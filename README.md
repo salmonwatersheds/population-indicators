@@ -1,21 +1,19 @@
-# r-analysis-template
+# population-indicators
 
-Date
+July 7, 2023
 
 ## Overview
 
-In one or two sentences, what is this repo all about? This is the bare minimum of a README file
+This is a draft example of how we might centralize the population indicator compilation across regions. Steph initiated this as a trial for discussion among the population group (Eric, Bruno, Steph). The idea would be to mirror the headings in the [tech-report](https://bookdown.org/salmonwatersheds/tech-report/).
 
 ## Files
 
-What are the files and folders contained in this repo and what do they do? Can be a file-by-file explanation (good) or a general overview (less good but likley the norm; e.g., This repo contains R code to reproduce the regional summaries shown in the Pacific Salmon Explorer landing page.)
-
+TBD
 ## Acknowledgements
 
-Here is a place to acknowledge contributions from project partners and funders.
+Something acknowledging data contributors, PSAC, regional TWGs that contributed to methods and data...
 
 ## More information
 
-Who can someone contact if they have questions? If you don't want to put your name, then direct folks to info at salmonwatersheds dot ca.
-
-Is there a paper or report in the Document Library that can be referenced here?
+See the [tech-report](https://bookdown.org/salmonwatersheds/tech-report/) that documents the methods to compile indicators that are shown here.
+Stephanie Peacock <speacock@psf.ca>

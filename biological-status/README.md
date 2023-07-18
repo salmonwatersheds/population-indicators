@@ -1,36 +1,30 @@
-# population-indicators
+# biological-status
 
-July 7, 2023
+July 18, 2023
 
 ## Overview
 
-This is a draft example of how we might centralize the population indicator compilation across regions. Steph initiated this as a trial for discussion among the population group (Eric, Bruno, Steph). The idea would be to mirror the headings in the [tech-report](https://bookdown.org/salmonwatersheds/tech-report/).
+
+See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#benchmarks-biostatus) for detailed methodology for biological status assessments.
 
 ## Files
 
-#### `biological-status`
+#### `code`
 
 Contains code to
 * fit HBM spawner-recruit model
 * estimate spawner-recruit benchmarks
 * estimate percentile benchmarks
+* calculate probability of different status outcomes
 * spit out datasets 101 and 102 (biological status outcomes)
 
-#### `spawner-surveys`
+#### `data`
 
-Contains code to compile dataset 1-part2 (spawner surveys) including
-* importing most recent NuSEDS data from [Open Data Canada](https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6)
-* applying 'hard-coded' fixes where we know there are errors
-* making changes to reflect additional knowledge where available (e.g., removing low-quality stream, unreliable data as recommended for SBC Chinook)
+Contains spawner-recruit datasets and priors used in HBM fitting. The data file was historically a .txt file with initial rows detailing `#MaxStocks` and the priors on `b`: `prSmax` and `prCV`. I suggest these priors get moved to a separate file. In that case the data files for each region and species would be, e.g., `SRdata_fraser-pink.csv` or `SRdata-cc-sockeye.csv` with fields for `CUID`, `brood_year`, `spawners`, `recruits`, and `exploitation_rate`. The priors would `SRpriors_fraser-pink.csv` or `SRpriors-cc-sockeye.csv` with fields for `prSmax` and `prCV`. 
 
-#### `timing`
+#### `output`
 
-Could include the run timing data but also spawn timing analysis of NuSEDS data or other timing data analysis?
-
-#### `hatchery-release-score`
-
-#### `data-quality`
-
+Place for mcmc posterior output files (as `.rds`?) of SR parameters (a and b) and benchmarks (Smsy, Sgen), and percentile benchmarks/samples, and output datasets.
 
 ## Acknowledgements
 

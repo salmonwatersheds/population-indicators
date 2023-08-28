@@ -10,7 +10,7 @@ This is a draft example of how we might centralize the population indicator comp
 
 #### `biological-status`
 
-Contains code to
+Contains (or will contain...) code to
 * fit HBM spawner-recruit model
 * estimate spawner-recruit benchmarks
 * estimate percentile benchmarks
@@ -24,7 +24,7 @@ Contains code to compile dataset 1-part2 (spawner surveys) including
 * making changes to reflect additional knowledge where available (e.g., removing low-quality stream, unreliable data as recommended for SBC Chinook)
 
 Update QA/QC code runs the following checks:
-* Looks in `-status/Output` folder for dataset1_part2 files and extracts date
+* Looks in `-status/Output` folder for dataset1_part2 files and extracts date (SP: Think of updating this to be the `spawner-surveys/output` folder?)
 * Sources most recent data (`newData`) and next-most-recent data (`oldData`)
 * Checks that headers are the same between the datasets
 * Checks if the same stream names are represented in both datasets and flags either missing or added streams
@@ -32,6 +32,12 @@ Update QA/QC code runs the following checks:
 * Performs a full join of new and old data and then flags any `streamid`s that have multiple rows for a single year. This would occur if any of the fields for a given `streamid` didn't match: `NuSEDS.counts.by.stream` for a given `year` (could be due to a correction in NuSEDS or some other error in how data are assigned to `streamid`), `CUID` (can happen if a stream is re-assigned to a new CU), or `streamname`. This could also occur if there were multiple methods in a year in which case this is not an error, per se.
 
 **Note:** You will get the error `no lines available in input` if Dropbox hasn't synced the data files. Suggest choosing "Make available offline" for the `xxx-status` folders to avoid this.
+
+#### `spawner-abundance`
+
+Compiles CU-level spawner abundance reconstructions, and/or runs those reconstructions using spawner surveys and expansion factors (would like to do this ourselves eventually?).
+
+Also contains `update-QAQC.R` code that runs equivalent checks to those for the spawner surveys.
 
 #### `timing`
 

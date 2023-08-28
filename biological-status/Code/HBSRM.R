@@ -133,9 +133,31 @@ for(i in 1:length(fndata)){
                    fill = TRUE, stringsAsFactors = FALSE)
   d0$BY <- as.numeric(d0$BY) # brood year
   
+  # Import the prSmax and prCV for each CU
+  d0_prior <- read.table(file = fndata[i], header = T, skip = 2, nrows = MaxStocks)
+  # **SP: These priors differ among stocks. Where do they come from?
+  
   d <- subset(d0, is.na(Rec) == F & is.na(Esc) == F & BY >= FBYr & Esc > 0)
   
   StNames <- as.character(unique(d$CU))     # name of CUs; as.character() is used because certain CUs have a number for name
+  StNames <- unique(d$CU)
+  
+  # in case CUID is given, replace it by the corresponding name of the CU(s)
+  areThereCUID <- suppressWarnings(!is.na(as.numeric(StNames)))
+  if(sum(areThereCUID) > 0){
+    CUIDsHere <- as.numeric(StNames[areThereCUID])
+    CUIDs <- read.csv(paste0(wd_Data,"/appendix1.csv"),header = T, stringsAsFactors = F)
+    CUIDs_cut <- CUIDs[CUIDs$CUID %in% CUIDsHere,]
+    CUIDsHere_names <- CUIDs_cut[order(CUIDsHere),]$Conservation.Unit  # to preserve the order because %in% does not 
+    StNames[areThereCUID] <- CUIDsHere_names
+    
+    # update d and 
+    for(j in 1:length(CUIDsHere)){
+      d$CU[d$CU == CUIDsHere[j]] <- CUIDsHere_names[j]
+      d0_prior$CU[d0_prior$CU == CUIDsHere[j]] <- CUIDsHere_names[j]
+    }
+  }
+  
   Nstocks <- length(StNames)  # nb of CUs
   Nyrs <- tapply(X = d, INDEX = d$CU, FUN = nrow) # nb of year per CU
   
@@ -167,15 +189,11 @@ for(i in 1:length(fndata)){
   #* covariation among stocks, but this format will have to be reconsidered if
   #* any complexity is added to the model (autocorrelation, temporal covariation)
   
-  # Set priors on b
-  # Import the prSmax and prCV for each CU
-  d0 <- read.table(file = fndata[i], header = T, skip = 2, nrows = MaxStocks)
-  # **SP: These priors differ among stocks. Where do they come from?
-  
+  # Set priors on b:
   # only keep the retained CUs
-  d1 <- subset(d0,CU %in% StNames)
-  prSmax <- d1$prSmax
-  prCV <- d1$prCV
+  d1_prior <- subset(d0_prior,CU %in% StNames)
+  prSmax <- d1_prior$prSmax
+  prCV <- d1_prior$prCV
   
   prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
   prtaub <- 1/prCV^2				# convert from cv to tau
@@ -190,6 +208,8 @@ for(i in 1:length(fndata)){
   LNRS <- log(R/S)   # BSC: could be created inside the function with R and S to limit the number of parameters to pass in
   inipars <- LinReg(Nyrs,LNRS,S,R,StNames)	
 }
+
+
 
 
 

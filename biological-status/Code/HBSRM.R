@@ -170,9 +170,10 @@ for(i in 1:length(fndata)){
   Nyrs <- Nyrs[StNames]
   
   # organize the data into a year x CU for R and S: 
-  S <- R <- matrix(nrow = max(Nyrs),ncol = Nstocks)
+  # S <- R <- matrix(nrow = max(Nyrs),ncol = Nstocks)    # BSC: previous code
+  S <- R <- matrix(nrow = length(min(d$BY):max(d$BY)),ncol = Nstocks)
   colnames(S) <- colnames(R) <- StNames
-  rownames(S) <- rownames(R) <- d$BY # BSC: in case we want all the years, even those with no data: min(d$BY):max(d$BY), but extra code needed if missing years, like for Pink
+  rownames(S) <- rownames(R) <- min(d$BY):max(d$BY)
   for(j in 1:Nstocks){
     d1 <- subset(d,CU == StNames[j])
     S[as.character(d1$BY),j] <- d1$Esc  # BSC: to address SP 's comment below
@@ -205,8 +206,9 @@ for(i in 1:length(fndata)){
     quartz()
   }
 
-  LNRS <- log(R/S)   # BSC: could be created inside the function with R and S to limit the number of parameters to pass in
-  inipars <- LinReg(Nyrs,LNRS,S,R,StNames)	
+  # LNRS <- log(R/S)   # BSC: now be created inside the function with R and S to limit the number of parameters to pass in
+  # inipars <- LinReg(Nyrs,LNRS,S,R,StNames)
+  inipars <- LinReg(S,R)
 }
 
 

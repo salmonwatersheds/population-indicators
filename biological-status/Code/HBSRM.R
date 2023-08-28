@@ -59,6 +59,7 @@ regions <- data.frame(
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
 region <- regions$Fraser
+region <- regions$Yukon
 
 # set the path of the input data sets for that specific region
 wd_Data_input <- paste0(wd_data_regions[,region])
@@ -114,14 +115,14 @@ FBYr <- -99   # set first brood year, "-99" for no constraint
 MinSRpts <- 3 # set minimum # of SR data points required to be included in the analysis
 
 #---------------------------------------------------------------#
-# 1. Read in Stock-Recruit Data 
+# Read in Stock-Recruit Data, run the HBSR model and output paraemter estimates ----
 #---------------------------------------------------------------#
 
-for(i in 1:length(fndata)){
+for(i in 1:length(Species)){
   
-  print(paste0("Plot printer for: ",
+  print(paste0("*** Plot printer for: ",
                colnames(species_acronym[, species_acronym == Species[i],drop=F]),
-               " (",Species[i],")"))
+               " (",Species[i],") ***"))
   
   MaxStocks <- scan(file = fndata[i], nlines = 1, skip = 1)
   
@@ -158,8 +159,11 @@ for(i in 1:length(fndata)){
     }
   }
   
-  Nstocks <- length(StNames)  # nb of CUs
   Nyrs <- tapply(X = d, INDEX = d$CU, FUN = nrow) # nb of year per CU
+  
+  # ti check the range of years for each CU:
+  # tapply(X = d$BY, INDEX = d$CU, FUN = function(x){range(x)})
+  
   
   # retain CUs with enough data points
   StNames <- StNames[which(Nyrs >= MinSRpts)]
@@ -208,8 +212,169 @@ for(i in 1:length(fndata)){
 
   # LNRS <- log(R/S)   # BSC: now be created inside the function with R and S to limit the number of parameters to pass in
   # inipars <- LinReg(Nyrs,LNRS,S,R,StNames)
+  # Display the RS plot and output the estimated parameter values:
   inipars <- LinReg(S,R)
+  
+  # BSC: this is temporary: see if it is possible to treat eah CU separately in the
+  # JAGS chunk in case there are NAs that differ among CU.
+  rowToKeep <- apply(X = S, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
+  S <-  S[rowToKeep,,drop = F]
+  rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
+  R <-  R[rowToKeep,,drop = F]
+  
+  LNRS <- log(R/S)
+  
+  #------------------------------------------------------------------------------#
+  #  Bayes model
+  #------------------------------------------------------------------------------#
+  modelFilename = "Bayes_SR_model.txt"
+  cat("
+  model{
+  
+    #Hyper priors
+    mu_a ~ dnorm(0.5, 1.0E-6)
+    tau_a ~ dgamma(0.5, 0.5)
+    sd_a <- pow(tau_a, -0.5)
+  
+    for(i in 1:Nstocks) {	
+  
+  	  a[i] ~ dlnorm(mu_a, tau_a) #Hyper distribution on alpha
+  
+  	  b[i] ~ dlnorm(prmub[i], prtaub[i])I(1.0E-5,)	#prior on stock-independent b
+  	  # **SP: Why is b truncated to be greater than 1.0E-5?
+  
+  	  sd[i] ~ dunif(0.05, 10)
+  	  # **SP: Why start at 0.05? Could the sd not be less?
+  	
+  	  # tau[i] <- pow(sd[i], -0.5)
+  	  # **SP: This should be -2 instead of -0.5
+      tau[i] <- pow(sd[i], -2)
+  	
+    }
+  
+    for(i in 1:Nstocks) {	
+    	for(j in 1:Nyrs[i]) {
+    		LNRS[j, i] ~ dnorm(Pred[j, i], tau[i])
+    		Pred[j, i] <- a[i] - b[i]*S[j, i]
+    	}
+    }
+  }
+  ", fill=TRUE, file=modelFilename)
+  
+  #------------------------------------------------------------------------------#
+  #  Jags inputs
+  #------------------------------------------------------------------------------#
+  # jags.data = list("Nstocks","Nyrs","LNRS","S","prmub","prtaub","cov")
+  #**SP: What is cov? Don't see it defined above or used in the model.
+  
+  # **SP: AFAIK you need a list of the data, not just a list of the data names. I.e.,
+  jags.data <- list(
+  	Nstocks = Nstocks,
+  	Nyrs = Nyrs,
+  	LNRS = LNRS,
+  	S = S,
+  	prmub = prmub,
+  	prtaub = prtaub #,
+  	# cov = cov
+  )
+  jags.parms = c("a","b","b2","sd","mu_a","sd_a","mu_b2","sd_b2")
+  #** SP: What are b2? mub2? etc.?
+  jags.parms = c("a","b","sd","mu_a","sd_a")
+  
+  #------------------------------------------------------------------------------#
+  #   Run Model
+  #------------------------------------------------------------------------------#
+  print("Running Parallel")
+  # **SP: Why have this message when it's not actually running in parallel?
+  # **BSC: TODO: get the parallele to work on windows, MAC and Linuxf
+  # https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
+  
+  ptm = proc.time()
+  jagsfit.p <- jags(data = jags.data,  
+                    parameters.to.save = jags.parms,
+                    n.thin = 10,                     # thinning rate
+                    n.iter = 6000, #100000, 
+                    model.file = modelFilename, 
+                    n.burnin = 2000, #5000, 
+                    n.chains = 6)
+  
+  endtime <- proc.time()-ptm
+  endtime[3]/60
+  post <- as.mcmc(jagsfit.p)
+  mypost <- as.matrix(post, chain=F)
+  
+  #**SP: This is not in fact running in parallel.
+  
+  ##### INFERENCE #####
+  gelman.diag(post, multivariate = F)
+  model.probs <- round(cbind(est = colMeans(mypost),
+                             sd = apply(mypost,2,sd),
+                             ci = t(apply(mypost,2,quantile,c(.025,.975)))),
+                       digits = 8)
+  model.probs
+  
+  # BSC: it is now exported in /Output
+  # BSC: Where these should be outputed? They are probably too big for github
+  write.table(mypost,file = paste0("Output/",region,".",Species[i],".post.out"),
+              col.names = T,row.names = F)
+  
+# }
+
+  #------------------------------------------------------------------------------#
+  # Plot SR relationship ----
+  #------------------------------------------------------------------------------#
+  
+  # BSC: it is possible to group this above code with the one below in the same loop.
+  # Now it is grouped.
+  # Note that keeping everything in one loop is simpler because we filter the 
+  # _SPregion <- regions$Fraser...csv datasets and eventually updated the names 
+  # in CUs. How come this is not done again here by the way?
+
+# for(i in 1:length(Species)){
+  
+  # i <- 1
+  # Import the ...
+  post <- read.table(file = paste0(wd_Output,"/",region,".",Species[i],".post.out"),
+                     header = T)
+  
+  # maximum nb of CUs
+  # MaxStocks <- scan(file = fndata[i],nlines = 1,skip = 1)
+  
+  
+  # for each CU...
+  for(cu in 1:length(unique(d$CU))){
+    
+    # cu <- 1
+    d_sub <- subset(x = d, subset = CU == unique(d$CU)[cu])
+    
+    
+    
+    
+    
+    
+  }
+  
+  
+  # obtain the CUs names:
+  unique(sp.rs$CU)
+  
+  
+  # sockeye
+  #long
+  Long.cu <- subset(sx.rs, CU=="Long")
+  
+  #owikeno
+  Owikeno.cu <- subset(sx.rs, CU=="Owikeno")
+  
+  #backland
+  Backland.cu <- subset(sx.rs, CU=="Backland")
+  
+  #backland
+  Canoona.cu
+  
+  
 }
+
 
 
 

@@ -11,7 +11,6 @@ if(!grepl(pattern = "biological-status", x = getwd())){
 }
 
 # Import functions
-source("Code/linear_SR_func.R")
 source("Code/functions.R")
 
 # Load packages
@@ -42,9 +41,6 @@ regions <- regions_fun()
 # User choices
 #------------------------------------------------------------------------------#
 
-# option to export the figures
-print_fig <- F
-
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
@@ -67,6 +63,11 @@ Species <- c(species_acronym$Sockeye,
 
 # If we do not specify the species:
 Species <- NULL
+
+
+# BSC: issue to solve with 
+region <- regions$Fraser
+Species <- species_acronym$Pink
 
 # Returns a list with the species and the corresponding path of the _SRdata files
 # (the most up to date)
@@ -103,39 +104,25 @@ for(i in 1:length(Species)){
   # organize the data into a year x CU for R and S:
   CUs <- unique(d$CU)
   nCUs <- length(CUs)
-  yrs <- min(d$BY):max(d$BY)
-  nyrs <- length(yrs)
+  Yrs <- min(d$BY):max(d$BY)
+  nYrs <- length(Yrs)
 
-  S <- R <- matrix(nrow = nyrs, ncol = nCUs, dimnames = list(yrs,CUs))
+  S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
   for(j in 1:nCUs){
     dj <- subset(d,CU == CUs[j])
-    S[as.character(dj$BY),j] <- dj$Esc  # BSC: to address SP 's comment below
+    S[as.character(dj$BY),j] <- dj$Esc  
     R[as.character(dj$BY),j] <- dj$Rec
     
     # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
     # R[1:Nyrs[j],j] <- d1$Rec
   }
   
-  #**SP: We have to be a bit careful with this format, because S-R pairs from 
-  #* different years are slotted into the same row. For example, if CU#1 has 
-  #* data for 1980-2000 and CU #2 has data for 1970-1990 those will both be in 
-  #* rows 1-21. There's no problem if we're not accounting for any temporal
-  #* covariation among stocks, but this format will have to be reconsidered if
-  #* any complexity is added to the model (autocorrelation, temporal covariation)
-  
-
   # Set priors on b:
   # Previous method using the values in the _SRdata.txt file
   # prSmax <- d_prior$prSmax
   # prCV <- d_prior$prCV
   # prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
   # prtaub <- 1/prCV^2				# convert from cv to tau
-  
-  # Use linear regression estimates as prior instead...
-  # ***SP: Check with Eric about priors on b. ***
-  lmEst <- estSR(spawners = S, recruits = R, CUnames = CUs)
-  
-  log_Smsr <- log(1/lmEst$b)
   
   #### Estimate a and b by linreg and plot
   if(.Platform$OS.type == "windows"){      # BSC: what to do with Linux? : x11()?
@@ -144,11 +131,14 @@ for(i in 1:length(Species)){
     quartz()
   }
 
-  # LNRS <- log(R/S)   # BSC: now be created inside the function with R and S to limit the number of parameters to pass in
+  # LnRS <- log(R/S)   # BSC: now is created inside the function with R and S to limit the number of parameters to pass in
   # inipars <- LinReg(Nyrs,LNRS,S,R,StNames)
   # Display the RS plot and output the estimated parameter values:
-  inipars <- LinReg(S,R)
+  inipars <- linRegRicker_fun(S = S, R = R, plot_figures = T)
+  # BSC: linRegRicker_fun() was LinReg() and estSR()
+  # ***SP: Check with Eric about priors on b. ***
   
+
   # BSC: this is temporary: see if it is possible to treat each CU separately in the
   # JAGS chunk in case there are NAs that differ among CU.
   rowToKeep <- apply(X = S, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
@@ -156,74 +146,74 @@ for(i in 1:length(Species)){
   rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
   R <-  R[rowToKeep,,drop = F]
   
-  LNRS <- log(R/S)
+  Yrs <-as.numeric(rownames(R))
+  nYrs <- length(Yrs)
+  
+  # LnRS <- log(R/S)
   
   #------------------------------------------------------------------------------#
-  #  Bayes model
+  #  Bayes model defined with rjags
   #------------------------------------------------------------------------------#
+  
+  ln_Smsr <- log(1/inipars$b)
+  
+  # jags inputs:
+  jags.data <- list(
+    nCUs = nCUs,
+    nYrs = nYrs,
+    obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
+    S = S,         # data on observed spawners - matrix nYrs x nCU 
+    ln_Smsr = ln_Smsr)
+  # prmub = prmub, # prior on mu for b
+  # prtaub = prtaub #prior on tau for b
+  # ) # cov - not sure what this is
+  
+  jags.parms <- c("a", "b", "sd", "mu_a", "sd_a")
+  
+  # Definition of the model:
   modelFilename = "Bayes_SR_model.txt"
   cat("
   model{
   
-    #Hyper priors
-    mu_a ~ dnorm(0.5, 1.0E-6)
-    tau_a ~ dgamma(0.5, 0.5)
-    sd_a <- pow(tau_a, -0.5)
-  
-    for(i in 1:Nstocks) {	
-  
-  	  a[i] ~ dlnorm(mu_a, tau_a) #Hyper distribution on alpha
-  
-  	  b[i] ~ dlnorm(prmub[i], prtaub[i])I(1.0E-5,)	#prior on stock-independent b
-  	  # **SP: Why is b truncated to be greater than 1.0E-5?
-  
-  	  sd[i] ~ dunif(0.05, 10)
-  	  # **SP: Why start at 0.05? Could the sd not be less?
+  	# Hyper priors
+  	log_mu_a ~ dnorm(0.5, 1.0E-6) # SP: Note that this parameter was confusing as it was defined as mu_a previously; changed this.
+  	mu_a <- exp(log_mu_a)
+  	tau_a ~ dgamma(0.5, 0.5) 
+  	sd_a <- pow(tau_a, -0.5)
   	
-  	  # tau[i] <- pow(sd[i], -0.5)
-  	  # **SP: This should be -2 instead of -0.5
-      tau[i] <- pow(sd[i], -2)
+  	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
   	
-    }
+  		a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha
+  		
+  		# b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+  		# Getting very broad estimates of b, try to contstrain by fitting
+  		# S at max recruits (Smsr) instead of b and truncating at 1e10
+  		
+  		Smsr[i] ~ dlnorm(ln_Smsr[i], pow(1, -2)) T(0, 1e10)
+  		b[i] <- 1/Smsr[i]
+  		sd[i] ~ dunif(0.05, 10) 
+  		tau[i] <- pow(sd[i], -2)	
+  	}
+  	
+  	for(i in 1:nCUs){	
+  		for(j in 1:nYrs){
+  		 	# Model prediction for log R/S based on estimated parameters
+  		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i]
+  		 	
+  		 	# Likelihood
+  		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+  		}
+  	}
+  }", fill = TRUE, file = modelFilename)
   
-    for(i in 1:Nstocks) {	
-    	for(j in 1:Nyrs[i]) {
-    		LNRS[j, i] ~ dnorm(Pred[j, i], tau[i])
-    		Pred[j, i] <- a[i] - b[i]*S[j, i]
-    	}
-    }
-  }
-  ", fill=TRUE, file=modelFilename)
-  
-  #------------------------------------------------------------------------------#
-  #  Jags inputs
-  #------------------------------------------------------------------------------#
-  # jags.data = list("Nstocks","Nyrs","LNRS","S","prmub","prtaub","cov")
-  #**SP: What is cov? Don't see it defined above or used in the model.
-  
-  # **SP: AFAIK you need a list of the data, not just a list of the data names. I.e.,
-  jags.data <- list(
-  	Nstocks = Nstocks,
-  	Nyrs = Nyrs,
-  	LNRS = LNRS,
-  	S = S,
-  	prmub = prmub,
-  	prtaub = prtaub #,
-  	# cov = cov
-  )
-  jags.parms = c("a","b","b2","sd","mu_a","sd_a","mu_b2","sd_b2")
-  #** SP: What are b2? mub2? etc.?
-  jags.parms = c("a","b","sd","mu_a","sd_a")
-  
-  #------------------------------------------------------------------------------#
-  #   Run Model
-  #------------------------------------------------------------------------------#
+  # Run Model
   print("Running Parallel")
   # **SP: Why have this message when it's not actually running in parallel?
   # **BSC: TODO: get the parallele to work on windows, MAC and Linuxf
   # https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
   
   ptm = proc.time()
+  
   jagsfit.p <- jags(data = jags.data,  
                     parameters.to.save = jags.parms,
                     n.thin = 10,                     # thinning rate
@@ -234,148 +224,22 @@ for(i in 1:length(Species)){
   
   endtime <- proc.time()-ptm
   endtime[3]/60
+  
   post <- as.mcmc(jagsfit.p)
-  mypost <- as.matrix(post, chain=F)
   
-  #**SP: This is not in fact running in parallel.
+  # BSC: it is exported in /Output for now but these should be exported someWhere
+  # else becaue they are probably too big for github.
+  saveRDS(post,
+          file = paste0("Output/",region,"_",Species[i],"_posteriors_priorShift.rds"))
   
-  ##### INFERENCE #####
+
+  ##### INFERENCE ##### BSC: is that useful?
+  mypost <- as.matrix(post, chain = F)
   gelman.diag(post, multivariate = F)
   model.probs <- round(cbind(est = colMeans(mypost),
                              sd = apply(mypost,2,sd),
                              ci = t(apply(mypost,2,quantile,c(.025,.975)))),
                        digits = 8)
   model.probs
-  
-  # BSC: it is now exported in /Output
-  # BSC: Where these should be outputed? They are probably too big for github
-  write.table(mypost,file = paste0("Output/",region,".",Species[i],".post.out"),
-              col.names = T,row.names = F)
-  
-# }
-
-  #------------------------------------------------------------------------------#
-  # Plot SR relationship ----
-  #------------------------------------------------------------------------------#
-  
-  # BSC: it is possible to group this above code with the one below in the same loop.
-  # Now it is grouped.
-  # Note that keeping everything in one loop is simpler because we filter the 
-  # _SPregion <- regions$Fraser...csv datasets and eventually updated the names 
-  # in CUs. How come this is not done again here by the way?
-
-# for(i in 1:length(Species)){
-  
-  # i <- 1
-  # Import the ...
-  # could also simply use mypost
-  post <- read.table(file = paste0(wd_Output,"/",region,".",Species[i],".post.out"),
-                     header = T)
-  
-  # maximum nb of CUs
-  # MaxStocks <- scan(file = fndata[i],nlines = 1,skip = 1)
-  
-  # for each CU..
-  CUs <- unique(d$CU)
-  for(i_cu in 1:length(CUs)){
-    
-    # i_cu <- 1
-    CU <-CUs[i_cu]
-    d_sub <- subset(x = d, subset = CU == CU)
-    
-    # alpha <- sx.post[,16]; beta <- sx.post[,65] # ?! what are those big numbers in there?
-    alpha <- post[,i_cu]
-    beta <- post[,i_cu + length(unique(d$CU))]
-    
-    # 
-    spw <- seq(0,max(d_sub$Esc, na.rm = T),100)
-    
-    # 
-    recruits <- array(NA, dim = c(1,length(spw), 10000))
-    
-    # 
-    for(j in 1:10000){
-      iter <- sample(length(alpha),1)
-      recruits[,,j] <- spw * exp(alpha[iter] - beta[iter] * spw) # Ricker model
-    }
-    
-    # 
-    rec.m <- apply(recruits,c(1,2),median)/1000
-    rec.u <- apply(recruits,c(1,2),quantile,probs = 0.975)/1000
-    rec.l <- apply(recruits,c(1,2),quantile,probs = 0.025)/1000
-    
-    if(print_fig){
-      # jpeg("LongSR.jpg", width=8, height=4,units="in",res=200)
-      # BSC: not sure if we want to export the figures in the github repo.
-      jpeg(paste0(wd_Figures,"/",region,"_",Species[i],"_",unique(d$CU)[i_cu],".jpg"), 
-           width = 8, height = 4,units = "in",res = 200)
-    }
-    
-    par(mfrow = c(1,1),mar = c(1.5,2.5,1,1.5),oma = c(2,2,2,1), new = F)
-    plot(x = d_sub$Esc / 1000,y = d_sub$Rec/1000,
-         bty='l', xlab="", ylab="", xaxt="n", yaxt="n", col = "white")
-    axis(1)
-    axis(2,las = 2)
-    # mtext("Sockeye - Long",3,cex=0.85,line=1)
-    species_full <- colnames(species_acronym)[which(species_acronym == Species[i])]
-    mtext(paste0(species_full," - ",CU),3,cex=0.85,line=1)
-    mtext("Spawners (000s)",1,outer=T,line=1)
-    mtext("Recruits (000s)",2,outer=T,line=1)
-    
-    
-    # .95 CI
-    polygon(x = c(spw/1000,rev(spw/1000)),y = c(rec.u,rev(rec.l)),
-            col = grey(0.9),border = NA)
-    
-    # data points 
-    points(x = d_sub$Esc / 1000,y = d_sub$Rec/1000)
-    
-    # median line
-    lines(x = spw/1000, y = rec.m, lwd = 2)
-    
-    # adjustcolor(grey(0.9), alpha.f = 0.9)
-    
-    
-    # Bench marks
-    abline(v =41.4,col="red",lwd=2)
-    abline(v =29.8,col="red",lty=2)
-    abline(v =76.7,col="red",lty=2)
-    
-    abline(v=82.8,col="dark green",lwd=2)
-    abline(v=59.7,col="dark green",lty=2)
-    abline(v=153.4,col="dark green",lty=2)
-    
-
-    
-    if(print_fig){
-      dev.off()
-    }
-    
-  }
-  
-  
-  # obtain the CUs names:
-  unique(sp.rs$CU)
-  
-  
-  # sockeye
-  #long
-  Long.cu <- subset(sx.rs, CU=="Long")
-  
-  #owikeno
-  Owikeno.cu <- subset(sx.rs, CU=="Owikeno")
-  
-  #backland
-  Backland.cu <- subset(sx.rs, CU=="Backland")
-  
-  #backland
-  Canoona.cu
-  
-  
 }
-
-
-
-
-
 

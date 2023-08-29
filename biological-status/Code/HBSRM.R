@@ -2,20 +2,21 @@
 # Hierarchical Bayesian SR analysis for all regions and conservation units.
 # Code adpated from Korman and English (2013).
 
-rm(list=ls())
+rm(list = ls())
 graphics.off()
 
 # Set directory to /biological-status
-setwd(dir = paste0(getwd(),"/biological-status"))
+if(!grepl(pattern = "biological-status", x = getwd())){
+  setwd(dir = paste0(getwd(),"/biological-status"))
+}
 
 # Import functions
 source("Code/linear_SR_func.R")
+source("Code/functions.R")
 
+# Load packages
 library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
-
-# option to export the figures
-print_fig <- F
 
 # Define subdirectories:
 wd_Code <- paste0(getwd(),"/Code")
@@ -24,44 +25,32 @@ wd_Figures <- paste0(getwd(),"/Figures")
 wd_Output <- paste0(getwd(),"/Output")
 
 # BSC: this below need to be automatized, which is tricky because our names are 
-# placed in the dropbax path that leads to the datasets...
+# placed in the dropbox path that leads to the datasets...
 wd_Data_input_root <- "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
 
-# BSC: we probably will need to organize these datasets better
-wd_data_regions <- data.frame(
-    Central_coast = paste0(wd_Data_input_root,"/1_Active/Central Coast PSE/analysis/central-coast-status/HBM and status"),
-    Columbia = paste0(wd_Data_input_root,"/1_Active/Columbia/data & analysis/analysis/columbia-status"), # BSC: ? no HBM and status folder... to check at some point
-    Fraser = paste0(wd_Data_input_root,"/Fraser_VIMI/analysis/fraser-status/HBM and status"),
-    Haida_Gwaii = paste0(wd_Data_input_root,"/1_Active/Haida Gwaii PSE/Data & Assessments/haida-gwaii-status/HBM and status"),
-    Nass = paste0(wd_Data_input_root,"/Nass/assessments/2_population/nass-status/HBM and status"),
-    Skeena = paste0(wd_Data_input_root,"/Skeena Updates/skeena-status/HBM and status"),
-    Yukon = paste0(wd_Data_input_root,"/1_Active/Yukon/Data & Assessments/yukon-status/HBM-and-status"))
+# Paths to the repositories containing the run reconstruction datasets for each 
+# region.
+wd_data_regions <- wd_data_regions_fun(wd_root = wd_Data_input_root)
 
-# BSC: figure out what these are exactly
-species_acronym <- data.frame(
-  Chinook = "CK",
-  Chum = "CM",         # to check
-  Coho = "CO",         # to check
-  Pink = "PK",
-  Sockeye = 'SX',
-  Steelheqd = "SH",   # to check
-  Cutthroat = "CT")   # to check
+# Import species names and acronyms
+species_acronym <- species_acronym_fun()
 
-# To be sure that the name of the region is spelled correctly 
-regions <- data.frame(
-  Central_coast = 'Central_coast',
-  Columbia = "Columbia", 
-  Fraser = 'Fraser',
-  Haida_Gwaii = 'Haida_Gwaii',
-  Nass = 'Nass',
-  Skeena = 'Skeena',
-  Yukon = 'Yukon')
+# Import region names
+regions <- regions_fun()
+
+#------------------------------------------------------------------------------#
+# User choices
+#------------------------------------------------------------------------------#
+
+# option to export the figures
+print_fig <- F
 
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
 region <- regions$Fraser
 region <- regions$Yukon
+region <- regions$Nass
 
 # set the path of the input data sets for that specific region
 wd_Data_input <- paste0(wd_data_regions[,region])
@@ -73,117 +62,55 @@ wd_Data_input <- paste0(wd_data_regions[,region])
 # If we specify the species:
 Species <- c(species_acronym$Sockeye,    
              species_acronym$Pink,
+             species_acronym$Cutthroat,
              species_acronym$Chum)
 
 # If we do not specify the species:
 Species <- NULL
 
-# Import the most recent individual fish counts for the region and species selected.
-# Select the most recent version of the files.
-files_list <- list.files(wd_Data_input)
+# Returns a list with the species and the corresponding path of the _SRdata files
+# (the most up to date)
+fndata <- SRdata_path_Species_fun(wd = wd_Data_input, Species = Species)
 
-# In the case we did not specify the Species, find those that have data:
-if(is.null(Species)){                               
-  files_s <- files_list[grepl(pattern = "_SRdata_",files_list)]
-  # get the species present:
-  Species <- unique(sub("_SRdata_.*", "", files_s))
-}
+Species <- fndata$Species  # species is updated is was NULL or certain species do not have a file
+fndata <- fndata$SRdata
 
-# Return the corresponding files, selecting the most recent ones eventually:
-fndata <- sapply(X = Species, FUN = function(s){
-  # s <- Species[3]
-  files_s <- files_list[grepl(pattern = paste0(s,"_SRdata_"),files_list)]
-  
-  # if multiple files, select the one with the most recent date modified:
-  if(length(files_s) > 1){
-    files_dates <- file.info(paste(wd_Data_input,files_s,sep="/"))$mtime
-    files_s <- files_s[files_dates == max(files_dates)]
-  }
-  # if no file is present --> NA
-  if(length(files_s) == 0){
-    files_s <- NA
-    print(paste0("Species ",s," does not have a file."))
-  }
-  return(files_s)
-})
+# Set first brood year, "-99" for no constraint
+FBYr <- -99
 
-fndata <- rbind(fndata)           # coerce into an array
-fndata <- fndata[!is.na(fndata)]  # remove species with that do not have file.
+# Set minimum # of SR data points required to be included in the analysis
+MinSRpts <- 3 
 
-# Get the full path:
-fndata <- paste(wd_Data_input,fndata,sep = "/")
-
-FBYr <- -99   # set first brood year, "-99" for no constraint
-MinSRpts <- 3 # set minimum # of SR data points required to be included in the analysis
+#----------------------------------------------------------------------------#
+# Read in Stock-Recruit Data, run the HBSR model and output parameter estimates
+#----------------------------------------------------------------------------#
 
 for(i in 1:length(Species)){
   
-  #----------------------------------------------------------------------------#
-  # Read in Stock-Recruit Data, run the HBSR model and output parameter estimates ----
-  #----------------------------------------------------------------------------#
+  # i <- 2
   
   print(paste0("*** Plot printer for: ",
                colnames(species_acronym[, species_acronym == Species[i],drop=F]),
                " (",Species[i],") ***"))
   
-  MaxStocks <- scan(file = fndata[i], nlines = 1, skip = 1)
-  
-  # First pass through to get list of stocks/CUs and determine how many years of SR 
-  # points for each. 
-  # Only retain the CUs with at least MinSRpts.
-  # Import the fish counts for R and S per year for each CU
-  d0 <- read.table(file = fndata[i], header = T, skip = 3 + MaxStocks, 
-                   fill = TRUE, stringsAsFactors = FALSE)
-  d0$BY <- as.numeric(d0$BY) # brood year
-  
-  # Import the prSmax and prCV for each CU
-  d0_prior <- read.table(file = fndata[i], header = T, skip = 2, nrows = MaxStocks)
-  # **SP: These priors differ among stocks. Where do they come from?
-  
-  d <- subset(d0, is.na(Rec) == F & is.na(Esc) == F & BY >= FBYr & Esc > 0)
-  
-  StNames <- as.character(unique(d$CU))     # name of CUs; as.character() is used because certain CUs have a number for name
-  StNames <- unique(d$CU)
-  
-  # in case CUID is given, replace it by the corresponding name of the CU(s)
-  areThereCUID <- suppressWarnings(!is.na(as.numeric(StNames)))
-  if(sum(areThereCUID) > 0){
-    CUIDsHere <- as.numeric(StNames[areThereCUID])
-    CUIDs <- read.csv(paste0(wd_Data,"/appendix1.csv"),header = T, stringsAsFactors = F)
-    CUIDs_cut <- CUIDs[CUIDs$CUID %in% CUIDsHere,]
-    CUIDsHere_names <- CUIDs_cut[order(CUIDsHere),]$Conservation.Unit  # to preserve the order because %in% does not 
-    StNames[areThereCUID] <- CUIDsHere_names
-    
-    # update d and 
-    for(j in 1:length(CUIDsHere)){
-      d$CU[d$CU == CUIDsHere[j]] <- CUIDsHere_names[j]
-      d0_prior$CU[d0_prior$CU == CUIDsHere[j]] <- CUIDsHere_names[j]
-    }
-  }
-  
-  Nyrs <- tapply(X = d, INDEX = d$CU, FUN = nrow) # nb of year per CU
-  
-  # ti check the range of years for each CU:
-  # tapply(X = d$BY, INDEX = d$CU, FUN = function(x){range(x)})
-  
-  
-  # retain CUs with enough data points
-  StNames <- StNames[which(Nyrs >= MinSRpts)]
-  
-  # update objects
-  d <- subset(d, CU %in% StNames)
-  Nstocks <- length(StNames)
-  Nyrs <- Nyrs[StNames]
-  
-  # organize the data into a year x CU for R and S: 
-  # S <- R <- matrix(nrow = max(Nyrs),ncol = Nstocks)    # BSC: previous code
-  S <- R <- matrix(nrow = length(min(d$BY):max(d$BY)),ncol = Nstocks)
-  colnames(S) <- colnames(R) <- StNames
-  rownames(S) <- rownames(R) <- min(d$BY):max(d$BY)
-  for(j in 1:Nstocks){
-    d1 <- subset(d,CU == StNames[j])
-    S[as.character(d1$BY),j] <- d1$Esc  # BSC: to address SP 's comment below
-    R[as.character(d1$BY),j] <- d1$Rec
+  # Import the priors and counts from the SRdata.txt file. The function retain 
+  # CUs with at least MinSRpts nb of data points and update their names in case 
+  # the CUID and not the name was used.
+  d <- SRdata_fun(path_file = fndata[i], wd_Data = wd_Data, MinSRpts = MinSRpts)
+  d_prior <- d$priors
+  d <- d$counts
+
+  # organize the data into a year x CU for R and S:
+  CUs <- unique(d$CU)
+  nCUs <- length(CUs)
+  yrs <- min(d$BY):max(d$BY)
+  nyrs <- length(yrs)
+
+  S <- R <- matrix(nrow = nyrs, ncol = nCUs, dimnames = list(yrs,CUs))
+  for(j in 1:nCUs){
+    dj <- subset(d,CU == CUs[j])
+    S[as.character(dj$BY),j] <- dj$Esc  # BSC: to address SP 's comment below
+    R[as.character(dj$BY),j] <- dj$Rec
     
     # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
     # R[1:Nyrs[j],j] <- d1$Rec
@@ -196,14 +123,19 @@ for(i in 1:length(Species)){
   #* covariation among stocks, but this format will have to be reconsidered if
   #* any complexity is added to the model (autocorrelation, temporal covariation)
   
+
   # Set priors on b:
-  # only keep the retained CUs
-  d1_prior <- subset(d0_prior,CU %in% StNames)
-  prSmax <- d1_prior$prSmax
-  prCV <- d1_prior$prCV
+  # Previous method using the values in the _SRdata.txt file
+  # prSmax <- d_prior$prSmax
+  # prCV <- d_prior$prCV
+  # prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
+  # prtaub <- 1/prCV^2				# convert from cv to tau
   
-  prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
-  prtaub <- 1/prCV^2				# convert from cv to tau
+  # Use linear regression estimates as prior instead...
+  # ***SP: Check with Eric about priors on b. ***
+  lmEst <- estSR(spawners = S, recruits = R, CUnames = CUs)
+  
+  log_Smsr <- log(1/lmEst$b)
   
   #### Estimate a and b by linreg and plot
   if(.Platform$OS.type == "windows"){      # BSC: what to do with Linux? : x11()?
@@ -217,7 +149,7 @@ for(i in 1:length(Species)){
   # Display the RS plot and output the estimated parameter values:
   inipars <- LinReg(S,R)
   
-  # BSC: this is temporary: see if it is possible to treat eah CU separately in the
+  # BSC: this is temporary: see if it is possible to treat each CU separately in the
   # JAGS chunk in case there are NAs that differ among CU.
   rowToKeep <- apply(X = S, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
   S <-  S[rowToKeep,,drop = F]
@@ -364,7 +296,7 @@ for(i in 1:length(Species)){
     # 
     for(j in 1:10000){
       iter <- sample(length(alpha),1)
-      recruits[,,j] <- spw * exp(alpha[iter] - beta[iter] * spw)
+      recruits[,,j] <- spw * exp(alpha[iter] - beta[iter] * spw) # Ricker model
     }
     
     # 
@@ -387,15 +319,24 @@ for(i in 1:length(Species)){
     # mtext("Sockeye - Long",3,cex=0.85,line=1)
     species_full <- colnames(species_acronym)[which(species_acronym == Species[i])]
     mtext(paste0(species_full," - ",CU),3,cex=0.85,line=1)
-    #
+    mtext("Spawners (000s)",1,outer=T,line=1)
+    mtext("Recruits (000s)",2,outer=T,line=1)
+    
+    
+    # .95 CI
     polygon(x = c(spw/1000,rev(spw/1000)),y = c(rec.u,rev(rec.l)),
             col = grey(0.9),border = NA)
-    # 
+    
+    # data points 
     points(x = d_sub$Esc / 1000,y = d_sub$Rec/1000)
-    #
+    
+    # median line
     lines(x = spw/1000, y = rec.m, lwd = 2)
     
     # adjustcolor(grey(0.9), alpha.f = 0.9)
+    
+    
+    # Bench marks
     abline(v =41.4,col="red",lwd=2)
     abline(v =29.8,col="red",lty=2)
     abline(v =76.7,col="red",lty=2)
@@ -403,8 +344,8 @@ for(i in 1:length(Species)){
     abline(v=82.8,col="dark green",lwd=2)
     abline(v=59.7,col="dark green",lty=2)
     abline(v=153.4,col="dark green",lty=2)
-    mtext("Spawners (000s)",1,outer=T,line=1)
-    mtext("Recruits (000s)",2,outer=T,line=1)
+    
+
     
     if(print_fig){
       dev.off()

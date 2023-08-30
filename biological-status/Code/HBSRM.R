@@ -65,9 +65,14 @@ Species <- c(species_acronym$Sockeye,
 Species <- NULL
 
 
-# BSC: issue to solve with 
+# **** BSC: issues to solve with ***
 region <- regions$Fraser
 Species <- species_acronym$Pink
+
+region <- regions$Yukon
+Species <- species_acronym$Pink
+
+# ****
 
 # Returns a list with the species and the corresponding path of the _SRdata files
 # (the most up to date)
@@ -107,6 +112,9 @@ for(i in 1:length(Species)){
   Yrs <- min(d$BY):max(d$BY)
   nYrs <- length(Yrs)
 
+  # unique(d[d$CU == CUs[1],]$BY)
+  # unique(d[d$CU == CUs[2],]$BY)
+  
   S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
   for(j in 1:nCUs){
     dj <- subset(d,CU == CUs[j])
@@ -146,7 +154,7 @@ for(i in 1:length(Species)){
   rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
   R <-  R[rowToKeep,,drop = F]
   
-  Yrs <-as.numeric(rownames(R))
+  Yrs <- as.numeric(rownames(R))
   nYrs <- length(Yrs)
   
   # LnRS <- log(R/S)

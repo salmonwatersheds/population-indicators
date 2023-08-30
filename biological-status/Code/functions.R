@@ -6,7 +6,6 @@
 # S and R:  year x CU matrices of fish counts for spawners and recruiters 
 # LNRS: log(R/S)     BSC: could be created inside the function with R and S to limit the number of parameters to pass in
 # StNames: the same of the CUs
-# 
 linRegRicker_fun <- function(S, R, plot_figures = T){
   
   CUs <- colnames(S)
@@ -14,6 +13,28 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
   a <- vector(length = nCUs)  # Vector to store productivity parameter
   b <- rep(NA, nCUs)           # Vector to store density-dependence parameter
   sigma <- rep(NA, nCUs)         # Vector to store estimates of sigma
+  
+  # in case we want to plot:
+  if(nCUs < 5){
+    ngrows <- nCUs
+    ngcol <- 1
+  }else if(5 <= nCUs & nCUs < 9){
+    ngrows <- 4
+    ngcol <- 2
+  }else if(9 <= nCUs & nCUs < 13){
+    ngrows <- 4
+    ngcol <- 3
+  }else if(13 <= nCUs & nCUs < 17){
+    ngrows <- 4
+    ngcol <- 4
+  }else if(17 <= nCUs & nCUs < 20){
+    ngrows <- 4
+    ngcol <- 5
+  }
+  
+  par(mfcol = c(ngrows,ngcol),
+      mai = c(.4,.3,.3,.2),     # size of margin size in inches
+      omi = c(0.1,0.1,0.1,0.1)) # size outer margins in inches
   
   for(i in 1:nCUs){
     
@@ -40,38 +61,19 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
     Smax <- round(b1 / a[i], digits = 0)
     Uopt <- round(0.5 * a[i] - 0.07 * a[i]^2, digits = 2)
     
-    print(rbind(output))
+    print(paste0("*** ",CUs[i]," ***"))
+    print(do.call(what = cbind,args = list(a = a[i], b = b[i], sigma = sigma[i])))
     print(c("Prod=",Prod))
     print(c("Smsy=",Smsy))
     print(c("Smax=",Smax))
     print(c("Uopt=",Uopt))
+    print("")
     
     # Plot basic SR curves and data
     # plot(S[,i], LNRS[1:Nyrs[i],i],bty='l',xlab="Spawners",xlim=c(0,max(S)),ylim=c(0,max(LNRS)),ylab="Ln(R/S)",main=CUs[i])
     # abline(reg,lty=1,lwd=2)
     
     if(plot_figures){
-      
-      if(nCUs < 5){
-        ngrows <- nCUs
-        ngcol <- 1
-      }else if(5 <= nCUs & nCUs < 9){
-        ngrows <- 4
-        ngcol <- 2
-      }else if(9 <= nCUs & nCUs < 13){
-        ngrows <- 4
-        ngcol <- 3
-      }else if(13 <= nCUs & nCUs < 17){
-        ngrows <- 4
-        ngcol <- 4
-      }else if(17 <= nCUs & nCUs < 20){
-        ngrows <- 4
-        ngcol <- 5
-      }
-      
-      par(mfcol = c(ngrows,ngcol),
-          mai = c(.3,.3,.3,.2),     # size of margin size in inches
-          omi = c(0.1,0.1,0.1,0.1)) # size outer margins in inches
       
       Sx <- seq(0,max(Scu),by = 100)
       pR <- Sx * exp(a[i] - b[i] * Sx)
@@ -84,6 +86,7 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
     }
     
   }
+  output <- list(a = a, b = b, sigma = sigma)
   return(output)
 }
 

@@ -51,56 +51,100 @@ region <- regions$Yukon
 region <- regions$Nass
 
 # set the path of the input data sets for that specific region
-wd_Data_input <- paste0(wd_data_regions[,region])
+wd_Data_input <- paste0(wd_data_regions[,region])   # BSC: if we end up having the posterior_priorShift.rds file in dropbox
+wd_Data_input <- wd_Output                          # if they are there
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
 # Option to set Species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-Species <- c(species_acronym$Sockeye,    
+Species <- c(
+             species_acronym$Sockeye,    
              species_acronym$Pink,
-             species_acronym$Cutthroat,
-             species_acronym$Chum)
+             species_acronym$Coho
+             #species_acronym$Cutthroat,
+             #species_acronym$Chum
+             )
 
-# If we do not specify the species:
-Species <- NULL
+# BSC: TODO: make a function that check the species for which there is a posterior_priorShift.rds
+# file.
 
-# Returns a list with the species and the corresponding path of the _SRdata files
-# (the most up to date)
-fndata <- SRdata_path_Species_fun(wd = wd_Data_input, Species = Species)
 
-Species <- fndata$Species  # species is updated is was NULL or certain species do not have a file
-fndata <- fndata$SRdata
+for(i_sp in 1:length(Species)){
+  
+  # i_sp <- 1
 
-# Set first brood year, "-99" for no constraint
-FBYr <- -99
-
-# Set minimum # of SR data points required to be included in the analysis
-MinSRpts <- 3 
-
-#----------------------------------------------------------------------------#
-# Read in Stock-Recruit Data, run the HBSR model and output parameter estimates
-#----------------------------------------------------------------------------#
-
-for(i in 1:length(Species)){
+  # Import the HBSRM outputs:
+  post <- readRDS(paste0(wd_Data_input,"/",region,"_",Species[i_sp],"_posteriors_priorShift.rds"))
+  
+  # find the nb of CUs
+  nCUs <- sum(grepl(pattern = "a\\[", x = colnames(post[[1]])))
+  
   #------------------------------------------------------------------------------#
-  # Plot SR relationship ----
+  # Check convergence of chains
   #------------------------------------------------------------------------------#
   
-  # BSC: it is possible to group this above code with the one below in the same loop.
-  # Now it is grouped.
-  # Note that keeping everything in one loop is simpler because we filter the 
-  # _SPregion <- regions$Fraser...csv datasets and eventually updated the names 
-  # in CUs. How come this is not done again here by the way?
+  nchains <- length(post) # 6 chains
+  # parameter names
+  pnames <- colnames(post[[1]])
+  # 
+  r.hat <- gelman.diag(x = post, multivariate = F)
+  if(sum(r.hat[[1]][, 1] > 1.1) > 0){
+    warning(paste("Some convergence issues for parameters: \n", pnames[which(r.hat[[1]][, 1] > 1.1)]))
+  }
   
-  # for(i in 1:length(Species)){
+  #------------------------------------------------------------------------------#
+  # Calculate benchmarks
+  #------------------------------------------------------------------------------#
   
-  # i <- 1
-  # Import the ...
-  # could also simply use mypost
-  post <- read.table(file = paste0(wd_Output,"/",region,".",Species[i],".post.out"),
-                     header = T)
+  # Unlist different chains of the posterior
+  post.arr <- array(
+    data = NA, 
+    dim = c(length(post), nrow(post[[1]]), ncol(post[[1]])), 
+    dimnames = list(paste0("chain", 1:length(post)), NULL, pnames))
+  
+  for(i in 1:length(post)){
+    post.arr[i, , ] <- post[[i]]
+  }
+  
+  # Calculate benchmarks for all mcmc draws to account for correlation between a and b
+  SR_bench <- array(
+    data = NA,
+    dim = c(nCUs, 5, length(post), nrow(post[[1]])),
+    dimnames = list(keepCU, c("a", "b", "sig", "Smsy", "Sgen"), 
+                    paste0("chain", 1:length(post)), NULL))
+  
+  for(i in 1:nCU){
+    SR_bench[i, "a", , ] <- post.arr[, , which(pnames == paste0("a[", i, "]"))]
+    SR_bench[i, "b", , ] <- post.arr[, , which(pnames == paste0("b[", i, "]"))]
+    SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == paste0("sd[", i, "]"))]
+  }
+  
+  # Calculate Smsy & Sgen (this takes a few mins...think of vectorizing/parallelizing)
+  # Uses 1_functions.R which is different from previous versions by estimating Smsy
+  # directly using the methods of Scheuerell (2016).
+  
+  for(i in 1:nCU){
+    for(j in 1:length(post)){
+      
+      # Smsy (function can handle vectors)
+      SR_bench[i, "Smsy", j, ] <- calcSmsy(a = SR_bench[i, "a", j, ], b = SR_bench[i, "b", j, ])
+      
+      # Sgen (function not currently set up to handle vectors..think of updating this)
+      for(k in 1:nrow(post[[1]])){
+        SR_bench[i, "Sgen", j, k] <- calcSgen(
+          Sgen.hat = 0.5 * SR_bench[i, "Smsy", j, k], 
+          theta = c(
+            a = SR_bench[i, "a", j, k], 
+            b = SR_bench[i, "b", j, k],
+            sig = SR_bench[i, "sig", j, k]),
+          Smsy = SR_bench[i, "Smsy", j, k])
+      }
+    }
+  }
+  
+
   
   # maximum nb of CUs
   # MaxStocks <- scan(file = fndata[i],nlines = 1,skip = 1)

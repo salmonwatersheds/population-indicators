@@ -48,6 +48,14 @@ region <- regions$Fraser
 region <- regions$Yukon
 region <- regions$Nass
 
+# **** BSC: issues to solve with ***
+region <- regions$Fraser
+Species <- species_acronym$Pink   # one CU: Fraser River (odd)
+
+# region <- regions$Nass
+# Species <- species_acronym$Pink    # two CUs: "Nass-Skeena_Estuary_Even"      "Nass_Portland_Observatory_odd"
+# ****
+
 # set the path of the input data sets for that specific region
 wd_Data_input <- paste0(wd_data_regions[,region])
 
@@ -63,16 +71,6 @@ Species <- c(species_acronym$Sockeye,
 
 # If we do not specify the species:
 Species <- NULL
-
-
-# **** BSC: issues to solve with ***
-region <- regions$Fraser
-Species <- species_acronym$Pink   # one CU: Fraser River (odd)
-
-region <- regions$Nass
-Species <- species_acronym$Pink    # two CUs: "Nass-Skeena_Estuary_Even"      "Nass_Portland_Observatory_odd"
-
-# ****
 
 # Returns a list with the species and the corresponding path of the _SRdata files
 # (the most up to date)
@@ -93,7 +91,7 @@ MinSRpts <- 3
 
 for(i in 1:length(Species)){
   
-  # i <- 2
+  # i <- 1
   
   print(paste0("*** Plot printer for: ",
                colnames(species_acronym[, species_acronym == Species[i],drop=F]),
@@ -154,39 +152,6 @@ for(i in 1:length(Species)){
   # rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
   # R <-  R[rowToKeep,,drop = F]
   
-  
-  # *** MODIFIED FROM HERE ***#
-  
-  # define a matrix of the rows the keep (i.e. that do not have NAs) for each CU
-  # in R and S. This rowsToKeep is the passed as an argument in the JAGS code 
-  # below.
-  # issue 1: BUGS does not subset arrays with boolean argument
-  # issue 2: BUGS does not accept list --> we have vector of rows that have different length
-  # and an array cannot consequently not be used
-  # Solution: flatten the list of vector of row numbers to keep
-  rowsToKeep <- apply(X = S, MARGIN = 2, FUN = function(x){which(!is.na(x))})
-  rowsToKeep <- unlist(rowsToKeep)
-  
-  # similarly define nYrs for each CU:
-  nYrs <- sapply(X = 1:ncol(S), FUN = function(c){
-    output <- length(rownames(S)[!is.na(S[,c])])
-    return(output)
-  })
-  
-  i <- 1
-  i_start <- 1
-  i_end <- nYrs[i]
-  rowsToKeep_cu <- rowsToKeep[i_start:i_end]
-  S[rowsToKeep_cu,i]
-  obs_lnRS[rowsToKeep_cu,i]
-  
-  i <- 2
-  i_start <- i_end + 1
-  i_end <- i_end + nYrs[i]
-  rowsToKeep_cu <- rowsToKeep[i_start:i_end]
-  S[rowsToKeep_cu,i]
-  obs_lnRS[rowsToKeep_cu,i]
-
   # Yrs <- as.numeric(rownames(R))
   # nYrs <- length(Yrs)
   
@@ -196,11 +161,17 @@ for(i in 1:length(Species)){
   #  Bayes model defined with rjags
   #------------------------------------------------------------------------------#
   
+  # Replace NAs with a value so that the model can run. Note that obs_lnRS still
+  # has NAs, so the it does not matter what pred_lnRS is for these cases because
+  # they are not considered in the likelihood calcutation (due to NAs in obs_lnRS).
+  S[is.na(S)] <- -99    # could put any value
+  nYrs <- nrow(S)
+  
   # jags inputs:
   jags.data <- list(
     nCUs = nCUs,
     nYrs = nYrs,
-    rowsToKeep = rowsToKeep,
+    # rowsToKeep = rowsToKeep,
     obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
     S = S,         # data on observed spawners - matrix nYrs x nCU 
     ln_Smsr = log(1/inipars$b))
@@ -235,31 +206,17 @@ for(i in 1:length(Species)){
   		tau[i] <- pow(sd[i], -2)	
   	}
   	
-  	# i_start <- 1
-  	# i_end <- nYrs[1]
-  	
   	for(i in 1:nCUs){
-  	
-  	  i_start <- ifelse(i == 1, 1, i_end + 1)
-  	  i_end <- ifelse(i > 1, nYrs[i], i_end + nYrs[i])
-  	
-  	  rowsToKeep_cu <- rowsToKeep[i_start:i_end]
-  	
-  	  S_cu <- S[rowsToKeep_cu,i]
-  	  obs_lnRS_cu <- obs_lnRS[rowsToKeep_cu,i]
-  	
-  		for(j in 1:nYrs[i]){    # note the nYrs[i] and not nYrs
+  		for(j in 1:nYrs){
   		
   		 	# Model prediction for log R/S based on estimated parameters
-  		 	pred_lnRS[j, i] <- a[i] - b[i] * S_cu[j, i]
+  		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i]
   		 	
   		 	# Likelihood
-  		 	obs_lnRS_cu[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+  		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
   		}
   	}
   }", fill = TRUE, file = modelFilename)
-  
-  # *** MODIFIED TO HERE ***#
   
   # Run Model
   print("Running Parallel")

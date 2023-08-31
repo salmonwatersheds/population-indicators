@@ -1,5 +1,5 @@
 
-
+# 
 
 rm(list = ls())
 graphics.off()
@@ -67,9 +67,16 @@ Species <- c(
              #species_acronym$Chum
              )
 
-# BSC: TODO: make a function that check the species for which there is a posterior_priorShift.rds
-# file.
+# or get the species for which there is a _posteriors_priorShift.rds file:
+Species <- NULL
 
+if(is.null(Species)){
+  files_list <- list.files(wd_Data_input)
+  files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
+  files_s <- files_s[grepl(pattern = region,files_list)]
+  Species <- unique(sub("_posteriors_priorShift.*", "", files_s))
+  Species <- gsub(pattern = paste0(region,"_"), replacement = "", x = Species)
+}
 
 for(i_sp in 1:length(Species)){
   
@@ -79,6 +86,9 @@ for(i_sp in 1:length(Species)){
   post <- readRDS(paste0(wd_Data_input,"/",region,"_",Species[i_sp],"_posteriors_priorShift.rds"))
   
   # find the nb of CUs
+  CUs <- read.csv(paste0(wd_Data_input,"/",region,"_",Species[i_sp],"_CUs_names.csv"),
+                  header = T,stringsAsFactors = F)
+  CUs <- CUs$CU
   nCUs <- sum(grepl(pattern = "a\\[", x = colnames(post[[1]])))
   
   #------------------------------------------------------------------------------#
@@ -101,7 +111,7 @@ for(i_sp in 1:length(Species)){
   # Unlist different chains of the posterior
   post.arr <- array(
     data = NA, 
-    dim = c(length(post), nrow(post[[1]]), ncol(post[[1]])), 
+    dim = c(nchains, nrow(post[[1]]), ncol(post[[1]])), 
     dimnames = list(paste0("chain", 1:length(post)), NULL, pnames))
   
   for(i in 1:length(post)){
@@ -112,10 +122,12 @@ for(i_sp in 1:length(Species)){
   SR_bench <- array(
     data = NA,
     dim = c(nCUs, 5, length(post), nrow(post[[1]])),
-    dimnames = list(keepCU, c("a", "b", "sig", "Smsy", "Sgen"), 
-                    paste0("chain", 1:length(post)), NULL))
+    dimnames = list(CUs, 
+                    c("a", "b", "sig", "Smsy", "Sgen"), 
+                    paste0("chain", 1:length(post)), 
+                    NULL))
   
-  for(i in 1:nCU){
+  for(i in 1:nCUs){
     SR_bench[i, "a", , ] <- post.arr[, , which(pnames == paste0("a[", i, "]"))]
     SR_bench[i, "b", , ] <- post.arr[, , which(pnames == paste0("b[", i, "]"))]
     SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == paste0("sd[", i, "]"))]
@@ -125,11 +137,13 @@ for(i_sp in 1:length(Species)){
   # Uses 1_functions.R which is different from previous versions by estimating Smsy
   # directly using the methods of Scheuerell (2016).
   
-  for(i in 1:nCU){
-    for(j in 1:length(post)){
-      
+  for(i in 1:nCUs){
+    # i <- 1
+    for(j in 1:length(post)){ # for each chain
+      # j <- 1
       # Smsy (function can handle vectors)
-      SR_bench[i, "Smsy", j, ] <- calcSmsy(a = SR_bench[i, "a", j, ], b = SR_bench[i, "b", j, ])
+      SR_bench[i, "Smsy", j, ] <- calcSmsy(a = SR_bench[i, "a", j, ], 
+                                           b = SR_bench[i, "b", j, ])
       
       # Sgen (function not currently set up to handle vectors..think of updating this)
       for(k in 1:nrow(post[[1]])){
@@ -144,7 +158,171 @@ for(i_sp in 1:length(Species)){
     }
   }
   
-
+  #------------------------------------------------------------------------------#
+  # Plot the benchmark posteriors
+  #------------------------------------------------------------------------------#
+  
+  library(MCMCglmm) # For poster.mode function
+  
+  # Function to calculate highest posterior density (HPD) and HPD interval
+  HPD <- function(x, xmax = NA, na.rm = TRUE,n = 5000){
+    if(is.na(xmax)){
+      xmax <- max(x, na.rm = na.rm)
+    }
+    dens <- density(x, from = 0, to = xmax, na.rm = na.rm, n = n)
+    m <- dens$x[which(dens$y == max(dens$y))][1]
+    
+    mCI <- HPDinterval(mcmc(c(x)), prob = 0.95)[1,]
+    
+    output <- c(m, mCI)
+    names(output) <- c("m","mCI")
+    return(output)
+  }
+  
+  # Function to calculate posterior median and quantiles
+  # * THis is the current method used in the PSE*
+  medQuan <- function(x, na.rm = TRUE){
+    m <- median(x, na.rm = na.rm)
+    mCI <- quantile(x, probs = c(0.025, 0.975), na.rm = na.rm)
+    output <- c(m, mCI)
+    names(output) <- c("m","mCI")
+    return(output)
+  }
+  
+  # Import the S and R matrices used for fitting the HBSR model:
+  # BSC: the wd here will eventually have to be set to the final repo for the 
+  # exported datasets.
+  SRm <- readRDS(paste0(wd_Data_input,"/",region,"_",Species[i_sp],"_SR_matrices.rds"))
+  
+  # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
+  if(print_fig){
+    pathFile <- paste0(wd_Figures,"/",region,"_",Species[i_sp],"_benchmark_posteriors.pdf")
+    pdf(file = pathFile, width = 8.5, height = 11)
+  }
+  
+  statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")
+  par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma =c(3,3,1,0))
+  
+  for(i in 1:nCUs){
+    
+    # i <- 1
+    
+    # max spawners for that CU for plotting purposes
+    maxS <- max(SRm$S[, i], na.rm = TRUE) * 1.5
+    
+    #----------------------
+    # Plot SR relationship
+    #----------------------
+    # Create dummy vector of spawner abundance
+    dummy_spawners <- seq(0, maxS, length.out = 200)
+    
+    # Calculate posterior prediction for recruits based on a and b
+    dummy_recruits_full <- array(NA, dim = c(200, nchains*nrow(post[[1]])))
+    for(j in 1:200){
+        dummy_recruits_full[j, ] <- dummy_spawners[j] * exp(c(SR_bench[i, "a", , ]) - 
+                                                              c(c(SR_bench[i, "b", , ])) * 
+                                                              dummy_spawners[j])
+    }
+    
+    # Summarize predicted recruits using original method and HPD for comparison
+    dummy_recruits <- list(
+      medQuan = apply(dummy_recruits_full, 1, medQuan),
+      HPD = apply(dummy_recruits_full, 1, HPD, xmax = maxS)
+    )
+    
+    # Plot SR relationship with predicted recruits and 95% CI
+    plot(x = dummy_spawners, y = dummy_recruits[[1]][1,], type = "n", 
+         xlim = c(0, maxS/1.5), ylim = c(0, max(SRm$R[, i], na.rm = TRUE)), 
+         xlab = "Spawners", ylab = "Recruits", bty = "l")
+    mtext(side = 3, adj = 0, line = 2.5, CUs[i])
+    points(SRm$S[, i], SRm$R[, i])
+    for(j in 1:2){
+      lines(dummy_spawners, dummy_recruits[[j]][1, ], lty = c(2,1)[j], lwd = 2)
+      lines(dummy_spawners, dummy_recruits[[j]][2, ], lty = c(2,1)[j])
+      lines(dummy_spawners, dummy_recruits[[j]][3, ], lty = c(2,1)[j])
+    }
+    
+    #----------------------
+    # Plot benchmarks
+    #----------------------
+    benchSummary <- list(
+      Sgen = rbind(
+        medQuan = medQuan(SR_bench[i, "Sgen", , ]),
+        HPD = HPD(SR_bench[i, "Sgen", , ])),
+      Smsy = rbind(
+        medQuan = medQuan(SR_bench[i, "Smsy", , ]),
+        HPD = HPD(SR_bench[i, "Smsy", , ]))
+    )
+    
+    u <- par('usr')
+    for(j in 1:2){
+      for(k in 1:2){
+        abline(v = benchSummary[[k]][j, 1], lty = c(2,1)[j], 
+               col = statusCols[c('r', 'g')[k]])
+        # abline(v = benchSummary[[k]][j, 2], lty = c(2,1)[j], col = statusCols[c('r', 'g')[k]])
+        # abline(v = benchSummary[[k]][j, 3], lty = c(2,1)[j], col = statusCols[c('r', 'g')[k]])
+        y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+        points(x = benchSummary[[k]][j, 1],y = y, 
+               col = statusCols[c('r', 'g')[k]], pch = 19, xpd = NA)
+        segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
+                 y0 = y, y1 = y, 
+                 col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j], lwd = 2, xpd = NA)
+      }}
+    
+    legend("topright", lty = c(2,1, NA, NA), pch = c(NA, NA, 19, 19), 
+           col = c(1, 1, statusCols['r'], statusCols['g']), 
+           legend = c("median and quantiles", "HPD", "Sgen", "Smsy"), bg = "white")
+    
+    
+    Sgen <- SR_bench[i, "Sgen", , ]
+    Sgen <- Sgen[which(Sgen <= maxS)]
+    
+    Smsy <- SR_bench[i, "Smsy", , ]
+    Smsy <- Smsy[which(Smsy <= maxS)]
+    
+    dens <- list(density(SR_bench[i, "Sgen", , ], from = 0, to = maxS/1.5), 
+                 density(SR_bench[i, "Smsy", , ], from = 0, to = maxS/1.5))
+    
+    # Histograms of posterior mcmc draws
+    h1 <- hist(x = Sgen, col = paste0(statusCols['r'], 50), border = NA,
+               breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), main = "", 
+               freq = FALSE, xlab = "Benchmarks")
+    h2 <- hist(x = Smsy, col = paste0(statusCols['g'], 50), border = NA, 
+               breaks = seq(0, maxS, maxS/50), add = TRUE, 
+               freq = FALSE)
+    
+    # Plot density lines and benchmark estimates
+    u <- par('usr')
+    for(k in 1:2){
+      lines(dens[[k]], lwd = 2, col = statusCols[c('r', 'g')[k]])
+      for(j in 1:2){
+        abline(v = benchSummary[[k]][j, 1], col = statusCols[c('r', 'g')[k]], 
+               lty = c(2,1)[j])
+        # abline(v = benchSummary[[k]][j, 2:3], col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j])
+        
+        y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+        points(x = benchSummary[[k]][j, 1],y = y, col = statusCols[c('r', 'g')[k]],
+               pch = 19, xpd = NA)
+        segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
+                 y0 = y, y1 = y, 
+                 col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j], lwd = 2, xpd = NA)
+      }
+    }
+    
+    # Add spawner points along bottom for reference
+    #points(x = d$Esc[d$CU == keepCU[i]], y = rep(0, length(which(d$CU == keepCU[i]))))
+  }
+  # # Add legend
+  # plot(1,1,"n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+  # legend("top", fill = c(statusCols['r'], statusCols['g']), legend = c("Sgen", "Smsy"), bty = "n", border = NA, cex = 1.5)
+  # legend("center", lty = c(2,1), title = "Posterior summary", legend = c("median", "HPD"), bty = "n", border = NA, cex = 1.5)
+  
+  if(print_fig){
+    dev.off()
+  }
+  
+  
+  
   
   # maximum nb of CUs
   # MaxStocks <- scan(file = fndata[i],nlines = 1,skip = 1)

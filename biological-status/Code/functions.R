@@ -1,4 +1,61 @@
 
+# Function that calculates the lower stock-recruitment benchmark, Sgen: 
+#' This function calculates Sgen1, or the spawner abundances that would result 
+#' in recovery to Smsy within one generation. 
+#' 
+#' @param Sgen.hat A proposed numeric value for Sgen
+#' @param theta A numeric vector containing the estimated parameters a, b, and
+#' sigma from the Ricker function fit to data
+#' @param Smsy The calculated value of Smsy based on theta, from the calcSmsy
+#' function.
+#' @return Returns the numeric value of Sgen1.
+#' 
+#' @examples 
+#' 
+
+calcSgen <- function(Sgen.hat, theta, Smsy){
+  
+  fit <- optimize(f = Sgen.optim, interval = c(0, Smsy), theta = theta, Smsy = Smsy)
+  
+  # Give warning if Sgen1 is at upper or lower bound
+  if(round(fit$minimum) == 0){
+    warning("Sgen1 at lower bound of zero")
+  }
+  
+  if(round(fit$minimum) == round(Smsy)){
+    warning("Lower benchmark greater than upper benchmark (Sgen1 > Smsy). Set to NA.")
+    return(Sgen1 = NA)
+  } else {
+    return(Sgen1 = as.numeric(fit$minimum))
+  }
+}
+
+# Function that calculates the upper stock-recruitment benchmark, Smsy
+#' This function calculates Smsy, or the spawner abundance projected to 
+#' maintain long-term maximum sustainable yield from a population with 
+#' Ricker dynamics. It applied the explicit solution for Smsy given by
+#' Scheuerell (2016), PeerJ, DOI 10.7717/peerj.1623
+#' This function uses the lambertW0 function from the `lamW` library.
+#'
+#' @param a A numeric value giving Ricker parameter a (or log alpha), estimated
+#' from the observed spawner-recruitment data.
+#' @param b A numeric value giving Ricker parameter b (strength of density 
+#' dependence; units spawners^(-1)), estimated from the observed spawner-
+#' recruitment data.
+#' @return Returns the value of Smsy.
+#'
+#' @examples
+#' #
+
+calcSmsy <- function(a, b) {
+  
+  require(lamW) # for the Lambert-W Function
+  
+  Smsy = (1 - lamW::lambertW0(exp(1 - a))) / b
+  
+  return(as.numeric(Smsy))
+}
+
 # Function which computes linear-regression estimates of parameters and MSY 
 # parameters (i.e., the simple linearized Ricker model) and plots. The function 
 # returns a list of the coefficients a, b and sigma.
@@ -105,6 +162,45 @@ regions_fun <- function(){
     Yukon = 'Yukon')
   
   return(regions)
+}
+
+#' Optimization routine for calculation of Sgen
+#' This function calculates the likelihood of residuals between the projected
+#' recruits from an estimated Sgen.hat and a known value of Smsy, to be used in
+#' the optimization of Sgen in the calcSgen function. This function is based on
+#' the Sgen.optim function in the samSim package (Freshwater et al. 2018).
+#' 
+#' @param Sgen.hat A proposed numeric value for Sgen
+#' @param theta A numeric vector containing the estimated parameters a, b, and
+#' sigma from the Ricker function fit to data
+#' @param Smsy The calculated value of Smsy based on theta, from the calcSmsy
+#' function.
+#' @return Returns the negative log likelihood of the residuals.
+
+Sgen.optim <- function (Sgen.hat, theta, Smsy) {
+  # # Add warning and adjustment for non-zero spawner abundances
+  # if(any(Sgen.hat < 0.00001)){
+  # 	Sgen.hat[Sgen.hat < 0.00001] <- 0.0001
+  # 	print(c("Sgen.hat abundance must be > 0. Negative values replaced w/ small positive"))
+  # }
+  # 
+  # if(any(Smsy < 0.00001)){
+  # 	Smsy[Smsy < 0.00001] <- 0.0001
+  # 	print(c("Smsy must be > 0. Negative values replaced w/ small positive"))
+  # }
+  
+  a <- theta[1]
+  b <- theta[2]
+  sig <- exp(theta[3])
+  
+  # Compute projected recruits based on Sgen.hat
+  Smsy.hat <- Sgen.hat * exp(a - b * Sgen.hat) 
+  
+  # Calculate residuals and negative log likelihood
+  epsilon <- log(Smsy) - log(Smsy.hat)
+  nloglike <- - sum(dnorm(x = epsilon, mean = 0, sd = sig, log = TRUE))	
+  
+  return(nloglike)
 }
 
 # Function that returns a data frame of the fish species names (as column names)

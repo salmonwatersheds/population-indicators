@@ -48,9 +48,9 @@ region <- regions$Fraser
 region <- regions$Yukon
 region <- regions$Nass
 
-# **** BSC: issues to solve with ***
-region <- regions$Fraser
-Species <- species_acronym$Pink   # one CU: Fraser River (odd)
+# **** BSC: issues to solve with *** DELETE CHUNK eventually
+# region <- regions$Fraser
+# Species <- species_acronym$Pink   # one CU: Fraser River (odd)
 
 # region <- regions$Nass
 # Species <- species_acronym$Pink    # two CUs: "Nass-Skeena_Estuary_Even"      "Nass_Portland_Observatory_odd"
@@ -122,6 +122,12 @@ for(i in 1:length(Species)){
     # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
     # R[1:Nyrs[j],j] <- d1$Rec
   }
+  
+  # save the S and R matrix
+  SR_l <- list(S,R)
+  names(SR_l) <- c("S","R")
+  saveRDS(SR_l,
+          file = paste0("Output/",region,"_",Species[i],"_SR_matrices.rds"))
   
   # Set priors on b:
   # Previous method using the values in the _SRdata.txt file
@@ -244,6 +250,11 @@ for(i in 1:length(Species)){
   saveRDS(post,
           file = paste0("Output/",region,"_",Species[i],"_posteriors_priorShift.rds"))
   
+  # save the name of the corresponding CUs:
+  CUs_df <- data.frame(CU = CUs)
+  write.csv(x = CUs_df,
+            file = paste0("Output/",region,"_",Species[i],"_CUs_names.csv"), 
+            row.names = F)
 
   ##### INFERENCE ##### BSC: is that useful?
   mypost <- as.matrix(post, chain = F)

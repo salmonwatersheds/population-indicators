@@ -1,5 +1,7 @@
 
-# Function that calculates the lower stock-recruitment benchmark, Sgen: 
+# Function that calculates the lower stock-recruitment benchmark, Sgen (i.e. the 
+# spawner abundance that leads to Smsy in one generation with no harvest and 
+# assuming constant environmental conditions). 
 #' This function calculates Sgen1, or the spawner abundances that would result 
 #' in recovery to Smsy within one generation. 
 #' 
@@ -12,7 +14,6 @@
 #' 
 #' @examples 
 #' 
-
 calcSgen <- function(Sgen.hat, theta, Smsy){
   
   fit <- optimize(f = Sgen.optim, interval = c(0, Smsy), theta = theta, Smsy = Smsy)
@@ -30,7 +31,8 @@ calcSgen <- function(Sgen.hat, theta, Smsy){
   }
 }
 
-# Function that calculates the upper stock-recruitment benchmark, Smsy
+# Function that calculates the upper stock-recruitment benchmark = the maximum 
+# Sustainability Yield (Smsy)
 #' This function calculates Smsy, or the spawner abundance projected to 
 #' maintain long-term maximum sustainable yield from a population with 
 #' Ricker dynamics. It applied the explicit solution for Smsy given by
@@ -54,6 +56,21 @@ calcSmsy <- function(a, b) {
   Smsy = (1 - lamW::lambertW0(exp(1 - a))) / b
   
   return(as.numeric(Smsy))
+}
+
+# Function to calculate highest posterior density (HPD) and HPD interval
+HPD <- function(x, xmax = NA, na.rm = TRUE,n = 5000){
+  if(is.na(xmax)){
+    xmax <- max(x, na.rm = na.rm)
+  }
+  dens <- density(x, from = 0, to = xmax, na.rm = na.rm, n = n)
+  m <- dens$x[which(dens$y == max(dens$y))][1]
+  
+  mCI <- HPDinterval(mcmc(c(x)), prob = 0.95)[1,]
+  
+  output <- c(m, mCI)
+  names(output) <- c("m","mCI")
+  return(output)
 }
 
 # Function which computes linear-regression estimates of parameters and MSY 
@@ -147,6 +164,15 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
   return(output)
 }
 
+# Function to calculate posterior median and quantiles
+# * THis is the current method used in the PSE*
+medQuan <- function(x, na.rm = TRUE){
+  m <- median(x, na.rm = na.rm)
+  mCI <- quantile(x, probs = c(0.025, 0.975), na.rm = na.rm)
+  output <- c(m, mCI)
+  names(output) <- c("m","mCI")
+  return(output)
+}
 
 # Function that returns the name of the regions. This is to ensure that no spelling
 # mistakes are make.
@@ -294,14 +320,14 @@ SRdata_fun <- function(path_file, wd_Data, MinSRpts = 3){
 # Function that returns the input _SRdata.txt file names from there region-specific 
 # repository, which is defined by wd.
 # wd <- wd_Data_input
-SRdata_path_Species_fun <- function(wd, Species = NULL){
+SRdata_path_Species_fun <- function(wd, Species = NA, Species_all = T){
   
   # Import the most recent individual fish counts for the region and species selected.
   # Note that the region path should be contained in wd already.
   files_list <- list.files(wd)
   
   # In the case we did not specify the Species, find those that have data:
-  if(is.null(Species)){                           
+  if(Species_all){                           
     files_s <- files_list[grepl(pattern = "_SRdata",files_list)]
     # get the species present:
     Species <- unique(sub("_SRdata.*", "", files_s))

@@ -1,6 +1,5 @@
 
 # 
-
 rm(list = ls())
 graphics.off()
 
@@ -73,7 +72,7 @@ Species <- NULL
 if(is.null(Species)){
   files_list <- list.files(wd_Data_input)
   files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
-  files_s <- files_s[grepl(pattern = region,files_list)]
+  files_s <- files_s[grepl(pattern = region,files_s)]
   Species <- unique(sub("_posteriors_priorShift.*", "", files_s))
   Species <- gsub(pattern = paste0(region,"_"), replacement = "", x = Species)
 }
@@ -195,17 +194,24 @@ for(i_sp in 1:length(Species)){
   SRm <- readRDS(paste0(wd_Data_input,"/",region,"_",Species[i_sp],"_SR_matrices.rds"))
   
   # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
-  if(print_fig){
-    pathFile <- paste0(wd_Figures,"/",region,"_",Species[i_sp],"_benchmark_posteriors.pdf")
-    pdf(file = pathFile, width = 8.5, height = 11)
-  }
+  # if(print_fig){
+  #   pathFile <- paste0(wd_Figures,"/",region,"_",Species[i_sp],"_benchmark_posteriors.pdf")
+  #   pdf(file = pathFile, width = 8.5, height = 11)
+  # }
   
   statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")
-  par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma =c(3,3,1,0))
-  
+  # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
+  # layout(matrix(data = 1:(nCUs * 2), nrow = nCUs, byrow = T))
+  par(mar = c(4,4,1,1))
   for(i in 1:nCUs){
     
     # i <- 1
+    
+    if(print_fig){
+      pathFile <- paste0(wd_Figures,"/",region,"_",Species[i_sp],"_",CUs[i],
+                         "_benchmark_posteriors.pdf")
+      pdf(file = pathFile, width = 8.5, height = 11)
+    }
     
     # max spawners for that CU for plotting purposes
     maxS <- max(SRm$S[, i], na.rm = TRUE) * 1.5
@@ -266,7 +272,8 @@ for(i_sp in 1:length(Species)){
                col = statusCols[c('r', 'g')[k]], pch = 19, xpd = NA)
         segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
                  y0 = y, y1 = y, 
-                 col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j], lwd = 2, xpd = NA)
+                 col = statusCols[c('r', 'g')[k]], 
+                 lty = c(2,1)[j], lwd = 2, xpd = NA)
       }}
     
     legend("topright", lty = c(2,1, NA, NA), pch = c(NA, NA, 19, 19), 

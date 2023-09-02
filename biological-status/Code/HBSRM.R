@@ -48,6 +48,10 @@ show_figures <- F
 region <- regions_df$Fraser
 region <- regions_df$Yukon
 region <- regions_df$Nass
+region <- regions_df$Central_coast
+region <- regions_df$Columbia     # BSC: no _RS data file
+region <- regions_df$Haida_Gwaii
+region <- regions_df$Skeena
 
 # multiple regions:
 region <- c(

@@ -55,6 +55,11 @@ region <- c(
   regions_df$Yukon,
   regions_df$Nass)
 
+region <- c(
+  regions_df$Central_coast,
+  regions_df$Haida_Gwaii,
+  regions_df$Skeena)
+
 # set the path of the input data sets for that specific region
 # wd_Data_input <- paste0(wd_data_regions[,region])   # BSC: if we end up having the posterior_priorShift.rds file in dropbox
 wd_Data_input <- wd_Output                          # if they are there

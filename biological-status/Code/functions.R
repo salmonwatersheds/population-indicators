@@ -104,6 +104,15 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
   }else if(17 <= nCUs & nCUs < 20){
     ngrows <- 4
     ngcol <- 5
+  }else if(21 <= nCUs & nCUs < 26){
+    ngrows <- 5
+    ngcol <- 5
+  }else if(26 <= nCUs & nCUs < 31){
+    ngrows <- 5
+    ngcol <- 6
+  }else if(31 <= nCUs & nCUs < 36){
+    ngrows <- 6
+    ngcol <- 6
   }
   
   par(mfcol = c(ngrows,ngcol),

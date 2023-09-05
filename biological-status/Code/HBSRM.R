@@ -18,10 +18,10 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
 
 # Define subdirectories:
-wd_Code <- paste0(getwd(),"/Code")
-wd_Data <- paste0(getwd(),"/Data")
-wd_Figures <- paste0(getwd(),"/Figures")
-wd_Output <- paste0(getwd(),"/Output")
+wd_Code <- paste0(getwd(),"/code")
+wd_Data <- paste0(getwd(),"/data")
+wd_Figures <- paste0(getwd(),"/figures")
+wd_Output <- paste0(getwd(),"/output")
 
 # BSC: this below need to be automatized, which is tricky because our names are 
 # placed in the dropbox path that leads to the datasets...

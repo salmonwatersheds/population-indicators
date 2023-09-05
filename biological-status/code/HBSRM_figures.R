@@ -1,6 +1,4 @@
 
-to delete
-
 # 
 rm(list = ls())
 graphics.off()

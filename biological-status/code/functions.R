@@ -1,6 +1,4 @@
 
-# to delete
-
 # Function that calculates the lower stock-recruitment benchmark, Sgen (i.e. the 
 # spawner abundance that leads to Smsy in one generation with no harvest and 
 # assuming constant environmental conditions). 

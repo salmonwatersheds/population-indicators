@@ -18,19 +18,29 @@ source("Code/functions.R")
 library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
 
-# Define subdirectories:
-wd_Code <- paste0(getwd(),"/code")
-wd_Data <- paste0(getwd(),"/data")
-wd_Figures <- paste0(getwd(),"/figures")
-wd_Output <- paste0(getwd(),"/output")
+# The pass ../Salmon Watersheds Dropbox/user_name/X Drive/1_PROJECTS.
+# The pass is personal and must be copy past in wd_X_Drive1_PROJECTS.txt
+# e.g.: "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
+wd_X_Drive1_PROJECTS <- readLines( "wd_X_Drive1_PROJECTS.txt")
 
-# BSC: this below need to be automatized, which is tricky because our names are 
-# placed in the dropbox path that leads to the datasets...
-wd_Data_input_root <- "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
+# Define subdirectories:
+wd_code <- paste0(getwd(),"/code")
+wd_data <- paste0(getwd(),"/data")
+
+# figures and datasets generated are 
+Export_locally <- T
+if(Export_locally){
+  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/figures")
+  wd_output <- paste0(getwd(),"/output")
+}else{
+  wd_biological_status <- "Population Methods and Analysis/population-indicators/biological-status"
+  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/figures")
+  wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
+}
 
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
-wd_data_regions <- wd_data_regions_fun(wd_root = wd_Data_input_root)
+wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
 
 # Import species names and acronyms
 species_acronym <- species_acronym_fun()
@@ -39,7 +49,7 @@ species_acronym <- species_acronym_fun()
 regions_df <- regions_fun()
 
 #------------------------------------------------------------------------------#
-# User choices
+# Selection of region(s) and species
 #------------------------------------------------------------------------------#
 
 # option to show the SR plot
@@ -98,11 +108,11 @@ for(i_rg in 1:length(region)){
   # i_rg <- 1
   
   # set the path of the input data sets for that specific region
-  wd_Data_input <- paste0(wd_data_regions[,region[i_rg]])
+  wd_data_input <- paste0(wd_data_regions[,region[i_rg]])
   
   # Returns a list with the species and the corresponding path of the _SRdata files
   # (the most up to date)
-  fndata <- SRdata_path_Species_fun(wd = wd_Data_input, 
+  fndata <- SRdata_path_Species_fun(wd = wd_data_input, 
                                     Species = Species, 
                                     Species_all = Species_all)
   
@@ -122,7 +132,7 @@ for(i_rg in 1:length(region)){
     # Import the priors and counts from the SRdata.txt file. The function retain 
     # CUs with at least MinSRpts nb of data points and update their names in case 
     # the CUID and not the name was used.
-    d <- SRdata_fun(path_file = fndata[i_sp], wd_Data = wd_Data, MinSRpts = MinSRpts)
+    d <- SRdata_fun(path_file = fndata[i_sp], wd_data = wd_data, MinSRpts = MinSRpts)
     d_prior <- d$priors
     d <- d$counts
     
@@ -149,7 +159,7 @@ for(i_rg in 1:length(region)){
     SR_l <- list(S,R)
     names(SR_l) <- c("S","R")
     saveRDS(SR_l,
-            file = paste0("Output/",region[i_rg],"_",Species[i_sp],"_SR_matrices.rds"))
+            file = paste0(wd_output,"/",region[i_rg],"_",Species[i_sp],"_SR_matrices.rds"))
     
     # Set priors on b:
     # Previous method using the values in the _SRdata.txt file
@@ -272,12 +282,12 @@ for(i_rg in 1:length(region)){
     # BSC: it is exported in /Output for now but these should be exported someWhere
     # else becaue they are probably too big for github.
     saveRDS(post,
-            file = paste0("Output/",region[i_rg],"_",Species[i_sp],"_posteriors_priorShift.rds"))
+            file = paste0(wd_output,"/",region[i_rg],"_",Species[i_sp],"_posteriors_priorShift.rds"))
     
     # save the name of the corresponding CUs:
     CUs_df <- data.frame(CU = CUs)
     write.csv(x = CUs_df,
-              file = paste0("Output/",region[i_rg],"_",Species[i_sp],"_CUs_names.csv"), 
+              file = paste0(wd_output,"/",region[i_rg],"_",Species[i_sp],"_CUs_names.csv"), 
               row.names = F)
     
     ##### INFERENCE ##### BSC: is that useful?

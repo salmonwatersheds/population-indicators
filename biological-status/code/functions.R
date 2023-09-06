@@ -16,6 +16,10 @@
 #' 
 calcSgen <- function(Sgen.hat, theta, Smsy){
   
+  # the function returns:
+  # - minimum: the value of Sgen.hat that minimises Sgen.optim(Sgen.hat, theta, Smsy)
+  # in the interval c(0, Smsy)
+  # - objective: the corresponding minimal value of Sgen.optim(Sgen.hat, theta, Smsy)
   fit <- optimize(f = Sgen.optim, interval = c(0, Smsy), theta = theta, Smsy = Smsy)
   
   # Give warning if Sgen1 is at upper or lower bound
@@ -226,7 +230,7 @@ Sgen.optim <- function (Sgen.hat, theta, Smsy) {
   
   a <- theta[1]
   b <- theta[2]
-  sig <- exp(theta[3])
+  sig <- exp(theta[3])  # sigma_bi
   
   # Compute projected recruits based on Sgen.hat
   Smsy.hat <- Sgen.hat * exp(a - b * Sgen.hat) 

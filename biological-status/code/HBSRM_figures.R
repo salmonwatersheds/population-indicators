@@ -16,18 +16,32 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
 
 # Define subdirectories:
-wd_Code <- paste0(getwd(),"/code")
-wd_Data <- paste0(getwd(),"/data")
-wd_Figures <- paste0(getwd(),"/figures")
-wd_Output <- paste0(getwd(),"/output")
+wd_code <- paste0(getwd(),"/code")
+wd_data <- paste0(getwd(),"/data")
 
-# BSC: this below need to be automatized, which is tricky because our names are 
-# placed in the dropbox path that leads to the datasets...
-wd_Data_input_root <- "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
+# The pass ../Salmon Watersheds Dropbox/user_name/X Drive/1_PROJECTS.
+# The pass is personal and must be copy past in wd_X_Drive1_PROJECTS.txt
+# e.g.: "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
+wd_X_Drive1_PROJECTS <- readLines( "wd_X_Drive1_PROJECTS.txt")
+
+# Define subdirectories:
+wd_code <- paste0(getwd(),"/code")
+wd_data <- paste0(getwd(),"/data")
+
+# figures and datasets generated are 
+Export_locally <- T
+if(Export_locally){
+  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/figures")
+  wd_output <- paste0(getwd(),"/output")
+}else{
+  wd_biological_status <- "Population Methods and Analysis/population-indicators/biological-status"
+  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/figures")
+  wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
+}
 
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
-wd_data_regions <- wd_data_regions_fun(wd_root = wd_Data_input_root)
+wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
 
 # Import species names and acronyms
 species_acronym <- species_acronym_fun()
@@ -36,7 +50,7 @@ species_acronym <- species_acronym_fun()
 regions_df <- regions_fun()
 
 #------------------------------------------------------------------------------#
-# User choices
+# Selection of region(s) and species
 #------------------------------------------------------------------------------#
 
 # option to export the figures
@@ -61,8 +75,8 @@ region <- c(
   regions_df$Skeena)
 
 # set the path of the input data sets for that specific region
-# wd_Data_input <- paste0(wd_data_regions[,region])   # BSC: if we end up having the posterior_priorShift.rds file in dropbox
-wd_Data_input <- wd_Output                          # if they are there
+# wd_data_input <- paste0(wd_data_regions[,region])   # BSC: if we end up having the posterior_priorShift.rds file in dropbox
+wd_data_input <- wd_output                          # if they are there
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
@@ -88,7 +102,7 @@ for(i_rg in 1:length(region)){
   # i_rg <- 1
   
   if(Species_all){
-    files_list <- list.files(wd_Data_input)
+    files_list <- list.files(wd_data_input)
     files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
     files_s <- files_s[grepl(pattern = region[i_rg],files_s)]
     Species <- unique(sub("_posteriors_priorShift.*", "", files_s))
@@ -102,22 +116,26 @@ for(i_rg in 1:length(region)){
     
     # i_sp <- 1
     
-    # Import the HBSRM outputs:
-    post <- readRDS(paste0(wd_Data_input,"/",region[i_rg],"_",Species[i_sp],"_posteriors_priorShift.rds"))
+    # Import the HBSRM outputs, i.e., the posterior distribtions of:
+    # - mu_a and sigma_a: with CU-level instrinsic productivity ai ~ N(mu_a,sigma_a)
+    # - with bi the CU-level density dependance parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
+    # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
+    post <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",Species[i_sp],"_posteriors_priorShift.rds"))
     
     # find the nb of CUs
-    CUs <- read.csv(paste0(wd_Data_input,"/",region[i_rg],"_",Species[i_sp],"_CUs_names.csv"),
+    CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",Species[i_sp],"_CUs_names.csv"),
                     header = T,stringsAsFactors = F)
     CUs <- CUs$CU
     nCUs <-length(CUs)
+    
+    nchains <- length(post) # 6 chains
+    # parameter names
+    pnames <- colnames(post[[1]])
     
     #-----------------------------------------------------------------------------#
     # Check convergence of chains
     #-----------------------------------------------------------------------------#
     
-    nchains <- length(post) # 6 chains
-    # parameter names
-    pnames <- colnames(post[[1]])
     # The Gelman-Rubin metric : R_hat ; if R_hat < 1.1 all is good
     r.hat <- gelman.diag(x = post, multivariate = F)
     if(sum(r.hat[[1]][, 1] > 1.1, na.rm = T) > 0){
@@ -130,6 +148,7 @@ for(i_rg in 1:length(region)){
                     paste0(region[i_rg]," - ",Species[i_sp]," - ",pnames[which(is.na(r.hat[[1]][, 1]))])))
       print(r.hat)
     }
+    
     #-----------------------------------------------------------------------------#
     # Calculate benchmarks
     #-----------------------------------------------------------------------------#
@@ -157,9 +176,9 @@ for(i_rg in 1:length(region)){
     
     for(i in 1:nCUs){
       if(nCUs == 1){
-        SR_bench[i, "a", , ] <- post.arr[, , which(pnames == "a")]
+        SR_bench[i, "a", , ] <- post.arr[, , which(pnames == "a")]      # matrix nb chains x nb mcmc draws --> all the values for that parameter
         SR_bench[i, "b", , ] <- post.arr[, , which(pnames == "b")]
-        SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == "sd")]
+        SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == "sd")]   # sigma_bi
       }else{
         SR_bench[i, "a", , ] <- post.arr[, , which(pnames == paste0("a[", i, "]"))]
         SR_bench[i, "b", , ] <- post.arr[, , which(pnames == paste0("b[", i, "]"))]
@@ -173,6 +192,7 @@ for(i_rg in 1:length(region)){
     
     for(i in 1:nCUs){
       # i <- 1
+      # i <- 3   # issue with Sgen in Fraser CO CU nb 3
       for(j in 1:length(post)){ # for each chain
         # j <- 1
         # Smsy (function can handle vectors)
@@ -180,7 +200,8 @@ for(i_rg in 1:length(region)){
                                              b = SR_bench[i, "b", j, ])
         
         # Sgen (function not currently set up to handle vectors..think of updating this)
-        for(k in 1:nrow(post[[1]])){
+        for(k in 1:nrow(post[[1]])){   # for each mcmc draw
+          # k <- 1
           SR_bench[i, "Sgen", j, k] <- calcSgen(
             Sgen.hat = 0.5 * SR_bench[i, "Smsy", j, k], 
             theta = c(
@@ -192,6 +213,8 @@ for(i_rg in 1:length(region)){
       }
     }
     
+    # median(SR_bench[3,"Sgen",,],na.rm = T)
+    
     #------------------------------------------------------------------------------#
     # Plot the benchmark posteriors
     #------------------------------------------------------------------------------#
@@ -201,11 +224,11 @@ for(i_rg in 1:length(region)){
     # Import the S and R matrices used for fitting the HBSR model:
     # BSC: the wd here will eventually have to be set to the final repo for the 
     # exported datasets.
-    SRm <- readRDS(paste0(wd_Data_input,"/",region[i_rg],"_",Species[i_sp],"_SR_matrices.rds"))
+    SRm <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",Species[i_sp],"_SR_matrices.rds"))
     
     # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
     # if(print_fig){
-    #   pathFile <- paste0(wd_Figures,"/",region,"_",Species[i_sp],"_benchmark_posteriors.pdf")
+    #   pathFile <- paste0(wd_figures,"/",region,"_",Species[i_sp],"_benchmark_posteriors.pdf")
     #   pdf(file = pathFile, width = 8.5, height = 11)
     # }
     
@@ -218,7 +241,7 @@ for(i_rg in 1:length(region)){
       
       if(print_fig){
         CUhere <- gsub(pattern = "/",'-',CUs[i])  # in case "/" is in the CU's name
-        pathFile <- paste0(wd_Figures,"/",region[i_rg],"_",Species[i_sp],"_",CUhere,
+        pathFile <- paste0(wd_figures,"/",region[i_rg],"_",Species[i_sp],"_",CUhere,
                            "_benchmark_posteriors.jpeg")
         
         # pdf(file = pathFile, width = 8.5, height = 11)
@@ -278,8 +301,8 @@ for(i_rg in 1:length(region)){
       )
       
       u <- par('usr')
-      for(j in 1:2){
-        for(k in 1:2){
+      for(j in 1:2){    # median, CI
+        for(k in 1:2){  # Sgen, Smsy
           abline(v = benchSummary[[k]][j, 1], lty = c(2,1)[j], 
                  col = statusCols[c('r', 'g')[k]])
           # abline(v = benchSummary[[k]][j, 2], lty = c(2,1)[j], col = statusCols[c('r', 'g')[k]])
@@ -298,6 +321,7 @@ for(i_rg in 1:length(region)){
              legend = c("median and quantiles", "HPD", "Sgen", "Smsy"), bg = "white")
       
       
+      # Histograms of posterior mcmc draws:
       Sgen <- SR_bench[i, "Sgen", , ]
       Sgen <- Sgen[which(Sgen <= maxS)]
       
@@ -307,7 +331,7 @@ for(i_rg in 1:length(region)){
       dens <- list(density(SR_bench[i, "Sgen", , ], from = 0, to = maxS/1.5, na.rm = T), # BSC: I had to add na.rm = T
                    density(SR_bench[i, "Smsy", , ], from = 0, to = maxS/1.5, na.rm = T))
       
-      # Histograms of posterior mcmc draws
+      
       h1 <- hist(x = Sgen, col = paste0(statusCols['r'], 50), border = NA,
                  breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), main = "", 
                  freq = FALSE, xlab = "Benchmarks")

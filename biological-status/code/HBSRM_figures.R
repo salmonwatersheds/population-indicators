@@ -39,6 +39,9 @@ if(Export_locally){
   wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
 }
 
+# option to export the figures
+print_fig <- F
+
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
 wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
@@ -52,9 +55,6 @@ regions_df <- regions_fun()
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species
 #------------------------------------------------------------------------------#
-
-# option to export the figures
-print_fig <- F
 
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
@@ -74,16 +74,20 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Skeena)
 
+# all the regions
+region <- as.character(regions_df[1,])
+region <- region[region != "Columbia"]
+
 # set the path of the input data sets for that specific region
 # wd_data_input <- paste0(wd_data_regions[,region])   # BSC: if we end up having the posterior_priorShift.rds file in dropbox
 wd_data_input <- wd_output                          # if they are there
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
-# Option to set Species to NULL; in that case all script looks inside the repository
+# Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-Species <- c(
+species <- c(
              species_acronym$Sockeye,    
              species_acronym$Pink,
              species_acronym$Coho
@@ -93,26 +97,26 @@ Species <- c(
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
-# note that Species_all take precedence over Species in SRdata_path_Species_fun()
-Species_all <- TRUE
+# note that species_all take precedence over species in SRdata_path_species_fun()
+species_all <- TRUE
 
 
 for(i_rg in 1:length(region)){
   
   # i_rg <- 1
   
-  if(Species_all){
+  if(species_all){
     files_list <- list.files(wd_data_input)
     files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
     files_s <- files_s[grepl(pattern = region[i_rg],files_s)]
-    Species <- unique(sub("_posteriors_priorShift.*", "", files_s))
-    Species <- gsub(pattern = paste0(region[i_rg],"_"), replacement = "", x = Species)
+    species <- unique(sub("_posteriors_priorShift.*", "", files_s))
+    species <- gsub(pattern = paste0(region[i_rg],"_"), replacement = "", x = species)
   }
   
-  # BSC: if case Species is not NULL, write code to remove species for which there
+  # BSC: if case species is not NULL, write code to remove species for which there
   # is not dataset for that specific region
   
-  for(i_sp in 1:length(Species)){
+  for(i_sp in 1:length(species)){
     
     # i_sp <- 1
     
@@ -120,10 +124,10 @@ for(i_rg in 1:length(region)){
     # - mu_a and sigma_a: with CU-level instrinsic productivity ai ~ N(mu_a,sigma_a)
     # - with bi the CU-level density dependance parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
     # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
-    post <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",Species[i_sp],"_posteriors_priorShift.rds"))
+    post <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_posteriors_priorShift.rds"))
     
     # find the nb of CUs
-    CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",Species[i_sp],"_CUs_names.csv"),
+    CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"),
                     header = T,stringsAsFactors = F)
     CUs <- CUs$CU
     nCUs <-length(CUs)
@@ -140,12 +144,12 @@ for(i_rg in 1:length(region)){
     r.hat <- gelman.diag(x = post, multivariate = F)
     if(sum(r.hat[[1]][, 1] > 1.1, na.rm = T) > 0){
       warning(paste("Some convergence issues for parameters: \n", 
-                    paste0(region[i_rg]," - ",Species[i_sp]," - ",pnames[which(r.hat[[1]][, 1] > 1.1)])))
+                    paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(r.hat[[1]][, 1] > 1.1)])))
       print(r.hat)
     }
     if(sum(is.na(r.hat[[1]][, 1])) > 0){  # BSC: I added that for Fraser PK 
       warning(paste("Some convergence issues for parameters: \n", 
-                    paste0(region[i_rg]," - ",Species[i_sp]," - ",pnames[which(is.na(r.hat[[1]][, 1]))])))
+                    paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(is.na(r.hat[[1]][, 1]))])))
       print(r.hat)
     }
     
@@ -224,13 +228,17 @@ for(i_rg in 1:length(region)){
     # Import the S and R matrices used for fitting the HBSR model:
     # BSC: the wd here will eventually have to be set to the final repo for the 
     # exported datasets.
-    SRm <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",Species[i_sp],"_SR_matrices.rds"))
+    SRm <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_SR_matrices.rds"))
     
     # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
     # if(print_fig){
-    #   pathFile <- paste0(wd_figures,"/",region,"_",Species[i_sp],"_benchmark_posteriors.pdf")
+    #   pathFile <- paste0(wd_figures,"/",region,"_",species[i_sp],"_benchmark_posteriors.pdf")
     #   pdf(file = pathFile, width = 8.5, height = 11)
     # }
+    
+    # data frame that will contain the benchmark central values and CI for the two
+    # methods used (median and quantile and HPD)
+    benchSummary_region_speceis_df <- NULL
     
     statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")  # BSC: those are not colour blind friendly
     # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
@@ -241,7 +249,7 @@ for(i_rg in 1:length(region)){
       
       if(print_fig){
         CUhere <- gsub(pattern = "/",'-',CUs[i])  # in case "/" is in the CU's name
-        pathFile <- paste0(wd_figures,"/",region[i_rg],"_",Species[i_sp],"_",CUhere,
+        pathFile <- paste0(wd_figures,"/",region[i_rg],"_",species[i_sp],"_",CUhere,
                            "_benchmark_posteriors.jpeg")
         
         # pdf(file = pathFile, width = 8.5, height = 11)
@@ -362,7 +370,29 @@ for(i_rg in 1:length(region)){
       }
       # Add spawner points along bottom for reference
       #points(x = d$Esc[d$CU == keepCU[i]], y = rep(0, length(which(d$CU == keepCU[i]))))
-    }
+      
+      benchSummary_df <- data.frame(region = rep(region[i_rg],4),
+                                    species = rep(species[i_sp],4),
+                                    CU = rep(CUs[i],4),
+                                    benchmark = c(rep(names(benchSummary)[1],2),rep(names(benchSummary)[2],2)),
+                                    method = rep(rownames(benchSummary[[1]]),2))
+      
+      benchSummary_df$m <- c(benchSummary$Sgen[,"m"],benchSummary$Smsy[,"m"])
+      benchSummary_df$CI025 <- c(benchSummary$Sgen[,2],benchSummary$Smsy[,2])
+      benchSummary_df$CI975 <- c(benchSummary$Sgen[,3],benchSummary$Smsy[,3])
+      
+      if(is.null(benchSummary_region_speceis_df)){
+        benchSummary_region_speceis_df <- benchSummary_df
+      }else{
+        benchSummary_region_speceis_df <- rbind(benchSummary_region_speceis_df,
+                                                benchSummary_df)
+      }
+    } # end of for each CU
+    
+    write.csv(x = benchSummary_region_speceis_df, 
+              file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_benchmarks_summary.csv"),
+              row.names = F)
+
     # # Add legend
     # plot(1,1,"n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
     # legend("top", fill = c(statusCols['r'], statusCols['g']), legend = c("Sgen", "Smsy"), bty = "n", border = NA, cex = 1.5)

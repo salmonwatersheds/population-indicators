@@ -72,26 +72,26 @@ region <- c(
 
 # **** BSC: issues to solve with *** DELETE CHUNK eventually
 # region <- regions_df$Fraser
-# Species <- species_acronym$Pink   # one CU: Fraser River (odd)
+# species <- species_acronym$Pink   # one CU: Fraser River (odd)
 
 # region <- regions_df$Nass
-# Species <- species_acronym$Pink    # two CUs: "Nass-Skeena_Estuary_Even"      "Nass_Portland_Observatory_odd"
+# species <- species_acronym$Pink    # two CUs: "Nass-Skeena_Estuary_Even"      "Nass_Portland_Observatory_odd"
 # ****
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
-# Option to set Species to NULL; in that case all script looks inside the repository
+# Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-Species <- c(species_acronym$Sockeye,    
+species <- c(species_acronym$Sockeye,    
              species_acronym$Pink,
              species_acronym$Cutthroat,
              species_acronym$Chum)
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
-# note that Species_all take precedence over Species in SRdata_path_Species_fun()
-Species_all <- TRUE
+# note that species_all take precedence over species in SRdata_path_species_fun()
+species_all <- TRUE
 
 # Set first brood year, "-99" for no constraint
 FBYr <- -99
@@ -112,22 +112,22 @@ for(i_rg in 1:length(region)){
   
   # Returns a list with the species and the corresponding path of the _SRdata files
   # (the most up to date)
-  fndata <- SRdata_path_Species_fun(wd = wd_data_input, 
-                                    Species = Species, 
-                                    Species_all = Species_all)
+  fndata <- SRdata_path_species_fun(wd = wd_data_input, 
+                                    species = species, 
+                                    species_all = species_all)
   
-  Species <- fndata$Species  # species is updated is was NULL or certain species do not have a file
+  species <- fndata$species  # species is updated is was NULL or certain species do not have a file
   fndata <- fndata$SRdata
   
   # 
-  for(i_sp in 1:length(Species)){
+  for(i_sp in 1:length(species)){
     
     # i_sp <- 1
     
     print(paste0("*** Plot printer for: ",
                  region[i_rg]," - ",
-                 colnames(species_acronym[, species_acronym == Species[i_sp],drop=F]),
-                 " (",Species[i_sp],") ***"))
+                 colnames(species_acronym[, species_acronym == species[i_sp],drop=F]),
+                 " (",species[i_sp],") ***"))
     
     # Import the priors and counts from the SRdata.txt file. The function retain 
     # CUs with at least MinSRpts nb of data points and update their names in case 
@@ -159,7 +159,7 @@ for(i_rg in 1:length(region)){
     SR_l <- list(S,R)
     names(SR_l) <- c("S","R")
     saveRDS(SR_l,
-            file = paste0(wd_output,"/",region[i_rg],"_",Species[i_sp],"_SR_matrices.rds"))
+            file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_SR_matrices.rds"))
     
     # Set priors on b:
     # Previous method using the values in the _SRdata.txt file
@@ -282,12 +282,12 @@ for(i_rg in 1:length(region)){
     # BSC: it is exported in /Output for now but these should be exported someWhere
     # else becaue they are probably too big for github.
     saveRDS(post,
-            file = paste0(wd_output,"/",region[i_rg],"_",Species[i_sp],"_posteriors_priorShift.rds"))
+            file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_posteriors_priorShift.rds"))
     
     # save the name of the corresponding CUs:
     CUs_df <- data.frame(CU = CUs)
     write.csv(x = CUs_df,
-              file = paste0(wd_output,"/",region[i_rg],"_",Species[i_sp],"_CUs_names.csv"), 
+              file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"), 
               row.names = F)
     
     ##### INFERENCE ##### BSC: is that useful?

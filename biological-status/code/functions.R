@@ -187,6 +187,88 @@ medQuan <- function(x, na.rm = TRUE){
   return(output)
 }
 
+#' Function to boostrap confidence intervals based on modelled timeseries of
+#' residuals 
+#' 
+#' **Description needed.**
+#' 
+#' 
+#' @param series Time series of spawner abundance data. Missing values should be
+#' entered as NA
+#' @param numLags The number of years for each block when implementing block
+#' bootstrapping  BSC: is that relevant for this function? The function does not perform block bootstrapping
+#' @param nBoot The number of permutations of the timeseries to be used for 
+#' calculating the bootstrap confidence intervals on benchmarks
+#' @param benchmarks The quantiles of the historical spawners series to be used
+#' as the upper and lower benchmarks. Defaults to the 25th and 50th percentiles (
+#' code{benchmarks = c(0.25, 0.5)}).
+#' 
+#' @return Returns a list; the first element is a matrix with the 95% CI 
+#' (rows) on the lower and upper benchmarks (columns). The second element
+#' is a matrix of dimension number of timesteps (\code{length(series)}) by 
+#' \code{nBoot}containing the simulated timeseries (columns).
+#'
+#' @examples
+#'
+#' @export
+
+
+modelBoot <- function(
+    series, 
+    numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
+    nBoot = 10000, 
+    benchmarks = c(0.25, 0.5)
+){
+  
+  n <- length(series)
+  
+  # Fit model to estimate autocorrelation
+  ar.fit <- ar(
+    log(series), # spawner time series
+    demean = TRUE, # Estimate mean spawners
+    intercept = FALSE, # Intercept = 0 for autocorrelation
+    order.max = numLags, # lag for autocorrelation
+    aic = FALSE, # estimate autocorrelation for all numLags 
+    method = "yule-walker", # only method that allows for NAs
+    na.action = na.pass #
+  ) # standard OLS
+  
+  # Matrices to store bootstrapped residuals and spawners (obs)
+  res.star <- matrix(nrow = n, ncol = nBoot)
+  res.star[, ] <- sample(na.omit(ar.fit$resid), n * nBoot, replace = TRUE)
+  
+  obs.star.log <- matrix(nrow = n + numLags, ncol = nBoot) 
+  
+  # Matrix to store bootstrapped values of CI
+  HS_benchBoot <- matrix(
+    NA, 
+    nrow = nBoot, 
+    ncol = 2, 
+    dimnames = list(c(1:nBoot), c("lower", "upper")))
+  
+  # Model bootstrap:
+  for(i in 1:nBoot){
+    
+    # Initialize the simulated time series using the true data for the first
+    # 1:numLags points, starting from a random place in the timeseries
+    j.init <- sample(1 : (n - numLags + 1), 1) # starting point for initialization
+    obs.star.log[1:numLags, i] <- log(series[j.init:(j.init + numLags - 1)])
+    
+    for (j in 1:n){ # For each timepoint in the simulated series
+      obs.star.log[(numLags + j), i] <- ar.fit$x.mean + ar.fit$ar %*% (obs.star.log[j:(j + numLags - 1), i] - ar.fit$x.mean) + res.star[j, i]
+    } #end j
+    
+    HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
+  } # end bootstrap loop
+  
+  HS_benchCI <- apply(HS_benchBoot, 2, quantile, c(0.025, 0.975), na.rm = TRUE)
+  
+  obs.star <- exp(tail(obs.star.log, n))
+  
+  return(list(CI = HS_benchCI, simulatedSeries = obs.star))
+}
+
+
 # Function that returns the name of the regions. This is to ensure that no spelling
 # mistakes are make.
 regions_fun <- function(){

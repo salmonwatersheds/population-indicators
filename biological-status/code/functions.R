@@ -240,64 +240,91 @@ modelBoot <- function(
   
   n <- length(series)
   
-  # Fit model to estimate autocorrelation
-  ar.fit <- ar(
-    log(series), # spawner time series
-    demean = TRUE, # Estimate mean spawners
-    intercept = FALSE, # Intercept = 0 for autocorrelation
-    order.max = numLags, # lag for autocorrelation
-    aic = FALSE, # estimate autocorrelation for all numLags 
-    method = "yule-walker", # only method that allows for NAs
-    na.action = na.pass #
-  ) # standard OLS
-  
-  # Matrices to store bootstrapped residuals and spawners (obs)
-  res.star <- matrix(nrow = n, ncol = nBoot)
-  res.star[, ] <- sample(na.omit(ar.fit$resid), n * nBoot, replace = TRUE)
-  
-  obs.star.log <- matrix(nrow = n + numLags, ncol = nBoot) 
-  
-  # Matrix to store bootstrapped values of CI
-  HS_benchBoot <- matrix(
-    NA, 
-    nrow = nBoot, 
-    ncol = 2, 
-    dimnames = list(c(1:nBoot), c("lower", "upper")))
-  
-  # Model bootstrap:
-  for(i in 1:nBoot){
+  if(sum(!is.na(series)) > 1){ # if there is at least two data points (to avoid crashing)
     
-    # Initialize the simulated time series using the true data for the first
-    # 1:numLags points, starting from a random place in the timeseries
-    j.init <- sample(1 : (n - numLags + 1), 1) # starting point for initialization
-    obs.star.log[1:numLags, i] <- log(series[j.init:(j.init + numLags - 1)])
+    # check if every odd or even year have consistently NAs like for Pink salmond.
+    # in that case, the ar() function returns an error. So it that case, remove 
+    # the odd or even years data points.
+    series_odd <- series[1:length(series) %% 2 == 1]
+    series_even <- series[1:length(series) %% 2 == 0]
+    keep_odd <- sum(!is.na(series_odd)) > 0
+    keep_even <- sum(!is.na(series_even)) > 0
+    # if this is the case here:
+    if(keep_odd & !keep_even){   # only keep odd row data points
+      
+      series <- series[1:length(series) %% 2 == 1]
+      
+    }else if(!keep_odd & keep_even){ # only keep even row data points
+      
+      series <- series[1:length(series) %% 2 == 0]
+      
+    }
     
-    for (j in 1:n){ # For each timepoint in the simulated series
-      obs.star.log[(numLags + j), i] <- ar.fit$x.mean + ar.fit$ar %*% (obs.star.log[j:(j + numLags - 1), i] - ar.fit$x.mean) + res.star[j, i]
-    } #end j
+    # Fit model to estimate autocorrelation
+    ar.fit <- ar(
+      log(series), # spawner time series
+      demean = TRUE, # Estimate mean spawners
+      intercept = FALSE, # Intercept = 0 for autocorrelation
+      order.max = numLags, # lag for autocorrelation
+      aic = FALSE, # estimate autocorrelation for all numLags 
+      method = "yule-walker", # only method that allows for NAs
+      na.action = na.pass #
+    ) # standard OLS
     
-    HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
-  } # end bootstrap loop
-  
-  # get the median
-  HS_benchmedian <- apply(HS_benchBoot, 2, median, na.rm = TRUE)
-  
-  # get the 95% CI
-  HS_benchCI <- apply(HS_benchBoot, 2, quantile, c(0.025, 0.975), na.rm = TRUE)
-  
-  # hist(HS_benchBoot)
-  # polygon(x = c(HS_benchCI[,1],rev(HS_benchCI[,1])),
-  #         y = c(0,0,3900,3900), border = "red", lty = 2,col = alpha('red',alpha = 0.5))
-  # polygon(x = c(HS_benchCI[,2],rev(HS_benchCI[,2])),
-  #         y = c(0,0,3900,3900), border = "chartreuse4", lty = 2,col = alpha('chartreuse4',alpha = 0.5))
-  # segments(x0 = HS_benchmedian, x1 = HS_benchmedian, y0 = 0, y1 = 3900, lwd = 2)
-  
-  obs.star <- exp(tail(obs.star.log, n))
-  
-  ouptup <- list(m = HS_benchmedian, 
-                 CI = HS_benchCI, 
-                 simulatedSeries = obs.star, 
-                 benchmarks = benchmarks)
+    # Matrices to store bootstrapped residuals and spawners (obs)
+    res.star <- matrix(nrow = n, ncol = nBoot)
+    res.star[, ] <- sample(na.omit(ar.fit$resid), n * nBoot, replace = TRUE)
+    
+    obs.star.log <- matrix(nrow = n + numLags, ncol = nBoot) 
+    
+    # Matrix to store bootstrapped values of CI
+    HS_benchBoot <- matrix(
+      NA, 
+      nrow = nBoot, 
+      ncol = 2, 
+      dimnames = list(c(1:nBoot), c("lower", "upper")))
+    
+    # Model bootstrap:
+    for(i in 1:nBoot){
+      
+      # Initialize the simulated time series using the true data for the first
+      # 1:numLags points, starting from a random place in the timeseries
+      j.init <- sample(1 : (n - numLags + 1), 1) # starting point for initialization
+      obs.star.log[1:numLags, i] <- log(series[j.init:(j.init + numLags - 1)])
+      
+      for (j in 1:n){ # For each timepoint in the simulated series
+        obs.star.log[(numLags + j), i] <- ar.fit$x.mean + ar.fit$ar %*% (obs.star.log[j:(j + numLags - 1), i] - ar.fit$x.mean) + res.star[j, i]
+      } #end j
+      
+      HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
+    } # end bootstrap loop
+    
+    # get the median
+    HS_benchmedian <- apply(HS_benchBoot, 2, median, na.rm = TRUE)
+    
+    # get the 95% CI
+    HS_benchCI <- apply(HS_benchBoot, 2, quantile, c(0.025, 0.975), na.rm = TRUE)
+    
+    # hist(HS_benchBoot)
+    # polygon(x = c(HS_benchCI[,1],rev(HS_benchCI[,1])),
+    #         y = c(0,0,3900,3900), border = "red", lty = 2,col = alpha('red',alpha = 0.5))
+    # polygon(x = c(HS_benchCI[,2],rev(HS_benchCI[,2])),
+    #         y = c(0,0,3900,3900), border = "chartreuse4", lty = 2,col = alpha('chartreuse4',alpha = 0.5))
+    # segments(x0 = HS_benchmedian, x1 = HS_benchmedian, y0 = 0, y1 = 3900, lwd = 2)
+    
+    obs.star <- exp(tail(obs.star.log, n))
+    
+    ouptup <- list(m = HS_benchmedian, 
+                   CI = HS_benchCI, 
+                   simulatedSeries = obs.star, 
+                   benchmarks = benchmarks)
+  }else{
+    
+    ouptup <- list(m = c(NA,NA), 
+                   CI = matrix(NA,nrow = 2, ncol = 2), 
+                   simulatedSeries = NA, 
+                   benchmarks = benchmarks)
+  }
   
   return(ouptup)
 }

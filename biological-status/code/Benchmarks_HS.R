@@ -106,9 +106,10 @@ wd_biological_status <- "Population Methods and Analysis/population-indicators/b
 spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/data")
 spawner_abundance <- read.csv(paste0(spawner_abundance_path,"/spawner_abundance.csv"),header = T)
 head(spawner_abundance)
+unique(spawner_abundance$species_name)
 
-
-
+# The benchmarks to use
+benchmarks <- c(0.25, 0.5)
 
 for(i_rg in 1:length(region)){
   
@@ -122,68 +123,72 @@ for(i_rg in 1:length(region)){
   spawner_abundance_rg <- spawner_abundance[spawner_abundance$region == region_i,]
   
   if(species_all){
-    
     species <- unique(spawner_abundance_rg$species_name)
-    
   }
-
   
   for(i_sp in 1:length(species)){
     # i_sp <- 1
+    
+    species_i <- species[i_sp]
+    #
+    species_i <- gsub(pattern = "Lake ",replacement = "",x = species_i)  # for sockeye
+    species_i <- gsub(pattern = "River ",replacement = "",x = species_i) # for sockeye
+    species_i <- gsub(pattern = "\\s*\\(odd\\)",replacement = "",x = species_i) # for Pink
+    species_i <- gsub(pattern = "\\s*\\(even\\)",replacement = "",x = species_i)# for Pink
+
+    # find the corresponding acronym
+    species_i_luc <- character_lowerHigerCase_fun(species_i) # to not worry about upper and lower case species names
+    species_acryn_i <- species_acronym[grepl(pattern = species_i_luc, x = names(species_acronym))]
+    species_acryn_i <- as.character(species_acryn_i)
+    
+    # subset spawner_abundance_rg
     spawner_abundance_rg_sp <- spawner_abundance_rg[spawner_abundance_rg$species_name == species[i_sp],]
     
+    # find the CUs present
     CUs <- unique(spawner_abundance_rg_sp$cu_name_pse)
+    
+    # create a dataframe to retain the benchmark information for all the CUs of
+    # the species in the region
+    benchSummary_region_species_df <- NULL
     
     for(i_cu in 1:length(CUs)){
       
       # i_cu <- 1
+      
+      # subset spawner_abundance_rg_sp
       spawner_abundance_rg_sp_cu <- spawner_abundance_rg_sp[spawner_abundance_rg_sp$cu_name_pse == CUs[i_cu],]
       series <- spawner_abundance_rg_sp_cu$estimated_count
       series[series <= 0] <- NA
       
       modelCI <- modelBoot(series = dat$LGL.counts, numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
                            nBoot = 10000, 
-                           benchmarks = c(0.25, 0.5))
+                           benchmarks = benchmarks)
       
-      modelCI$CI
-   
+      # place the information a dataframe
+      benchSummary_df <- data.frame(region = rep(region[i_rg],2),
+                                    species = rep(species_acryn_i,2),
+                                    CU = rep(CUs[i_cu],2),
+                                    benchmark = c('lower','upper'),
+                                    method = rep('HS_percentiles',2))
       
-    }
-
-    
-  }
-}
-
-
-
-#
-filepath <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Transboundary/Data & Assessments/transboundary-status/Output")
-abund_file <- read.csv(paste0(filepath,"/dataset_1part1.Jan202023.csv"), header = T)
-
-abund_file <- abund_file %>% select(2,4,5)
-
-head(abund_file)
-
-dat <- subset(abund_file, CUID == '1039')
-dat <- na.omit(dat)
-dat <- dat %>% select (2,3)
-dat <- dat %>% select (2)
-dat <- as.numeric(dat)
-dat[dat == 0] <- NA
-dat
-
-modelCI <- modelBoot(series = dat$LGL.counts, numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
-                     nBoot = 10000, 
-                     benchmarks = c(0.25, 0.5))
-
-modelCI$CI
-
-wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
-
-
-
-
-
+      benchSummary_df$m <- modelCI$m
+      benchSummary_df$CI025 <- modelCI$CI[,1]
+      benchSummary_df$CI975 <- modelCI$CI[,2]
+      benchSummary_df$benchamrks <- rep(paste(benchmarks,collapse = "-"),2)
+      
+      if(is.null(benchSummary_region_species_df)){
+        benchSummary_region_species_df <- benchSummary_df
+      }else{
+        benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
+                                                benchSummary_df)
+      }
+    } # end of loop for the CUs
+    print(paste0("*** ",region[i_rg],"_",species_acryn_i," done ***"))
+    write.csv(x = benchSummary_region_species_df, 
+              file = paste0(wd_output,"/",region[i_rg],"_",species_acryn_i,"_benchmarks_HS_percentiles_summary.csv"),
+              row.names = F)
+  } # end of loop for the species
+} # end of the loop for the regions
 
 
 

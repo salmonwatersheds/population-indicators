@@ -62,6 +62,23 @@ calcSmsy <- function(a, b) {
   return(as.numeric(Smsy))
 }
 
+# Function that takes a vector of string characters and returns the same vector but
+# with the first character of each string in lower and upper case inside [].
+character_lowerHigerCase_fun <- function(characterVec){
+  
+  characterVec_lhc <- sapply(X = characterVec,FUN = function(x){
+    # x <- characterVec[1]
+    x_st <- substring(text = x,first = 1,last = 1)
+    x_rest <- substring(text = x,first = 2,last = nchar(x))
+    x_st_lowerC <- tolower(x_st)
+    x_st_upperC <- toupper(x_st)
+    x_stComb <- paste0("[",x_st_upperC,"|",x_st_lowerC,"]")
+    output <- paste0(x_stComb,x_rest)
+    return(output)
+  })
+  return(characterVec_lhc)
+}
+
 # Function to calculate highest posterior density (HPD) and HPD interval
 HPD <- function(x, xmax = NA, na.rm = TRUE,n = 5000){
   if(is.na(xmax)){
@@ -188,7 +205,8 @@ medQuan <- function(x, na.rm = TRUE){
 }
 
 #' Function to boostrap confidence intervals based on modelled timeseries of
-#' residuals 
+#' residuals. The functions returns a list containing the upper and lower benchmarks'
+#' (1) median, (2) 95% CI, (3) the simulated data and (4) the % used. 
 #' 
 #' **Description needed.**
 #' 
@@ -261,11 +279,27 @@ modelBoot <- function(
     HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
   } # end bootstrap loop
   
+  # get the median
+  HS_benchmedian <- apply(HS_benchBoot, 2, median, na.rm = TRUE)
+  
+  # get the 95% CI
   HS_benchCI <- apply(HS_benchBoot, 2, quantile, c(0.025, 0.975), na.rm = TRUE)
+  
+  # hist(HS_benchBoot)
+  # polygon(x = c(HS_benchCI[,1],rev(HS_benchCI[,1])),
+  #         y = c(0,0,3900,3900), border = "red", lty = 2,col = alpha('red',alpha = 0.5))
+  # polygon(x = c(HS_benchCI[,2],rev(HS_benchCI[,2])),
+  #         y = c(0,0,3900,3900), border = "chartreuse4", lty = 2,col = alpha('chartreuse4',alpha = 0.5))
+  # segments(x0 = HS_benchmedian, x1 = HS_benchmedian, y0 = 0, y1 = 3900, lwd = 2)
   
   obs.star <- exp(tail(obs.star.log, n))
   
-  return(list(CI = HS_benchCI, simulatedSeries = obs.star))
+  ouptup <- list(m = HS_benchmedian, 
+                 CI = HS_benchCI, 
+                 simulatedSeries = obs.star, 
+                 benchmarks = benchmarks)
+  
+  return(ouptup)
 }
 
 
@@ -339,7 +373,7 @@ species_acronym_fun <- function(){
     Coho = "CO",         # to check
     Pink = "PK",
     Sockeye = 'SX',
-    Steelheqd = "SH",   # to check
+    Steelhead = "SH",   # to check
     Cutthroat = "CT")   # to check
   
   return(species_acronym)

@@ -238,7 +238,7 @@ for(i_rg in 1:length(region)){
     
     # data frame that will contain the benchmark central values and CI for the two
     # methods used (median and quantile and HPD)
-    benchSummary_region_speceis_df <- NULL
+    benchSummary_region_species_df <- NULL
     
     statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")  # BSC: those are not colour blind friendly
     # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
@@ -381,15 +381,15 @@ for(i_rg in 1:length(region)){
       benchSummary_df$CI025 <- c(benchSummary$Sgen[,2],benchSummary$Smsy[,2])
       benchSummary_df$CI975 <- c(benchSummary$Sgen[,3],benchSummary$Smsy[,3])
       
-      if(is.null(benchSummary_region_speceis_df)){
-        benchSummary_region_speceis_df <- benchSummary_df
+      if(is.null(benchSummary_region_species_df)){
+        benchSummary_region_species_df <- benchSummary_df
       }else{
-        benchSummary_region_speceis_df <- rbind(benchSummary_region_speceis_df,
+        benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
                                                 benchSummary_df)
       }
     } # end of for each CU
-    
-    write.csv(x = benchSummary_region_speceis_df, 
+    print(paste0("*** ",region[i_rg],"_",species[i_sp]," done ***"))
+    write.csv(x = benchSummary_region_species_df, 
               file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_benchmarks_summary.csv"),
               row.names = F)
 

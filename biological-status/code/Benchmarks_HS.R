@@ -74,6 +74,8 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Skeena)
 
+region <- regions_df$Central_coast
+
 # all the regions
 region <- as.character(regions_df[1,])
 region <- region[region != "Columbia"]
@@ -84,17 +86,17 @@ region <- region[region != "Columbia"]
 # and import the files present for the species.
 # If we specify the species:
 species <- c(
-  species_acronym$Sockeye,    
-  species_acronym$Pink,
-  species_acronym$Coho
-  #species_acronym$Cutthroat,
-  #species_acronym$Chum
+  # species_acronym$Sockeye,    
+  # species_acronym$Pink,
+  # species_acronym$Coho
+  species_acronym$Chinook,
+  species_acronym$Chum
 )
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- TRUE
+species_all <- F
 
 # Import the spawner_abundance.csv, downloaded from SPS work.
 wd_biological_status <- "Population Methods and Analysis/population-indicators/biological-status"
@@ -183,7 +185,7 @@ for(i_rg in 1:length(region)){
         benchSummary_df$m <- modelCI$m
         benchSummary_df$CI025 <- modelCI$CI[,1]
         benchSummary_df$CI975 <- modelCI$CI[,2]
-        benchSummary_df$benchamrks <- rep(paste(benchmarks,collapse = "-"),2)
+        benchSummary_df$benchmarks <- rep(paste(benchmarks,collapse = "-"),2)
         
         if(is.null(benchSummary_region_species_df)){
           benchSummary_region_species_df <- benchSummary_df
@@ -196,7 +198,7 @@ for(i_rg in 1:length(region)){
       print(paste0("*** ",region[i_rg],"_",species_acryn_i," done ***"))
       write.csv(x = benchSummary_region_species_df, 
                 file = paste0(wd_output,"/",region[i_rg],"_",species_acryn_i,"_benchmarks_HS_percentiles_summary.csv"),
-                row.names = F)
+                row.names = F) # keep region[i_rg] and not region_i because of "Central coast" is used to name the other files and not "Central Coast"
       
     }else{ # in case the species selected by the user is not this region
       

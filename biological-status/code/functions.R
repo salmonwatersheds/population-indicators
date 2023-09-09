@@ -279,7 +279,6 @@ modelBoot <- function(
     
     # Matrix to store bootstrapped values of CI
     HS_benchBoot <- matrix(
-      NA, 
       nrow = nBoot, 
       ncol = 2, 
       dimnames = list(c(1:nBoot), c("lower", "upper")))

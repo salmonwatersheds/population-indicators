@@ -79,6 +79,228 @@ character_lowerHigerCase_fun <- function(characterVec){
   return(characterVec_lhc)
 }
 
+# BM_data <- benchmarks_df
+# methods = NA
+# size_box_cm = 6
+figure_compare_benchamrks_fun <- function(BM_data,
+                                          nameRegion_show = T,
+                                          nameSpecies_show = T,
+                                          print_fig = F,
+                                          methods = NA,
+                                          size_box_cm = 6, # the of the plots in cm when exported
+                                          wd_figures, 
+                                          addTonameFile = ""){
+  
+  benchCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")
+  
+  if(is.na(methods)){
+    methods <- c("medQuan","HPD","HS_percentiles")
+  }
+  # methods <- factor(methods)
+  
+  # 
+  regions <- unique(BM_data$region)
+  
+  for(i_r in 1:length(regions)){
+    
+    # i_r <- 1
+    
+    species <- unique(subset(x = BM_data, subset = region == regions[i_r])$species)
+    
+    for(i_s in 1:length(species)){
+      
+      # i_s <- 1
+      
+      BM_data_sub <- BM_data[BM_data$region == regions[i_r] & BM_data$species == species[i_s],]
+      
+      CUs <- unique(BM_data_sub$CU)
+      nCUs <- length(CUs)
+      
+      side1_large <- size_box_cm / 6
+      side1_small <- size_box_cm / 10
+      side2_large <- size_box_cm / 3
+      side2_small <- size_box_cm / 20
+      side3 <- size_box_cm / 10
+      side4 <- size_box_cm / 20
+      
+      if(nCUs <= 2){
+        nrow <- 1
+        ncol <- nCUs
+        # side1 <- rep(side1_large,ncol)
+        # side2 <- c(side2_large,rep(side2_small,nCUs - 1))
+      }else if(3 <= nCUs & nCUs <= 4){
+        nrow <- 2
+        ncol <- 2
+        # side1 <- c(rep(side1_small,ncol),rep(side1_large,ncol))
+        # side2 <- rep(c(side2_large,side2_small),nrow)
+      }else if(5 <= nCUs & nCUs <= 6){
+        nrow <- 2
+        ncol <- 3
+        #side1 <- c(rep(side1_small,ncol),rep(side1_large,ncol))
+        # side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
+      }else if(7 <= nCUs & nCUs <= 9){
+        nrow <-3
+        ncol <- 3
+        # side1 <- c(rep(rep(side1_small,ncol),nrow-1),rep(side1_large,ncol))
+        # side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
+      }else if(10 <= nCUs & nCUs <= 12){
+        nrow <- 3
+        ncol <- 4
+        # side1 <- c(rep(rep(side1_small,ncol),nrow-1),rep(side1_large,ncol))
+        # side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
+      }else if(13 <= nCUs & nCUs <= 16){
+        nrow <- 4
+        ncol <- 4
+      }else if(17 <= nCUs & nCUs <= 20){
+        nrow <- 4
+        ncol <- 5
+      }else if(21 <= nCUs & nCUs <= 25){
+        nrow <- 5
+        ncol <- 5
+      }else if(26 <= nCUs & nCUs <= 30){
+        nrow <- 5
+        ncol <- 6
+      }else if(31 <= nCUs & nCUs <= 36){
+        nrow <- 6
+        ncol <- 6
+      }
+      
+      # margins and labels
+      side1 <- c(rep(rep(side1_small,ncol),nrow-1),rep(side1_large,ncol))
+      side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
+      xlab_show <- side1 == side1_large
+      ylab_show <- side2 == side2_large
+      
+      # 
+      layout_m <- matrix(data = 1:(nrow*ncol),nrow = nrow, byrow = T)
+      
+      header <- 0
+      
+      if(nameRegion_show | nameSpecies_show){ # add a row at the top
+        layout_m <- layout_m + 1
+        layout_m <- rbind(rep(1,ncol(layout_m)),layout_m)
+        header <- 1
+      }
+      
+      # size_box_cm <- 6 # the of the plots in cm when exported
+      
+      if(print_fig){
+        pathFile <- paste0(wd_figures,"/",regions[i_r],"_",species[i_s],
+                           "_benchmarks_comparisons",addTonameFile,".jpeg")
+        
+        jpeg(file = pathFile, width = size_box_cm * ncol, 
+             height = size_box_cm * nrow + header/size_box_cm, 
+             units = "cm", res = 300)
+      }
+      
+      # to have the box of the plots of the same dimension when exporting
+      widths <- c((size_box_cm - side2_small - side4)/(size_box_cm - side2_large - side4),
+                  rep(1,ncol - 1))
+      heights <- c(rep(1,nrow - 1),
+                   (size_box_cm - side1_small - side3)/(size_box_cm - side1_large - side3))
+      
+      if(nameRegion_show | nameSpecies_show){
+        heights <- c(1/5,heights)
+      }
+      
+      layout(mat = layout_m, widths = widths, heights = heights)
+      
+      # plot region and or species at the top of the figure
+      if(nameRegion_show | nameSpecies_show){ # add a row at the top
+        sep <- ""
+        if(nameRegion_show | nameSpecies_show){
+          sep <- " - "
+        }
+        header_text <- c(gsub("_"," ",region[i_r]),species[i_s])
+        header_text <- paste0(header_text[c(nameRegion_show,nameSpecies_show)],collapse = sep)
+        
+        par(mar = rep(0,4))
+        plot(1, type = "n", xlab = "",ylab = "", xaxt = "n", yaxt = "n", bty = "n")
+        legend("center",header_text,bty = "n", cex = 3)
+      }
+      
+      for(i_cu in 1:length(CUs)){
+        
+        # i_cu <- 27
+        
+        BM_data_sub_cu <- subset(BM_data_sub,CU == CUs[i_cu])
+        BM_data_sub_cu
+        
+        # coordinates benchmarks
+        y_ticks <- 1:length(methods)
+        offset <- 0.15
+        y <- rev(sort(c(y_ticks - offset, y_ticks + offset)))
+        
+        x <- c()
+        x_LCI <- c()
+        x_UCI <- c()
+        for(m in methods){
+          # m <- "HPD"
+          if(m == "HS_percentiles"){
+            CItype <- c("lower","upper")
+          }else{
+            CItype <- c("Sgen","Smsy")
+          }
+          
+          for(b in CItype){
+            x_new <- BM_data_sub_cu[BM_data_sub_cu$method == m & BM_data_sub_cu$benchmark == b,]$m
+            x_LCI_new <- BM_data_sub_cu[BM_data_sub_cu$method == m & BM_data_sub_cu$benchmark == b,]$CI025
+            x_UCI_new <- BM_data_sub_cu[BM_data_sub_cu$method == m & BM_data_sub_cu$benchmark == b,]$CI975
+            if(length(x_new) == 0){
+              x_new <- NA
+            }
+            if(length(x_LCI_new) == 0){
+              x_LCI_new <- NA
+            }
+            if(length(x_UCI_new) == 0){
+              x_UCI_new <- NA
+            }
+            x <- c(x,x_new)
+            x_LCI <- c(x_LCI,x_LCI_new)
+            x_UCI <- c(x_UCI,x_UCI_new)
+          }
+        }
+        
+        # coordinates CI
+        xmin <- min(c(x,x_LCI,x_UCI),na.rm = T)
+        xmax <- max(c(x,x_LCI,x_UCI),na.rm = T)
+        if(is.infinite(xmin)){
+          xmin <- 0
+          xmax <- 1
+        }
+        
+        # 
+        # par(mar = c(side1[i_cu],side2[i_cu],3,0.5))
+        cm_inch <- .393701
+        par(mai = c(side1[i_cu], side2[i_cu], side3, side4) * cm_inch)
+        #
+        plot(x = x, y = y, yaxt = "n", ylab = "", xlab = "",
+             xlim = c(xmin,xmax), ylim = c(min(y_ticks) - .5, max(y_ticks) + .5),  
+             col = rep(c(benchCols["r"],benchCols["g"]),length(methods)),
+             pch = 16, cex = 2)
+        if(ylab_show[i_cu]){
+          ylab <- methods
+        }else{
+          ylab <- rep("",length(methods))
+        }
+        axis(side = 2, at = y_ticks, labels = ylab,las = 1)
+        segments(x0 = x, x1 = x_LCI, y0 = y, y1 = y,
+                 col = c(benchCols["r"],benchCols["g"]), lwd = 2)
+        segments(x0 = x, x1 = x_UCI, y0 = y, y1 = y, 
+                 col = c(benchCols["r"],benchCols["g"]), lwd = 2)
+        mtext(CUs[i_cu],side = 3, line = .4)
+        if(xlab_show[i_cu]){
+          mtext("Number of spawners",side = 1, line = 2.5, cex = .9)
+        }
+        
+      }
+    }
+    if(print_fig){
+      dev.off()
+    }
+  }
+}
+
 # Function to calculate highest posterior density (HPD) and HPD interval
 HPD <- function(x, xmax = NA, na.rm = TRUE,n = 5000){
   if(is.na(xmax)){
@@ -242,23 +464,20 @@ modelBoot <- function(
   
   if(sum(!is.na(series)) > 1){ # if there is at least two data points (to avoid crashing)
     
-    # check if every odd or even year have consistently NAs like for Pink salmond.
+    # check if every odd or even year have consistently NAs like for Pink salmons.
     # in that case, the ar() function returns an error. So it that case, remove 
     # the odd or even years data points.
-    series_odd <- series[1:length(series) %% 2 == 1]
-    series_even <- series[1:length(series) %% 2 == 0]
-    keep_odd <- sum(!is.na(series_odd)) > 0
-    keep_even <- sum(!is.na(series_even)) > 0
-    # if this is the case here:
-    if(keep_odd & !keep_even){   # only keep odd row data points
-      
-      series <- series[1:length(series) %% 2 == 1]
-      
-    }else if(!keep_odd & keep_even){ # only keep even row data points
-      
-      series <- series[1:length(series) %% 2 == 0]
-      
-    }
+    # NOT KEPT, INSTEAD numLags IS SET TO 2 AND NOT 1
+    # series_odd <- series[1:length(series) %% 2 == 1]
+    # series_even <- series[1:length(series) %% 2 == 0]
+    # keep_odd <- sum(!is.na(series_odd)) > 0
+    # keep_even <- sum(!is.na(series_even)) > 0
+    # # if this is the case here:
+    # if(keep_odd & !keep_even){   # only keep odd row data points
+    #   series <- series[1:length(series) %% 2 == 1]
+    # }else if(!keep_odd & keep_even){ # only keep even row data points
+    #   series <- series[1:length(series) %% 2 == 0]
+    # }
     
     # Fit model to estimate autocorrelation
     ar.fit <- ar(

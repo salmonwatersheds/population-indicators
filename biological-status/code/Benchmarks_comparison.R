@@ -143,7 +143,7 @@ for(i_rg in 1:length(region)){
       
       nbplots_max <- 6^2 # could change to 5 or 4 if that's too many figures
       
-      if(length(Cus) <= nbplots_max){
+      if(length(CUs) <= nbplots_max){
         
         # make the figure
         figure_compare_benchamrks_fun(BM_data = benchmarks_df, 

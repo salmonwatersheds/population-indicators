@@ -93,6 +93,8 @@ species <- c(
   species_acronym$Chum
 )
 
+species <- species_acronym$Pink
+
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
@@ -171,7 +173,15 @@ for(i_rg in 1:length(region)){
         series <- spawner_abundance_rg_sp_cu$estimated_count
         series[series <= 0] <- NA
         
-        modelCI <- modelBoot(series = series, numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
+        # 
+        if(species_acryn_i == "PK"){  # numLags has to be set to 2 year and not one because of the odd and even CUs
+          numLags <- 2
+        }else{
+          numLags <- 1
+        }
+        
+        modelCI <- modelBoot(series = series, 
+                             numLags = numLags, # numLags is the lag for the autocorrelation; default is just 1 year
                              nBoot = 10000, 
                              benchmarks = benchmarks)
         

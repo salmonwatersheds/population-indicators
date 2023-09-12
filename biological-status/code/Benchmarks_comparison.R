@@ -27,6 +27,7 @@ wd_data <- paste0(getwd(),"/data")
 
 # figures and datasets generated are 
 Export_locally <- F
+
 if(Export_locally){
   wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/figures")
   wd_output <- paste0(getwd(),"/output")
@@ -55,6 +56,7 @@ regions_df <- regions_fun()
 region <- regions_df$Fraser
 region <- regions_df$Yukon
 region <- regions_df$Nass
+region <- regions_df$Central_coast
 
 # multiple regions:
 region <- c(
@@ -84,10 +86,17 @@ species <- c(
   #species_acronym$Chum
 )
 
+species <- species_acronym$Chinook
+species <- species_acronym$Coho
+
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
+species_all <- F
+
+# maximum number of plots that can be shown in one figure
+nbplots_max <- 6^2 # could change to 5 or 4 if that's too many figures
 
 for(i_rg in 1:length(region)){
   
@@ -140,8 +149,6 @@ for(i_rg in 1:length(region)){
       
       # 
       CUs <- unique(benchmarks_df$CU)
-      
-      nbplots_max <- 6^2 # could change to 5 or 4 if that's too many figures
       
       if(length(CUs) <= nbplots_max){
         

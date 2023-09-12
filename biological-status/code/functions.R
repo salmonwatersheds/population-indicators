@@ -82,6 +82,7 @@ character_lowerHigerCase_fun <- function(characterVec){
 # BM_data <- benchmarks_df
 # methods = NA
 # size_box_cm = 6
+# nameRegion_show = nameSpecies_show = T
 figure_compare_benchamrks_fun <- function(BM_data,
                                           nameRegion_show = T,
                                           nameSpecies_show = T,
@@ -116,38 +117,28 @@ figure_compare_benchamrks_fun <- function(BM_data,
       CUs <- unique(BM_data_sub$CU)
       nCUs <- length(CUs)
       
-      side1_large <- size_box_cm / 6
-      side1_small <- size_box_cm / 10
-      side2_large <- size_box_cm / 3
-      side2_small <- size_box_cm / 20
+      side1_large <- size_box_cm / 6   # 1.0
+      side1_small <- size_box_cm / 10  # 0.6
+      side2_large <- size_box_cm / 3   # 2.0
+      side2_small <- size_box_cm / 20  # 0.3
       side3 <- size_box_cm / 10
       side4 <- size_box_cm / 20
       
       if(nCUs <= 2){
         nrow <- 1
         ncol <- nCUs
-        # side1 <- rep(side1_large,ncol)
-        # side2 <- c(side2_large,rep(side2_small,nCUs - 1))
       }else if(3 <= nCUs & nCUs <= 4){
         nrow <- 2
         ncol <- 2
-        # side1 <- c(rep(side1_small,ncol),rep(side1_large,ncol))
-        # side2 <- rep(c(side2_large,side2_small),nrow)
       }else if(5 <= nCUs & nCUs <= 6){
         nrow <- 2
         ncol <- 3
-        #side1 <- c(rep(side1_small,ncol),rep(side1_large,ncol))
-        # side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
       }else if(7 <= nCUs & nCUs <= 9){
         nrow <-3
         ncol <- 3
-        # side1 <- c(rep(rep(side1_small,ncol),nrow-1),rep(side1_large,ncol))
-        # side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
       }else if(10 <= nCUs & nCUs <= 12){
         nrow <- 3
         ncol <- 4
-        # side1 <- c(rep(rep(side1_small,ncol),nrow-1),rep(side1_large,ncol))
-        # side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
       }else if(13 <= nCUs & nCUs <= 16){
         nrow <- 4
         ncol <- 4
@@ -165,9 +156,17 @@ figure_compare_benchamrks_fun <- function(BM_data,
         ncol <- 6
       }
       
+      if(nrow == 1 & ncol %in% c(1,2)){
+        side2_large <- size_box_cm / 2  # for better display
+        side1_large <- size_box_cm / 4
+      }
+      
       # margins and labels
       side1 <- c(rep(rep(side1_small,ncol),nrow-1),rep(side1_large,ncol))
       side2 <- rep(c(side2_large,rep(side2_small,ncol-1)),nrow)
+      side3 <- rep(side3,ncol * nrow)
+      side4 <- rep(side4,ncol * nrow)
+      
       xlab_show <- side1 == side1_large
       ylab_show <- side2 == side2_large
       
@@ -182,22 +181,38 @@ figure_compare_benchamrks_fun <- function(BM_data,
         header <- 1
       }
       
-      # size_box_cm <- 6 # the of the plots in cm when exported
+      # size_box_cm <- 6 # the size of the squared plots in cm when exported
+      
+      width_fig_cm <- size_box_cm * ncol + sum(side2[1:ncol]) + sum(side4[1:ncol])
+      height_fig_cm <- size_box_cm * nrow + 
+        header * size_box_cm/5 + 
+        sum(matrix(side1,nrow = nrow, byrow = T)[,1]) +
+        sum(matrix(side3,nrow = nrow, byrow = T)[,1])
+      height_fig_cm_noHeader <- height_fig_cm -  header * size_box_cm/5
       
       if(print_fig){
         pathFile <- paste0(wd_figures,"/",regions[i_r],"_",species[i_s],
                            "_benchmarks_comparisons",addTonameFile,".jpeg")
         
-        jpeg(file = pathFile, width = size_box_cm * ncol, 
-             height = size_box_cm * nrow + header/size_box_cm, 
+        jpeg(file = pathFile, 
+             width = width_fig_cm, 
+             height = height_fig_cm, 
              units = "cm", res = 300)
       }
       
-      # to have the box of the plots of the same dimension when exporting
-      widths <- c((size_box_cm - side2_small - side4)/(size_box_cm - side2_large - side4),
-                  rep(1,ncol - 1))
-      heights <- c(rep(1,nrow - 1),
-                   (size_box_cm - side1_small - side3)/(size_box_cm - side1_large - side3))
+      width_onePlot_cm <- width_fig_cm / ncol 
+      height_onePlot_cm <- height_fig_cm_noHeader / nrow
+      
+      widths <- 1
+      if(ncol > 1){
+        widths <- c((width_onePlot_cm - side2_small - side4[1])/(width_onePlot_cm - side2_large - side4[1]),
+                    rep(1,ncol - 1))
+      }
+      heights <- 1
+      if(nrow > 1){
+        heights <- c(rep(1,nrow - 1),
+                     (height_onePlot_cm - side1_small - side3[1])/(height_onePlot_cm - side1_large - side3[1]))
+      }
       
       if(nameRegion_show | nameSpecies_show){
         heights <- c(1/5,heights)
@@ -216,15 +231,14 @@ figure_compare_benchamrks_fun <- function(BM_data,
         
         par(mar = rep(0,4))
         plot(1, type = "n", xlab = "",ylab = "", xaxt = "n", yaxt = "n", bty = "n")
-        legend("center",header_text,bty = "n", cex = 3)
+        legend("center",header_text,bty = "n", cex = ncol + 1)
       }
       
       for(i_cu in 1:length(CUs)){
         
-        # i_cu <- 27
+        # i_cu <- 1
         
         BM_data_sub_cu <- subset(BM_data_sub,CU == CUs[i_cu])
-        BM_data_sub_cu
         
         # coordinates benchmarks
         y_ticks <- 1:length(methods)
@@ -235,7 +249,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
         x_LCI <- c()
         x_UCI <- c()
         for(m in methods){
-          # m <- "HPD"
+          # m <- "medQuan" # m <- "HPD" # m <- "HS_percentiles"
           if(m == "HS_percentiles"){
             CItype <- c("lower","upper")
           }else{
@@ -243,6 +257,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
           }
           
           for(b in CItype){
+            # b <- "Sgen"  b <- "lower"
             x_new <- BM_data_sub_cu[BM_data_sub_cu$method == m & BM_data_sub_cu$benchmark == b,]$m
             x_LCI_new <- BM_data_sub_cu[BM_data_sub_cu$method == m & BM_data_sub_cu$benchmark == b,]$CI025
             x_UCI_new <- BM_data_sub_cu[BM_data_sub_cu$method == m & BM_data_sub_cu$benchmark == b,]$CI975
@@ -272,14 +287,14 @@ figure_compare_benchamrks_fun <- function(BM_data,
         # 
         # par(mar = c(side1[i_cu],side2[i_cu],3,0.5))
         cm_inch <- .393701
-        par(mai = c(side1[i_cu], side2[i_cu], side3, side4) * cm_inch)
+        par(mai = c(side1[i_cu], side2[i_cu], side3[i_cu], side4[i_cu]) * cm_inch)
         #
         plot(x = x, y = y, yaxt = "n", ylab = "", xlab = "",
              xlim = c(xmin,xmax), ylim = c(min(y_ticks) - .5, max(y_ticks) + .5),  
              col = rep(c(benchCols["r"],benchCols["g"]),length(methods)),
              pch = 16, cex = 2)
         if(ylab_show[i_cu]){
-          ylab <- methods
+          ylab <- rev(methods)
         }else{
           ylab <- rep("",length(methods))
         }

@@ -90,7 +90,8 @@ figure_compare_benchamrks_fun <- function(BM_data,
                                           methods = NA,
                                           size_box_cm = 6, # the of the plots in cm when exported
                                           wd_figures, 
-                                          addTonameFile = ""){
+                                          addTonameFile = "",
+                                          coeff_width_adj = 0.1){
   
   benchCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")
   
@@ -205,7 +206,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
       
       widths <- 1
       if(ncol > 1){
-        widths <- c((width_onePlot_cm - side2_small - side4[1])/(width_onePlot_cm - side2_large - side4[1]),
+        widths <- c((width_onePlot_cm - side2_small - side4[1] - coeff_width_adj)/(width_onePlot_cm - side2_large - side4[1]),
                     rep(1,ncol - 1))
       }
       heights <- 1
@@ -475,26 +476,25 @@ modelBoot <- function(
     benchmarks = c(0.25, 0.5)
 ){
   
-  n <- length(series)
-  
   if(sum(!is.na(series)) > 1){ # if there is at least two data points (to avoid crashing)
     
     # check if every odd or even year have consistently NAs like for Pink salmons.
     # in that case, the ar() function returns an error. So it that case, remove 
     # the odd or even years data points.
-    # NOT KEPT, INSTEAD numLags IS SET TO 2 AND NOT 1
-    # series_odd <- series[1:length(series) %% 2 == 1]
-    # series_even <- series[1:length(series) %% 2 == 0]
-    # keep_odd <- sum(!is.na(series_odd)) > 0
-    # keep_even <- sum(!is.na(series_even)) > 0
-    # # if this is the case here:
-    # if(keep_odd & !keep_even){   # only keep odd row data points
-    #   series <- series[1:length(series) %% 2 == 1]
-    # }else if(!keep_odd & keep_even){ # only keep even row data points
-    #   series <- series[1:length(series) %% 2 == 0]
-    # }
+    # OTHE TSOLUTION THAT DOES NOT WORK: set numLags to 2
+    series_odd <- series[1:length(series) %% 2 == 1]
+    series_even <- series[1:length(series) %% 2 == 0]
+    keep_odd <- sum(!is.na(series_odd)) > 0
+    keep_even <- sum(!is.na(series_even)) > 0
+    # if this is the case here:
+    if(keep_odd & !keep_even){   # only keep odd row data points
+      series <- series[1:length(series) %% 2 == 1]
+    }else if(!keep_odd & keep_even){ # only keep even row data points
+      series <- series[1:length(series) %% 2 == 0]
+    }
     
-    # Fit model to estimate autocorrelation
+    n <- length(series)
+    
     ar.fit <- ar(
       log(series), # spawner time series
       demean = TRUE, # Estimate mean spawners
@@ -525,12 +525,19 @@ modelBoot <- function(
       j.init <- sample(1 : (n - numLags + 1), 1) # starting point for initialization
       obs.star.log[1:numLags, i] <- log(series[j.init:(j.init + numLags - 1)])
       
-      for (j in 1:n){ # For each timepoint in the simulated series
+      for(j in 1:n){ # For each timepoint in the simulated series
         obs.star.log[(numLags + j), i] <- ar.fit$x.mean + ar.fit$ar %*% (obs.star.log[j:(j + numLags - 1), i] - ar.fit$x.mean) + res.star[j, i]
       } #end j
       
       HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
     } # end bootstrap loop
+    
+    #
+    # plot(x = 1:(n+1), y = obs.star.log[,1], type = 'l', col = alpha('grey10',alpha = 0.5),
+    #      lwd = 1.5, ylim = c(0,25))
+    # for(i in 2:1000){
+    #   lines(x = 1:(n+1), y = obs.star.log[,i], col = alpha('grey40',alpha = 0.5) ,lwd = 1.5)
+    # }
     
     # get the median
     HS_benchmedian <- apply(HS_benchBoot, 2, median, na.rm = TRUE)

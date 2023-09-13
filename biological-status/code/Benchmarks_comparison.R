@@ -88,6 +88,7 @@ species <- c(
 
 species <- species_acronym$Chinook
 species <- species_acronym$Coho
+species <- species_acronym$Pink
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
@@ -158,7 +159,8 @@ for(i_rg in 1:length(region)){
                                       nameSpecies_show = T, 
                                       print_fig = T,
                                       size_box_cm = 7,
-                                      wd_figures = wd_figures)
+                                      wd_figures = wd_figures,
+                                      coeff_width_adj = .53)
         
       }else{ # need to create multiple files
         
@@ -180,7 +182,8 @@ for(i_rg in 1:length(region)){
                                         print_fig = T,
                                         size_box_cm = 7,
                                         wd_figures = wd_figures, 
-                                        addTonameFile = paste0("_",i_loops))
+                                        addTonameFile = paste0("_",i_loops),
+                                        coeff_width_adj = .53)
         }
       }
     }

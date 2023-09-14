@@ -759,6 +759,9 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
   return(output)
 }
 
+# The dropbox path to the /population-indicators/biological-status folder:
+wd_biological_status <- "1_Active/Population Methods and Analysis/population-indicators/biological-status"
+
 # Function that returns a data frame with the path leading to the repository where 
 # input data (i.e., run reconstructions) is located for each region.
 # wd_Data_input_root is the root directory common to all the regions.
@@ -779,6 +782,7 @@ wd_data_regions_fun <- function(wd_root = ""){
   
   return(wd_data_regions)
 }
+
 
 
 

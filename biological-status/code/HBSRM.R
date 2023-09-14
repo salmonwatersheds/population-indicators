@@ -30,10 +30,9 @@ wd_data <- paste0(getwd(),"/data")
 # figures and datasets generated are 
 Export_locally <- T
 if(Export_locally){
-  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/figures")
+  wd_figures <- paste0(getwd(),"/figures")
   wd_output <- paste0(getwd(),"/output")
 }else{
-  wd_biological_status <- "1_Active/Population Methods and Analysis/population-indicators/biological-status"
   wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/figures")
   wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
 }

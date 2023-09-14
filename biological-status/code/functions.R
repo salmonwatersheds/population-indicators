@@ -716,22 +716,22 @@ SRdata_fun <- function(path_file, wd_Data, MinSRpts = 3){
 # Function that returns the input _SRdata.txt file names from there region-specific 
 # repository, which is defined by wd.
 # wd <- wd_Data_input
-SRdata_path_Species_fun <- function(wd, Species = NA, Species_all = T){
-  
+SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
+
   # Import the most recent individual fish counts for the region and species selected.
   # Note that the region path should be contained in wd already.
   files_list <- list.files(wd)
   
-  # In the case we did not specify the Species, find those that have data:
-  if(Species_all){                           
+  # In the case we did not specify the species, find those that have data:
+  if(species_all){                           
     files_s <- files_list[grepl(pattern = "_SRdata",files_list)]
     # get the species present:
-    Species <- unique(sub("_SRdata.*", "", files_s))
+    species <- unique(sub("_SRdata.*", "", files_s))
   }
   
   # Return the corresponding files, selecting the most recent ones eventually:
-  SRdata <- sapply(X = Species, FUN = function(s){
-    # s <- Species[3]
+  SRdata <- sapply(X = species, FUN = function(s){
+    # s <- species[3]
     files_s <- files_list[grepl(pattern = paste0(s,"_SRdata"),files_list)]
     
     # if multiple files, select the one with the most recent date modified:
@@ -742,7 +742,7 @@ SRdata_path_Species_fun <- function(wd, Species = NA, Species_all = T){
     # if no file is present --> NA
     if(length(files_s) == 0){
       files_s <- NA
-      print(paste0("Species ",s," does not have a file."))
+      print(paste0("species ",s," does not have a file."))
     }
     return(files_s)
   })
@@ -751,10 +751,10 @@ SRdata_path_Species_fun <- function(wd, Species = NA, Species_all = T){
   SRdata <- SRdata[!is.na(SRdata)]  # remove species with that do not have file.
   
   # Get the full path:
-  SRdata <- paste(wd_Data_input,SRdata,sep = "/")
+  SRdata <- paste(wd,SRdata,sep = "/")
   
-  output <- list(Species,SRdata)
-  names(output) <- c("Species","SRdata")
+  output <- list(species,SRdata)
+  names(output) <- c("species","SRdata")
     
   return(output)
 }
@@ -768,10 +768,13 @@ wd_data_regions_fun <- function(wd_root = ""){
   wd_data_regions <- data.frame(
     Central_coast = paste0(wd_root,"/1_Active/Central Coast PSE/analysis/central-coast-status/HBM and status"),
     Columbia = paste0(wd_root,"/1_Active/Columbia/data & analysis/analysis/columbia-status"), # BSC: ? no HBM and status folder... to check at some point
-    Fraser = paste0(wd_root,"/Fraser_VIMI/analysis/fraser-status/HBM and status"),
+    Fraser = paste0(wd_root,"/1_Active/Fraser_VIMI/analysis/fraser-status/HBM and status"),
+    # Fraser = paste0(wd_root,"/Fraser_VIMI/analysis/fraser-status/HBM and status"),
     Haida_Gwaii = paste0(wd_root,"/1_Active/Haida Gwaii PSE/Data & Assessments/haida-gwaii-status/HBM and status"),
-    Nass = paste0(wd_root,"/Nass/assessments/2_population/nass-status/HBM and status"),
-    Skeena = paste0(wd_root,"/Skeena Updates/skeena-status/HBM and status"),
+    Nass = paste0(wd_root,"/1_Active/Nass/assessments/2_population/nass-status/HBM and status"),
+    # Nass = paste0(wd_root,"/Nass/assessments/2_population/nass-status/HBM and status"),
+    Skeena = paste0(wd_root,"/1_Active/Skeena Updates/skeena-status/HBM and status"),
+    # Skeena = paste0(wd_root,"/Skeena Updates/skeena-status/HBM and status"),
     Yukon = paste0(wd_root,"/1_Active/Yukon/Data & Assessments/yukon-status/HBM-and-status"))
   
   return(wd_data_regions)

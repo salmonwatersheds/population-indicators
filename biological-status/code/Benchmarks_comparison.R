@@ -11,15 +11,10 @@ if(!grepl(pattern = "biological-status", x = getwd())){
   setwd(dir = paste0(getwd(),"/biological-status"))
 }
 
-# Import functions
+# Import functions and set certain directories
 source("Code/functions.R")
 
 library(tidyverse)
-
-# The pass ../Salmon Watersheds Dropbox/user_name/X Drive/1_PROJECTS.
-# The pass is personal and must be copy past in wd_X_Drive1_PROJECTS.txt
-# e.g.: "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
-wd_X_Drive1_PROJECTS <- readLines( "wd_X_Drive1_PROJECTS.txt")
 
 # Define subdirectories:
 wd_code <- paste0(getwd(),"/code")

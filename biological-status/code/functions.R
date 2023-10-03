@@ -762,6 +762,11 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
 # The dropbox path to the /population-indicators/biological-status folder:
 wd_biological_status <- "1_Active/Population Methods and Analysis/population-indicators/biological-status"
 
+# The pass ../Salmon Watersheds Dropbox/user_name/X Drive/1_PROJECTS.
+# The pass is personal and must be copy past in wd_X_Drive1_PROJECTS.txt
+# e.g.: "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
+wd_X_Drive1_PROJECTS <- readLines( "wd_X_Drive1_PROJECTS.txt")
+
 # Function that returns a data frame with the path leading to the repository where 
 # input data (i.e., run reconstructions) is located for each region.
 # wd_Data_input_root is the root directory common to all the regions.

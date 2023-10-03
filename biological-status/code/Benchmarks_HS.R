@@ -18,7 +18,7 @@ if(!grepl(pattern = "biological-status", x = getwd())){
   setwd(dir = paste0(getwd(),"/biological-status"))
 }
 
-# Import functions
+# Import functions and set certain directories
 source("Code/functions.R")
 
 library(tidyverse)
@@ -92,19 +92,16 @@ species <- species_acronym$Pink
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- F
 species_all <- T
 
 # Import the spawner_abundance.csv, downloaded from SPS work.
-wd_biological_status <- "1_Active/Population Methods and Analysis/population-indicators/biological-status"
 spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/data")
 spawner_abundance <- read.csv(paste0(spawner_abundance_path,"/spawner_abundance.csv"),header = T)
 # head(spawner_abundance)
 # unique(spawner_abundance$species_name)
 
 # The benchmarks to use
-benchmarks <- c(0.25, 0.5)
-benchmarks <- c(0.25, 0.75) # last run
+benchmarks <- c(0.25, 0.75) # was c(0.25, 0.5)
 
 for(i_rg in 1:length(region)){
   

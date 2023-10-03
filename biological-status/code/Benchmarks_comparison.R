@@ -44,6 +44,8 @@ regions_df <- regions_fun()
 # Selection of region(s) and species and benchmark %
 #------------------------------------------------------------------------------#
 
+print_fig <- T  # to export the figures
+
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
@@ -88,7 +90,6 @@ species <- species_acronym$Pink
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
-species_all <- F
 
 # maximum number of plots that can be shown in one figure
 nbplots_max <- 6^2 # could change to 5 or 4 if that's too many figures
@@ -151,7 +152,7 @@ for(i_rg in 1:length(region)){
         figure_compare_benchamrks_fun(BM_data = benchmarks_df, 
                                       nameRegion_show = T, 
                                       nameSpecies_show = T, 
-                                      print_fig = T,
+                                      print_fig = print_fig,
                                       size_box_cm = 7,
                                       wd_figures = wd_figures,
                                       coeff_width_adj = .53)
@@ -173,7 +174,7 @@ for(i_rg in 1:length(region)){
           figure_compare_benchamrks_fun(BM_data = benchmarks_df_loop, 
                                         nameRegion_show = T, 
                                         nameSpecies_show = T, 
-                                        print_fig = T,
+                                        print_fig = print_fig,
                                         size_box_cm = 7,
                                         wd_figures = wd_figures, 
                                         addTonameFile = paste0("_",i_loops),

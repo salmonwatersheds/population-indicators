@@ -152,7 +152,7 @@ for(i_rg in 1:length(region)){
         figure_compare_benchamrks_fun(BM_data = benchmarks_df, 
                                       nameRegion_show = T, 
                                       nameSpecies_show = T, 
-                                      print_fig = print_fig,
+                                      print_fig = F,
                                       size_box_cm = 7,
                                       wd_figures = wd_figures,
                                       coeff_width_adj = .53)

@@ -18,22 +18,17 @@ if(!grepl(pattern = "biological-status", x = getwd())){
   setwd(dir = paste0(getwd(),"/biological-status"))
 }
 
-# Import functions
+# Import functions and set certain directories
 source("Code/functions.R")
 
 library(tidyverse)
-
-# The pass ../Salmon Watersheds Dropbox/user_name/X Drive/1_PROJECTS.
-# The pass is personal and must be copy past in wd_X_Drive1_PROJECTS.txt
-# e.g.: "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
-wd_X_Drive1_PROJECTS <- readLines( "wd_X_Drive1_PROJECTS.txt")
 
 # Define subdirectories:
 wd_code <- paste0(getwd(),"/code")
 wd_data <- paste0(getwd(),"/data")
 
 # figures and datasets generated are 
-Export_locally <- F
+Export_locally <- F   # if false then files are exported to wd_X_Drive1_PROJECTS
 if(Export_locally){
   wd_figures <- paste0(getwd(),"/figures")
   wd_output <- paste0(getwd(),"/output")
@@ -77,7 +72,7 @@ region <- regions_df$Central_coast
 
 # all the regions
 region <- as.character(regions_df[1,])
-region <- region[region != "Columbia"]
+region <- region[region != "Columbia"]  # no data in Columbia
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
@@ -97,18 +92,16 @@ species <- species_acronym$Pink
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- F
 species_all <- T
 
 # Import the spawner_abundance.csv, downloaded from SPS work.
-wd_biological_status <- "Population Methods and Analysis/population-indicators/biological-status"
 spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/data")
 spawner_abundance <- read.csv(paste0(spawner_abundance_path,"/spawner_abundance.csv"),header = T)
 # head(spawner_abundance)
 # unique(spawner_abundance$species_name)
 
 # The benchmarks to use
-benchmarks <- c(0.25, 0.5)
+benchmarks <- c(0.25, 0.75) # was c(0.25, 0.5)
 
 for(i_rg in 1:length(region)){
   

@@ -1,0 +1,165 @@
+parameter,location,species,year,datavalue
+run_time,Ecstall,Chinook,,8.5
+run_time,Kalum-Early,Chinook,,-38.5
+run_time,Kalum-Late,Chinook,,8.5
+run_time,Lakelse,Chinook,,8.5
+run_time,Lower Skeena,Chinook,,8.5
+run_time,Middle Skeena-Large Lakes,Chinook,,8.5
+run_time,Middle Skeena-Mainstem Tributaries,Chinook,,8.5
+run_time,Okanagan,Chinook,,73
+run_time,Sicintine,Chinook,,
+run_time,Skeena Estuary,Chinook,,8.5
+run_time,Upper Bulkley River,Chinook,,-38.5
+run_time,Upper Skeena,Chinook,,8.5
+run_time,Zymoetz,Chinook,,8.5
+run_time,Lower Skeena,Chum,,27.5
+run_time,Middle Skeena,Chum,,27.5
+run_time,Skeena Estuary,Chum,,27.5
+run_time,Upper Skeena,Chum,,27.5
+run_time,Lower Skeena,Coho,,51.5
+run_time,Middle Skeena,Coho,,18.5
+run_time,Skeena Estuary,Coho,,18.5
+run_time,Upper Skeena,Coho,,18.5
+run_time,Adams & Momich Lakes-Early Summer,Lake sockeye,,4
+run_time,Alastair,Lake sockeye,,-14
+run_time,Anderson-Seton-Early Summer,Lake sockeye,,4
+run_time,Asitika,Lake sockeye,,-3.5
+run_time,Azuklotz,Lake sockeye,,-3.5
+run_time,Babine (enhanced),Lake sockeye,,0
+run_time,Babine/Onerka,Lake sockeye,,-10.5
+run_time,Bear,Lake sockeye,,-3.5
+run_time,Bowron-Early Summer,Lake sockeye,,4
+run_time,Bulkley/Maxan,Lake sockeye,,-10.5
+run_time,Chilko-Early Summer,Lake sockeye,,4
+run_time,Chilko-Summer,Lake sockeye,,14
+run_time,Chilliwack-Early Summer (cyclic),Lake sockeye,,4
+run_time,Cultus-Late,Lake sockeye,,22
+run_time,Damshilgwit,Lake sockeye,,-3.5
+run_time,Ecstall/Lower,Lake sockeye,,-21
+run_time,Footsore/Hodder,Lake sockeye,,
+run_time,Francois-Fraser-Summer,Lake sockeye,,14
+run_time,Gitanyow (Kitwanga/Kitwancool),Lake sockeye,,3.5
+run_time,Harrison-Downstream Migrating-Late,Lake sockeye,,22
+run_time,Harrison-Upstream Migrating-Late,Lake sockeye,,22
+run_time,Harrison River (river-type),Lake sockeye,,14
+run_time,Johanson,Lake sockeye,,-3.5
+run_time,Johnston,Lake sockeye,,-21
+run_time,Kamloops-Early Summer,Lake sockeye,,4
+run_time,Kitsumkalum,Lake sockeye,,-3.5
+run_time,Kluatantan,Lake sockeye,,-10.5
+run_time,Kluayaz,Lake sockeye,,-10.5
+run_time,Lakelse,Lake sockeye,,-21
+run_time,Lillooet-Harrison-Late,Lake sockeye,,22
+run_time,Mcdonell/Dennis/Aldrich,Lake sockeye,,-17.5
+run_time,Morice/Atna,Lake sockeye,,-10.5
+run_time,Motase,Lake sockeye,,3.5
+run_time,Nadina-Francois-Early Summer,Lake sockeye,,4
+run_time,Nahatlatch-Early Summer,Lake sockeye,,4
+run_time,Nilkitkwa,Lake sockeye,,10.5
+run_time,North Barriere-Early Summer (de novo),Lake sockeye,,4
+run_time,Osoyoos,Lake sockeye,,16
+run_time,Pitt-Early Summer,Lake sockeye,,4
+run_time,Quesnel-Summer (cyclic),Lake sockeye,,14
+run_time,Seton-Late (de novo),Lake sockeye,,22
+run_time,Shuswap-Early Summer (cyclic),Lake sockeye,,4
+run_time,Shuswap-Late (cyclic),Lake sockeye,,22
+run_time,Sicintine,Lake sockeye,,-3.5
+run_time,Slamgeesh,Lake sockeye,,-3.5
+run_time,Spawning,Lake sockeye,,-3.5
+run_time,Stephens,Lake sockeye,,-10.5
+run_time,Sustut,Lake sockeye,,-3.5
+run_time,Swan/Club,Lake sockeye,,-10.5
+run_time,Tahlo/Morrison,Lake sockeye,,-3.5
+run_time,Takla-Trembleur-Early Stuart (cyclic),Lake sockeye,,-21
+run_time,Takla-Trembleur-Stuart-Summer (cyclic),Lake sockeye,,14
+run_time,Taseko-Early Summer,Lake sockeye,,4
+run_time,Widgeon (river-type),Lake sockeye,,14
+run_time,Middle-Upper Skeena (even),Pink (even),,18.5
+run_time,Nass-Skeena Estuary (even),Pink (even),,18.5
+run_time,Lower Skeena River (odd),Pink (odd),,18.5
+run_time,Middle-Upper Skeena (odd),Pink (odd),,18.5
+run_time,Nass-Skeena Estuary (odd),Pink (odd),,18.5
+run_time,Skeena River-High Interior (river-type),River sockeye,,
+run_time,Skeena River (river-type),River sockeye,,
+run_time_sd,Ecstall,Chinook,,11
+run_time_sd,Kalum-Early,Chinook,,11
+run_time_sd,Kalum-Late,Chinook,,11
+run_time_sd,Lakelse,Chinook,,11
+run_time_sd,Lower Skeena,Chinook,,11
+run_time_sd,Middle Skeena-Large Lakes,Chinook,,11
+run_time_sd,Middle Skeena-Mainstem Tributaries,Chinook,,11
+run_time_sd,Okanagan,Chinook,,9
+run_time_sd,Sicintine,Chinook,,
+run_time_sd,Skeena Estuary,Chinook,,11
+run_time_sd,Upper Bulkley River,Chinook,,11
+run_time_sd,Upper Skeena,Chinook,,11
+run_time_sd,Zymoetz,Chinook,,11
+run_time_sd,Lower Skeena,Chum,,12.5
+run_time_sd,Middle Skeena,Chum,,12.5
+run_time_sd,Skeena Estuary,Chum,,12.5
+run_time_sd,Upper Skeena,Chum,,12.5
+run_time_sd,Lower Skeena,Coho,,12.5
+run_time_sd,Middle Skeena,Coho,,12.5
+run_time_sd,Skeena Estuary,Coho,,12.5
+run_time_sd,Upper Skeena,Coho,,12.5
+run_time_sd,Adams & Momich Lakes-Early Summer,Lake sockeye,,9.55
+run_time_sd,Alastair,Lake sockeye,,18.2
+run_time_sd,Anderson-Seton-Early Summer,Lake sockeye,,9.55
+run_time_sd,Asitika,Lake sockeye,,14
+run_time_sd,Azuklotz,Lake sockeye,,14
+run_time_sd,Babine (enhanced),Lake sockeye,,14
+run_time_sd,Babine/Onerka,Lake sockeye,,14
+run_time_sd,Bear,Lake sockeye,,14
+run_time_sd,Bowron-Early Summer,Lake sockeye,,9.55
+run_time_sd,Bulkley/Maxan,Lake sockeye,,17.5
+run_time_sd,Chilko-Early Summer,Lake sockeye,,9.55
+run_time_sd,Chilko-Summer,Lake sockeye,,9.44
+run_time_sd,Chilliwack-Early Summer (cyclic),Lake sockeye,,9.55
+run_time_sd,Cultus-Late,Lake sockeye,,8.16
+run_time_sd,Damshilgwit,Lake sockeye,,14
+run_time_sd,Ecstall/Lower,Lake sockeye,,13.3
+run_time_sd,Footsore/Hodder,Lake sockeye,,
+run_time_sd,Francois-Fraser-Summer,Lake sockeye,,9.44
+run_time_sd,Gitanyow (Kitwanga/Kitwancool),Lake sockeye,,19.6
+run_time_sd,Harrison-Downstream Migrating-Late,Lake sockeye,,8.16
+run_time_sd,Harrison-Upstream Migrating-Late,Lake sockeye,,8.16
+run_time_sd,Harrison River (river-type),Lake sockeye,,9.44
+run_time_sd,Johanson,Lake sockeye,,14
+run_time_sd,Johnston,Lake sockeye,,13.3
+run_time_sd,Kamloops-Early Summer,Lake sockeye,,9.55
+run_time_sd,Kitsumkalum,Lake sockeye,,17.5
+run_time_sd,Kluatantan,Lake sockeye,,17.5
+run_time_sd,Kluayaz,Lake sockeye,,17.5
+run_time_sd,Lakelse,Lake sockeye,,13.3
+run_time_sd,Lillooet-Harrison-Late,Lake sockeye,,8.16
+run_time_sd,Mcdonell/Dennis/Aldrich,Lake sockeye,,9.8
+run_time_sd,Morice/Atna,Lake sockeye,,17.5
+run_time_sd,Motase,Lake sockeye,,15.4
+run_time_sd,Nadina-Francois-Early Summer,Lake sockeye,,9.55
+run_time_sd,Nahatlatch-Early Summer,Lake sockeye,,9.55
+run_time_sd,Nilkitkwa,Lake sockeye,,14
+run_time_sd,North Barriere-Early Summer (de novo),Lake sockeye,,9.55
+run_time_sd,Osoyoos,Lake sockeye,,8
+run_time_sd,Pitt-Early Summer,Lake sockeye,,9.55
+run_time_sd,Quesnel-Summer (cyclic),Lake sockeye,,9.44
+run_time_sd,Seton-Late (de novo),Lake sockeye,,8.16
+run_time_sd,Shuswap-Early Summer (cyclic),Lake sockeye,,9.55
+run_time_sd,Shuswap-Late (cyclic),Lake sockeye,,8.16
+run_time_sd,Sicintine,Lake sockeye,,14
+run_time_sd,Slamgeesh,Lake sockeye,,14
+run_time_sd,Spawning,Lake sockeye,,14
+run_time_sd,Stephens,Lake sockeye,,12.6
+run_time_sd,Sustut,Lake sockeye,,14
+run_time_sd,Swan/Club,Lake sockeye,,12.6
+run_time_sd,Tahlo/Morrison,Lake sockeye,,14
+run_time_sd,Takla-Trembleur-Early Stuart (cyclic),Lake sockeye,,6.81
+run_time_sd,Takla-Trembleur-Stuart-Summer (cyclic),Lake sockeye,,9.44
+run_time_sd,Taseko-Early Summer,Lake sockeye,,9.55
+run_time_sd,Widgeon (river-type),Lake sockeye,,9.44
+run_time_sd,Middle-Upper Skeena (even),Pink (even),,12.5
+run_time_sd,Nass-Skeena Estuary (even),Pink (even),,12.5
+run_time_sd,Lower Skeena River (odd),Pink (odd),,12.5
+run_time_sd,Middle-Upper Skeena (odd),Pink (odd),,12.5
+run_time_sd,Nass-Skeena Estuary (odd),Pink (odd),,12.5
+run_time_sd,Skeena River-High Interior (river-type),River sockeye,,
+run_time_sd,Skeena River (river-type),River sockeye,,

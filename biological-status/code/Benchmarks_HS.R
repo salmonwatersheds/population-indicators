@@ -1,44 +1,60 @@
 
-# Script about the percentile benchmarks
-# background info: 
-# https://www.dropbox.com/scl/fi/64dc2861izm12xzykf6sd/HS_ConfidenceIntervals_10June2020.docx?rlkey=9a8hh4zvgl6zc2s8bik9s612o&dl=0
-# 
-# Steph's github repo:
-# https://github.com/salmonwatersheds/percentile-benchmarks-CI
+#'******************************************************************************
+#' The goal of the script is to calculate the benchmarks from using the percentile
+#' approach on the history spawner (HS) data.
+#' Files produced: 
+#' - output/region_species__benchmarks_HS_percentiles_summary.csv
+#'******************************************************************************
 
-# Example application of the code to the Fraser in:
-# C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS/Fraser_VIMI/analysis/fraser-status
+#' Background info: 
+#' - https://www.dropbox.com/scl/fi/64dc2861izm12xzykf6sd/HS_ConfidenceIntervals_10June2020.docx?rlkey=9a8hh4zvgl6zc2s8bik9s612o&dl=0
+#' - Steph's github repo:
+#'    https://github.com/salmonwatersheds/percentile-benchmarks-CI
+#' - Example application of the code to the Fraser in:
+#'    C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS/Fraser_VIMI/analysis/fraser-status
 
-# 
 rm(list = ls())
 graphics.off()
 
-# Set directory to /biological-status
-if(!grepl(pattern = "biological-status", x = getwd())){
-  setwd(dir = paste0(getwd(),"/biological-status"))
-}
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
 
-# Import functions and set certain directories
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("functions_set_wd.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+# The datasets to input were outputted by other scripts 
+wd_data_input <- wd_output
+
+# Import functions for this specific project
 source("Code/functions.R")
 
+# Load packages
 library(tidyverse)
 
-# Define subdirectories:
-wd_code <- paste0(getwd(),"/code")
-wd_data <- paste0(getwd(),"/data")
+# option to export the figures
+print_fig <- F
 
-# figures and datasets generated are 
-Export_locally <- F   # if false then files are exported to wd_X_Drive1_PROJECTS
-if(Export_locally){
-  wd_figures <- paste0(getwd(),"/figures")
-  wd_output <- paste0(getwd(),"/output")
-}else{
-  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/figures")
-  wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
-}
-
-# The datsets to input were outputted by other scripts 
-wd_data_input <- wd_output
+# Paths to the repositories containing the run reconstruction datasets for each 
+# region.
+wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
 
 # Import species names and acronyms
 species_acronym <- species_acronym_fun()

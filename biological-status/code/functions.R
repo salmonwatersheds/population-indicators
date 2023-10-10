@@ -1,4 +1,9 @@
 
+#'******************************************************************************
+#' The goal of the script is to produce functions that are used in the 
+#' biological-status project.
+#'******************************************************************************
+
 # Function that calculates the lower stock-recruitment benchmark, Sgen (i.e. the 
 # spawner abundance that leads to Smsy in one generation with no harvest and 
 # assuming constant environmental conditions). 

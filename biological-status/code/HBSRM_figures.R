@@ -1,4 +1,12 @@
 
+#'******************************************************************************
+#' The goal of the script is to calculate the benchmarks from the HBSE modelling
+#' work done in HBSRM.R. 
+#' Files produced: 
+#' - figures/region_species_CU_benchmark_posteriors.jpeg
+#' - output/region_species_benchmarks_summary.csv
+#'******************************************************************************
+
 # 
 rm(list = ls())
 graphics.off()
@@ -27,13 +35,15 @@ wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
 
+# The datasets to input were outputted by other scripts 
+wd_data_input <- wd_output
+
 # Import functions for this specific project
 source("Code/functions.R")
 
 # Load packages
-library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
-library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
-
+library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.  ??? needed ?
+library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # option to export the figures
 print_fig <- F
@@ -73,10 +83,6 @@ region <- c(
 # all the regions
 region <- as.character(regions_df[1,])
 region <- region[region != "Columbia"]
-
-# set the path of the input data sets for that specific region
-# wd_data_input <- paste0(wd_data_regions[,region])   # BSC: if we end up having the posterior_priorShift.rds file in dropbox
-wd_data_input <- wd_output                          # if they are there
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.

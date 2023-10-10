@@ -1,10 +1,8 @@
 
 #'******************************************************************************
-#' The gola of the script is to help setting the working directories for the 
-#' different projects.
+#' The goal of the script is to produce functions that help setting the working 
+#' directories for the different projects.
 #'******************************************************************************
-
-
 
 
 #' Function to return a list if the names of the (sub) directories of the 

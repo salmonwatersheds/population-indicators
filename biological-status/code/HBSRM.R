@@ -1,36 +1,54 @@
 
 
-# Hierarchical Bayesian SR analysis for all regions and conservation units.
+#'******************************************************************************
+#' The goal of the script is to conduct a hierarchical Bayesian spawner recruits 
+#' (HBSR) R analysis for all regions and conservation units.
 # Code adpated from Korman and English (2013).
+#' Files produced: 
+#' - output/region_species_SR_matrices.rds
+#' - output/region_posteriors_priorShift.rds
+#' - output/region_species_CUs_names.csv
+#'******************************************************************************
 
 rm(list = ls())
 graphics.off()
 
-# Set directory to /biological-status
-if(!grepl(pattern = "biological-status", x = getwd())){
-  setwd(dir = paste0(getwd(),"/biological-status"))
-}
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
 
-# Import functions and set certain directories
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("functions_set_wd.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+# The datasets to input were outputted by other scripts 
+wd_data_input <- wd_output
+
+# Import functions for this specific project
 source("Code/functions.R")
 
 # Load packages
-library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
-library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
+library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.  ??? needed ?
+library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
-# Define subdirectories:
-wd_code <- paste0(getwd(),"/code")
-wd_data <- paste0(getwd(),"/data")
-
-# figures and datasets generated are 
-Export_locally <- T
-if(Export_locally){
-  wd_figures <- paste0(getwd(),"/figures")
-  wd_output <- paste0(getwd(),"/output")
-}else{
-  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/figures")
-  wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
-}
+# option to export the figures
+print_fig <- F
 
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.

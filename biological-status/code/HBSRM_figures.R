@@ -3,31 +3,37 @@
 rm(list = ls())
 graphics.off()
 
-# Set directory to /biological-status
-if(!grepl(pattern = "biological-status", x = getwd())){
-  setwd(dir = paste0(getwd(),"/biological-status"))
-}
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
 
-# Import functions and set certain directories
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("functions_set_wd.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+# Import functions for this specific project
 source("Code/functions.R")
 
 # Load packages
 library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions.
 
-# Define subdirectories:
-wd_code <- paste0(getwd(),"/code")
-wd_data <- paste0(getwd(),"/data")
-
-# figures and datasets generated are 
-Export_locally <- T
-if(Export_locally){
-  wd_figures <- paste0(getwd(),"/figures")
-  wd_output <- paste0(getwd(),"/output")
-}else{
-  wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/figures")
-  wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/output")
-}
 
 # option to export the figures
 print_fig <- F
@@ -110,9 +116,9 @@ for(i_rg in 1:length(region)){
     
     # i_sp <- 1
     
-    # Import the HBSRM outputs, i.e., the posterior distribtions of:
-    # - mu_a and sigma_a: with CU-level instrinsic productivity ai ~ N(mu_a,sigma_a)
-    # - with bi the CU-level density dependance parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
+    # Import the HBSRM outputs, i.e., the posterior distributions of:
+    # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
+    # - with bi the CU-level density dependence parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
     # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
     post <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_posteriors_priorShift.rds"))
     

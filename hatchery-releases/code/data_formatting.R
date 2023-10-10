@@ -13,7 +13,6 @@ if(!grepl(pattern = "hatchery-releases", x = getwd())){
 wd_code <- paste0(getwd(),"/code")
 wd_data <- paste0(getwd(),"/data")
 
-
 library(readxl)
 library(tidyverse)
 
@@ -32,8 +31,7 @@ dataDFO <- read_excel(paste0(wd_data,"/PSF_modified_SEP_releases_2023.xlsx"),
 head(dataDFO)
 colnames(dataDFO)
 # apply(X = dataDFO, MARGIN = 2, FUN = unique)
-dataDFO$TotalRelease
-
+dataDFO$STOCK_CU_INDEX
 
 # Template:
 templSheet1 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
@@ -65,9 +63,10 @@ unique(dataDFO$RELEASE_SITE_NAME)
 colnames(templSheet2)
 
 # "facilityid" ???
+unique(dataDFO$)
 
-# "program"
-unique(dataDFO$PROGRAM_CODE)
+# "program"  ???
+unique(dataDFO$PROGRAM_CODE) # --> no, "program" is for instance: "Public Involvement Unit"
 
 # "project"
 unique(dataDFO$PROJ_NAME)
@@ -76,7 +75,7 @@ unique(dataDFO$PROJ_NAME)
 unique(dataDFO$FACILITY_NAME)  # ???
 
 # "CUID"
-unique(dataDFO$STOCK_CU_ID)
+unique(dataDFO$STOCK_CU_ID)   # cuid_broodstock 
 
 # "facility_latitude"
 unique(dataDFO$FACILITY_LATITUDE)
@@ -89,7 +88,6 @@ unique(dataDFO$START_DATE)
 
 # "endyear" 
 unique(dataDFO$END_DATE)
-
 
 # Sheet 3 -----
 colnames(templSheet3)

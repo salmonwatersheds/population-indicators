@@ -2,6 +2,9 @@
 #'******************************************************************************
 #' The goal of the script is to produce functions that are used in the 
 #' biological-status project.
+#' 
+#' Data set imported:
+#' - data/appendix1.csv : appendix 1 of tech-report
 #'******************************************************************************
 
 # Function that calculates the lower stock-recruitment benchmark, Sgen (i.e. the 
@@ -651,12 +654,12 @@ species_acronym_fun <- function(){
   return(species_acronym)
 }
 
-# Function that returns a list of two data frame from the _SRdata.txt for a given 
-# species in a given region. The path of the 
-# path_file <- fndata[i]  # the path of the _SRdata.text file
-# MinSRpts: the minimum number of year (= data points) required 
-# wd_Data: the biological-status/Data folder 
-SRdata_fun <- function(path_file, wd_Data, MinSRpts = 3){
+#' Function that returns a list of two dataframes from the _SRdata.txt for a given 
+#' species in a given region.
+#' path_file <- fndata[i]  # the path of the _SRdata.text file
+#' MinSRpts: the minimum number of year (= data points) required 
+#' wd_data: the biological-status/Data folder 
+SRdata_fun <- function(path_file, wd_data, MinSRpts = 3){
   
   # BSC: I replaced "stock" with "CU" in the code?
   CUs_nb <- scan(file = path_file, nlines = 1, skip = 1)
@@ -682,7 +685,7 @@ SRdata_fun <- function(path_file, wd_Data, MinSRpts = 3){
   if(sum(areThereCUID) > 0){
     CUIDsHere <- as.numeric(StNames[areThereCUID])
     # Import Appendix 1: table from the tech report:
-    CUIDs <- read.csv(paste0(wd_Data,"/appendix1.csv"),header = T, 
+    CUIDs <- read.csv(paste0(wd_data,"/appendix1.csv"),header = T, 
                       stringsAsFactors = F)
     # filter/subset
     CUIDs_cut <- CUIDs[CUIDs$CUID %in% CUIDsHere,]
@@ -720,7 +723,7 @@ SRdata_fun <- function(path_file, wd_Data, MinSRpts = 3){
 
 # Function that returns the input _SRdata.txt file names from there region-specific 
 # repository, which is defined by wd.
-# wd <- wd_Data_input
+# wd <- wd_data_input
 SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
 
   # Import the most recent individual fish counts for the region and species selected.

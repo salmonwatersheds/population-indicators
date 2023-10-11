@@ -3,7 +3,11 @@
 #'******************************************************************************
 #' The goal of the script is to conduct a hierarchical Bayesian spawner recruits 
 #' (HBSR) R analysis for all regions and conservation units.
-# Code adpated from Korman and English (2013).
+#' Code adpated from Korman and English (2013).
+#' 
+#' Files imported (from dropbox):
+#' - species_SRdata_date.txt
+#' 
 #' Files produced: 
 #' - output/region_species_SR_matrices.rds
 #' - output/region_posteriors_priorShift.rds
@@ -108,7 +112,7 @@ species_all <- TRUE
 # Set first brood year, "-99" for no constraint
 FBYr <- -99
 
-# Set minimum # of SR data points required to be included in the analysis
+# Set minimum nb of SR data points required to be included in the analysis
 MinSRpts <- 3 
 
 #----------------------------------------------------------------------------#

@@ -2,6 +2,10 @@
 #'******************************************************************************
 #' The goal of the script is to calculate the benchmarks from using the percentile
 #' approach on the history spawner (HS) data.
+#' 
+#' #' Files imported (from dropbox):
+#' - /data/spawner_abundance.csv
+#' 
 #' Files produced: 
 #' - output/region_species__benchmarks_HS_percentiles_summary.csv
 #'******************************************************************************
@@ -39,6 +43,7 @@ wd_data <- wds_l$wd_data
 wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+wd_project_dropbox <- wds_l$wd_project_dropbox
 
 # The datasets to input were outputted by other scripts 
 wd_data_input <- wd_output
@@ -111,7 +116,7 @@ species <- species_acronym$Pink
 species_all <- T
 
 # Import the spawner_abundance.csv, downloaded from SPS work.
-spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_biological_status,"/data")
+spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/data")
 spawner_abundance <- read.csv(paste0(spawner_abundance_path,"/spawner_abundance.csv"),header = T)
 # head(spawner_abundance)
 # unique(spawner_abundance$species_name)

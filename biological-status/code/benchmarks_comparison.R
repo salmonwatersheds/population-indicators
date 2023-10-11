@@ -3,6 +3,11 @@
 #' The goal of the script is to compare the benchmark central values and their
 #' 95% CI among the different methods used (HBSRM vs. percentile), for all regions, 
 #' species and CUs.
+#' 
+#' #' Files imported (from /output --> produced in this subdir):
+#' - region_species_benchmarks_HS_percentiles_summary.csv
+#' - region_species_benchmarks_summary.csv
+#' 
 #' Files produced: 
 #' - figures/region_species_benchmarks_comparisons.jpeg
 #'******************************************************************************

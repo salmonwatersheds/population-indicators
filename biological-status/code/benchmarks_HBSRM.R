@@ -2,6 +2,10 @@
 #'******************************************************************************
 #' The goal of the script is to calculate the benchmarks from the HBSE modelling
 #' work done in HBSRM.R. 
+#' 
+#' Files imported (from ):
+#' - 
+#' 
 #' Files produced: 
 #' - figures/region_species_CU_benchmark_posteriors.jpeg
 #' - output/region_species_benchmarks_summary.csv

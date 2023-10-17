@@ -42,8 +42,8 @@ templSheet3 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
                           sheet = "DataEntry_facilitiescuids")
 templSheet4 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
                           sheet = "DataEntry_releases")
-
 # Sheet 1 -----
+# QUESTION: do I need to fill sheet one as well?
 templSheet1
 dim(templSheet1)
 fields_s1 <- templSheet1$`Pacific Salmon Foundation Salmon Watersheds Program` 
@@ -74,7 +74,7 @@ unique(dataDFO$PROJ_NAME)
 # "facilityname"
 unique(dataDFO$FACILITY_NAME)  # ???
 
-# "CUID"
+# "CUID"  --> not in the more recent template
 unique(dataDFO$STOCK_CU_ID)   # cuid_broodstock 
 
 # "facility_latitude"
@@ -97,7 +97,34 @@ colnames(templSheet3)
 # "CUID" 
 unique(dataDFO$STOCK_CU_ID)
 
+# sheet 4 -------
 
+colnames(templSheet4)
+
+# "species"
+unique(dataDFO$SPECIES_NAME)
+
+# "release_site_latitude"
+unique(dataDFO$REL_LATITUDE)
+
+# "release_site_longitude"
+unique(dataDFO$REL_LONGITUDE)
+
+# "release_site_name"
+unique(dataDFO$RELEASE_SITE_NAME)
+
+# "release_stage"
+unique(dataDFO$RELEASE_STAGE_NAME)
+
+# "release_site_CUID"
+unique(dataDFO$REL_CU_INDEX)
+
+# "facilityID" ???
+unique(dataDFO$ID)
+
+# "cuid_broodstock"        
+# "release_date"           
+# "total_release" 
 
 
 

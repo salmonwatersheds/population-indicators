@@ -62,7 +62,7 @@ unique(dataDFO$RELEASE_SITE_NAME)
 # Sheet 2 ----
 colnames(templSheet2)
 
-# "facilityid" ???
+# "facilityid" ??? --> need a look up file, 
 unique(dataDFO$)
 
 # "program"  ???

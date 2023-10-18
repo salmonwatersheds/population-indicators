@@ -32,19 +32,22 @@ subDir_projects <- subDir_projects_fun()
 wds_l <- set_working_directories_fun(subDir = subDir_projects$spawner_surveys,
                                      Export_locally = F)
 wd_head <- wds_l$wd_head
+wd_project <- wds_l$wd_project
 wd_code <- wds_l$wd_code
 wd_data <- wds_l$wd_data
 wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
 
-wd_references <- paste(wd_X_Drive1_PROJECTS,
-                       wds_l$wd_project_dropbox,
-                       "references",sep="/")
+wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                               wds_l$wd_project_dropbox,
+                               "references",sep="/")
 
 wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
                          wds_l$wd_project_dropbox,
-                         "Data",sep="/")
+                         "data",sep="/")
+
+wd_documents <- paste(wd_project,"documents",sep="/")
 
 # Loading packages 
 library(plyr)
@@ -56,174 +59,254 @@ library(readxl)
 library(reshape2)
 library(stringr)
 
-# ??? what is this file?
-# it is in: Dropbox (Salmon Watersheds)/X Drive/1_PROJECTS/Fraser_VIMI/analysis/Compilation/Reference
-refdat <- read.delim(paste(wd_references,"NCC_Streams_13March2016_KKE.txt",sep="/"),
-                     header=TRUE, na.string="")
 
-# Set up column names for empty destination dataframe # ???
-names <- c(names(refdat)[1:45], c(1926:2021))
+# Functions ------
+# TODO: place in a functions.R script
 
-# Import the NuSEDS data, either from the API if the data has been updated since
-# the last download, or from wd_data 
-
-
-
-#-----
-# OPTION #2: Use most recent file that's already downloaded
-#-----
-z <- list.files(path = "data/")
-zz <- z[grep(pattern = "all_areas_nuseds_", z)]
-z.date <- unlist(lapply(strsplit(zz, split = ".csv"), strsplit, split = "all_areas_nuseds_"))
-z.date <- as.Date(z.date[which(z.date != "")], format = "%Y%m%d")
-
-nusedsName <- paste0("data/", zz[which(order(z.date, decreasing = TRUE) == 1)])
-
-
-
-fi <- file.info(paste(wd_references,"NCC_Streams_13March2016_KKE.txt",sep="/"))
-fi$mtime # file modification
-fi$ctime # last status change
-fi$atime # last access time
-lastModified(fi)
-
-options(timeout = 190)
-API_NuSEDS <- "https://api-proxy.edh.azure.cloud.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/All%20Areas%20NuSEDS.csv"
-
-library(httr)
-# Make a HEAD request to get the headers
-response <- httr::HEAD(API_NuSEDS)
-
-httr::headers(response)$date
-
-# Create a curl handle
-handle <- curl::new_handle()
-
-# Set the custom request to get only headers
-curl::handle_setopt(handle, customrequest = "HEAD")
-
-# Perform the request
-response <- httr::GET(API_NuSEDS, handle = handle)
-
-# Extract the Last-Modified header
-last_modified <- httr::headers(response)$`last-modified`
-
-# Print the result
-print(last_modified)
-
-res <- GET(API_NuSEDS)
-
-# Check if the request was successful (status code 200)
-if (httr::status_code(response) == 200) {
-  # Get the Last-Modified header
-  #last_modified <- httr::headers(response)$`last-modified`
-  last_modified <- httr::headers(response)$date
-  print(paste("Last modified date:", last_modified))
-} else {
-  print("Failed to retrieve the file or file not found.")
+#' Compares the column names of two dataframes and print the differences if any.
+compareColNamesDF_fun <- function(DF1,DF2){
+  colnames1 <- colnames(DF1)
+  colnames2 <- colnames(DF2)
+  if(!identical(colnames1, colnames2)){
+    print("Column names only in first dataframe:")
+    toPrint <- colnames1[!colnames1 %in% colnames2]
+    print(toPrint)
+    cat("\n")
+    print("Column names only in second dataframe:")
+    toPrint <- colnames2[!colnames2 %in% colnames1]
+    print(toPrint)
+    cat("\n")
+    print("Column names in both dataframes:")
+    toPrint <- colnames2[colnames2 %in% colnames1]
+    print(toPrint)
+    cat("\n")
+  }else{
+    print("Column names are identical.")
+  }
 }
 
+# Import datasets -----
 
-nusedsName <- paste0("C:/Users/bcarturan/Downloads/all_areas_nuseds_", strftime(Sys.Date(), format = "%Y%m%d"), ".csv")
-download.file(url = API_NuSEDS, destfile = nusedsName)
-?download.file
+# Create a dataframe to keep track of the different datasets and objects
+datasets_df <- data.frame(object = rep(NA,10),
+                          dataset_original = rep(NA,10), 
+                          dataset_new = rep(NA,10),
+                          comments = rep(NA,10))
+nrow <- 1
 
+#' ** Import ??? **
+# ??? what is this file?
+# it is in: Dropbox (Salmon Watersheds)/X Drive/1_PROJECTS/Fraser_VIMI/analysis/Compilation/Reference
+refdat <- read.delim(paste(wd_references_dropbox,"NCC_Streams_13March2016_KKE.txt",sep="/"),
+                     header=TRUE, na.string="")
 
-# Make a HEAD request to get the headers
-response <- httr::HEAD(API_NuSEDS)
+# Set up column names for empty destination dataframe
+names <- c(names(refdat)[1:45], c(1926:2021))
+# View(refdat)
 
-
-
-url <- "https://example.com/path/to/your/file.txt"
-
-
-
-
-
-
-# NuSEDS takes a while to download; increase timeout time to 190 sec
-options(timeout = 190)
-
-#-----
-# OPTION #1: Import most recent data from URL
-#-----
-nusedsName <- paste0("data/all_areas_nuseds_", strftime(Sys.Date(), format = "%Y%m%d"), ".csv")
-
-download.file("https://api-proxy.edh.azure.cloud.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/All%20Areas%20NuSEDS.csv", 
-              destfile = nusedsName)
-
-#-----
-# OPTION #2: Use most recent file that's already downloaded
-#-----
-z <- list.files(path = "data/")
-zz <- z[grep(pattern = "all_areas_nuseds_", z)]
-z.date <- unlist(lapply(strsplit(zz, split = ".csv"), strsplit, split = "all_areas_nuseds_"))
-z.date <- as.Date(z.date[which(z.date != "")], format = "%Y%m%d")
-
-nusedsName <- paste0("data/", zz[which(order(z.date, decreasing = TRUE) == 1)])
-
-#-----
-# Read in NuSEDS to R
-#-----
-nuseds <- read.csv(nusedsName)
+datasets_df$object[nrow] <- "refdat"
+datasets_df$dataset_original[nrow] <- "NCC_Streams_13March2016_KKE.txt"
+datasets_df$dataset_new[nrow] <- NA
+datasets_df$comments[nrow] <- "?"
+nrow <- nrow + 1
 
 
+#' ** Import the NuSEDS data **
+#' either from the API if the data has been updated since
+#' the last download, or from wd_data 
+#' TODO: find a way to check the date of last modification from API and compare it
+#' to the local version of the file, then decide what to do. Packages and functions
+#' to use:
+#' - file.info()$mtime : file (last) modification date
+#' - httr::HEAD(API_NuSEDS)$date: that does not work with the API_NuSEDS...
+
+updateNuSEDSFile <- F
+
+if(updateNuSEDSFile){
+  
+  options(timeout = 190)
+  API_NuSEDS <- "https://api-proxy.edh.azure.cloud.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/All%20Areas%20NuSEDS.csv"
+  nusedsFileName <- paste0(wd_data_dropbox,"/all_areas_nuseds_", strftime(Sys.Date(), format = "%Y%m%d"), ".csv")
+  download.file(url = API_NuSEDS, destfile = nusedsFileName)
+  
+}else{
+  
+  pattern <- "all_areas_nuseds_"
+  z <- list.files(path = wd_data_dropbox)
+  zz <- z[grep(pattern = pattern, z)]
+  z.date <- unlist(lapply(strsplit(zz, split = ".csv"), strsplit, split = pattern))
+  z.date <- as.Date(z.date[which(z.date != "")], format = "%Y%m%d")
+  
+  nusedsFileName <- zz[which(order(z.date, decreasing = TRUE) == 1)]
+  nusedsFileName <- paste(wd_data_dropbox,nusedsFileName,sep="/")
+  
+}
+
+nuseds <- read.csv(nusedsFileName, header = T)
+
+# TODO: implement comparison with previous version. Below is a provisory solution.
+nuseds_old <- read.csv(paste(wd_data_dropbox,"All Areas NuSEDS.csv",sep="/"),
+                       header=TRUE, stringsAsFactors=FALSE)
+
+compareColNamesDF_fun(nuseds,nuseds_old)
+
+datasets_df$object[nrow] <- "nuseds"
+datasets_df$dataset_original[nrow] <- "All Areas NuSEDS.csv"
+datasets_df$dataset_new[nrow] <- "all_areas_nuseds_20231017.csv"
+datasets_df$comments[nrow] <- "NuSEDS data, column names are identical"
+nrow <- nrow + 1
 
 
+#' ** Import the NuSEDS list of CUs **
+# ???: where is it coming from?
+# ???: what's the goal?
+# DFO provided files matching streams and Nuseds to full CU index --> API!
+
+updateNuSEDSFile <- F
+
+if(updateNuSEDSFile){
+  
+  url_CU_sites <-"https://api-proxy.edh.azure.cloud.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/conservation_unit_system_sites.csv"
+  CU_SiteFileName <- paste0(wd_data_dropbox,"/conservation_unit_system_sites_", strftime(Sys.Date(), format = "%Y%m%d"), ".csv")
+  download.file(url = url_CU_sites, destfile = CU_SiteFileName)
+  
+}else{
+  
+  pattern <- "conservation_unit_system_sites_"
+  z <- list.files(path = wd_data_dropbox)
+  zz <- z[grep(pattern = pattern, z)]
+  z.date <- unlist(lapply(strsplit(zz, split = ".csv"), strsplit, split = pattern))
+  z.date <- as.Date(z.date[which(z.date != "")], format = "%Y%m%d")
+  
+  nusedsFileName <- zz[which(order(z.date, decreasing = TRUE) == 1)]
+  nusedsFileName <- paste(wd_data_dropbox,nusedsFileName,sep="/")
+  
+}
+
+cu.sites <- read.csv(nusedsFileName, header=TRUE, stringsAsFactors=FALSE)
+
+# TODO: implement comparison with previous version. Below is a provisory solution.
+cu.sites_old <- read.csv(paste(wd_data_dropbox,"conservation_unit_system_sitesJul2023.csv",sep="/"),
+                         header=TRUE, stringsAsFactors=FALSE)
+
+compareColNamesDF_fun(cu.sites,cu.sites_old)
+
+datasets_df$object[nrow] <- "cu.sites"
+datasets_df$dataset_original[nrow] <- "conservation_unit_system_sitesJul2023.csv"
+datasets_df$dataset_new[nrow] <- "conservation_unit_system_sites_20231017.csv"
+datasets_df$comments[nrow] <- "There are 10 more columns in the original dataset"
+nrow <- nrow + 1
+
+# If we decide to keep the older version
+# cu.sites <- cu.sites_old
+# names(cu.sites)[1] <- "ID"
 
 
+#' ** Import PSF list of CUs **
+# ???: where is it coming from?
+# ???: what's the goal?
+# CU list provided by Katy at some point, other version of data/conservation-units.csv, 
+# BUT check the different, contain generation length?
+psf.cu <- read.csv(paste(wd_data_dropbox,"PSF_master_CU_list.csv",sep="/"),
+                   header=TRUE, stringsAsFactors = FALSE)
+
+psf.cu2 <- read.csv(paste(wd_data_dropbox,"conservation-units.csv",sep="/"),
+                    header=TRUE, stringsAsFactors = FALSE)
+
+compareColNamesDF_fun(psf.cu,psf.cu2)
+# --> many colnames are in capital letters in psf.cu and not in psf.cu2
+psf.cu$CUID
+psf.cu2$cuid[! psf.cu2$cuid %in% psf.cu$CUID]  # conservation-units.csv has way more CUs BUT
+psf.cu$CUID[! psf.cu$CUID %in% psf.cu2$cuid]   # 936 is missing in conservation-units.csv
+
+datasets_df$object[nrow] <- "psf.cu"
+datasets_df$dataset_original[nrow] <- "PSF_master_CU_list.csv"
+datasets_df$dataset_new[nrow] <- "conservation-units.csv"
+datasets_df$comments[nrow] <- "There are much more CUs in the new df but CU 936 is missing. Colnames are capitalized in older file"
+nrow <- nrow + 1
 
 
+#' ** Import WHAT IS IT ??? **
+# ???: where is it coming from?
+# ???: what's the goal?
+# ??? that is specific to VIMI Fraser right?
+vimi.sites <- read.delim(paste(wd_data_dropbox,"ssp.streams_20230719.txt",sep = "/"),
+                         header=TRUE, stringsAsFactors=FALSE)
+colnames(vimi.sites)[colnames(vimi.sites) == "streamname"] <- "SYSTEM_SITE"
+
+datasets_df$object[nrow] <- "vimi.sites"
+datasets_df$dataset_original[nrow] <- "ssp.streams_20230719.txt"
+datasets_df$dataset_new[nrow] <- NA
+datasets_df$comments[nrow] <- "?"
+nrow <- nrow + 1
 
 
+# BSC: return all the rows in vimi.sites without a match in cu.sites
+# ??? what is that for? Just a check up?
+da <- anti_join(vimi.sites, cu.sites, by = "SYSTEM_SITE")
 
+# Compare NuSEDS CUs with PSF list of CUs - make sure that the CUs we are keeping
+# are the right ones. There are some discrepancies where CUs listed as "current"
+# in PSF list have been binned in NuSEDS list.
+unique(cu.sites$AREA) # ???
+unique(cu.sites_old$AREA)
 
+# Filter site info for CUs in south coast regions.
+# nuseds.cus <- cu.sites # no need to create nuseds.cus so I replaced it by cu.sites in the code below
 
+# colToKeep <- colnames(cu.sites)[c(13,18,20)] # bod practice
+colToKeep <- c("CU_NAME","CU_TYPE","FULL_CU_IN")
 
-# NuSEDS data and CU site data #
-nuseds <- read.csv("All Areas NuSEDS.csv", header=TRUE, stringsAsFactors=FALSE)
-# NuSEDS list of CUs #
-cu.sites <- read.csv("conservation_unit_system_sitesJul2023.csv", header=TRUE, stringsAsFactors=FALSE)
-names(cu.sites)[1] <- "ID"
-# PSF list of CUs #
-psf.cu <- read.csv("PSF_master_CU_list.csv", header=TRUE, stringsAsFactors = FALSE)
+# Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"?
+# what is "Bin"?
+# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "Bin")),c(13,18,20)])
+# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "BIN")),c(13,18,20)]) # BSC: !!!
+unique(cu.sites[grepl("BIN",cu.sites$CU_NAME),colToKeep])
 
-vimi.sites <- read.delim("ssp.streams_20230719.txt", header=TRUE, stringsAsFactors=FALSE)
-colnames(vimi.sites)[colnames(vimi.sites) == "streamname"] ="SYSTEM_SITE"
-
-da <- anti_join(vimi.sites,cu.sites, by="SYSTEM_SITE")
-# Compare NuSEDS CUs with PSF list of CUs - make sure CUs we are keeping are the right ones #
-# There are some discrepancies where CUs listed as current in PSF list have been binned in NuSEDS list #
-unique(cu.sites$AREA)
-
-# Filter site info for CUs in south coast regions #
-nuseds.cus <- cu.sites 
-
-# Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"? #
-unique(nuseds.cus[nuseds.cus$CU_NAME %in% c(str_subset(unique(nuseds.cus$CU_NAME), "Bin")),c(13,18,20)])
 # Which are labeled "Extirpated"? #
-unique(nuseds.cus[nuseds.cus$CU_NAME %in% c(str_subset(unique(nuseds.cus$CU_NAME), "Extirpated")),c(13,18,20)])
+# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "Extirpated")),c(13,18,20)])
+# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "EXTIRPATED")),c(13,18,20)])  # BSC: !!!
+unique(cu.sites[grepl("EXTIRPATED",cu.sites$CU_NAME),colToKeep])
+
 # For the populations which are Binned in NuSEDs, we have DIFFERENT CU indices from the PSF list #
 # Which of these CU indices are present in the NuSEDS CU list? #
-unique(nuseds.cus[nuseds.cus$FULL_CU_IN %in% c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025"), c(13,18,20)])
+CU_Bin_Ind <- c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025")
+#unique(cu.sites[cu.sites$FULL_CU_IN %in% c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025"), c(13,18,20)])
+unique(cu.sites[cu.sites$FULL_CU_IN %in% CU_Bin_Ind, colToKeep])
 
 # Try looking up binned CU names in NuSEDS list #
-unique(nuseds.cus[nuseds.cus$CU_ACRO %in% c(str_subset(unique(nuseds.cus$CU_ACRO), "Seton-L")),c(13,18,20)])
-unique(nuseds.cus[nuseds.cus$CU_ACRO %in% c(str_subset(unique(nuseds.cus$CU_ACRO), "Nadina/Francois-ES")),c(13,18,20)])
-unique(nuseds.cus[nuseds.cus$CU_ACRO %in% c(str_subset(unique(nuseds.cus$CU_ACRO), "NBarriere-ES")),c(13,18,20)])
+# unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "Seton-L")),c(13,18,20)])
+# unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "Nadina/Francois-ES")),c(13,18,20)])
+# unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "NBarriere-ES")),c(13,18,20)])
+unique(cu.sites[grepl("Seton-L",cu.sites$CU_ACRO),colToKeep])
+unique(cu.sites[grepl("Nadina/Francois-ES",cu.sites$CU_ACRO),colToKeep])
+unique(cu.sites[grepl("NBarriere-ES",cu.sites$CU_ACRO),colToKeep])
+
 
 # Remove rows for Atlantic, Steelhead, and Kokanee #
 nuseds <- filter(nuseds, SPECIES %in% c("Chum", "Chinook", "Coho", "Pink", "Sockeye"))
 cu.sites <- filter(cu.sites, SPECIES_QUALIFIED %in% c("CM", "CK", "CO", "PKE", "PKO", "SEL", "SER"))
+# unique(nuseds$SPECIES)
+# unique(cu.sites$SPECIES_QUALIFIED)
 
 # Define variables to include in MAX_ESTIMATE
-var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", "NATURAL_JACK_SPAWNERS", "NATURAL_SPAWNERS_TOTAL", "ADULT_BROODSTOCK_REMOVALS", "JACK_BROODSTOCK_REMOVALS", "TOTAL_BROODSTOCK_REMOVALS", "OTHER_REMOVALS", "TOTAL_RETURN_TO_RIVER")
+var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", 
+                         "NATURAL_JACK_SPAWNERS", 
+                         "NATURAL_SPAWNERS_TOTAL", 
+                         "ADULT_BROODSTOCK_REMOVALS", 
+                         "JACK_BROODSTOCK_REMOVALS", 
+                         "TOTAL_BROODSTOCK_REMOVALS", 
+                         "OTHER_REMOVALS", 
+                         "TOTAL_RETURN_TO_RIVER")
 
 # Calculate MAX_ESTIMATE
 # (dat is the NuSEDS data)
-
 nuseds$MAX_ESTIMATE <- apply(nuseds[, var_in_MAX_ESTIMATE], 1, max, na.rm = TRUE)
 nuseds[sapply(nuseds, is.infinite)] <- NA
+
+
+BRUNO IS HEAR
+
 # --- Part A: Organize stream/CU data from CU System Sites spreadsheet --- #
 # --- Code adapted from LGL script: "UpdateNCCStreams.fn.R" (see "nccdbv2-master" folder) --- #
 

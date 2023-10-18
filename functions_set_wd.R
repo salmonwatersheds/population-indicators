@@ -90,9 +90,9 @@ set_working_directories_fun <- function(subDir = NA, Export_locally = T){
   print(wd_figures)
   print(wd_output)
   
-  out_l <- list(wd_head,wd_code,wd_data,wd_figures,wd_output,
+  out_l <- list(wd_head,wd_project,wd_code,wd_data,wd_figures,wd_output,
                 wd_X_Drive1_PROJECTS,wd_project_dropbox)
-  names(out_l) <- list("wd_head","wd_code","wd_data","wd_figures","wd_output",
+  names(out_l) <- list("wd_head","wd_project","wd_code","wd_data","wd_figures","wd_output",
                        "wd_X_Drive1_PROJECTS","wd_project_dropbox")
   return(out_l)
 }

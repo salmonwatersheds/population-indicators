@@ -59,7 +59,6 @@ library(readxl)
 library(reshape2)
 library(stringr)
 
-
 # Functions ------
 # TODO: place in a functions.R script
 
@@ -149,6 +148,7 @@ nuseds_old <- read.csv(paste(wd_data_dropbox,"All Areas NuSEDS.csv",sep="/"),
                        header=TRUE, stringsAsFactors=FALSE)
 
 compareColNamesDF_fun(nuseds,nuseds_old)
+rm(nuseds_old)
 
 datasets_df$object[nrow] <- "nuseds"
 datasets_df$dataset_original[nrow] <- "All Areas NuSEDS.csv"
@@ -157,10 +157,9 @@ datasets_df$comments[nrow] <- "NuSEDS data, column names are identical"
 nrow <- nrow + 1
 
 
-#' ** Import the NuSEDS list of CUs **
-# ???: where is it coming from?
+#' ** Import the NuSEDS list of CUs: **
 # ???: what's the goal?
-# DFO provided files matching streams and Nuseds to full CU index --> API!
+# DFO provided files matching streams and Nuseds to full CU index 
 
 updateNuSEDSFile <- F
 
@@ -197,24 +196,28 @@ datasets_df$dataset_new[nrow] <- "conservation_unit_system_sites_20231017.csv"
 datasets_df$comments[nrow] <- "There are 10 more columns in the original dataset"
 nrow <- nrow + 1
 
+#' TODO: check if the new version works despite missing certain columns. If it 
+#' does not work, figure out what column(s) is needed and then ask how it was 
+#' obtained.
 # If we decide to keep the older version
 # cu.sites <- cu.sites_old
 # names(cu.sites)[1] <- "ID"
 
 
 #' ** Import PSF list of CUs **
-# ???: where is it coming from?
 # ???: what's the goal?
 # CU list provided by Katy at some point, other version of data/conservation-units.csv, 
-# BUT check the different, contain generation length?
+# BUT check the different, contain generation length? --> it does not
 psf.cu <- read.csv(paste(wd_data_dropbox,"PSF_master_CU_list.csv",sep="/"),
                    header=TRUE, stringsAsFactors = FALSE)
 
+# suggested other file, which comes from the PFS database
 psf.cu2 <- read.csv(paste(wd_data_dropbox,"conservation-units.csv",sep="/"),
                     header=TRUE, stringsAsFactors = FALSE)
 
 compareColNamesDF_fun(psf.cu,psf.cu2)
 # --> many colnames are in capital letters in psf.cu and not in psf.cu2
+# --> does not contain the generation length
 psf.cu$CUID
 psf.cu2$cuid[! psf.cu2$cuid %in% psf.cu$CUID]  # conservation-units.csv has way more CUs BUT
 psf.cu$CUID[! psf.cu$CUID %in% psf.cu2$cuid]   # 936 is missing in conservation-units.csv
@@ -229,7 +232,7 @@ nrow <- nrow + 1
 #' ** Import WHAT IS IT ??? **
 # ???: where is it coming from?
 # ???: what's the goal?
-# ??? that is specific to VIMI Fraser right?
+# List of CUs for the VIMI Fraser???
 vimi.sites <- read.delim(paste(wd_data_dropbox,"ssp.streams_20230719.txt",sep = "/"),
                          header=TRUE, stringsAsFactors=FALSE)
 colnames(vimi.sites)[colnames(vimi.sites) == "streamname"] <- "SYSTEM_SITE"
@@ -241,20 +244,26 @@ datasets_df$comments[nrow] <- "?"
 nrow <- nrow + 1
 
 
+datasets_df <- unique(datasets_df)
+write.csv(datasets_df,paste(wd_references_dropbox,"Info_datasets.csv",sep="/"),
+          row.names = F)
+
+# QUESTION: is that a QA/QC here below? ------
+
 # BSC: return all the rows in vimi.sites without a match in cu.sites
 # ??? what is that for? Just a check up?
 da <- anti_join(vimi.sites, cu.sites, by = "SYSTEM_SITE")
 
-# Compare NuSEDS CUs with PSF list of CUs - make sure that the CUs we are keeping
-# are the right ones. There are some discrepancies where CUs listed as "current"
-# in PSF list have been binned in NuSEDS list.
+#' Compare NuSEDS CUs (i.e. cu.sites) with PSF list of CUs (i.e., psf.cu) - make
+#' sure that the CUs we are keeping are the right ones. There are some discrepancies
+#' where CUs listed as "current" in PSF list have been binned in NuSEDS list.
 unique(cu.sites$AREA) # ???
 unique(cu.sites_old$AREA)
 
 # Filter site info for CUs in south coast regions.
-# nuseds.cus <- cu.sites # no need to create nuseds.cus so I replaced it by cu.sites in the code below
+# nuseds.cus <- cu.sites # BSC: no need to create nuseds.cus so I replaced it by cu.sites in the code below
 
-# colToKeep <- colnames(cu.sites)[c(13,18,20)] # bod practice
+# colToKeep <- colnames(cu.sites)[c(13,18,20)] # bad practice
 colToKeep <- c("CU_NAME","CU_TYPE","FULL_CU_IN")
 
 # Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"?
@@ -290,6 +299,7 @@ cu.sites <- filter(cu.sites, SPECIES_QUALIFIED %in% c("CM", "CK", "CO", "PKE", "
 # unique(cu.sites$SPECIES_QUALIFIED)
 
 # Define variables to include in MAX_ESTIMATE
+# ???
 var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", 
                          "NATURAL_JACK_SPAWNERS", 
                          "NATURAL_SPAWNERS_TOTAL", 
@@ -305,25 +315,37 @@ nuseds$MAX_ESTIMATE <- apply(nuseds[, var_in_MAX_ESTIMATE], 1, max, na.rm = TRUE
 nuseds[sapply(nuseds, is.infinite)] <- NA
 
 
-BRUNO IS HEAR
-
-# --- Part A: Organize stream/CU data from CU System Sites spreadsheet --- #
-# --- Code adapted from LGL script: "UpdateNCCStreams.fn.R" (see "nccdbv2-master" folder) --- #
+# Part A: Organize stream/CU data from CU System Sites spreadsheet ----
+# Code adapted from LGL script: "UpdateNCCStreams.fn.R" (see "nccdbv2-master" folder)
 
 # - Step 1: Add NCCDB SpeciesId based on SPECIES_QUALIFIED - #
 spp.code <- cu.sites$SPECIES_QUALIFIED
-spp.code <- as.character(spp.code)
+# spp.code <- as.character(spp.code)
 
 spp.code.qual <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER")
+
+# BSC: these are the same as:
+unique(psf.cu2$species_abbr)
+apply(X = psf.cu[,"CU_INDEX",drop=F],MARGIN = 1, FUN = function(x){
+  out <- str_split(x, "-")[[1]][1]
+}) %>%
+  unique()
+apply(X = psf.cu[,"CU_INDEX",drop=F],MARGIN = 1, FUN = function(x){
+  out <- str_split(x, "-")[[1]][1]
+}) %>%
+  unique()
+unique(refdat$SPP)
 
 # Check to ensure NuSEDS SPECIES_QUALIFIED codes have not changed
 check <- all(spp.code %in% spp.code.qual)
 if (!check) { 
   stop("'SPECIES_QUALIFIED' codes have changed.")
+  out <- spp.code[! spp.code %in% spp.code.qual]
+  print(out)
 }
 
-spp.lookup <-  c("CN", "CM", "CO", "PKE", "PKO",  "SX",  "SX")  # SpeciesId
-names(spp.lookup) <-spp.code.qual
+spp.lookup <-  c("CN", "CM", "CO", "PKE", "PKO",  "SX",  "SX")  # SpeciesId --> OF WHAT ?!
+names(spp.lookup) <- spp.code.qual
 
 # Convert codes
 result <- spp.lookup[as.character(spp.code)]
@@ -356,11 +378,11 @@ na.rm = FALSE
 
 # Step 1: Use UNSPECIFIED_RETURNS -----------------------------------------
 adult.returns <- data.frame(
-  Id =  nuseds[[c("ACT_ID")]],
-  PopId = nuseds[[c("POP_ID")]],
-  Year =   nuseds[[c("ANALYSIS_YR")]],
+  Id =  nuseds$ACT_ID,
+  PopId = nuseds$POP_ID,
+  Year =   nuseds$ANALYSIS_YR,
   nuseds[c("AREA", "SPECIES", "ADULT_PRESENCE")],
-  Returns = nuseds[["NATURAL_ADULT_SPAWNERS"]],
+  Returns = nuseds$NATURAL_ADULT_SPAWNERS,
   Source = "NATURAL_ADULT_SPAWNERS",
   stringsAsFactors = FALSE
 )
@@ -371,20 +393,20 @@ any.return <- !is.na(nuseds[["NATURAL_ADULT_SPAWNERS"]])
 
 # Step 2 ------------------------------------------------------------------
 # otherwise, we need to calculate the adult spawners - get the [Natural_Adult_Spawners]
-adult.returns[["Source"]][!any.return] <- NA
-adult.returns[["Spawners"]][!any.return] <- nuseds[["NATURAL_SPAWNERS_TOTAL"]][!any.return]
-adult.returns[["SpawnersSource"]][!any.return] <- "NATURAL_SPAWNERS_TOTAL"
+adult.returns$Source[!any.return] <- NA
+adult.returns$Spawners[!any.return] <- nuseds$NATURAL_SPAWNERS_TOTAL[!any.return]
+adult.returns$SpawnersSource[!any.return] <- "NATURAL_SPAWNERS_TOTAL"
 
-check2 <- is.na(nuseds[["NATURAL_ADULT_SPAWNERS"]]) & !any.return
+check2 <- is.na(nuseds$NATURAL_ADULT_SPAWNERS) & !any.return
 if (any(check2)) {
-  adult.returns[["SpawnersSource"]][!any.return & check2] <- NA
-  adult.returns[["Spawners"]][check2] <- nuseds[["NATURAL_SPAWNERS_TOTAL"]][check2]
-  adult.returns[["SpawnersSource"]][check2] <- "NATURAL_SPAWNERS_TOTAL"
+  adult.returns$SpawnersSource[!any.return & check2] <- NA
+  adult.returns$Spawners[check2] <- nuseds$NATURAL_SPAWNERS_TOTAL[check2]
+  adult.returns$SpawnersSource[check2] <- "NATURAL_SPAWNERS_TOTAL"
 }
-adult.returns[["SpawnersSource"]][is.na(adult.returns[["Spawners"]])] <- NA
+adult.returns$SpawnersSource[is.na(adult.returns$Spawners)] <- NA
 
 
-d1<- filter(adult.returns, PopId=='52625')
+d1 <- filter(adult.returns, PopId == '52625') # ???
 # Broodstock --------------------------------------------------
 # 4) calculate brood stock - use [Adult_Broodstock_Removals]
 # 5) if there is no value in [Adult_Broodstock_Removals], then use the value in [Total_Broodstock_Removals]

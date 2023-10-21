@@ -93,9 +93,9 @@ datasets_df <- data.frame(object = rep(NA,10),
                           comments = rep(NA,10))
 nrow <- 1
 
-#' ** Import ??? **
-# ??? what is this file?
-# it is in: Dropbox (Salmon Watersheds)/X Drive/1_PROJECTS/Fraser_VIMI/analysis/Compilation/Reference
+#' ** Import reference file for formatting output **
+#'This file is only used for to format the outputted file ??? which one????
+# Origin in Dropbox: /X Drive/1_PROJECTS/Fraser_VIMI/analysis/Compilation/Reference
 refdat <- read.delim(paste(wd_references_dropbox,"NCC_Streams_13March2016_KKE.txt",sep="/"),
                      header=TRUE, na.string="")
 
@@ -106,9 +106,8 @@ names <- c(names(refdat)[1:45], c(1926:2021))
 datasets_df$object[nrow] <- "refdat"
 datasets_df$dataset_original[nrow] <- "NCC_Streams_13March2016_KKE.txt"
 datasets_df$dataset_new[nrow] <- NA
-datasets_df$comments[nrow] <- "?"
+datasets_df$comments[nrow] <- "Only used for its format, not its data"
 nrow <- nrow + 1
-
 
 #' ** Import the NuSEDS data **
 #' either from the API if the data has been updated since
@@ -143,7 +142,15 @@ if(updateNuSEDSFile){
 
 nuseds <- read.csv(nusedsFileName, header = T)
 
-# TODO: implement comparison with previous version. Below is a provisory solution.
+# cf. references/useds_report_definitions.xlsx for the definitions of terms:
+unique(nuseds$POPULATION)    # Default naming originates from previous databases =  stream name + subdistrict + species + run type. This is the most important piece of data that all the other SEN data fields refers to.
+unique(nuseds$POP_ID)        # population ID
+unique(nuseds$GFE_ID)        # stream ID
+unique(nuseds$WATERBODY)     # name of the waterbody or portion of a waterbody that bounds the population as shown on any given SEN.
+unique(nuseds$WATERBODY_ID)  # 
+unique(nuseds$ACT_ID)        # primary key for SEN
+
+# TODO: implement comparison with previous version. Below is a temporary solution.
 nuseds_old <- read.csv(paste(wd_data_dropbox,"All Areas NuSEDS.csv",sep="/"),
                        header=TRUE, stringsAsFactors=FALSE)
 
@@ -155,7 +162,6 @@ datasets_df$dataset_original[nrow] <- "All Areas NuSEDS.csv"
 datasets_df$dataset_new[nrow] <- "all_areas_nuseds_20231017.csv"
 datasets_df$comments[nrow] <- "NuSEDS data, column names are identical"
 nrow <- nrow + 1
-
 
 #' ** Import the NuSEDS list of CUs: **
 # ???: what's the goal?
@@ -184,6 +190,20 @@ if(updateNuSEDSFile){
 
 cu.sites <- read.csv(nusedsFileName, header=TRUE, stringsAsFactors=FALSE)
 
+# cf. references/conservation_unit_report_definitions.csv for definitions:
+unique(cu.sites$CU_NAME)        # The assigned name of the Conservation Unit. Note that this name does not identify the species.
+unique(cu.sites$CU_ACRO)        # the CUs' acronyms
+unique(cu.sites$CU_INDEX)       # = "species code" + "Conservation Unit Index" (?)
+unique(cu.sites$CU_TYPE)        # 
+unique(cu.sites$SYSTEM_SITE)    # 
+unique(cu.sites$WATERSHED_CDE)  # 45 digit hierarchical provincial code unique to the waterbody and its watershed  
+unique(cu.sites$FULL_CU_IN)     # The full index of the CU including the species qualifier (SPECIES_QUALIFIED), e.g. CK-01
+unique(cu.sites$POP_ID)         # A unique numeric code identifying the population
+range(cu.sites$POP_ID)          # so different from the number in cuid or CU_FULL_IN
+unique(cu.sites$GFE_ID)         # Numeric code identifying the waterbody. From NUSEDS with some additions and modifications. Same as Stream_Id
+unique(cu.sites$FWA_WATERSHED_CDE) 
+cu.sites$SPECIES_QUALIFIED      # This is an Conservation Unit acronym used to describe the species of salmon for which the escapement estimate is for, eg:  CK - Chinook Salmon CM - Chum Salmon CO - Coho Salmon PKE - Even Year Pink Salmon PKO - Odd Year Pink Salmon SEL - Lake Type Sockeye Salmon SER - River or Ocean Type Sockeye Salmon  
+
 # TODO: implement comparison with previous version. Below is a provisory solution.
 cu.sites_old <- read.csv(paste(wd_data_dropbox,"conservation_unit_system_sitesJul2023.csv",sep="/"),
                          header=TRUE, stringsAsFactors=FALSE)
@@ -202,7 +222,7 @@ nrow <- nrow + 1
 # If we decide to keep the older version
 # cu.sites <- cu.sites_old
 # names(cu.sites)[1] <- "ID"
-
+unique(cu.sites_old[,1])
 
 #' ** Import PSF list of CUs **
 # ???: what's the goal?
@@ -222,12 +242,30 @@ psf.cu$CUID
 psf.cu2$cuid[! psf.cu2$cuid %in% psf.cu$CUID]  # conservation-units.csv has way more CUs BUT
 psf.cu$CUID[! psf.cu$CUID %in% psf.cu2$cuid]   # 936 is missing in conservation-units.csv
 
+unique(psf.cu$CU_INDEX)  # Comment from Katy: older index that has been carried through
+unique(psf.cu2$cu_index) # from earlier versions of CUs (which is why the field 
+#' name is different). Not a  reliable field to match to FULL_CU_IN in cu.sites.
+#' These index values had issues in the past (not being unique or changing between
+#'versions of CUs). CU_INDEX should be either deleted from the PSF database or 
+#'corrected to match FULL_CU_IN in DFO database.
+
+unique(psf.cu$CUID)  #  we (PSF) adopted out our CUID unique identifier
+unique(psf.cu2$cuid)
+
+unique(psf.cu2$pooledcuid) # QUESTION: what us this?
+psf.cu2[,c("cuid","pooledcuid")]
+psf.cu2[which(psf.cu2$cuid != psf.cu2$pooledcuid),]
+
+psf.cu2$cu_name_pse
+
 datasets_df$object[nrow] <- "psf.cu"
 datasets_df$dataset_original[nrow] <- "PSF_master_CU_list.csv"
 datasets_df$dataset_new[nrow] <- "conservation-units.csv"
-datasets_df$comments[nrow] <- "There are much more CUs in the new df but CU 936 is missing. Colnames are capitalized in older file"
+datasets_df$comments[nrow] <- "There are much more CUs in the new df but CU 936 is missing. Colnames are capitalized in older file. There is no CU_TYPE in new df"
 nrow <- nrow + 1
 
+unique(psf.cu$CU_TYPE)
+unique(psf.cu2) # NOTE: There is no CU_TYPE in conservation-units.csv
 
 #' ** Import WHAT IS IT ??? **
 # ???: where is it coming from?
@@ -243,15 +281,15 @@ datasets_df$dataset_new[nrow] <- NA
 datasets_df$comments[nrow] <- "?"
 nrow <- nrow + 1
 
-
 datasets_df <- unique(datasets_df)
-write.csv(datasets_df,paste(wd_references_dropbox,"Info_datasets.csv",sep="/"),
-          row.names = F)
+datasets_df <- datasets_df[!is.na(datasets_df$object),]
+# write.csv(datasets_df,paste(wd_references_dropbox,"Info_datasets.csv",sep="/"),
+#           row.names = F)
 
 # QUESTION: is that a QA/QC here below? ------
 
 # BSC: return all the rows in vimi.sites without a match in cu.sites
-# ??? what is that for? Just a check up?
+# QUESTIONS: what is that for? Just a check up? What do we do with these CUs?
 da <- anti_join(vimi.sites, cu.sites, by = "SYSTEM_SITE")
 
 #' Compare NuSEDS CUs (i.e. cu.sites) with PSF list of CUs (i.e., psf.cu) - make
@@ -266,24 +304,42 @@ unique(cu.sites_old$AREA)
 # colToKeep <- colnames(cu.sites)[c(13,18,20)] # bad practice
 colToKeep <- c("CU_NAME","CU_TYPE","FULL_CU_IN")
 
-# Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"?
-# what is "Bin"?
-# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "Bin")),c(13,18,20)])
-# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "BIN")),c(13,18,20)]) # BSC: !!!
-unique(cu.sites[grepl("BIN",cu.sites$CU_NAME),colToKeep])
+unique(cu.sites$SPECIES_QUALIFIED)
+unique(cu.sites$CU_INDEX)
 
-# Which are labeled "Extirpated"? #
-# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "Extirpated")),c(13,18,20)])
-# unique(cu.sites[cu.sites$CU_NAME %in% c(str_subset(unique(cu.sites$CU_NAME), "EXTIRPATED")),c(13,18,20)])  # BSC: !!!
-unique(cu.sites[grepl("EXTIRPATED",cu.sites$CU_NAME),colToKeep])
+# Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"?
+cu.sites_bin <- unique(cu.sites[cu.sites$CU_TYPE == "Bin",colToKeep])
+cu.sites_bin
+
+# Which are labeled "Extirpated"?
+cu.sites_extir <- unique(cu.sites[cu.sites$CU_TYPE == "Extirpated",colToKeep])
+cu.sites_extir
 
 # For the populations which are Binned in NuSEDs, we have DIFFERENT CU indices from the PSF list #
 # Which of these CU indices are present in the NuSEDS CU list? #
-CU_Bin_Ind <- c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025")
+CU_Bin_Ind <- c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025") # QUESTION: are those CU indices from PSF?
+psf.cu[psf.cu$CU_TYPE == "Bin",]  # BSC: these are different, I'm so confused...
+psf.cu[psf.cu$CU_name %in% cu.sites_bin$FULL_CU_IN,]  # QUESTION: I don't know how to match these two datasets...
+
+unique(psf.cu$CUID)
+unique(cu.sites_bin$CU_NAME) # transform to  lower case and remove "<<BIN>>" ?
+
+unique(psf.cu$CU_INDEX)
+unique(psf.cu2$cu_index)
+unique(cu.sites_bin$FULL_CU_IN)
+unique(cu.sites$FULL_CU_IN)
+
+unique(cu.sites$FULL_CU_IN)
+unique(cu.sites_old$FULL_CU_IN)
+
+unique(cu.sites_old$POP_ID_IN_NUSEDS)
+
+cu.sites_bin
+
 #unique(cu.sites[cu.sites$FULL_CU_IN %in% c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025"), c(13,18,20)])
 unique(cu.sites[cu.sites$FULL_CU_IN %in% CU_Bin_Ind, colToKeep])
 
-# Try looking up binned CU names in NuSEDS list #
+# Try looking up binned CU names in NuSEDS list # QUESTION: ???
 # unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "Seton-L")),c(13,18,20)])
 # unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "Nadina/Francois-ES")),c(13,18,20)])
 # unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "NBarriere-ES")),c(13,18,20)])
@@ -293,8 +349,11 @@ unique(cu.sites[grepl("NBarriere-ES",cu.sites$CU_ACRO),colToKeep])
 
 
 # Remove rows for Atlantic, Steelhead, and Kokanee #
-nuseds <- filter(nuseds, SPECIES %in% c("Chum", "Chinook", "Coho", "Pink", "Sockeye"))
-cu.sites <- filter(cu.sites, SPECIES_QUALIFIED %in% c("CM", "CK", "CO", "PKE", "PKO", "SEL", "SER"))
+sp_salmon <- c("Chum", "Chinook", "Coho", "Pink", "Sockeye")
+sp_salmon_acro <- c("CM", "CK", "CO", "PKE", "PKO", "SEL", "SER")
+
+nuseds <- filter(nuseds, SPECIES %in% sp_salmon)
+cu.sites <- filter(cu.sites, SPECIES_QUALIFIED %in% sp_salmon_acro)
 # unique(nuseds$SPECIES)
 # unique(cu.sites$SPECIES_QUALIFIED)
 
@@ -322,19 +381,8 @@ nuseds[sapply(nuseds, is.infinite)] <- NA
 spp.code <- cu.sites$SPECIES_QUALIFIED
 # spp.code <- as.character(spp.code)
 
-spp.code.qual <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER")
+spp.code.qual <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER") # needed? --> use sp_salmon_acro instead
 
-# BSC: these are the same as:
-unique(psf.cu2$species_abbr)
-apply(X = psf.cu[,"CU_INDEX",drop=F],MARGIN = 1, FUN = function(x){
-  out <- str_split(x, "-")[[1]][1]
-}) %>%
-  unique()
-apply(X = psf.cu[,"CU_INDEX",drop=F],MARGIN = 1, FUN = function(x){
-  out <- str_split(x, "-")[[1]][1]
-}) %>%
-  unique()
-unique(refdat$SPP)
 
 # Check to ensure NuSEDS SPECIES_QUALIFIED codes have not changed
 check <- all(spp.code %in% spp.code.qual)
@@ -344,11 +392,12 @@ if (!check) {
   print(out)
 }
 
-spp.lookup <-  c("CN", "CM", "CO", "PKE", "PKO",  "SX",  "SX")  # SpeciesId --> OF WHAT ?!
+spp.lookup <-  c("CN", "CM", "CO", "PKE", "PKO",  "SX",  "SX")  # SpeciesId ; NCC Salmon Database (NCCSDB) Designation 
 names(spp.lookup) <- spp.code.qual
 
 # Convert codes
 result <- spp.lookup[as.character(spp.code)]
+spp.lookup[spp.code]
 
 # check to ensure all species code conversions worked.
 if (any(is.na(result))) {
@@ -356,7 +405,8 @@ if (any(is.na(result))) {
 }
 
 head(result)
-cu.sites$SpeciesId <- result
+unique(result)
+cu.sites$SpeciesId <- result  # TODO: change name to speciesID_NCCDB for instance
 
 # Ensure we have a 1:1 mapping of SPECIES_QUALIFIED to SpeciesId
 if (!all(table(unique(cu.sites[c("SPECIES_QUALIFIED", "SpeciesId")])$SPECIES_QUALIFIED) == 1)) {
@@ -369,20 +419,20 @@ if (!all(table(unique(cu.sites[c("SPECIES_QUALIFIED", "SpeciesId")])$SPECIES_QUA
 # Compute escapement #
 
 # Settings #
-legacy = FALSE
-zeros = FALSE
-ncc.only = FALSE
+legacy = FALSE    # ???
+zeros = FALSE     # NuSEDS ADULT_PRESENCE == 'NONE OBSERVED' used as zero counts for escapement.
+ncc.only = FALSE  # ???"
+meta.data = TRUE  # ???
+na.rm = FALSE     # if True, escapement does not contains rows with NAs for Returns
 
-meta.data = TRUE
-na.rm = FALSE
 
 # Step 1: Use UNSPECIFIED_RETURNS -----------------------------------------
 adult.returns <- data.frame(
-  Id =  nuseds$ACT_ID,
-  PopId = nuseds$POP_ID,
+  Id =  nuseds$ACT_ID,                             # This is the primary key for the SEN (from references/nuseds_report_definitions.csv)
+  PopId = nuseds$POP_ID,                           # A unique numeric code identifying the population
   Year =   nuseds$ANALYSIS_YR,
   nuseds[c("AREA", "SPECIES", "ADULT_PRESENCE")],
-  Returns = nuseds$NATURAL_ADULT_SPAWNERS,
+  Returns = nuseds$NATURAL_ADULT_SPAWNERS,         # All salmon that have reached maturity, excluding jacks (jacks are salmon that have matured at an early age).
   Source = "NATURAL_ADULT_SPAWNERS",
   stringsAsFactors = FALSE
 )
@@ -397,16 +447,16 @@ adult.returns$Source[!any.return] <- NA
 adult.returns$Spawners[!any.return] <- nuseds$NATURAL_SPAWNERS_TOTAL[!any.return]
 adult.returns$SpawnersSource[!any.return] <- "NATURAL_SPAWNERS_TOTAL"
 
-check2 <- is.na(nuseds$NATURAL_ADULT_SPAWNERS) & !any.return
+check2 <- is.na(nuseds$NATURAL_ADULT_SPAWNERS) & !any.return  # BSC: ?! this is the same as is.na(nuseds$NATURAL_ADULT_SPAWNERS) & is.na(nuseds$NATURAL_ADULT_SPAWNERS) --> useless
+check2 <- is.na(nuseds$NATURAL_SPAWNERS_TOTAL) & !any.return  # I think this is the correct code
 if (any(check2)) {
-  adult.returns$SpawnersSource[!any.return & check2] <- NA
+  adult.returns$SpawnersSource[!any.return & check2] <- NA    # BSC: ?! !any.return is already in check2...
   adult.returns$Spawners[check2] <- nuseds$NATURAL_SPAWNERS_TOTAL[check2]
   adult.returns$SpawnersSource[check2] <- "NATURAL_SPAWNERS_TOTAL"
 }
 adult.returns$SpawnersSource[is.na(adult.returns$Spawners)] <- NA
 
-
-d1 <- filter(adult.returns, PopId == '52625') # ???
+d1 <- filter(adult.returns, PopId == '52625') # QUESTION: why is this one removed ?
 # Broodstock --------------------------------------------------
 # 4) calculate brood stock - use [Adult_Broodstock_Removals]
 # 5) if there is no value in [Adult_Broodstock_Removals], then use the value in [Total_Broodstock_Removals]
@@ -421,7 +471,7 @@ if (any(check3)) {
 
 adult.returns[["BroodstockSource"]][is.na(adult.returns[["Broodstock"]])] <- NA
 
-d1<- filter(adult.returns, PopId=='52625')
+d1 <- filter(adult.returns, PopId=='52625')
 
 # Removals ----------------------------------------------------------------
 adult.returns[['Removals']] <- nuseds[[toupper("OTHER_REMOVALS")]]
@@ -429,17 +479,20 @@ adult.returns[['RemovalsSource']] <-  toupper("OTHER_REMOVALS")
 adult.returns[["RemovalsSource"]][is.na(adult.returns[["Removals"]])] <- NA
 
 d1<- filter(adult.returns, PopId=='52625')
+
 # Calculate Returns ------------------------------------------------
+
 adult.returns[["Returns"]][!any.return] <- apply(
   X = adult.returns[!any.return, c("Spawners","Broodstock", "Removals")],
   MARGIN = 1, 
   FUN = sum, 
   na.rm=TRUE
-)  
+)
 
 adult.returns[["Source"]][!any.return] <- apply(adult.returns[c("SpawnersSource","BroodstockSource", "RemovalsSource")], 1, function(x) paste(na.omit(x),collapse=" + "))[!any.return]
 
-d1<- filter(adult.returns, PopId=='3119')
+d1 <- filter(adult.returns, PopId=='3119')  # QUESTION: why is this one removed ?
+
 # Set as NA rather than zero if no info in any column
 check4 <- apply(
   X = adult.returns[!any.return, c("Spawners","Broodstock", "Removals")],
@@ -448,8 +501,10 @@ check4 <- apply(
 ) 
 adult.returns[["Returns"]][!any.return][check4] <- NA
 
-d1<- filter(adult.returns, PopId=='52625')
+d1 <- filter(adult.returns, PopId=='52625')
+
 # Check final source ---------------------------------------------
+
 # 7) if we still don't have a value, use either [Tot_adult_ret_river] or [Total_return_to_river]
 no.return <- is.na(adult.returns[["Returns"]])
 if (any(no.return)) {
@@ -457,13 +512,15 @@ if (any(no.return)) {
   adult.returns[["Source"]][no.return] <- toupper("TOTAL_RETURN_TO_RIVER")
 }
 
-no.return <- is.na(adult.returns[["Returns"]])
-if (any(no.return)) {
-  adult.returns[["Returns"]][no.return] <- nuseds[[toupper("TOTAL_RETURN_TO_RIVER")]][no.return]
-  adult.returns[["Source"]][no.return] <- toupper("TOTAL_RETURN_TO_RIVER")
-}
+# BSC: duplicated code?
+# no.return <- is.na(adult.returns[["Returns"]])
+# if (any(no.return)) {
+#   adult.returns[["Returns"]][no.return] <- nuseds[[toupper("TOTAL_RETURN_TO_RIVER")]][no.return]
+#   adult.returns[["Source"]][no.return] <- toupper("TOTAL_RETURN_TO_RIVER")
+# }
 
-d1<- filter(adult.returns, PopId=='52625')
+d1 <- filter(adult.returns, PopId == '52625')
+
 # OPTIONAL: MAX_ESTIMATE when all else fails  ---------------------------
 # Finally, when none of the other methods are available #
 #if (!legacy) {
@@ -481,16 +538,19 @@ no.return <- is.na(adult.returns[["Returns"]])
 adult.returns[["Source"]][no.return] <- NA
 
 d1<- filter(adult.returns, PopId=='52625')
+
 # Zero Counts -------------------------------------------------------------
-if (zeros) {
+
+if(zeros){
   # browser()
-  message("NuSEDS ADULT_PRESENCE == 'NONE OBSERVED' used as zero counts for escapement." )
+  message("NuSEDS ADULT_PRESENCE == 'NONE OBSERVED' used as zero counts for escapement.")
   no.adult <- no.return & nuseds$ADULT_PRESENCE == 'NONE OBSERVED'
   adult.returns[["Returns"]][no.adult] <- 0
   adult.returns[["Source"]][no.adult] <- 'NONE OBSERVED'
 }
 
 # browser()
+
 # Add NCC Salmon Database Fields ------------------------------------------
 # @TODO - could use general ConvertSpeciesCode 
 
@@ -510,6 +570,7 @@ Convert2StatArea <- function(area){
   return(StatArea)
 }
 
+# BSC: this does not work... Error: object 'SpeciesId' not found
 adult.returns <- within( 
   data = merge(
     x = adult.returns,
@@ -519,49 +580,64 @@ adult.returns <- within(
     all.x=TRUE   # LEFT JOIN
   ),
   {
-    SpeciesId[SPECIES == "Pink" & Year %% 2 == 0] <- "PKE"  # Even pink years 
-    SpeciesId[SPECIES == "Pink" & Year %% 2 != 0] <- "PKO"  # Odd pink years 
+    SpeciesId[SPECIES == "Pink" & Year %% 2 == 0] <- "PKE"  # Even pink years
+    SpeciesId[SPECIES == "Pink" & Year %% 2 != 0] <- "PKO"  # Odd pink years
     IndexId <- paste(SpeciesId, PopId, sep="_")
     StatArea <- Convert2StatArea(AREA)
   }
 )
 
-d1<- filter(adult.returns, PopId=='52625')
+head(adult.returns)
 
-adult.returns <- distinct(adult.returns)
+colnames(adult.returns)
+
+d1 <- filter(adult.returns, PopId=='52625')
+
+adult.returns <- distinct(adult.returns) # remove duplicated rows
 
 # Subset and Sort -------------------------------------------------------
+
 fields <- c("Id", "SpeciesId", "IndexId", "PopId", "Year", "StatArea", "Returns")
 if (meta.data) {
-  fields <- c(fields, setdiff(colnames(adult.returns), fields))
+  # BSC: concatenate fields with column names in adult.returns that are not in fields
+  fields <- c(fields, setdiff(colnames(adult.returns), fields)) # setdiff(x,y) is the same as: x[! x %in% y]
 }
 
-adult.returns <- adult.returns[fields]
+# adult.returns <- adult.returns[,fields] # BSC: I commented out this part 
 
-# Sort results
+# Sort results, 1st by IndexId, then Year:
 adult.returns <- adult.returns[order(adult.returns$IndexId, adult.returns$Year), ]
 
 
 # Return ------------------------------------------------------------------
 if (na.rm) {
-  escapement <- (subset(adult.returns, !is.na(Returns)))
+  escapement <- subset(adult.returns, !is.na(Returns))
 } else {
-  escapement <- (adult.returns)
+  escapement <- adult.returns
 }
 
-# Summarize escapment statistics for each stream
+# escapement <- escapement[,fields] # BSC: I added this here but also commented it out because of next operation I commented out this part 
+
+# BSC: adult.returns becomes escapement, and is not used after. TODO: simplify
+
+# Summarize escapement statistics for each stream
+
 # First, make corrections for populations with discrepancies in area assignments #
 # These errors become apparent when merging data frames later on #
 
 escapement[escapement$IndexId=="CO_46240",]$StatArea = "29"
-escapement[escapement$IndexId=="PKO_51094",]$StatArea = "12"
-escapement[escapement$IndexId=="SX_45495",]$StatArea = "120"
+escapement[escapement$IndexId=="PKO_51094",]$StatArea = "12"  # BSC: already 12
+escapement[escapement$IndexId=="SX_45495",]$StatArea = "120"  # BSC: alreadt 120
 
-esc.summary <- ddply(escapement, c("IndexId", "SpeciesId", "PopId", "StatArea"), summarise,
+# BSC: calculate different statistics per group of unique combination of the .variables
+# BSC: QUESTION: how can this work when many of the variables used have been removed (i.e., are not in fields)?!
+esc.summary <- ddply(.data = escapement,
+                     .variables = c("IndexId", "SpeciesId", "PopId", "StatArea"), 
+                     .fun = summarise,
                      nrecs  = sum(!is.na(AREA)),   # Total number of NuSEDS records
-                     nnumest  = sum(!is.na(Returns)),
-                     nins  = sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")),
-                     npres = sum(ADULT_PRESENCE %in% c("PRESENT")),
+                     nnumest  = sum(!is.na(Returns)), # number of observations
+                     nins  = sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")),  # ???
+                     npres = sum(ADULT_PRESENCE %in% c("PRESENT")),                   # nb observation with presence
                      pinsrec = (sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")))/(sum(!is.na(AREA))),
                      ppres_ins = sum(ADULT_PRESENCE %in% c("PRESENT"))/sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")),
                      pest_pres = sum(!is.na(Returns))/sum(ADULT_PRESENCE %in% c("PRESENT")),
@@ -572,6 +648,9 @@ esc.summary <- ddply(escapement, c("IndexId", "SpeciesId", "PopId", "StatArea"),
                      Year.start = min(Year, na.rm=TRUE),
                      Year.end = max(Year, na.rm=TRUE)
 )
+
+escapement <- escapement[,fields] # BSC: I added this here, not sure if it is useful
+esc.summary <- esc.summary[,fields] # BSC: I added this here
 
 d1<- filter(esc.summary, PopId=='52625')
 
@@ -591,10 +670,12 @@ stream.list <- within(
     NoEscapement <- !is.na(Escapement.total) & Escapement.total == 0
     Surveyed <- !is.na(Escapement.avg)
     CU <- paste0(SpeciesId, "_", CU_INDEX)
-    SITE_ID <- ID
+    SITE_ID <- ID  # QUESTION: this is cu.sites_old$X.ID. which contains only NAs and is not present in cu.sites ?! What's the point of it?
   }
 )
 
+unique(cu.sites_old$X.ID.) # BRUNO IS HERE
+unique(cu.sites$X.ID.)
 
 # Stream List Filtering and Fixes  -------------------------------------------------
 # Drop streams without CU_INDEX values
@@ -664,7 +745,7 @@ sa.cu.lk <- ddply(
 # z <- filter(escapement, !(IndexId %in% remove))
 # z <- filter(z, !(IndexId %in% remove2))
 
-z <- escapement
+z <- escapement      # BSC why creating another object, especially with such an uninformative
 
 id <- unique(z$IndexId)
 

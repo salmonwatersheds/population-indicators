@@ -94,7 +94,8 @@ datasets_df <- data.frame(object = rep(NA,10),
 nrow <- 1
 
 #' ** Import reference file for formatting output **
-#'This file is only used for to format the outputted file ??? which one????
+#'This file is only used to rename the columns of the final dataframe at the end 
+#' (i.e., NuSEDS_escapement_data_collated_date.csv).
 # Origin in Dropbox: /X Drive/1_PROJECTS/Fraser_VIMI/analysis/Compilation/Reference
 refdat <- read.delim(paste(wd_references_dropbox,"NCC_Streams_13March2016_KKE.txt",sep="/"),
                      header=TRUE, na.string="")
@@ -155,7 +156,6 @@ nuseds_old <- read.csv(paste(wd_data_dropbox,"All Areas NuSEDS.csv",sep="/"),
                        header=TRUE, stringsAsFactors=FALSE)
 
 compareColNamesDF_fun(nuseds,nuseds_old)
-rm(nuseds_old)
 
 datasets_df$object[nrow] <- "nuseds"
 datasets_df$dataset_original[nrow] <- "All Areas NuSEDS.csv"
@@ -219,7 +219,8 @@ nrow <- nrow + 1
 #' TODO: check if the new version works despite missing certain columns. If it 
 #' does not work, figure out what column(s) is needed and then ask how it was 
 #' obtained.
-# If we decide to keep the older version
+
+# If we decide to keep the older version, do:
 # cu.sites <- cu.sites_old
 # names(cu.sites)[1] <- "ID"
 unique(cu.sites_old[,1])
@@ -291,6 +292,7 @@ datasets_df <- datasets_df[!is.na(datasets_df$object),]
 # BSC: return all the rows in vimi.sites without a match in cu.sites
 # QUESTIONS: what is that for? Just a check up? What do we do with these CUs?
 da <- anti_join(vimi.sites, cu.sites, by = "SYSTEM_SITE")
+da
 
 #' Compare NuSEDS CUs (i.e. cu.sites) with PSF list of CUs (i.e., psf.cu) - make
 #' sure that the CUs we are keeping are the right ones. There are some discrepancies
@@ -323,6 +325,8 @@ psf.cu[psf.cu$CU_name %in% cu.sites_bin$FULL_CU_IN,]  # QUESTION: I don't know h
 
 unique(psf.cu$CUID)
 unique(cu.sites_bin$CU_NAME) # transform to  lower case and remove "<<BIN>>" ?
+
+psf.cu[psf.cu$CU_INDEX %in% CU_Bin_Ind,] # QUESTION: one is misisng + plus I thought CU_INDEX was not reliable
 
 unique(psf.cu$CU_INDEX)
 unique(psf.cu2$cu_index)

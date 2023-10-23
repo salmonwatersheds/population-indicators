@@ -11,6 +11,10 @@
 #' - 
 #'******************************************************************************
 
+# NOTE (to remove eventually): original script is:
+# 1_nuseds_data_collationJun72023.R in:
+# \X Drive\1_PROJECTS\1_Active\Fraser_VIMI\analysis\Compilation\Code
+
 rm(list = ls())
 graphics.off()
 
@@ -207,6 +211,10 @@ cu.sites$SPECIES_QUALIFIED      # This is an Conservation Unit acronym used to d
 # TODO: implement comparison with previous version. Below is a provisory solution.
 cu.sites_old <- read.csv(paste(wd_data_dropbox,"conservation_unit_system_sitesJul2023.csv",sep="/"),
                          header=TRUE, stringsAsFactors=FALSE)
+names(cu.sites_old)[1] <- "ID"
+unique(cu.sites_old$ID)  # QUESTION: there are only NAs ???
+
+cu.sites$ID <- NA # BSC: cf. question above, but this column is used later on to create "stream.list"
 
 compareColNamesDF_fun(cu.sites,cu.sites_old)
 
@@ -343,14 +351,13 @@ cu.sites_bin
 #unique(cu.sites[cu.sites$FULL_CU_IN %in% c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025"), c(13,18,20)])
 unique(cu.sites[cu.sites$FULL_CU_IN %in% CU_Bin_Ind, colToKeep])
 
-# Try looking up binned CU names in NuSEDS list # QUESTION: ???
+# Try looking up binned CU names in NuSEDS list # QUESTION: try to do what? there is not correction being done
 # unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "Seton-L")),c(13,18,20)])
 # unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "Nadina/Francois-ES")),c(13,18,20)])
 # unique(cu.sites[cu.sites$CU_ACRO %in% c(str_subset(unique(cu.sites$CU_ACRO), "NBarriere-ES")),c(13,18,20)])
 unique(cu.sites[grepl("Seton-L",cu.sites$CU_ACRO),colToKeep])
 unique(cu.sites[grepl("Nadina/Francois-ES",cu.sites$CU_ACRO),colToKeep])
 unique(cu.sites[grepl("NBarriere-ES",cu.sites$CU_ACRO),colToKeep])
-
 
 # Remove rows for Atlantic, Steelhead, and Kokanee #
 sp_salmon <- c("Chum", "Chinook", "Coho", "Pink", "Sockeye")
@@ -362,7 +369,7 @@ cu.sites <- filter(cu.sites, SPECIES_QUALIFIED %in% sp_salmon_acro)
 # unique(cu.sites$SPECIES_QUALIFIED)
 
 # Define variables to include in MAX_ESTIMATE
-# ???
+# TODO: To explain: 
 var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", 
                          "NATURAL_JACK_SPAWNERS", 
                          "NATURAL_SPAWNERS_TOTAL", 
@@ -382,11 +389,11 @@ nuseds[sapply(nuseds, is.infinite)] <- NA
 # Code adapted from LGL script: "UpdateNCCStreams.fn.R" (see "nccdbv2-master" folder)
 
 # - Step 1: Add NCCDB SpeciesId based on SPECIES_QUALIFIED - #
-spp.code <- cu.sites$SPECIES_QUALIFIED
+spp.code <- cu.sites$SPECIES_QUALIFIED # CU acronym used to describe the species of salmon for which the escapement estimate is for, eg:  CK - Chinook Salmon CM - Chum Salmon CO - Coho Salmon PKE - Even Year Pink Salmon PKO - Odd Year Pink Salmon SEL - Lake Type Sockeye Salmon SER - River or Ocean Type Sockeye Salmon  
+
 # spp.code <- as.character(spp.code)
 
 spp.code.qual <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER") # needed? --> use sp_salmon_acro instead
-
 
 # Check to ensure NuSEDS SPECIES_QUALIFIED codes have not changed
 check <- all(spp.code %in% spp.code.qual)
@@ -410,7 +417,7 @@ if (any(is.na(result))) {
 
 head(result)
 unique(result)
-cu.sites$SpeciesId <- result  # TODO: change name to speciesID_NCCDB for instance
+cu.sites$SpeciesId <- result  # TODO: change name to speciesID_NCCDB for instance --> NO cause I think the name is used in PSE (?) + skip the creation of the object results
 
 # Ensure we have a 1:1 mapping of SPECIES_QUALIFIED to SpeciesId
 if (!all(table(unique(cu.sites[c("SPECIES_QUALIFIED", "SpeciesId")])$SPECIES_QUALIFIED) == 1)) {
@@ -419,6 +426,7 @@ if (!all(table(unique(cu.sites[c("SPECIES_QUALIFIED", "SpeciesId")])$SPECIES_QUA
 
 # - Step 2: Calculate stream escapement - #
 # - Code adapted from LGL script: "CalculateStreamEscapement.fn.R" - #
+# TODO: explain the method
 
 # Compute escapement #
 
@@ -428,7 +436,6 @@ zeros = FALSE     # NuSEDS ADULT_PRESENCE == 'NONE OBSERVED' used as zero counts
 ncc.only = FALSE  # ???"
 meta.data = TRUE  # ???
 na.rm = FALSE     # if True, escapement does not contains rows with NAs for Returns
-
 
 # Step 1: Use UNSPECIFIED_RETURNS -----------------------------------------
 adult.returns <- data.frame(
@@ -574,7 +581,6 @@ Convert2StatArea <- function(area){
   return(StatArea)
 }
 
-# BSC: this does not work... Error: object 'SpeciesId' not found
 adult.returns <- within( 
   data = merge(
     x = adult.returns,
@@ -634,7 +640,7 @@ escapement[escapement$IndexId=="PKO_51094",]$StatArea = "12"  # BSC: already 12
 escapement[escapement$IndexId=="SX_45495",]$StatArea = "120"  # BSC: alreadt 120
 
 # BSC: calculate different statistics per group of unique combination of the .variables
-# BSC: QUESTION: how can this work when many of the variables used have been removed (i.e., are not in fields)?!
+# BSC: QUESTION: how can this work when many of the variables used have been removed (i.e., are not in fields)?! --> I commented out the line above so it works
 esc.summary <- ddply(.data = escapement,
                      .variables = c("IndexId", "SpeciesId", "PopId", "StatArea"), 
                      .fun = summarise,
@@ -654,11 +660,12 @@ esc.summary <- ddply(.data = escapement,
 )
 
 escapement <- escapement[,fields] # BSC: I added this here, not sure if it is useful
-esc.summary <- esc.summary[,fields] # BSC: I added this here
+# esc.summary <- esc.summary[,colnames(esc.summary) %in% fields] # BSC: I added this here
 
 d1<- filter(esc.summary, PopId=='52625')
 
 # append available meta data
+# BSC: that does not work...
 stream.list <- within(
   data = merge(
     x = esc.summary,
@@ -677,9 +684,6 @@ stream.list <- within(
     SITE_ID <- ID  # QUESTION: this is cu.sites_old$X.ID. which contains only NAs and is not present in cu.sites ?! What's the point of it?
   }
 )
-
-unique(cu.sites_old$X.ID.) # BRUNO IS HERE
-unique(cu.sites$X.ID.)
 
 # Stream List Filtering and Fixes  -------------------------------------------------
 # Drop streams without CU_INDEX values
@@ -714,9 +718,9 @@ if (legacy){
 # Ensure our record count is accurate
 check <- merge(
   x = stream.list[c("IndexId", "nrecs")],
-  y = as.data.frame(table(escapement$IndexId)),
+  y = as.data.frame(table(escapement$IndexId)), #  IndexId = paste(SpeciesId, PopId, sep="_")
   by.x = "IndexId",
-  by.y = "Var1"
+  by.y = "Var1"       # i.e., IndexId
 )
 
 if (!all(check$nrecs == check$Freq)) stop("Record count error")
@@ -727,6 +731,7 @@ piv <- table(stream.list$IndexId)
 
 # Print which IndexIds have duplicates
 piv[piv > 1]
+stream.list[duplicated(stream.list$IndexId),c("PopId","SpeciesId","IndexId")]
 
 #remove <- c("CO_46240", "PKO_51094", "SX_45495") # Temporary fix for populations with duplicates (from earlier check)
 #remove2 <- c("SX_43790", "SX_47590", "SX_49234") # Temporary fix for populations with duplicates caught during transposing
@@ -744,6 +749,8 @@ sa.cu.lk <- ddply(
   StatArea = paste(sort(unique(StatArea)), collapse=", ")
 )
 
+# QUESTION: What are we checking here? is not used after.
+
 # --- Part 2: Formatting output data frame with CU info and escapement info --- #
 
 # z <- filter(escapement, !(IndexId %in% remove))
@@ -760,14 +767,16 @@ id <- unique(z$IndexId)
 # zz <- z[,c(3,5,7)]
 
 # Widen data frame #
-zz <- dcast(melt(z[,c(3,5,7)], id.vars = c("IndexId", "Year")),
+# zz <- dcast(melt(z[,c(3,5,7)], id.vars = c("IndexId", "Year")), # BSC Bad practices
+zz <- dcast(melt(z[,c("IndexId","Year","Returns")], id.vars = c("IndexId", "Year")),  # wide to long format
             IndexId + variable ~ Year,
             value.var = "value",
             fun.aggregate=sum, # Come back to this, currently won't let me widen data without aggregation function
             fill = 0.12345) # Filler to make sure can distinguish true zeros
 
 #duplicates <- which(zz[,3:ncol(zz)][1] > 1)
-zz <- zz[,-2]
+# zz <- zz[,-2] # remove column variable, bad practice
+zz <- zz[,colnames(zz) != "variable"]
 
 # Putting together extra info for final data frame #
 names(zz)
@@ -792,6 +801,7 @@ data$CU_facro <- paste(data$SpeciesId, data$CU_ACRO, sep="::")
 data$CU_findex <- data$FULL_CU_IN
 
 # Set all zero escapement values to NA #
+# BSC: ad practices TODO: correct
 data[,56:157][data[,56:157] == 0.12345] <- " "
 data[,56:157][is.na(data[,56:157])] <- " "
 

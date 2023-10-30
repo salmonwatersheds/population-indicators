@@ -194,14 +194,16 @@ if(updateNuSEDSFile){
 
 cu.sites <- read.csv(nusedsFileName, header=TRUE, stringsAsFactors=FALSE)
 
+cu.sites$ID <- NA # BSC: cf. question above, but this column is used later on to create "stream.list"
+
 # cf. references/conservation_unit_report_definitions.csv for definitions:
 unique(cu.sites$CU_NAME)        # The assigned name of the Conservation Unit. Note that this name does not identify the species.
 unique(cu.sites$CU_ACRO)        # the CUs' acronyms
-unique(cu.sites$CU_INDEX)       # = "species code" + "Conservation Unit Index" (?)
+unique(cu.sites$CU_INDEX)       # = "species code" + "Conservation Unit Index" (?) NOTE from Cathy: old code that should not be trusted 
 unique(cu.sites$CU_TYPE)        # 
 unique(cu.sites$SYSTEM_SITE)    # 
 unique(cu.sites$WATERSHED_CDE)  # 45 digit hierarchical provincial code unique to the waterbody and its watershed  
-unique(cu.sites$FULL_CU_IN)     # The full index of the CU including the species qualifier (SPECIES_QUALIFIED), e.g. CK-01
+unique(cu.sites$FULL_CU_IN)     #' The full index of the CU including the species qualifier (SPECIES_QUALIFIED), e.g. CK-01 *** to compare with the PSF "CU_INDEX" or "cu_index" ***
 unique(cu.sites$POP_ID)         # A unique numeric code identifying the population
 range(cu.sites$POP_ID)          # so different from the number in cuid or CU_FULL_IN
 unique(cu.sites$GFE_ID)         # Numeric code identifying the waterbody. From NUSEDS with some additions and modifications. Same as Stream_Id
@@ -214,7 +216,7 @@ cu.sites_old <- read.csv(paste(wd_data_dropbox,"conservation_unit_system_sitesJu
 names(cu.sites_old)[1] <- "ID"
 unique(cu.sites_old$ID)  # QUESTION: there are only NAs ???
 
-cu.sites$ID <- NA # BSC: cf. question above, but this column is used later on to create "stream.list"
+
 
 compareColNamesDF_fun(cu.sites,cu.sites_old)
 
@@ -240,16 +242,42 @@ unique(cu.sites_old[,1])
 psf.cu <- read.csv(paste(wd_data_dropbox,"PSF_master_CU_list.csv",sep="/"),
                    header=TRUE, stringsAsFactors = FALSE)
 
-# suggested other file, which comes from the PFS database
+unique(psf.cu$CU_INDEX)   # Katy: carried through from earlier versions of CUs. I would not rely on the values in the CU_INDEX field to match to FULL_CU_IN in 
+unique(psf.cu$CU_name)    # 
+unique(psf.cu$CUID)       # The PSF unique identifier
+unique(psf.cu$Region)     # SCVI = ???
+unique(psf.cu$Full_CU_MA) # species acronym + river name ???
+unique(psf.cu$CU_TYPE)    # same as the DFO cu.sites$CU_TYPE
+
+
+# Alternative suggested other file, which comes from the PFS database:
 psf.cu2 <- read.csv(paste(wd_data_dropbox,"conservation-units.csv",sep="/"),
                     header=TRUE, stringsAsFactors = FALSE)
+psf.cu2 <- psf.cu2[,colnames(psf.cu2) != "X"]
+colnames(psf.cu2)[colnames(psf.cu2) == "cuid"] <- "CUID"
+colnames(psf.cu2)[colnames(psf.cu2) == "region"] <- "Region"
+colnames(psf.cu2)[colnames(psf.cu2) == "cu_index"] <- "CU_INDEX"
+psf.cu2[psf.cu2$CU_INDEX == "-989898",]$CU_INDEX <- NA 
+
+unique(psf.cu2$cu_name_dfo)     # same as cu_name_pse but with the species name or acronym psf.cu2[,c("cu_name_pse","cu_name_dfo")][psf.cu2$cu_name_pse != psf.cu2$cu_name_dfo,]
+unique(psf.cu2$cu_name_pse)     # see above
+unique(psf.cu2$CU_INDEX)        # 
+unique(psf.cu2$primarycu)       # 
+
+# Is psf.cu$CU_name == psf.cu2$cu_name_pse
+colToKeep <- c("CUID","Region","CU_INDEX")
+psf.cu12 <- merge(x = psf.cu[,colToKeep],y = psf.cu2[,colToKeep],
+                  by = c("CUID","Region"),all = T)
+View(psf.cu12)
 
 compareColNamesDF_fun(psf.cu,psf.cu2)
 # --> many colnames are in capital letters in psf.cu and not in psf.cu2
 # --> does not contain the generation length
 psf.cu$CUID
-psf.cu2$cuid[! psf.cu2$cuid %in% psf.cu$CUID]  # conservation-units.csv has way more CUs BUT
-psf.cu$CUID[! psf.cu$CUID %in% psf.cu2$cuid]   # 936 is missing in conservation-units.csv
+psf.cu2$CUID[! psf.cu2$CUID %in% psf.cu$CUID]  # conservation-units.csv has way more CUs BUT
+psf.cu$CUID[! psf.cu$CUID %in% psf.cu2$CUID]   # 936 is missing in conservation-units.csv --> QUESTION
+psf.cu[psf.cu$CUID == 936,]
+
 
 unique(psf.cu$CU_INDEX)  # Comment from Katy: older index that has been carried through
 unique(psf.cu2$cu_index) # from earlier versions of CUs (which is why the field 
@@ -262,8 +290,10 @@ unique(psf.cu$CUID)  #  we (PSF) adopted out our CUID unique identifier
 unique(psf.cu2$cuid)
 
 unique(psf.cu2$pooledcuid) # QUESTION: what us this?
-psf.cu2[,c("cuid","pooledcuid")]
-psf.cu2[which(psf.cu2$cuid != psf.cu2$pooledcuid),]
+psf.cu2[,c("CUID","pooledcuid")]
+psf.cu2[which(psf.cu2$CUID != psf.cu2$pooledcuid),]
+
+psf.cu[psf.cu$CUID == 936,] # extirpated QUESTION: why is it not in psf.cu2
 
 psf.cu2$cu_name_pse
 
@@ -305,6 +335,7 @@ da
 #' Compare NuSEDS CUs (i.e. cu.sites) with PSF list of CUs (i.e., psf.cu) - make
 #' sure that the CUs we are keeping are the right ones. There are some discrepancies
 #' where CUs listed as "current" in PSF list have been binned in NuSEDS list.
+#' QUESTION: what to do in this case?
 unique(cu.sites$AREA) # ???
 unique(cu.sites_old$AREA)
 
@@ -316,20 +347,26 @@ colToKeep <- c("CU_NAME","CU_TYPE","FULL_CU_IN")
 
 unique(cu.sites$SPECIES_QUALIFIED)
 unique(cu.sites$CU_INDEX)
+unique(cu.sites$CU_TYPE)
 
 # Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"?
 cu.sites_bin <- unique(cu.sites[cu.sites$CU_TYPE == "Bin",colToKeep])
+cu.sites_bin <- unique(cu.sites[grepl("[B|b]in",cu.sites$CU_TYPE),colToKeep])
 cu.sites_bin
 
 # Which are labeled "Extirpated"?
 cu.sites_extir <- unique(cu.sites[cu.sites$CU_TYPE == "Extirpated",colToKeep])
+cu.sites_extir <- unique(cu.sites[grepl("[E|e]xtirpated",cu.sites$CU_TYPE),colToKeep])
 cu.sites_extir
 
 # For the populations which are Binned in NuSEDs, we have DIFFERENT CU indices from the PSF list #
 # Which of these CU indices are present in the NuSEDS CU list? #
 CU_Bin_Ind <- c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025") # QUESTION: are those CU indices from PSF?
 psf.cu[psf.cu$CU_TYPE == "Bin",]  # BSC: these are different, I'm so confused...
-psf.cu[psf.cu$CU_name %in% cu.sites_bin$FULL_CU_IN,]  # QUESTION: I don't know how to match these two datasets...
+psf.cu[psf.cu$CU_INDEX %in% cu.sites_bin$FULL_CU_IN,]  # QUESTION: I don't know how to match these two datasets...
+psf.cu2[psf.cu2$CU_INDEX %in% cu.sites_bin$FULL_CU_IN,c("Region","CU_INDEX","cu_name_dfo","cu_name_pse","pooledcuid","CUID")]
+
+psf.cu2[psf.cu2$CU_INDEX %in% cu.sites_extir$FULL_CU_IN,c("Region","CU_INDEX","cu_name_dfo","cu_name_pse","pooledcuid","CUID")]
 
 unique(psf.cu$CUID)
 unique(cu.sites_bin$CU_NAME) # transform to  lower case and remove "<<BIN>>" ?
@@ -383,7 +420,6 @@ var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS",
 # (dat is the NuSEDS data)
 nuseds$MAX_ESTIMATE <- apply(nuseds[, var_in_MAX_ESTIMATE], 1, max, na.rm = TRUE)
 nuseds[sapply(nuseds, is.infinite)] <- NA
-
 
 # Part A: Organize stream/CU data from CU System Sites spreadsheet ----
 # Code adapted from LGL script: "UpdateNCCStreams.fn.R" (see "nccdbv2-master" folder)
@@ -572,7 +608,7 @@ spp.tab <- data.frame(
   cu_sites = c(  "CM",      "CK",   "CO",     NA,  "PKE", "PKO",    "SEL",     "SER"), # Conservation Unit Sites
   stringsAsFactors = FALSE
 )
-
+# QUESTION: why doing this?
 Convert2StatArea <- function(area){
   StatArea <- as.character(area)
   StatArea[area %in% c("3A", "3B")] <- 3
@@ -593,7 +629,7 @@ adult.returns <- within(
     SpeciesId[SPECIES == "Pink" & Year %% 2 == 0] <- "PKE"  # Even pink years
     SpeciesId[SPECIES == "Pink" & Year %% 2 != 0] <- "PKO"  # Odd pink years
     IndexId <- paste(SpeciesId, PopId, sep="_")
-    StatArea <- Convert2StatArea(AREA)
+    StatArea <- Convert2StatArea(AREA)                      # AREA is the subdistrict
   }
 )
 
@@ -641,6 +677,10 @@ escapement[escapement$IndexId=="SX_45495",]$StatArea = "120"  # BSC: alreadt 120
 
 # BSC: calculate different statistics per group of unique combination of the .variables
 # BSC: QUESTION: how can this work when many of the variables used have been removed (i.e., are not in fields)?! --> I commented out the line above so it works
+# IndexId is = to paste(SpeciesId, PopId, sep="_")
+# SpeciesId is = to spp.tab$nccsdb = the NCC Salmon Database (NCCSDB) Designation
+# PopId is = to the nuseds$POP_ID
+# StatArea is = to Convert2StatArea(AREA), with AREA the subdistrict
 esc.summary <- ddply(.data = escapement,
                      .variables = c("IndexId", "SpeciesId", "PopId", "StatArea"), 
                      .fun = summarise,
@@ -685,6 +725,9 @@ stream.list <- within(
   }
 )
 
+unique(stream.list$ID)
+unique(stream.list$SITE_ID)
+
 # Stream List Filtering and Fixes  -------------------------------------------------
 # Drop streams without CU_INDEX values
 # drop.cuindex <- subset(stream.list, is.na(CU_INDEX))
@@ -723,7 +766,9 @@ check <- merge(
   by.y = "Var1"       # i.e., IndexId
 )
 
-if (!all(check$nrecs == check$Freq)) stop("Record count error")
+if(!all(check$nrecs == check$Freq)){
+  stop("Record count error")
+} 
 check[check$nrecs != check$Freq,]
 
 # Check for duplications
@@ -801,9 +846,13 @@ data$CU_facro <- paste(data$SpeciesId, data$CU_ACRO, sep="::")
 data$CU_findex <- data$FULL_CU_IN
 
 # Set all zero escapement values to NA #
-# BSC: ad practices TODO: correct
+# BSC: bad practices TODO: correct --> it does not work with the new cu.sites because certain columns are missing
 data[,56:157][data[,56:157] == 0.12345] <- " "
 data[,56:157][is.na(data[,56:157])] <- " "
+
+col_dates <- as.character(1923:2022)
+data[,col_dates][data[,col_dates] == 0.12345] <- " "
+data[,col_dates][is.na(data[,col_dates])] <- " "
 
 # Check out CUs that are no longer current # 
 bin <- filter(data, CU_TYPE %in% c("bin", "Deleted", "Bin", "VREQ[Bin]", "VREQ[Extirpated]", "Extirpated"))
@@ -822,7 +871,10 @@ Z.fields <- c("PopId","SpeciesId","GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT",
               "NoEscapement")
 
 Z <- data[,Z.fields]
+# BSC: Z.fields[! Z.fields %in% colnames(data)]
+
 Z <- cbind(Z, data[,56:157])
+Z <- cbind(Z, data[,col_dates])
 
 # Add extra columns #
 length <- length(Z$IndexId)

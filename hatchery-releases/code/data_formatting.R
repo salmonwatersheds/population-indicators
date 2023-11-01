@@ -16,10 +16,16 @@ wd_data <- paste0(getwd(),"/data")
 library(readxl)
 library(tidyverse)
 
+source(paste(wd_code,"functions.R",sep = "/"))
+
+#' *** Import the latest 
+
 # NOTES:
-# Eric: the only trick will be translating the "STOCK_CU_INDEX" field into 
+# - Eric: the only trick will be translating the "STOCK_CU_INDEX" field into 
 # "cuid_broodstock". Will have to use one of the tables in the decoder repo. 
 # Let me know if you have any other questions.
+# - decoder tables:
+# C:\Users\bcarturan\Salmon Watersheds Dropbox\Bruno Carturan\X Drive\1_PROJECTS\1_Active\Population Methods and Analysis\decoders\tables
 
 # decoder repo:
 # C:\Users\bcarturan\Salmon Watersheds Dropbox\Bruno Carturan\X Drive\1_PROJECTS\1_Active\Population Methods and Analysis\decoders
@@ -125,6 +131,31 @@ unique(dataDFO$ID)
 # "cuid_broodstock"        
 # "release_date"           
 # "total_release" 
+
+
+
+
+
+# The PSF/SWP data set ----
+
+SWP_df <- read_excel(paste0(wd_data,"/PSF_modified_SEP_releases_2023.xlsx"))
+head(SWP_df)
+colnames(SWP_df)
+sort(unique(SWP_df$BROOD_YEAR))
+unique(SWP_df$SPECIES_NAME)
+unique(SWP_df$REL_CU_NAME)
+unique(SWP_df$STOCK_NAME)
+unique(SWP_df$STOCK_CU_INDEX)
+unique(SWP_df$STOCK_GFE_ID)
+unique(SWP_df$STOCK_CU_ID)
+unique(SWP_df$FACILITY_NAME)
+
+
+matchCol_df <- matching_columns_fun(wd_data)
+
+
+
+
 
 
 

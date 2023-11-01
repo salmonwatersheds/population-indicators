@@ -194,7 +194,8 @@ if(updateNuSEDSFile){
 
 cu.sites <- read.csv(nusedsFileName, header=TRUE, stringsAsFactors=FALSE)
 
-cu.sites$ID <- NA # BSC: cf. question above, but this column is used later on to create "stream.list"
+# BSC: cf. question above, but this column is used later on to create "stream.list"
+cu.sites <- cbind(data.frame(ID = NA,cu.sites))
 
 # cf. references/conservation_unit_report_definitions.csv for definitions:
 unique(cu.sites$CU_NAME)        # The assigned name of the Conservation Unit. Note that this name does not identify the species.
@@ -208,15 +209,13 @@ unique(cu.sites$POP_ID)         # A unique numeric code identifying the populati
 range(cu.sites$POP_ID)          # so different from the number in cuid or CU_FULL_IN
 unique(cu.sites$GFE_ID)         # Numeric code identifying the waterbody. From NUSEDS with some additions and modifications. Same as Stream_Id
 unique(cu.sites$FWA_WATERSHED_CDE) 
-cu.sites$SPECIES_QUALIFIED      # This is an Conservation Unit acronym used to describe the species of salmon for which the escapement estimate is for, eg:  CK - Chinook Salmon CM - Chum Salmon CO - Coho Salmon PKE - Even Year Pink Salmon PKO - Odd Year Pink Salmon SEL - Lake Type Sockeye Salmon SER - River or Ocean Type Sockeye Salmon  
+unique(cu.sites$SPECIES_QUALIFIED)   # This is an Conservation Unit acronym used to describe the species of salmon for which the escapement estimate is for, eg:  CK - Chinook Salmon CM - Chum Salmon CO - Coho Salmon PKE - Even Year Pink Salmon PKO - Odd Year Pink Salmon SEL - Lake Type Sockeye Salmon SER - River or Ocean Type Sockeye Salmon  
 
 # TODO: implement comparison with previous version. Below is a provisory solution.
 cu.sites_old <- read.csv(paste(wd_data_dropbox,"conservation_unit_system_sitesJul2023.csv",sep="/"),
                          header=TRUE, stringsAsFactors=FALSE)
 names(cu.sites_old)[1] <- "ID"
 unique(cu.sites_old$ID)  # QUESTION: there are only NAs ???
-
-
 
 compareColNamesDF_fun(cu.sites,cu.sites_old)
 
@@ -263,6 +262,8 @@ unique(psf.cu2$cu_name_dfo)     # same as cu_name_pse but with the species name 
 unique(psf.cu2$cu_name_pse)     # see above
 unique(psf.cu2$CU_INDEX)        # 
 unique(psf.cu2$primarycu)       # 
+unique(psf.cu2$pooledcuid)      # Certain CUs are grouped in the PSE. In that case, cu_name_pse contains the names under cu_name_dfo separated by a "/"
+psf.cu2[psf.cu2$pooledcuid %in% c(178,178,180,181,185,188,203),]
 
 # Is psf.cu$CU_name == psf.cu2$cu_name_pse
 colToKeep <- c("CUID","Region","CU_INDEX")

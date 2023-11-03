@@ -246,8 +246,7 @@ unique(psf.cu$CU_name)    #
 unique(psf.cu$CUID)       # The PSF unique identifier
 unique(psf.cu$Region)     # SCVI = ???
 unique(psf.cu$Full_CU_MA) # species acronym + river name ???
-unique(psf.cu$CU_TYPE)    # same as the DFO cu.sites$CU_TYPE
-
+unique(psf.cu$CU_TYPE)    # same as the DFO cu.sites$CU_TYPE    #
 
 # Alternative suggested other file, which comes from the PFS database:
 psf.cu2 <- read.csv(paste(wd_data_dropbox,"conservation-units.csv",sep="/"),

@@ -1,0 +1,208 @@
+
+#' Function that returns the column names in the PSF file 
+#' (e.g., PSF_modified_SEP_releases_2023.xlsx), and the corresponding column 
+#' names and sheet name in the survery files (e.g., SWP_hatchery_data_template.xlsx).
+#' wd_spawner_surveys_data is where conservation-units.csv
+#' TODO: place conservation-units.csv in the population-indicators head folder?
+matching_columns_fun <- function(wd_data,wd_spawner_surveys_data,DFO_df = NA){
+  
+  
+  if(is.na(DFO_df)[1]){
+    # import most recent PSF file:
+    DFO_df <- return_file_lastVersion_fun(wd_data,
+                                          pattern = "PSF_modified_SEP_releases")
+  }
+
+  # Make a dataframe with all the fields to match
+  DataEntry_facilities <- c("facilityid","program","project","facilityname",
+                            "facility_latitude","facility_longitude",
+                            "startyear","endyear")
+  DataEntry_facilitiescuids <- c("facilityID","CUID")
+  DataEntry_releases <- c("species","release_site_latitude","release_site_longitude",
+                          "release_site_name","release_stage","release_site_CUID",
+                          "facilityID","cuid_broodstock","release_date","total_release")
+  
+  out <- data.frame(Survey_colnames = c(DataEntry_facilities,
+                                        DataEntry_facilitiescuids,
+                                        DataEntry_releases),
+                    Survey_sheet = c(rep("DataEntry_facilities",length(DataEntry_facilities)),
+                                     rep("DataEntry_facilitiescuids",length(DataEntry_facilitiescuids)),
+                                     rep("DataEntry_releases",length(DataEntry_releases))),
+                    DFO_colnames = NA,
+                    comments = NA)
+  
+  
+  #' ** Fields in DataEntry_facilities **
+  
+  i <- 1
+  col <- out$Survey_colnames[i] # facilityid
+  out$comments[out$Survey_colnames == col] <- "does it matter which program get which facilityid?"
+
+  i <- i + 1
+  col <- out$Survey_colnames[i] # program
+  out$DFO_colnames[out$Survey_colnames == col] <- "PROGRAM_CODE"
+  out$comments[out$Survey_colnames == col] <- "Is there a way to convert the program name to its code?"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # project
+  out$DFO_colnames[out$Survey_colnames == col] <- "PROJ_NAME"
+
+  i <- i + 1
+  col <- out$Survey_colnames[i] # facilityname
+  out$DFO_colnames[out$Survey_colnames == col] <- "FACILITY_NAME"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # facility_latitude
+  out$DFO_colnames[out$Survey_colnames == col] <- "FACILITY_LATITUDE"
+
+  i <- i + 1
+  col <- out$Survey_colnames[i] # facility_longitude
+  out$DFO_colnames[out$Survey_colnames == col] <- "FACILITY_LONGITUDE"
+
+  i <- i + 1
+  col <- out$Survey_colnames[i] # startyear
+  out$DFO_colnames[out$Survey_colnames == col] <- "START_DATE"
+  out$comments[out$Survey_colnames == col] <- "only keep the year, e.g., '19920814' --> '1992'"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # endyear
+  out$DFO_colnames[out$Survey_colnames == col] <- "END_DATE"
+  out$comments[out$Survey_colnames == col] <- "only keep the year, e.g., '19920814' --> '1992'"
+  
+  
+  #' ** DataEntry_facilitiescuids **
+  
+  # facilityID = facilityid', see comment above
+  i <- i + 1
+  col <- out$Survey_colnames[i] # facilityID
+  out$comments[out$Survey_colnames == col] <- "make sure it matches DataEntry_facilities/facilityid"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # CUID
+  out$DFO_colnames[out$Survey_colnames == col] <- "STOCK_CU_INDEX"
+  out$comments[out$Survey_colnames == col] <- "same as DataEntry_releases/release_site_CUID; convert to STOCK_CU_INDEX using conservation-units.csv"
+  
+  
+  #' ** Fields in DataEntry_releases **
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # species
+  out$DFO_colnames[out$Survey_colnames == col] <- "SPECIES_NAME"
+  out$comments[out$Survey_colnames == col] <- "only keep the species, for instance 'Lake Sockeye' --> 'Sockeye'"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # release_site_latitude
+  out$DFO_colnames[out$Survey_colnames == col] <- "REL_LATITUDE"
+
+  i <- i + 1
+  col <- out$Survey_colnames[i] # release_site_longitude
+  out$DFO_colnames[out$Survey_colnames == col] <- "REL_LONGITUDE"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # release_site_name
+  out$DFO_colnames[out$Survey_colnames == col] <- "RELEASE_SITE_NAME"
+  out$comments[out$Survey_colnames == col] <- "unabbreviate names, e.g., 'Adams R Up' --> 'Adams River Upper'"  # QUESTION: do I need to do that or abbreviations are ok?
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # release_stage
+  out$DFO_colnames[out$Survey_colnames == col] <- "RELEASE_STAGE_NAME"
+
+  i <- i + 1
+  col <- out$Survey_colnames[i] # release_site_CUID
+  out$DFO_colnames[out$Survey_colnames == col] <- "STOCK_CU_INDEX"
+  out$comments[out$Survey_colnames == col] <- "same as DataEntry_facilitiescuids/CUID; convert to STOCK_CU_INDEX using conservation-units.csv"
+  
+  # facilityID = facilityid', see comment above 
+  i <- i + 1
+  col <- out$Survey_colnames[i] # facilityID
+  out$comments[out$Survey_colnames == col] <- "make sure it matches DataEntry_facilities/facilityid"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # cuid_broodstock
+  out$DFO_colnames[out$Survey_colnames == col] <- "STOCK_CU_INDEX"
+  out$comments[out$Survey_colnames == col] <- "can differ from release_site_CUID ; use STOCK_CU_INDEX ???"
+  
+  #' QUESTIONS:
+  #' - Does the STOCK_CU_INDEX in DFO file corresponds to cuid_broodstock or 
+  #' release_site_CUID? (in case these two differ)? (Note that the correspondence 
+  #' is done using conservation-units.csv.)
+  #' - If cuid_broodstock != release_site_CUID, and indeed STOCK_CU_INDEX corresponds
+  #' to cuid_broodstock, how to find release_site_CUID?
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # release_date
+  out$DFO_colnames[out$Survey_colnames == col] <- "RELEASE_YEAR"
+  
+  i <- i + 1
+  col <- out$Survey_colnames[i] # total_release
+  out$DFO_colnames[out$Survey_colnames == col] <- "TotalRelease"
+
+  # unique(DFO_df$TotalRelease)
+
+  # unique(DFO_df$TotalRelease)
+  
+  # release_site_CUID --> DFO_df$REL_GFE_ID ? QUESTION
+
+  # unique(DFO_df$STOCK_CU_INDEX)  # "SEL-19-60" "CK-60"     "CM-4"      "CO-13" ...  # ERic: to translate to cuid_broodstock == release_site_CUID (?) 
+  # unique(DFO_df$STOCK_CU_ID)     # 7170 7308 7318 7361 7283 7277 7321 7360   NA... LOOK LIKE STREAM IDs --> 
+  # unique(DFO_df$REL_CU_INDEX)    # "SEL-19-60" NA "CM-4" "CO-13" "CK-34"... 
+  # unique(DFO_df$REL_CU_NAME)     # "TANKEEAH RIVER" NA "GEORGIA STRAIT"...
+  # QUESTION: how come there is no CUID or cuid in PSF_modified_SEP_releases_2023.xlsx ?!
+  
+  # C:\Users\bcarturan\Salmon Watersheds Dropbox\Bruno Carturan\X Drive\1_PROJECTS\1_Active\Population Methods and Analysis\population-indicators\spawner-surveys\data
+  # conservation-units.csv cu_index == DFO_df$STOCK_CU_INDEX QUESTION
+  
+  # or Full.CU.Index in Appendix 1.csv  == DFO_df$STOCK_CU_INDEX QUESTION
+  
+  return(out)
+}
+
+#' Function that returns the most recent file from the wd_data repository and using
+#' part of the file name (i.e., "pattern")
+return_file_lastVersion_fun <- function(wd_data,pattern){
+  
+  # import most recent PSF file:
+  files_list <- list.files(wd_data)
+  files_list <- files_list[grepl(pattern = pattern,files_list)]
+  
+  # in case there is no file
+  if(length(files_list) == 0){
+    print(paste0("There is no file with pattern '",pattern,"' in ",wd_data))
+    break
+  }else{
+    # if multiple files, select the one with the most recent date modified:
+    if(length(files_list) > 1){
+      files_dates <- file.info(paste(wd_data,files_list,sep="/"))$mtime
+      files_list <- files_list[files_dates == max(files_dates)]
+    }
+    print(paste("The file selected is: ",files_list))
+  }
+  
+  file_output <- read_excel(paste(wd_data,files_list,sep="/"))
+  
+  return(file_output)
+}
+
+
+#' Function returning a list of the sheets (as data frames) of the PSF hatchery 
+#' template .xlsx file (the default file is SWP_hatchery_data_template.xlsx).
+hatchery_template_fun <- function(wd_data,
+                                  fileSuveryname = "SWP_hatchery_data_template.xlsx"){
+  
+  fileSurvey_l <- list()
+  sheetsNames <- c(
+    "DataProvider",
+    "DataEntry_facilities",
+    "DataEntry_facilitiescuids",
+    "DataEntry_releases"
+  )
+  
+  for(i in 1:length(sheetsNames)){
+    fileSurvey_l[[i]] <- read_excel(paste(wd_data,fileSuveryname,sep = "/"),
+                                    sheet = sheetsNames[i])
+  }
+  names(fileSurvey_l) <- sheetsNames
+  return(fileSurvey_l)
+}
+
+

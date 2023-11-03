@@ -24,6 +24,7 @@ setwd(wd_head)
 # Note that the script cannot be called again once the directory is set to the 
 # subdirectory of the project (unless setwd() is called again).
 source("functions_set_wd.R")
+source("functions_general.R")
 
 subDir_projects <- subDir_projects_fun()
 
@@ -78,42 +79,83 @@ matchCol_df <- matching_columns_fun(wd_data = wd_data,
 fileSurvey_l <- hatchery_template_fun(wd_data = wd_data,
                                       fileSuveryname = "SWP_hatchery_data_template.xlsx")
 
-
-fileSurvey_l$DataEntry_facilities
-
-matchCol_df
-
-
-# import conservation-units.csv from wd_spawner_surveys_data
+# Import conservation-units.csv from wd_spawner_surveys_data
 # TODO: eventually move the conservation-units.csv file to the population-indicators folder
 conservation_units <- read.csv(paste0(wd_spawner_surveys_data,"/conservation-units.csv"),
                                header = T)
 
-#' QUESTIONS:
-#' - does DataEntry_facilitiescuids/CUID == DataEntry_releases/release_site_CUID OR DataEntry_releases/cuid_broodstock --> the latter but ask confirmation
-#' - does DataEntry_releases/release_site_CUID == DataEntry_releases/cuid_broodstock --> they can differ in case broods of a CU are released in the location of another CU
-
-
-# now change column names and eventually transform certain of these variable to 
-# match DFO_df
-
-
-
-
-
-
-
-
-
-varSurvey <- matchCol_noNA_df$Survey_colnames # fields matching columns in DFO_df
-
-# abbreviation to convert field release_site_name in sheet DataEntry_releases:
-# QUESTION: is that correct? Am I missing something?
+# Fill fileSurvey_l with new data
+## abbreviation to convert field release_site_name in sheet DataEntry_releases:
+## QUESTION: is that correct? Am I missing something?
 release_site_abbrev <-        c("Cr","R","Up","Low","Sl","N","S","E","W","LK")
 names(release_site_abbrev) <- c("Creek","River","Upper","Lower","Slough","North","South","East","West","Lake")
 
+for(sheet_i in 2:length(sheetsNames)){   # The 1st sheet is to be filled by hand (QUESTION)
+  
+  # sheet_i <- 2
+  sheetName <- names(fileSurvey_l)[sheet_i]
+  sheetNew <- fileSurvey_l[[sheet_i]]
+  
+  # subset matchCol_df for the current sheet
+  matchCol_df_cut <- matchCol_df[matchCol_df$Survey_sheet == sheetName,]
+  
+  # attribute to each program a facilityID (TODO: wait to hear from them to know if this is the right approach) 
+  if(sheetName == "DataEntry_facilities"){
+    
+    # associate a facilityid to each PROGRAM_CODE
+    programs <- unique(DFO_df$PROGRAM_CODE)
+    facilityid <- 1:length(programs)
+    prog_facilID_df <- data.frame(program = programs,
+                                  facilityid = facilityid)
+    
+    # create an empty dataframe and start filling it
+    sheetNew <- dataframe_structure_fun(df = fileSurvey_l[[sheet_i]], 
+                                        nrow = nrow(prog_facilID_df))
 
-for(sheet_i in 1:length(sheetsNames)){
+    sheetNew$facilityid <- prog_facilID_df$facilityid
+    sheetNew$program <- prog_facilID_df$program
+    
+    # fill the rest automatically
+    for(col_i in 3:ncol(sheetNew)){
+      
+      # col_i <- 3
+      
+      
+      
+      
+      
+      
+    }
+    
+    
+    
+    
+    
+    
+    # fill the sheet accordingly
+    fileSurvey_l[[sheet_i]]
+    
+
+    
+    
+    fileSurvey_l[[sheet_i]]$facilityid <- facilityid
+    fileSurvey_l[[sheet_i]]$facilityid <- facilityid
+    
+  }
+  
+  
+  
+  
+  for(){
+    
+    
+    
+    
+  }
+  
+  DFO_df
+  matchCol_df
+  
   
   
   

@@ -22,10 +22,10 @@ matching_columns_fun <- function(wd_data,wd_spawner_surveys_data,DFO_df = NA){
                           "release_site_name","release_stage","release_site_CUID",
                           "facilityID","cuid_broodstock","release_date","total_release")
   
-  out <- data.frame(Survey_colnames = c(DataEntry_facilities,
+  out <- data.frame(PSF_colnames = c(DataEntry_facilities,
                                         DataEntry_facilitiescuids,
                                         DataEntry_releases),
-                    Survey_sheet = c(rep("DataEntry_facilities",length(DataEntry_facilities)),
+                    PSF_sheet = c(rep("DataEntry_facilities",length(DataEntry_facilities)),
                                      rep("DataEntry_facilitiescuids",length(DataEntry_facilitiescuids)),
                                      rep("DataEntry_releases",length(DataEntry_releases))),
                     DFO_colnames = NA,
@@ -35,92 +35,92 @@ matching_columns_fun <- function(wd_data,wd_spawner_surveys_data,DFO_df = NA){
   #' ** Fields in DataEntry_facilities **
   
   i <- 1
-  col <- out$Survey_colnames[i] # facilityid
-  out$comments[out$Survey_colnames == col] <- "does it matter which program get which facilityid?"
+  col <- out$PSF_colnames[i] # facilityid
+  out$comments[out$PSF_colnames == col] <- "does it matter which program get which facilityid?"
 
   i <- i + 1
-  col <- out$Survey_colnames[i] # program
-  out$DFO_colnames[out$Survey_colnames == col] <- "PROGRAM_CODE"
-  out$comments[out$Survey_colnames == col] <- "Is there a way to convert the program name to its code?"
+  col <- out$PSF_colnames[i] # program
+  out$DFO_colnames[out$PSF_colnames == col] <- "PROGRAM_CODE"
+  out$comments[out$PSF_colnames == col] <- "Is there a way to convert the program name to its code?"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # project
-  out$DFO_colnames[out$Survey_colnames == col] <- "PROJ_NAME"
+  col <- out$PSF_colnames[i] # project
+  out$DFO_colnames[out$PSF_colnames == col] <- "PROJ_NAME"
 
   i <- i + 1
-  col <- out$Survey_colnames[i] # facilityname
-  out$DFO_colnames[out$Survey_colnames == col] <- "FACILITY_NAME"
+  col <- out$PSF_colnames[i] # facilityname
+  out$DFO_colnames[out$PSF_colnames == col] <- "FACILITY_NAME"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # facility_latitude
-  out$DFO_colnames[out$Survey_colnames == col] <- "FACILITY_LATITUDE"
+  col <- out$PSF_colnames[i] # facility_latitude
+  out$DFO_colnames[out$PSF_colnames == col] <- "FACILITY_LATITUDE"
 
   i <- i + 1
-  col <- out$Survey_colnames[i] # facility_longitude
-  out$DFO_colnames[out$Survey_colnames == col] <- "FACILITY_LONGITUDE"
+  col <- out$PSF_colnames[i] # facility_longitude
+  out$DFO_colnames[out$PSF_colnames == col] <- "FACILITY_LONGITUDE"
 
   i <- i + 1
-  col <- out$Survey_colnames[i] # startyear
-  out$DFO_colnames[out$Survey_colnames == col] <- "START_DATE"
-  out$comments[out$Survey_colnames == col] <- "only keep the year, e.g., '19920814' --> '1992'"
+  col <- out$PSF_colnames[i] # startyear
+  out$DFO_colnames[out$PSF_colnames == col] <- "START_DATE"
+  out$comments[out$PSF_colnames == col] <- "only keep the year, e.g., '19920814' --> '1992'"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # endyear
-  out$DFO_colnames[out$Survey_colnames == col] <- "END_DATE"
-  out$comments[out$Survey_colnames == col] <- "only keep the year, e.g., '19920814' --> '1992'"
+  col <- out$PSF_colnames[i] # endyear
+  out$DFO_colnames[out$PSF_colnames == col] <- "END_DATE"
+  out$comments[out$PSF_colnames == col] <- "only keep the year, e.g., '19920814' --> '1992'"
   
   
   #' ** DataEntry_facilitiescuids **
   
   # facilityID = facilityid', see comment above
   i <- i + 1
-  col <- out$Survey_colnames[i] # facilityID
-  out$comments[out$Survey_colnames == col] <- "make sure it matches DataEntry_facilities/facilityid"
+  col <- out$PSF_colnames[i] # facilityID
+  out$comments[out$PSF_colnames == col] <- "make sure it matches DataEntry_facilities/facilityid"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # CUID
-  out$DFO_colnames[out$Survey_colnames == col] <- "STOCK_CU_INDEX"
-  out$comments[out$Survey_colnames == col] <- "same as DataEntry_releases/release_site_CUID; convert to STOCK_CU_INDEX using conservation-units.csv"
+  col <- out$PSF_colnames[i] # CUID
+  out$DFO_colnames[out$PSF_colnames == col] <- "STOCK_CU_INDEX"
+  out$comments[out$PSF_colnames == col] <- "same as DataEntry_releases/release_site_CUID; convert to STOCK_CU_INDEX using conservation-units.csv"
   
   
   #' ** Fields in DataEntry_releases **
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # species
-  out$DFO_colnames[out$Survey_colnames == col] <- "SPECIES_NAME"
-  out$comments[out$Survey_colnames == col] <- "only keep the species, for instance 'Lake Sockeye' --> 'Sockeye'"
+  col <- out$PSF_colnames[i] # species
+  out$DFO_colnames[out$PSF_colnames == col] <- "SPECIES_NAME"
+  out$comments[out$PSF_colnames == col] <- "only keep the species, for instance 'Lake Sockeye' --> 'Sockeye'"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # release_site_latitude
-  out$DFO_colnames[out$Survey_colnames == col] <- "REL_LATITUDE"
+  col <- out$PSF_colnames[i] # release_site_latitude
+  out$DFO_colnames[out$PSF_colnames == col] <- "REL_LATITUDE"
 
   i <- i + 1
-  col <- out$Survey_colnames[i] # release_site_longitude
-  out$DFO_colnames[out$Survey_colnames == col] <- "REL_LONGITUDE"
+  col <- out$PSF_colnames[i] # release_site_longitude
+  out$DFO_colnames[out$PSF_colnames == col] <- "REL_LONGITUDE"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # release_site_name
-  out$DFO_colnames[out$Survey_colnames == col] <- "RELEASE_SITE_NAME"
-  out$comments[out$Survey_colnames == col] <- "unabbreviate names, e.g., 'Adams R Up' --> 'Adams River Upper'"  # QUESTION: do I need to do that or abbreviations are ok?
+  col <- out$PSF_colnames[i] # release_site_name
+  out$DFO_colnames[out$PSF_colnames == col] <- "RELEASE_SITE_NAME"
+  out$comments[out$PSF_colnames == col] <- "unabbreviate names, e.g., 'Adams R Up' --> 'Adams River Upper'"  # QUESTION: do I need to do that or abbreviations are ok?
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # release_stage
-  out$DFO_colnames[out$Survey_colnames == col] <- "RELEASE_STAGE_NAME"
+  col <- out$PSF_colnames[i] # release_stage
+  out$DFO_colnames[out$PSF_colnames == col] <- "RELEASE_STAGE_NAME"
 
   i <- i + 1
-  col <- out$Survey_colnames[i] # release_site_CUID
-  out$DFO_colnames[out$Survey_colnames == col] <- "STOCK_CU_INDEX"
-  out$comments[out$Survey_colnames == col] <- "same as DataEntry_facilitiescuids/CUID; convert to STOCK_CU_INDEX using conservation-units.csv"
+  col <- out$PSF_colnames[i] # release_site_CUID
+  out$DFO_colnames[out$PSF_colnames == col] <- "STOCK_CU_INDEX"
+  out$comments[out$PSF_colnames == col] <- "same as DataEntry_facilitiescuids/CUID; convert to STOCK_CU_INDEX using conservation-units.csv"
   
   # facilityID = facilityid', see comment above 
   i <- i + 1
-  col <- out$Survey_colnames[i] # facilityID
-  out$comments[out$Survey_colnames == col] <- "make sure it matches DataEntry_facilities/facilityid"
+  col <- out$PSF_colnames[i] # facilityID
+  out$comments[out$PSF_colnames == col] <- "make sure it matches DataEntry_facilities/facilityid"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # cuid_broodstock
-  out$DFO_colnames[out$Survey_colnames == col] <- "STOCK_CU_INDEX"
-  out$comments[out$Survey_colnames == col] <- "can differ from release_site_CUID ; use STOCK_CU_INDEX ???"
+  col <- out$PSF_colnames[i] # cuid_broodstock
+  out$DFO_colnames[out$PSF_colnames == col] <- "STOCK_CU_INDEX"
+  out$comments[out$PSF_colnames == col] <- "can differ from release_site_CUID ; use STOCK_CU_INDEX ???"
   
   #' QUESTIONS:
   #' - Does the STOCK_CU_INDEX in DFO file corresponds to cuid_broodstock or 
@@ -130,12 +130,12 @@ matching_columns_fun <- function(wd_data,wd_spawner_surveys_data,DFO_df = NA){
   #' to cuid_broodstock, how to find release_site_CUID?
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # release_date
-  out$DFO_colnames[out$Survey_colnames == col] <- "RELEASE_YEAR"
+  col <- out$PSF_colnames[i] # release_date
+  out$DFO_colnames[out$PSF_colnames == col] <- "RELEASE_YEAR"
   
   i <- i + 1
-  col <- out$Survey_colnames[i] # total_release
-  out$DFO_colnames[out$Survey_colnames == col] <- "TotalRelease"
+  col <- out$PSF_colnames[i] # total_release
+  out$DFO_colnames[out$PSF_colnames == col] <- "TotalRelease"
 
   # unique(DFO_df$TotalRelease)
 
@@ -187,9 +187,9 @@ return_file_lastVersion_fun <- function(wd_data,pattern){
 #' Function returning a list of the sheets (as data frames) of the PSF hatchery 
 #' template .xlsx file (the default file is SWP_hatchery_data_template.xlsx).
 hatchery_template_fun <- function(wd_data,
-                                  fileSuveryname = "SWP_hatchery_data_template.xlsx"){
+                                  filePSFname = "SWP_hatchery_data_template.xlsx"){
   
-  fileSurvey_l <- list()
+  filePSF_l <- list()
   sheetsNames <- c(
     "DataProvider",
     "DataEntry_facilities",
@@ -198,11 +198,11 @@ hatchery_template_fun <- function(wd_data,
   )
   
   for(i in 1:length(sheetsNames)){
-    fileSurvey_l[[i]] <- read_excel(paste(wd_data,fileSuveryname,sep = "/"),
+    filePSF_l[[i]] <- read_excel(paste(wd_data,filePSFname,sep = "/"),
                                     sheet = sheetsNames[i])
   }
-  names(fileSurvey_l) <- sheetsNames
-  return(fileSurvey_l)
+  names(filePSF_l) <- sheetsNames
+  return(filePSF_l)
 }
 
 

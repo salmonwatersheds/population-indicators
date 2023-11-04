@@ -69,6 +69,25 @@ source(paste(wd_code,"functions.R",sep = "/"))
 # Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data
 DFO_df <- return_file_lastVersion_fun(wd_data,pattern = "PSF_modified_SEP_releases")
 
+# QA/QC
+# QUESTIONS: are those multiple relationship normal?
+printDF <- F
+relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROGRAM_CODE", printDF = printDF) # many to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "FACILITY_NAME",col1 = "PROGRAM_CODE", printDF = printDF)
+relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROJ_NAME", printDF = printDF) # many to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "FACILITY_NAME",col1 = "PROJ_NAME", printDF = printDF)
+relationships_twoCol_df_fn(df = DFO_df,col1 = "PROGRAM_CODE",col2 = "PROJ_NAME", printDF = printDF) # one to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "PROGRAM_CODE",col1 = "PROJ_NAME", printDF = printDF)
+relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROJ_NAME", printDF = printDF) # many to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "FACILITY_NAME",col1 = "PROJ_NAME", printDF = printDF)
+
+relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "START_DATE", printDF = printDF) # many to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "FACILITY_NAME",col1 = "START_DATE", printDF = printDF)
+relationships_twoCol_df_fn(df = DFO_df,col1 = "PROGRAM_CODE",col2 = "START_DATE", printDF = printDF) # many to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "PROGRAM_CODE",col1 = "START_DATE", printDF = printDF)
+relationships_twoCol_df_fn(df = DFO_df,col1 = "PROJ_NAME",col2 = "START_DATE", printDF = printDF) # many to many
+relationships_twoCol_df_fn(df = DFO_df,col2 = "PROJ_NAME",col1 = "START_DATE", printDF = printDF)
+
 #' Create a dataframe with the name of the columns in PSF_modified_SEP_releases_DATE.xlsx
 #' and corresponding column names and sheets in the survey file SWP_hatchery_data_...xlsx
 matchCol_df <- matching_columns_fun(wd_data = wd_data,
@@ -76,15 +95,15 @@ matchCol_df <- matching_columns_fun(wd_data = wd_data,
                                     DFO_df = DFO_df)
 
 # Import the hatchery template from wd_data as a list.
-fileSurvey_l <- hatchery_template_fun(wd_data = wd_data,
-                                      fileSuveryname = "SWP_hatchery_data_template.xlsx")
+filePSF_l <- hatchery_template_fun(wd_data = wd_data,
+                                      filePSFname = "SWP_hatchery_data_template.xlsx")
 
 # Import conservation-units.csv from wd_spawner_surveys_data
 # TODO: eventually move the conservation-units.csv file to the population-indicators folder
 conservation_units <- read.csv(paste0(wd_spawner_surveys_data,"/conservation-units.csv"),
                                header = T)
 
-# Fill fileSurvey_l with new data
+# Fill filePSF_l with new data
 ## abbreviation to convert field release_site_name in sheet DataEntry_releases:
 ## QUESTION: is that correct? Am I missing something?
 release_site_abbrev <-        c("Cr","R","Up","Low","Sl","N","S","E","W","LK")
@@ -93,69 +112,84 @@ names(release_site_abbrev) <- c("Creek","River","Upper","Lower","Slough","North"
 for(sheet_i in 2:length(sheetsNames)){   # The 1st sheet is to be filled by hand (QUESTION)
   
   # sheet_i <- 2
-  sheetName <- names(fileSurvey_l)[sheet_i]
-  sheetNew <- fileSurvey_l[[sheet_i]]
+  sheetName <- names(filePSF_l)[sheet_i]
+  sheetNew <- filePSF_l[[sheet_i]]
   
   # subset matchCol_df for the current sheet
-  matchCol_df_cut <- matchCol_df[matchCol_df$Survey_sheet == sheetName,]
+  matchCol_df_cut <- matchCol_df[matchCol_df$PSF_sheet == sheetName,]
   
-  # attribute to each program a facilityID (TODO: wait to hear from them to know if this is the right approach) 
+  #' attribute to each facilityname a facilityID
   if(sheetName == "DataEntry_facilities"){
     
     # associate a facilityid to each PROGRAM_CODE
-    programs <- unique(DFO_df$PROGRAM_CODE)
-    facilityid <- 1:length(programs)
-    prog_facilID_df <- data.frame(program = programs,
+    facilityname <- unique(DFO_df$FACILITY_NAME)
+    facilityid <- 1:length(facilityname)
+    prog_facilID_df <- data.frame(facilityname = facilityname,
                                   facilityid = facilityid)
     
     # create an empty dataframe and start filling it
-    sheetNew <- dataframe_structure_fun(df = fileSurvey_l[[sheet_i]], 
+    sheetNew <- dataframe_structure_fun(df = filePSF_l[[sheet_i]], 
+                                        colnamesToKeep = c("facilityid","facilityname"),
                                         nrow = nrow(prog_facilID_df))
 
     sheetNew$facilityid <- prog_facilID_df$facilityid
-    sheetNew$program <- prog_facilID_df$program
+    sheetNew$facilityname <- prog_facilID_df$facilityname
     
     # fill the rest automatically
-    for(col_i in 3:ncol(sheetNew)){
+    colNamesRemaining <- colnames(filePSF_l[[sheet_i]])[!colnames(filePSF_l[[sheet_i]]) %in% c("facilityid","facilityname")]
+    for(col_i in 1:length(colNamesRemaining)){
       
-      # col_i <- 3
+      # col_i <- 1
+      field_PSF <- colNamesRemaining[col_i]
+      field_DFO <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames == field_PSF &
+                                            matchCol_df$PSF_sheet == sheetName]
       
+      # match the other fields with 'facilityname' except 'project' that must be 
+      # match with 'program', because 'project' has a MANY TO ONE relationship with
+      # 'program' but a MANY TO MANY with 'facilityname'
+      #' TODO: make sure you get confirmation of these associations
+      field_PSF_ref <- "facilityname"
+      if(field_PSF == "project"){
+        field_PSF_ref <- "program"
+      }else if(field_PSF %in% c("startyear","endyear")){
+        field_PSF_ref <- "project"
+      }
+      field_DFO_ref <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames == field_PSF_ref & 
+                                                 matchCol_df$PSF_sheet == sheetName]
       
+      # make a copy of DFO_df, keep only FACILITY_NAME and focal field
+      DFO_df_cut <- DFO_df[,c(field_DFO_ref,field_DFO)]
+      DFO_df_cut <- unique(DFO_df_cut) # only keep unique combination
       
+      # relationships_twoCol_df_fn(df = DFO_df_cut, col1 = field_DFO_ref,col2 = field_DFO)
+      # relationships_twoCol_df_fn(df = DFO_df_cut, col2 = field_DFO_ref,col1 = field_DFO)
       
+      # rename columns to match PSF colnames
+      colnames(DFO_df_cut)[colnames(DFO_df_cut) == field_DFO_ref] <- field_PSF_ref
+      colnames(DFO_df_cut)[colnames(DFO_df_cut) == field_DFO] <- field_PSF
       
+      if(field_PSF %in% c("startyear","endyear")){
+        
+        # only keep the year, e.g., '19920814' --> '1992'
+        date <- sapply(X = DFO_df_cut[,field_PSF], 
+                       FUN = function(d){substr(x = d,start = 1, stop = 4)})
+        date <- as.numeric(date)
+        allDates <- date %in% 1900:2100
+        if(!all(allDates)){
+          print(paste0("The following dates in '",sheetName,"/",field_PSF,"' have to be checked:"))
+          print(date[!allDates])
+        }
+        DFO_df_cut[,field_PSF] <- date
+      }
       
+      # merge sheetNew and DFO_df_cut by facilityname
+      sheetNew <- merge(x = sheetNew,y = DFO_df_cut, by = field_PSF_ref, all = T)
+      View(sheetNew)
     }
+  }else if(){
     
-    
-    
-    
-    
-    
-    # fill the sheet accordingly
-    fileSurvey_l[[sheet_i]]
-    
+  }
 
-    
-    
-    fileSurvey_l[[sheet_i]]$facilityid <- facilityid
-    fileSurvey_l[[sheet_i]]$facilityid <- facilityid
-    
-  }
-  
-  
-  
-  
-  for(){
-    
-    
-    
-    
-  }
-  
-  DFO_df
-  matchCol_df
-  
   
   
   
@@ -174,8 +208,8 @@ for(i in 1:length(varSurvey)){
   
   # i <- 1
   varHere <- varSurvey[i]
-  sheetHere <- matchCol_noNA_df$Survey_sheet[matchCol_noNA_df$Survey_colnames == varHere]
-  val <- fileSurvey_l[[sheetHere]][,varHere,drop = T]
+  sheetHere <- matchCol_noNA_df$PSF_sheet[matchCol_noNA_df$PSF_colnames == varHere]
+  val <- filePSF_l[[sheetHere]][,varHere,drop = T]
   
   if(i == 1){  # initiate SWP_new_df
     
@@ -226,7 +260,7 @@ for(i in 1:length(varSurvey)){
   }
   
   # fill SWP_new_df
-  varHere_swp <- matchCol_noNA_df$PSF_colnames[matchCol_noNA_df$Survey_colnames == varHere]
+  varHere_swp <- matchCol_noNA_df$PSF_colnames[matchCol_noNA_df$PSF_colnames == varHere]
   
   
   Create SWP_new_df here depending on number of rows

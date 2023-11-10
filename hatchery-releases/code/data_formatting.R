@@ -42,6 +42,10 @@ wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
                          wds_l$wd_project_dropbox,
                          "data",sep="/")
 
+wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                                         wds_l$wd_population_indicator_data_input_dropbox,
+                                         sep = "/")
+
 # define wd to access population-indicators/spawner-surveys/data/conservation-units.csv
 
 wd_spawner_surveys_data <- paste(wd_X_Drive1_PROJECTS,
@@ -58,8 +62,10 @@ source(paste(wd_code,"functions.R",sep = "/"))
 #'** Import conservation-units.csv from wd_spawner_surveys_data **
 #' This file comes from the PSF database all allows to match the DFO STOCK_CU_INDEX
 #' with the PSF 'cuid' (or 'CUID') with the field 'cu_index' (= STOCK_CU_INDEX)
-# TODO: eventually move the conservation-units.csv file to the population-indicators folder
-conservation_units <- read.csv(paste0(wd_spawner_surveys_data,"/conservation-units.csv"),
+# TODO: eventually move the conservation-units.csv file to the population-indicators folder DONE
+# conservation_units <- read.csv(paste0(wd_spawner_surveys_data,"/conservation-units.csv"),
+#                                header = T)
+conservation_units <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
                                header = T)
 
 #'** Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data **

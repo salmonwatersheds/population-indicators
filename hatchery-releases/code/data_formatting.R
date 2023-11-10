@@ -48,6 +48,7 @@ wd_spawner_surveys_data <- paste(wd_X_Drive1_PROJECTS,
                                  "1_Active/Population Methods and Analysis/population-indicators/spawner-surveys",
                                  "data",sep="/")
 
+library(xlsx)
 library(readxl)
 library(tidyverse)
 library(stringr)
@@ -96,8 +97,8 @@ DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(D
 #' (i.e., conservation-units.csv):
 #' - CK-9002, CK-9005, CK-9006, CK-9007, CK-9008 # Eric: These aren't real CUs. They are hatchery-only population so we don't show them on the PSE
 #' - SEL-15-03                                   # Eric: This a CU that the central coast Nations said is not a CU. So we don't show on the PSE
-CUToRemove <- unique(DFO_df$STOCK_CU_INDEX[! DFO_df$STOCK_CU_INDEX %in% conservation_units$cu_index])
-CUToRemove
+#' - CM-9004                                     # Eric: a CU that no longer exists
+CUToRemove <- c("CK-9002","CK-9005","CK-9006","CK-9007","CK-9008","SEL-15-03","CM-9004")
 DFO_df <- DFO_df[! DFO_df$STOCK_CU_INDEX %in% CUToRemove,]
 DFO_df <- DFO_df[! DFO_df$REL_CU_INDEX %in% CUToRemove,]
 
@@ -218,8 +219,6 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     sheetNew$CUID <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$cu_index,
                                                          conservation_units = conservation_units)
     
-    #' TODO: wait to hear about "The value 'CM-9004' does not have a match so NA is given instead."
-    
     # retain the desired columns
     sheetNew <- sheetNew[,c("facilityID","CUID")]
     
@@ -231,15 +230,61 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     
     #' find the facilityid/ID corresponding to each unique combination of 
     #' program-project-facilityname:
-    field_DFO <- c(field_DFO,c("PROGRAM_CODE","PROJ_NAME")) # add the fields to be able to match the facilityID
-    
-    sheetNew <- cbind(sheetNew, DFO_df[,c("PROGRAM_CODE","PROJ_NAME","FACILITY_NAME")])
+    field_DFO_forFacilityID <- c("PROGRAM_CODE","PROJ_NAME","FACILITY_NAME")
+
+    sheetNew <- cbind(sheetNew, DFO_df[,field_DFO_forFacilityID])
     
     colnames(sheetNew)[colnames(sheetNew) == "PROGRAM_CODE"] <- "program"
     colnames(sheetNew)[colnames(sheetNew) == "PROJ_NAME"] <- "project"
     colnames(sheetNew)[colnames(sheetNew) == "facilityID"] <- "facilityname"
     
-    # place the program acronyms by their names
+    #' there are duplicated columns:
+    #' TODO: remove them from now but deal with it with Katy and co.
+    # nrow(sheetNew) # 31830
+    # nrow(DFO_df)   # 31830
+    # sum(duplicated(sheetNew)) # 134
+    # sum(duplicated(DFO_df))   # 0
+    # sum(duplicated(DFO_df[,c(field_DFO,field_DFO_forFacilityID)]))   # 134
+    # 
+    # rowsDuplicating <- which(duplicated(sheetNew) | duplicated(sheetNew, fromLast = TRUE))
+    # View(sheetNew[rowsDuplicating,])
+    # View(DFO_df[rowsDuplicating,field_DFO])
+    # View(DFO_df[rowsDuplicating,])
+    # 
+    # sum(duplicated(DFO_df)) # 0
+    # sum(duplicated(DFO_df[,colnames(DFO_df) != "MRP_TAGCODE"]))     # 35
+    # sum(duplicated(DFO_df[,colnames(DFO_df) != "MRP_TAGCODE"])) # 0   ?!
+    # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","RELEASE_COMMENT")]))  # 48
+    # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","BROOD_YEAR")]))       # 41
+    # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","AVE_WEIGHT")]))       # 40
+    # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","NoTagClip")]))        # 39
+    # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","RELEASE_COMMENT","BROOD_YEAR","AVE_WEIGHT","NoTagClip")]))  # 69
+    # 
+    # 
+    # remainingCol <- colnames(DFO_df)[! colnames(DFO_df) %in% c(field_DFO,field_DFO_forFacilityID)]
+    # for(c in remainingCol){
+    #   DFO_df_cut <- DFO_df[,colnames(DFO_df) != c]
+    #   if(sum(duplicated(DFO_df_cut)) > 0){
+    #     print(c)
+    #   }
+    # }
+    # colSelected <- c("MRP_TAGCODE","RELEASE_COMMENT","BROOD_YEAR","AVE_WEIGHT","NoTagClip","START_DATE","END_DATE","PURPOSE_CODE","AVE_LENGTH")
+    # remainingCol <- colnames(DFO_df)[! colnames(DFO_df) %in% c(field_DFO,field_DFO_forFacilityID,colSelected)]
+    # threshold <- sum(duplicated(DFO_df[,!colnames(DFO_df) %in% colSelected]))
+    # for(c in remainingCol){
+    #   # c <- "RELEASE_COMMENT"
+    #   c_here <- c(c,colSelected)
+    #   DFO_df_cut <- DFO_df[,!colnames(DFO_df) %in% c_here]
+    #   nb_duplicates <- sum(duplicated(DFO_df_cut))
+    #   if(nb_duplicates > threshold){
+    #     print(paste0(nb_duplicates," duplicated; columns: "))
+    #     print(c_here)
+    #     print("")
+    #   }
+    # }
+    # more columns must be removed to reach the 134 number of duplicated rows...
+    
+    # replace the program acronyms by their names
     sheetNew$program <- program_acronym_fun(prog_acro =  sheetNew$program)
     
     # add facilityid by merging with sheet DataEntry_facilities
@@ -250,19 +295,23 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     colnames(sheetNew)[colnames(sheetNew) == "facilityid"] <- "facilityID"
     
     # drop columns 'program', 'project' and 'facilityname'
-    sheetNew <- sheetNew[,! colnames(sheetNew) %in% c('program','project','facilityname')]
+    sheetNew <- sheetNew[,!colnames(sheetNew) %in% c('program','project','facilityname')]
+    
+    # replace STOCK_CU_INDEX and REL_CU_INDEX values by the PSF CUID
+    sheetNew$release_site_CUID <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$release_site_CUID, 
+                                                                      conservation_units = conservation_units)
+    sheetNew$cuid_broodstock <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$cuid_broodstock, 
+                                                                    conservation_units = conservation_units)
     
     # reorder columns and rows
     sheetNew <- sheetNew[field_PSF]
     sheetNew <- sheetNew[order(sheetNew$facilityID),]
     
-    # there are duplicated columns:
-    View(sheetNew[duplicated(sheetNew),])
-    View(unique(sheetNew))
-    r_unique <- rownames(unique(sheetNew))
-    r_unique_no <- rownames(sheetNew)[!rownames(sheetNew) %in% r_unique]
-    View(sheetNew[r_unique_no,])
-    
+    # remove duplicted rows (SEE TODO ABOVE ABOUT THAT)
+    # nrow(DFO_df)
+    # nrow(sheetNew) - nrow(unique(sheetNew))
+    sheetNew <- unique(sheetNew)
+    # sheetNew[sheetNew$cuid_broodstock != sheetNew$release_site_CUID,]
     
     # "release_site_name" ("RELEASE_SITE_NAME")
     # QUESTION: unabbreviate names, e.g., 'Adams R Up' --> 'Adams River Upper'
@@ -270,73 +319,33 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # release_site_abbrev <-        c("Cr","R","Up","Low","Sl","N","S","E","W","LK")
     # names(release_site_abbrev) <- c("Creek","River","Upper","Lower","Slough","North","South","East","West","Lake")
     
-    
-    # "release_site_CUID" ("STOCK_CU_INDEX") is "cuid" in conservation_units.csv
-    sheetNew$cu_index <- sheetNew$release_site_CUID
-    sheetNew$release_site_CUID <- convert_column_match_fun(df = sheetNew, 
-                                                           decoder_df = conservation_units, 
-                                                           colToConvert = "cu_index",
-                                                           colMatchingVal = "cuid")
-    sheetNew <- sheetNew[colnames(sheetNew) != "cu_index"]
-    # remove NAs - QUICK FIX FOR NOW
-    #' TODO: wait to hear from them to know what to do with these CUs
-    sheetNew <- sheetNew[!is.na(sheetNew$release_site_CUID),]
-    
-    
-    # "facilityID" (from "FACILITY_NAME")
-    sheetNew$facilityname <- sheetNew$facilityID
-    sheetNew$facilityID <- convert_column_match_fun(df = sheetNew, 
-                                                    decoder_df = facilityNameID_df, 
-                                                    colToConvert = "facilityname",
-                                                    colMatchingVal = "facilityid")
-    sheetNew <- sheetNew[colnames(sheetNew) != "facilityname"]
-    
-    
-    # "cuid_broodstock"
-    colHere <- "STOCK_CU_INDEX"
-    colnames(sheetNew)[colnames(sheetNew) == colHere][2] <- field_PSF[field_DFO == colHere][2]
-    #' TODO: find a way to fill that column, ask how to do that?
-    
-    # colnames(sheetNew)
-    # field_PSF
-    # field_DFO
-    # cbind(field_DFO,field_PSF)
-    # unique(sheetNew$SPECIES_NAME)
-    # unique(DFO_df_all$SPECIES_NAME)
-    # colSelected <- c("SPECIES_NAME","RUN_NAME","STOCK_NAME","STOCK_GFE_ID","STOCK_GFE_NAME","STOCK_POP_ID","STOCK_POP_NAME","STOCK_CU_ID","STOCK_CU_NAME")
-    # View(unique(DFO_df_all[,colSelected]))
-    # DFO_df_all
-    # matchCol_df
   }
   filePSFnew_l[[sheet_i]] <- sheetNew
 }
 
 
 
-unique(data.frame(v1 = c("A","B","A","C"),
-                  v2 = c(3,3,3,1),
-                  v3 = c(4,3,NA,1))) 
-    
-AFS-Aboriginal Fisheries Strategy
-CDP-Community Economic Development Program
-DPI-Designated Public Involvement
-OPS-Major Operations
-PIP-Public Involvement Program
+# export the file
+date <- Sys.Date()
+date <- gsub(pattern = "-",replacement = "",x = date)
 
-    
-# CK-9002
-# CK-9005
-# CK-9006
-# CK-9007
-# CK-9008
-# These aren't real CUs. They are hatchery-only population so we don't show them on the PSE
+for(sh_i in 1:length(names(filePSFnew_l))){
+  # sh_i <- 1
+  if(sh_i == 1){
+    append <- F
+  }else{
+    append <- T
+  }
+  sheetName <- names(filePSFnew_l)[sh_i]
+  write.xlsx(filePSFnew_l[sheetName], 
+             file = paste0(wd_data_dropbox,"/SWP_hatchery_data_TBR",date,".xlsx"),
+             sheetName = sheetName, 
+             row.names = FALSE,
+             append = append)
+}
 
-# SEL-15-03
-# This a CU that the central coast Nations said is not a CU. So we don't show on the PSE
-    
-    
-    
-# NOTES:
+
+# OLD NOTES: -------
 # - Eric: the only trick will be translating the "STOCK_CU_INDEX" field into 
 # "cuid_broodstock" AND CUID of the release site. Will have to use one of the tables in the decoder repo. 
 # Let me know if you have any other questions.
@@ -346,9 +355,8 @@ PIP-Public Involvement Program
 # decoder repo:
 # C:\Users\bcarturan\Salmon Watersheds Dropbox\Bruno Carturan\X Drive\1_PROJECTS\1_Active\Population Methods and Analysis\decoders
     
-    
-# QA/QC
-# QUESTIONS: are those multiple relationship normal?
+
+# QA/QC database relationship related ------
 printDF <- T
 relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROGRAM_CODE", printDF = printDF) # many to many
 relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROJ_NAME", printDF = printDF) # many to many
@@ -382,329 +390,4 @@ sum(is.na(DFO_df$START_DATE)) # 0
 sum(is.na(DFO_df$FACILITY_LATITUDE)) #  2043
 sum(is.na(DFO_df$FACILITY_LONGITUDE)) #  2043
 unique(DFO_df$FACILITY_NAME[is.na(DFO_df$FACILITY_LATITUDE)]) # facilities withuot GIS coordinates
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # associate a facilityid to each PROGRAM_CODE
-    facilityname <- unique(DFO_df$FACILITY_NAME)
-    facilityid <- 1:length(facilityname)
-    prog_facilID_df <- data.frame(facilityname = facilityname,
-                                  facilityid = facilityid)
-    
-    # create an empty dataframe and start filling it
-    sheetNew <- dataframe_structure_fun(df = filePSF_l[[sheet_i]], 
-                                        colnamesToKeep = c("facilityid","facilityname"),
-                                        nrow = nrow(prog_facilID_df))
-
-    sheetNew$facilityid <- prog_facilID_df$facilityid
-    sheetNew$facilityname <- prog_facilID_df$facilityname
-    
-    # fill the rest automatically
-    colNamesRemaining <- colnames(filePSF_l[[sheet_i]])[!colnames(filePSF_l[[sheet_i]]) %in% c("facilityid","facilityname")]
-    for(col_i in 1:(length(colNamesRemaining)-1)){  # -1 because "startyear" and "endyear" are treated together
-    #for(col_i in 1:4){
-      # col_i <- 1
-      field_PSF <- colNamesRemaining[col_i]
-      field_DFO <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames == field_PSF &
-                                            matchCol_df$PSF_sheet == sheetName]
-      
-      # match the other fields with 'facilityname' except 'project' that must be 
-      # match with 'program', because 'project' has a MANY TO ONE relationship with
-      # 'program' but a MANY TO MANY with 'facilityname'
-      #' TODO: make sure you get confirmation of these associations
-      field_PSF_ref <- "facilityname"
-      if(field_PSF == "project"){
-        field_PSF_ref <- "program"
-      }else if(field_PSF %in% c("startyear","endyear")){
-        # field_PSF_ref <- "project"
-        field_PSF_ref <- c("project","program","facilityname")
-      }
-      # field_DFO_ref <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames == field_PSF_ref & 
-      #                                            matchCol_df$PSF_sheet == sheetName]
-      field_DFO_ref <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames %in% field_PSF_ref & 
-                                                  matchCol_df$PSF_sheet == sheetName]
-      
-      # make a copy of DFO_df, keep only FACILITY_NAME and focal field
-      DFO_df_cut <- DFO_df[,c(field_DFO_ref,field_DFO)]
-      
-      # relationships_twoCol_df_fn(df = DFO_df_cut, col1 = field_DFO_ref,col2 = field_DFO)
-      # relationships_twoCol_df_fn(df = DFO_df_cut, col2 = field_DFO_ref,col1 = field_DFO)
-      
-      # rename columns to match PSF colnames by making sure to preserve the order
-      # of the columns in case several are present
-      for(col_psf_here in field_PSF_ref){
-        # col_psf_here <- field_PSF_ref[3]
-        field_DFO_ref_here <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames == col_psf_here & 
-                                                       matchCol_df$PSF_sheet == sheetName]
-        colnames(DFO_df_cut)[colnames(DFO_df_cut) == field_DFO_ref_here] <- col_psf_here
-      }
-      
-      #
-      colnames(DFO_df_cut)[colnames(DFO_df_cut) == field_DFO] <- field_PSF
-      
-      if(field_PSF == "startyear"){
-        
-        # combine columns "startyear" and "endyear"
-        field_DFO_endDate <- matchCol_df$DFO_colnames[matchCol_df$PSF_colnames == "endyear" & 
-                                                      matchCol_df$PSF_sheet == sheetName]
-        DFO_df_cut$endyear <- DFO_df[,field_DFO_endDate,drop = T]
-        
-        DFO_df_cut$startEndYear <- paste(DFO_df_cut$startyear,DFO_df_cut$endyear,sep = "_")
-      }
-      
-      # remove duplicated rows
-      DFO_df_cut <- unique(DFO_df_cut)
-      
-      # merge sheetNew and DFO_df_cut by facilityname
-      sheetNew <- merge(x = sheetNew,y = DFO_df_cut, by = field_PSF_ref, all = T)
-      # View(sheetNew)
-      
-      # finalise the dates and table plus check years make sense
-      if(field_PSF == "startyear"){
-        
-        PSFfieldsToKeep <- matchCol_df$PSF_colnames[matchCol_df$PSF_sheet == sheetName]
-        sheetNew <- sheetNew[,PSFfieldsToKeep]
-        
-        for(ycol in c("startyear","endyear")){
-          
-          # ycol <- c("startyear","endyear")[1]
-          
-          # only keep the year, e.g., '19920814' --> '1992'
-          date <- sapply(X = sheetNew[,ycol], 
-                         FUN = function(d){substr(x = d,start = 1, stop = 4)})
-          date <- as.numeric(date)
-          allDates <- date %in% 1900:2100
-          if(!all(allDates)){
-            print(paste0("The following dates in '",sheetName,"/",field_PSF,"' have to be checked:"))
-            print(date[!allDates])
-          }
-          DFO_df_cut[,field_PSF] <- date
-          
-          
-        }
-        
-      }
-      
-      
-
-      
-      
-    }
-  }else if(){
-    
-  }
-
-  
-  
-  
-  
-}
-
-
-
-
-
-
-# Make a new DFO_df and fill it up with the new data
-SWP_new_df <- DFO_df[0,] 
-
-for(i in 1:length(varSurvey)){
-  
-  # i <- 1
-  varHere <- varSurvey[i]
-  sheetHere <- matchCol_noNA_df$PSF_sheet[matchCol_noNA_df$PSF_colnames == varHere]
-  val <- filePSF_l[[sheetHere]][,varHere,drop = T]
-  
-  if(i == 1){  # initiate SWP_new_df
-    
-    
-    
-  }
-  
-  # potential data manipulation
-  if(varHere == "species"){
-    # only keep the species, for instance 'Lake Sockeye' --> 'Sockeye
-    speciesSalmon <- c("Sockeye","Chinook","Chum","Coho","Cutthroat","Pink","Steelhead")
-    val <- val[val ]
-    
-    # Create a pattern for matching words in speciesSalmon
-    # \\b is a word boundary anchor 
-    pattern <- paste0("\\b", paste(speciesSalmon, collapse = "\\b|\\b"), "\\b")
-    
-    # Extract matching words for each element in val
-    matched_words <- str_extract_all(val, pattern)
-    val <- unlist(matched_words)
-    
-  }else if(varHere == "release_site_name"){
-    
-    # abbreviate names, e.g., 'Adams River Upper' --> 'Adams R Up'
-    val <- sapply(X = val, FUN = function(v){
-      
-      # v <- val[3]
-      for(j in 1:length(release_site_abbrev)){
-        # j <- 1
-        abb_here <- release_site_abbrev[j]
-        w_here <- names(release_site_abbrev)[j]
-        v <- gsub(pattern = w_here, replacement = abb_here, x = v)
-      }
-      return(v)
-    })
-    
-  }else if(varHere == "release_date"){
-    
-    # only keep the year, e.g., '19920814' --> '1992'
-    out <- substr(x = val,start = 1, stop = 4)
-    out <- as.numeric(out)
-    allDates <- out %in% 1950:2099
-    if(!all(allDates <- out %in% 1950:2099)){
-      print(paste("The following dates in",sheetHere,"/",varHere," have to be checked:"))
-      print(out[!allDates])
-    }
-    val <- out
-  }
-  
-  # fill SWP_new_df
-  varHere_swp <- matchCol_noNA_df$PSF_colnames[matchCol_noNA_df$PSF_colnames == varHere]
-  
-  
-  Create SWP_new_df here depending on number of rows
-  SWP_new_df[,SWP_new_df] <- val
-  
-  
-  
-  
-}
-
-
-
-
-
-# translating the "STOCK_CU_INDEX" field into "cuid_broodstock"
-DFO_df$STOCK_CU_ID
-
-
-
-# Combine DFO_df and SWP_new_df 
-#' QUESTIONS:
-#' - shoud these two be combined?
-#' - should I implement a check up to make sure the data is not already present?
-#' 
-
-# Older stuff ----
-
-# Data obtained from DFO:
-dataDFO <- read_excel(paste0(wd_data,"/PSF_modified_SEP_releases_2023.xlsx"),
-                      sheet = 1)
-
-head(dataDFO)
-colnames(dataDFO)
-# apply(X = dataDFO, MARGIN = 2, FUN = unique)
-dataDFO$STOCK_CU_INDEX
-
-# Template:
-templSheet1 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
-                          sheet = "DataProvider")
-templSheet2 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
-                          sheet = "DataEntry_facilities")
-templSheet3 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
-                          sheet = "DataEntry_facilitiescuids")
-templSheet4 <- read_excel(paste0(wd_data,"/SWP_hatchery_data_template.xlsx"),
-                          sheet = "DataEntry_releases")
-# Sheet 1 -----
-# QUESTION: do I need to fill sheet one as well?
-templSheet1
-dim(templSheet1)
-fields_s1 <- templSheet1$`Pacific Salmon Foundation Salmon Watersheds Program` 
-fields_s1 <- fields_s1[!is.na(fields_s1)]
-fields_s1 <- fields_s1[3:length(fields_s1)]
-
-# "First Name"         --> ???
-# "Last Name"          --> ???
-# "Organization"       --> ??? 
-# "Email"              --> ???
-# "Metadata file name" --> ???
-unique(dataDFO$PROJ_NAME)
-unique(dataDFO$REL_CU_NAME)
-unique(dataDFO$RELEASE_SITE_NAME)
-
-# Sheet 2 ----
-colnames(templSheet2)
-
-# "facilityid" ??? --> need a look up file, 
-unique(dataDFO$)
-
-# "program"  ???
-unique(dataDFO$PROGRAM_CODE) # --> no, "program" is for instance: "Public Involvement Unit"
-
-# "project"
-unique(dataDFO$PROJ_NAME)
-
-# "facilityname"
-unique(dataDFO$FACILITY_NAME)  # ???
-
-# "CUID"  --> not in the more recent template
-unique(dataDFO$STOCK_CU_ID)   # cuid_broodstock 
-
-# "facility_latitude"
-unique(dataDFO$FACILITY_LATITUDE)
-
-# "facility_longitude
-unique(dataDFO$FACILITY_LONGITUDE)
-
-# startyear"
-unique(dataDFO$START_DATE)
-
-# "endyear" 
-unique(dataDFO$END_DATE)
-
-# Sheet 3 -----
-colnames(templSheet3)
-
-# "facilityID" ???
-
-# "CUID" 
-unique(dataDFO$STOCK_CU_ID)
-
-# sheet 4 -------
-
-colnames(templSheet4)
-
-# "species"
-unique(dataDFO$SPECIES_NAME)
-
-# "release_site_latitude"
-unique(dataDFO$REL_LATITUDE)
-
-# "release_site_longitude"
-unique(dataDFO$REL_LONGITUDE)
-
-# "release_site_name"
-unique(dataDFO$RELEASE_SITE_NAME)
-
-# "release_stage"
-unique(dataDFO$RELEASE_STAGE_NAME)
-
-# "release_site_CUID"
-unique(dataDFO$REL_CU_INDEX)
-
-# "facilityID" ???
-unique(dataDFO$ID)
-
-# "cuid_broodstock"        
-# "release_date"           
-# "total_release" 
-
-
-
-
-
-
-
 

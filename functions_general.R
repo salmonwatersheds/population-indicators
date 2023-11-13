@@ -98,4 +98,86 @@ relationships_twoCol_df_fn <- function(df,col1,col2,printDF = F,n_eg = 3){
   print(paste0("CONCLUSION: The relatinship between '",col1,"' and '",col2,"' is: ",col1Col2Relationship))
 }
 
+# Function to compute the geometric mean accounting for NAs values
+# x <- c(450, NA, 350, 350)
+mean_geom_fun <- function(x){
+  # exp(mean(log(x),na.rm = T))  # other equivalent formula 
+  gm <- prod(x, na.rm = T)^(1/sum(!is.na(x)))
+  return(gm)
+}
+
+# Function that returns a data frame of the fish species names (as column names)
+# and corresponding acronym.
+# BSC: figure out what these are exactly --> to double check
+species_acronym_fun <- function(){
+  
+  # species_acronym <- data.frame(
+  #   name = c("Chinook","Chum","Coho","Pink","Sockeye","Steelhead","Cutthroat"),
+  #   acronym = c("CK","CM","CO","PK","SX","SH","CT"))
+  
+  species_acronym <- data.frame(
+    Chinook = "CK",
+    Chum = "CM",         # to check
+    Coho = "CO",         # to check
+    Pink = "PK",
+    Sockeye = 'SX',
+    Steelhead = "SH",   # to check
+    Cutthroat = "CT")   # to check
+  
+  return(species_acronym)
+}
+
+#' Function that receives a vector of population size time series with year as 
+#' the names of each value and returns if the series had years only in even or 
+#' odd years or both.
+# x <- spawnerAbundance
+# even_odd_time_series_fun(x)
+even_odd_time_series_fun <- function(x){
+  
+  years <- as.numeric(names(x))
+  names(years) <- sapply(X = years, FUN = function(y){
+    if(y %% 2 == 1){
+      out <- "odd"
+    }else if(y %% 2 == 0){
+      out <- "even"
+    }
+    return(out)
+  })
+  
+  x_odd <- x[names(years) == "odd"]
+  x_even <- x[names(years) == "even"]
+  
+  if(sum(!is.na(x_odd)) > 0){
+    valuePresentInOddyears <- T
+  }else{
+    valuePresentInOddyears <- F
+  }
+  if(sum(!is.na(x_even)) > 0){
+    valuePresentInEvenyears <- T
+  }else{
+    valuePresentInEvenyears <- F
+  }
+  
+  if(valuePresentInOddyears & valuePresentInEvenyears){
+    output <- "both"
+  }else if(!valuePresentInOddyears & valuePresentInEvenyears){
+    output <- "even"
+  }else if(valuePresentInOddyears & !valuePresentInEvenyears){
+    output <- "odd"
+  }
+  
+  return(output)
+}
+
+#' Generation length estimates from the Tech-Report for when the value is not 
+#' available for given CU:
+#' "Where CU-specific data on age-at-return are unavailable, we assume 
+#' generation lengths of 
+#' - 5 years for Chinook CUs, 
+#' - 4 years for coho CUs, 
+#' - 4 years for chum CUs, 
+#' - 4 years for sockeye CUs"
+#' - Pink salmon have a consistent 2-year age-at-return 
+generationLengthEstiamte_df <- data.frame(species   = c("CM","CK","CO","SX","PK"),
+                                          genLength = c(4,5,4,4,2))
 

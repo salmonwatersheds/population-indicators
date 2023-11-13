@@ -486,8 +486,8 @@ modelBoot <- function(
   
   if(sum(!is.na(series)) > 1){ # if there is at least two data points (to avoid crashing)
     
-    # check if every odd or even year have consistently NAs like for Pink salmons.
-    # in that case, the ar() function returns an error. So it that case, remove 
+    # check if every odd or even year have consistently NAs like for Pink salmons,
+    # which generate a error in the ar(). So it that case, remove 
     # the odd or even years data points.
     # OTHE TSOLUTION THAT DOES NOT WORK: set numLags to 2
     series_odd <- series[1:length(series) %% 2 == 1]
@@ -633,27 +633,6 @@ Sgen.optim <- function (Sgen.hat, theta, Smsy) {
   return(nloglike)
 }
 
-# Function that returns a data frame of the fish species names (as column names)
-# and corresponding acronym.
-# BSC: figure out what these are exactly --> to double check
-species_acronym_fun <- function(){
-  
-  # species_acronym <- data.frame(
-  #   name = c("Chinook","Chum","Coho","Pink","Sockeye","Steelhead","Cutthroat"),
-  #   acronym = c("CK","CM","CO","PK","SX","SH","CT"))
-  
-  species_acronym <- data.frame(
-    Chinook = "CK",
-    Chum = "CM",         # to check
-    Coho = "CO",         # to check
-    Pink = "PK",
-    Sockeye = 'SX',
-    Steelhead = "SH",   # to check
-    Cutthroat = "CT")   # to check
-  
-  return(species_acronym)
-}
-
 #' Function that returns a list of two dataframes from the _SRdata.txt for a given 
 #' species in a given region.
 #' path_file <- fndata[i]  # the path of the _SRdata.text file
@@ -767,6 +746,280 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
   return(output)
 }
 
+CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym = NA){
+  # quick fixes for now
+  #' TODO fix that in the data base? Or anywhere else?
+  if(CUname[1] == "Mussel-Kynock"){
+    CUname <- c(CUname,"Mussel-Kynoch")
+  }else if(CUname[1] == "Bella Colla-Dean Rivers"){
+    CUname <- c(CUname,"Bella Coola-Dean Rivers")
+  }else if(grepl(pattern = "NCC",x = CUname[1])){
+    CUname_bis <- gsub(pattern = "NCC",
+                       replacement = "North & Central Coast",
+                       x = CUname[1])
+    CUname_bis <- gsub(pattern = " timing",replacement = "",CUname_bis)
+    # CUname_bis <- gsub(pattern = "-late",replacement = "-Late",CUname_bis)
+    # CUname_bis <- gsub(pattern = "-early",replacement = "-Early",CUname_bis)
+    CUname <- c(CUname,CUname_bis)
+  }else if(grepl(pattern = "N ",x = CUname[1])){
+    CUname <- c(CUname,gsub(pattern = "N ",replacement = "Northern ",x = CUname[1]))
+  }else if(CUname[1] %in% c("Northern Coastal Fjords","Northern Coastal Streams")){
+    CUname <- c(CUname,paste(CUname,"(river-type)"))
+  }else if(CUname[1] == "Anderson/Seton Early Summer"){
+    CUname <- c(CUname,"Anderson-Seton-Early Summer")
+  }else if(grepl(pattern = " Early Summer",x = CUname[1])){
+    CUname <- c(CUname,gsub(pattern = " Early Summer", replacement = "-Early Summer",x = CUname[1]))
+  }else if(grepl(pattern = " Summer",x = CUname[1])){
+    CUname <- c(CUname,gsub(pattern = " Summer", replacement = "-Summer",x = CUname[1]))
+  }else if(CUname[1] == "Harrison River"){
+    CUname <- c(CUname,"Harrison River (river-type)")
+  }else if(CUname[1] %in% c("Seton Late","Seton-Late")){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      paste(CUname,"(de novo)",sep = " ")})
+    CUname <- c(CUname,CUname_bis)
+  }else if("HG-EAST" %in% CUname){
+    CUname <- c(CUname,"East Haida Gwaii")
+  }else if("HG-WEST" %in% CUname){
+    CUname <- c(CUname,"West Haida Gwaii")
+  }else if(CUname == "MARIAN"){
+    CUname <- c(CUname,"Marian/Eden")
+    # conservationunits_decoder$cu_name_pse[grepl("Marian",conservationunits_decoder$cu_name_pse)]
+  }else if(CUname == "Swan"){
+    CUname <- c(CUname,"Swan/Club")
+  }else if(CUname == "Middle Yukon River and tributaries"){
+    CUname <- c(CUname,"Middle Yukon")
+  }else if(CUname == "White and tributaries"){
+    CUname <- c(CUname,"White")
+  }else if(CUname == "Northern Yukon River and tributaries"){
+    CUname <- c(CUname,"Northern Yukon")
+  }else if(CUname == "Upper Yukon River"){
+    CUname <- c(CUname,"Upper Yukon")
+  }else if(CUname == "Yukon River-Teslin headwaters"){
+    CUname <- c(CUname,"Teslin")
+  }
+
+
+  if(grepl(pattern = "[E|e]ven",x = CUname[1])){
+    CUname <- c(CUname,gsub(pattern = "[E|e]ven",replacement = "(even)",x = CUname[1]))
+  }
+  if(grepl(pattern = "[O|o]dd",x = CUname[1])){
+    CUname <- c(CUname,gsub(pattern = "[O|o]dd",replacement = "(odd)",x = CUname[1]))
+  }
+  if(grepl(pattern = "Coola Dean",x = CUname[1])){  # not a if else because goes with (odd) and odd as well
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){               # there are potentially multiple values in CUname
+      gsub(pattern = "Coola Dean",replacement = "Coola-Dean",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "Homathko-Klinaklini-Rivers-Smith-Bella",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Rivers-Smith-Bella",replacement = "Smith-Rivers-Bella",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "Francois/Fraser",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Francois/Fraser",replacement = "Francois-Fraser",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "migrating Late",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "migrating Late",replacement = "Migrating-Late",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "-upstream",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "-upstream",replacement = "-Upstream",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "-downstream",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "-downstream",replacement = "-Downstream",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "-late",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "-late",replacement = "-Late",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "-early",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "-early",replacement = "-Early",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = " Late",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = " Late",replacement = "-Late",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = " Early",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = " Early",replacement = "-Early",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "/",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "/",replacement = "-",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = " ES",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = " ES",replacement = "-Early Summer",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "HG",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "HG",replacement = "Haida Gwaii",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "GRAHAM-ISLAND-LOWLANDS",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "GRAHAM-ISLAND-LOWLANDS",replacement = "Graham Island Lowlands",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl("Haida Gwaii",CUname[1]) & speciesAcronym == "PK"){
+    oddEven <- even_odd_time_series_fun(x = spawnerAbundance)
+    CUname_bis <- paste0(CUname," (",oddEven,")")
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = " Observatory",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = " Observatory",replacement = "-Observatory",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  # remove the species acronym present in certain CU names
+  if(sum(sapply(X = speciesAcronyms,   
+                FUN = function(spa){
+                  grepl(pattern = paste0(" ",spa),x = CUname[1])}))){
+    
+    spAcroTF <- sapply(X = speciesAcronyms, 
+                       FUN = function(spa){
+                         grepl(pattern = paste0(" ",spa),x = CUname[1])})
+    
+    patternToRemove <- paste0(" ",speciesAcronyms[spAcroTF])
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = patternToRemove,replacement = "",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "Portland Sound",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Portland Sound",replacement = "Portland Sound-Observatory Inlet-Lower Nass",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- c(CUname,CUname_bis)
+  }
+  if(grepl(pattern = "Portland Sound Observatory Inlet CO",x = CUname[1])){
+    CUname <- c(CUname,"Portland Sound-Observatory Inlet-Portland Canal")
+  }
+  if(grepl(pattern = "Nass Portland Observatory",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Nass Portland Observatory",replacement = "Nass-Portland-Observatory",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Mid ",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Mid ",replacement = "Middle ",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Skeena Large",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Skeena Large",replacement = "Skeena-Large",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Skeena Main Tribs",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Skeena Main Tribs",replacement = "Skeena-Mainstem Tributaries",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Upper Bulkley",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Upper Bulkley",replacement = "Upper Bulkley River",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Lower Skeena Odd",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Lower Skeena Odd",replacement = "Lower Skeena River (odd)",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Middle Upper",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Middle Upper",replacement = "Middle-Upper",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "-Enhanced",x = CUname[1])){
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "-Enhanced",replacement = " (enhanced)",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }  
+  if(grepl(pattern = "Babine",x = CUname[1]) & !grepl(pattern = "Enhanced",x = CUname[1]) & # otherwise it is Babine (enhanced)
+     speciesAcronym %in% c("SX","SEL","SER")){             # otherwise it Babine for SH
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Babine",replacement = "Babine/Onerka",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Kitwancool",x = CUname[1])){             # otherwise it Babine for SH
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Kitwancool",replacement = "Gitanyow (Kitwanga/Kitwancool)",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Mcdonell",x = CUname[1])){             # otherwise it Babine for SH
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Mcdonell",replacement = "Mcdonell/Dennis/Aldrich",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "Morice",x = CUname[1]) & species_acronym %in% c("SX","SEL","SER")){     # otherwise it is Morice for SH
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "Morice",replacement = "Morice/Atna",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "SkeenaRivHigh",x = CUname[1])){     # otherwise it is Morice for SH
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "SkeenaRivHigh",replacement = "Skeena River-High Interior (river-type)",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+  if(grepl(pattern = "SkeenaRivHigh",x = CUname[1])){     # otherwise it is Morice for SH
+    CUname_bis <- sapply(X = CUname, FUN = function(cu){         
+      gsub(pattern = "SkeenaRivHigh",replacement = "Skeena River-High Interior (river-type)",x = cu)})
+    names(CUname_bis) <- NULL
+    CUname <- unique(c(CUname,CUname_bis))
+  }
+
+  # conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$species_abbr %in% speciesName,]
+  # sort(unique(conservationunits_decoder_cut$cu_name_pse))
+  # sort(unique(conservationunits_decoder_cut$cu_name_dfo))
+  # conservationunits_decoder$cu_name_pse[grepl("[e|E]nhanced",conservationunits_decoder$cu_name_pse)]
+  # conservationunits_decoder[grepl("[e|E]nhanced",conservationunits_decoder$cu_name_pse),]
+  # conservationunits_decoder[grepl("Smith Inlet",conservationunits_decoder$cu_name_pse),]
+  # gsub(pattern = "_",replacement = " ",x = CUs[i])
+  
+  return(CUname)
+}
 
 
 

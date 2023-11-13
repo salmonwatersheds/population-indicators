@@ -81,7 +81,9 @@ set_working_directories_fun <- function(subDir = NA, Export_locally = T){
   }else{
     
     # The dropbox path to the /population-indicators/biological-status folder:
-    wd_project_dropbox <- paste0("1_Active/Population Methods and Analysis/population-indicators/",subDir)
+    wd_population_indicator_dropbox <- "1_Active/Population Methods and Analysis/population-indicators"
+    wd_population_indicator_data_input_dropbox <- paste(wd_population_indicator_dropbox,"data_input",sep = "/")
+    wd_project_dropbox <- paste(wd_population_indicator_dropbox,subDir,sep = "/")
     
     wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/figures")
     wd_output <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/output")
@@ -90,10 +92,24 @@ set_working_directories_fun <- function(subDir = NA, Export_locally = T){
   print(wd_figures)
   print(wd_output)
   
-  out_l <- list(wd_head,wd_project,wd_code,wd_data,wd_figures,wd_output,
-                wd_X_Drive1_PROJECTS,wd_project_dropbox)
-  names(out_l) <- list("wd_head","wd_project","wd_code","wd_data","wd_figures","wd_output",
-                       "wd_X_Drive1_PROJECTS","wd_project_dropbox")
+  out_l <- list(wd_head,wd_project,
+                wd_code,wd_data,
+                wd_figures,
+                wd_output,
+                wd_X_Drive1_PROJECTS,
+                wd_population_indicator_dropbox,
+                wd_population_indicator_data_input_dropbox,
+                wd_project_dropbox)
+  names(out_l) <- list("wd_head",
+                       "wd_project",
+                       "wd_code",
+                       "wd_data",
+                       "wd_figures",
+                       "wd_output",
+                       "wd_X_Drive1_PROJECTS",
+                       "wd_population_indicator_dropbox",
+                       "wd_population_indicator_data_input_dropbox",
+                       "wd_project_dropbox")
   return(out_l)
 }
 

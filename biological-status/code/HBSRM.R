@@ -27,7 +27,8 @@ setwd(wd_head)
 # Now import functions related to directories.
 # Note that the script cannot be called again once the directory is set to the 
 # subdirectory of the project (unless setwd() is called again).
-source("functions_set_wd.R")
+source("code/functions_set_wd.R")
+source("code/functions_set_wd.R")
 
 # return the name of the directories for the different projects:
 subDir_projects <- subDir_projects_fun()

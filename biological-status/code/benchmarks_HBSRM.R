@@ -60,10 +60,6 @@ library(modeest) # Provides estimators of the mode of univariate data or univari
 # option to export the figures
 print_fig <- F
 
-# Paths to the repositories containing the run reconstruction datasets for each 
-# region.
-wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
-
 # Import species names and acronyms
 species_acronym <- species_acronym_fun()
 

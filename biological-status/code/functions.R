@@ -1021,7 +1021,49 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
   return(CUname)
 }
 
-
+#' Function that retrieves and rbind the CSV files generated in the 
+#' biological-status/output folder, for the regions and species provided as 
+#' vector arguments. The three type of fils being gatehred are (for instance):
+#' - Yukon_CK_biological_status.csv
+#' - Yukon_CK_benchmarks_summary.CSV
+#' - Yukon_CK_benchmarks_HS_percentiles_summary.csv
+#' Arguments:
+#' - wd_output: where the files are.
+#' - pattern:  "biological_status", "benchmarks_summary", "benchmarks_HS_percentiles_summary"
+#' - region: vector of regions
+#' - species: vector of species acronyms (in species_acronym_fun())
+#' - species_all: T or F, if T, takes precedence on whatever is specified for species
+rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
+                                          species_all = F){
+  
+  biological_status_df <- NULL
+  for(rg in region){
+    # rg <- regions_df[1,1]
+    
+    # returns all the files with pattern rg and "biological_status"
+    list_files <- list.files(path = paste0(wd_output))
+    list_files <- list_files[grepl(rg,list_files) & grepl(pattern,list_files)]
+    
+    # select the species required
+    if(!species_all & !is.na(species[1])){
+      list_files<- sapply(X = species, FUN = function(sp){list_files[grepl(pattern = sp,x = list_files)]})
+      list_files <- unlist(list_files_bis) # this gets rides of the empty elements
+    }
+    
+    # import these files and rbind them
+    for(i_f in 1:length(list_files)){
+      # i_f <- 1
+      fileHere <- read.csv(file = paste(wd_output,list_files[i_f],sep="/"),header = T)
+      
+      if(is.null(biological_status_df)){
+        biological_status_df <- fileHere
+      }else{
+        biological_status_df <- rbind(biological_status_df,fileHere)
+      }
+    }
+  }
+  return(biological_status_df)
+}
 
 
 

@@ -69,35 +69,76 @@ regions_df <- regions_fun()
 
 #' Import the files for all regions, species and CUs and rbind them to a single 
 #' dataframe.
-
 region <- as.character(regions_df[1,])
 region <- region[region != "Columbia"]
-
+species <- c(
+  species_acronym$Sockeye,    
+  species_acronym$Pink,
+  species_acronym$Coho
+  #species_acronym$Cutthroat,
+  #species_acronym$Chum
+)
+# note that species_all take precedence over species in SRdata_path_species_fun()
+species_all <- TRUE
 pattern <- "biological_status"
-biological_status_df <- NULL
-for(rg in region){
-  # rg <- regions_df[1,1]
-  
-  # returns all the files with pattern rg and "biological_status"
-  list_files <- list.files(path = paste0(wd_output))
-  list_files <- list_files[grepl(rg,list_files) & grepl(pattern,list_files)]
-  
-  # import these files and rbind them
-  for(i_f in 1:length(list_files)){
-    # i_f <- 1
-    fileHere <- read.csv(file = paste(wd_output,list_files[i_f],sep="/"),header = T)
 
-    if(is.null(biological_status_df)){
-      biological_status_df <- fileHere
-    }else{
-      biological_status_df <- rbind(biological_status_df,fileHere)
-    }
-  }
-}
+biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                      wd_output = wd_output,
+                                                      region = region,
+                                                      species_all = F)
 
 
 write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
           row.names = F)
+head(biological_status_df)
+colnames(biological_status_df)
+
+nrow(biological_status_df) # 146
+
+
+# discrepancies in CU names
+sum(gsub("_"," ",biological_status_df$CU) != biological_status_df$CU_pse)/nrow(biological_status_df)
+sum(gsub("_"," ",biological_status_df$CU) != biological_status_df$CU_dfo)/nrow(biological_status_df)
+sum(biological_status_df$CU_pse != biological_status_df$CU_dfo)/nrow(biological_status_df)
+
+# CUs that have contrasting biological status between Smsy80 and Smsy:
+colnamesSelect <- c("region","species","CU","CU_pse",colnames(biological_status_df)[grepl("Smsy_")])
+biological_status_df_cut <- biological_status_df
+
+biological_status_df$status_Smsy <- sapply(X = 1:nrow(biological_status_df), 
+                                          FUN = function(r){
+                                            # r <- 1
+                                            slice <- biological_status_df[r,colnames(biological_status_df)[grepl("Smsy_",colnames(biological_status_df))]]
+                                            out <- c("red","amber","green")[slice == max(slice)]
+                                            return(out)
+                                          })
+
+biological_status_df$status_Smsy80 <- sapply(X = 1:nrow(biological_status_df), 
+                                           FUN = function(r){
+                                             # r <- 1
+                                             slice <- biological_status_df[r,colnames(biological_status_df)[grepl("Smsy80_",colnames(biological_status_df))]]
+                                             out <- c("red","amber","green")[slice == max(slice)]
+                                             return(out)
+                                           })
+
+# 
+biological_status_df[biological_status_df$status_Smsy != biological_status_df$status_Smsy80,]
+# that's not a lot of CUs!
+
+
+#' Import the associated benchmark values
+pattern <- "benchmarks_summary"
+
+benchmarks_summary_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                       wd_output = wd_output,
+                                                       region = region,
+                                                       species_all = F)
+
+head(benchmarks_summary_df)
+nrow(unique(benchmarks_summary_df[,c("region","species","CU")])) # 146
+
+
+
 
 
 

@@ -13,6 +13,9 @@
 rm(list = ls())
 graphics.off()
 
+options(java.parameters = "- Xmx1024m") # to be able to export a large excel file
+
+
 # reset the wd to head using the location of the current script
 path <- rstudioapi::getActiveDocumentContext()$path
 dirhead <- "population-indicators"
@@ -23,8 +26,8 @@ setwd(wd_head)
 # Now import functions related to directories.
 # Note that the script cannot be called again once the directory is set to the 
 # subdirectory of the project (unless setwd() is called again).
-source("functions_set_wd.R")
-source("functions_general.R")
+source("code/functions_set_wd.R")
+source("code/functions_general.R")
 
 subDir_projects <- subDir_projects_fun()
 
@@ -62,10 +65,7 @@ source(paste(wd_code,"functions.R",sep = "/"))
 #'** Import conservation-units.csv from wd_spawner_surveys_data **
 #' This file comes from the PSF database all allows to match the DFO STOCK_CU_INDEX
 #' with the PSF 'cuid' (or 'CUID') with the field 'cu_index' (= STOCK_CU_INDEX)
-# TODO: eventually move the conservation-units.csv file to the population-indicators folder DONE
-# conservation_units <- read.csv(paste0(wd_spawner_surveys_data,"/conservation-units.csv"),
-#                                header = T)
-conservation_units <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
+conservationunits_decoder <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
                                header = T)
 
 #'** Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data **
@@ -84,7 +84,7 @@ DFO_df <- DFO_df_all
 DFO_df <- DFO_df[!is.na(DFO_df$STOCK_CU_INDEX),]
 nrow(DFO_df) # 32642
 
-#' 2) STOCK_CU_INDEX (CU of the population of origine) and REL_CU_INDEX (CU of 
+#' 2) STOCK_CU_INDEX (CU of the population of origin) and REL_CU_INDEX (CU of 
 #' the releasing site)
 #' Steph and Eric: "we assume that REL_CU_INDEX = STOCK_CU_INDEX when NAs are present 
 #' in REL_CU_INDEX".
@@ -94,7 +94,7 @@ DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(D
 #' 3) "Seapen" released (RELEASE_STAGE_NAME == "Seapen")
 #' Steph and Eric: "some cases REL_CU_INDEX = blank is for seapen released, since
 #' maybe in those cases the release can’t be assigned to a CU? But in those cases
-#'  do we assume the fish will return to the broodstock CU? Yes."
+#'  do we assume the fish will return to the broodstock CU? Eric: Yes."
 #' TODO: deal with it later.
 # View(DFO_df_all[grepl("Seapen",DFO_df_all$RELEASE_STAGE_NAME),])
 
@@ -107,7 +107,7 @@ DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(D
 CUToRemove <- c("CK-9002","CK-9005","CK-9006","CK-9007","CK-9008","SEL-15-03","CM-9004")
 DFO_df <- DFO_df[! DFO_df$STOCK_CU_INDEX %in% CUToRemove,]
 DFO_df <- DFO_df[! DFO_df$REL_CU_INDEX %in% CUToRemove,]
-
+nrow(DFO_df)
 
 #' ** Import the hatchery template from wd_data as a list **
 filePSF_l <- hatchery_template_fun(wd_data = wd_data,
@@ -125,7 +125,7 @@ filePSFnew_l <- filePSF_l
 #' TODO: correct/clear the 1st sheet (?)
 
 # Fill filePSF_l with new data
-for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by hand (QUESTION)
+for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by hand or not at all (QUESTION)
   
   # sheet_i <- 2
   sheetName <- names(filePSF_l)[sheet_i]
@@ -138,13 +138,13 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
   field_PSF <- matchCol_df$PSF_colnames[matchCol_df$PSF_sheet == sheetName]
   field_DFO <- matchCol_df$DFO_colnames[matchCol_df$PSF_sheet == sheetName]
   field_DFO <- field_DFO[!is.na(field_DFO)]
-  
+  #
   if(sheetName == "DataEntry_facilities"){ # sheet 2
     
     #
     sheetNew <- DFO_df[,field_DFO]
     
-    colnames(sheetNew) <- field_PSF[field_PSF != "facilityid"]
+    colnames(sheetNew) <- field_PSF[field_PSF != "facilityid"] # "program" "project" "facilityname" "facility_latitude" "facility_longitude" "startyear"  "endyear"  
     
     # only keep the year, e.g., '19920814' --> '1992'
     for(ycol in c("startyear","endyear")){
@@ -187,16 +187,30 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     
     #' In "program" replace the acronyms by the full names
     sheetNew$program <- program_acronym_fun(prog_acro =  sheetNew$program)
-    # sheetNew[sheetNew$program == "NA",]  # QUESTION: is that noramal?
+    # sheetNew[sheetNew$program == "NA",]  # QUESTION: is that normal?
     # sheetNew[sheetNew$facilityname == "Omega Pacific H",]
     
     #' Define facilityid/facilityID:
-    #' --> facilityid uniquely identifies “program-project-facilityname-facility_latitude-facility_longitude-startyear-endyear”
-    #' --> facilityid only lives in this file so it can be defined here.
+    #' Katy: facilityid uniquely identifies “program-project-facilityname-facility_latitude-facility_longitude-startyear-endyear”
+    #' Katy: facilityid only lives in this file so it can be defined here.
     sheetNew$facilityid <- 1:nrow(sheetNew)
 
     # Reorder columns
     sheetNew <- sheetNew[,field_PSF]
+    
+    # check if multiple coordinate values are attributed to a unique facilityname
+    sheetNew_cut <- sheetNew[,c("facilityname","facility_latitude","facility_longitude")]
+    for(fn_i in 1:length(unique(sheetNew_cut$facilityname))){
+      # fn_i <- 1
+      fn_here <- unique(sheetNew_cut$facilityname)[fn_i]
+      sheetNew_cut2 <- sheetNew_cut[sheetNew_cut$facilityname == fn_here,]
+      sheetNew_cut2 <- unique(sheetNew_cut2)
+      if(nrow(sheetNew_cut2) > 1){
+        print(" WARNING: The following facility has multiple coordinate values (and should not):")
+        print(sheetNew_cut2)
+      }
+    }
+    
     
   }else if(sheetName == "DataEntry_facilitiescuids"){
     
@@ -204,14 +218,14 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     #' program-project-facilityname:
     field_DFO <- c("PROGRAM_CODE","PROJ_NAME","FACILITY_NAME","REL_CU_INDEX")
     sheetNew <- DFO_df[,field_DFO]
-    colnames(sheetNew) <- c("program","project","facilityname","cu_index") # "cu_index" in conservation_units = the CU_INDEX
+    colnames(sheetNew) <- c("program","project","facilityname","cu_index") # "cu_index" in conservationunits_decoder = the CU_INDEX
     sheetNew$program <- program_acronym_fun(prog_acro =  sheetNew$program)
     sheetNew <- merge(x = sheetNew, 
                       y = filePSFnew_l$DataEntry_facilities[,c("facilityid","program","project","facilityname")],
                       by = c("program","project","facilityname"), 
                       all = T)
     
-    # remove uncessary columns and update their names
+    # remove unnecessary columns and update their names
     sheetNew <- sheetNew[,c("facilityid","cu_index")]  
     colnames(sheetNew)[colnames(sheetNew) == "facilityid"] <- "facilityID"
     
@@ -221,9 +235,9 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # remove duplicated rows
     sheetNew <- unique(sheetNew)
     
-    # convert CUID (i.e. REL_CU_INDEX) to the PSF cuid
+    # convert CUID (i.e. REL_CU_INDEX) to the PSE cuid
     sheetNew$CUID <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$cu_index,
-                                                         conservation_units = conservation_units)
+                                                         conservation_units = conservationunits_decoder)
     
     # retain the desired columns
     sheetNew <- sheetNew[,c("facilityID","CUID")]
@@ -244,13 +258,12 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     colnames(sheetNew)[colnames(sheetNew) == "PROJ_NAME"] <- "project"
     colnames(sheetNew)[colnames(sheetNew) == "facilityID"] <- "facilityname"
     
-    #' there are duplicated columns:
+    #' there are duplicated rows:
     #' TODO: remove them from now but deal with it with Katy and co.
     # nrow(sheetNew) # 31830
     # nrow(DFO_df)   # 31830
     # sum(duplicated(sheetNew)) # 134
     # sum(duplicated(DFO_df))   # 0
-    # sum(duplicated(DFO_df[,c(field_DFO,field_DFO_forFacilityID)]))   # 134
     # 
     # rowsDuplicating <- which(duplicated(sheetNew) | duplicated(sheetNew, fromLast = TRUE))
     # View(sheetNew[rowsDuplicating,])
@@ -259,13 +272,12 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # 
     # sum(duplicated(DFO_df)) # 0
     # sum(duplicated(DFO_df[,colnames(DFO_df) != "MRP_TAGCODE"]))     # 35
-    # sum(duplicated(DFO_df[,colnames(DFO_df) != "MRP_TAGCODE"])) # 0   ?!
+    # sum(duplicated(DFO_df[,colnames(DFO_df) != "RELEASE_COMMENT"])) # 0   ?!
     # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","RELEASE_COMMENT")]))  # 48
     # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","BROOD_YEAR")]))       # 41
     # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","AVE_WEIGHT")]))       # 40
     # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","NoTagClip")]))        # 39
     # sum(duplicated(DFO_df[,! colnames(DFO_df) %in% c("MRP_TAGCODE","RELEASE_COMMENT","BROOD_YEAR","AVE_WEIGHT","NoTagClip")]))  # 69
-    # 
     # 
     # remainingCol <- colnames(DFO_df)[! colnames(DFO_df) %in% c(field_DFO,field_DFO_forFacilityID)]
     # for(c in remainingCol){
@@ -276,7 +288,7 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # }
     # colSelected <- c("MRP_TAGCODE","RELEASE_COMMENT","BROOD_YEAR","AVE_WEIGHT","NoTagClip","START_DATE","END_DATE","PURPOSE_CODE","AVE_LENGTH")
     # remainingCol <- colnames(DFO_df)[! colnames(DFO_df) %in% c(field_DFO,field_DFO_forFacilityID,colSelected)]
-    # threshold <- sum(duplicated(DFO_df[,!colnames(DFO_df) %in% colSelected]))
+    # threshold <- sum(duplicated(DFO_df[,!colnames(DFO_df) %in% colSelected])) # 100
     # for(c in remainingCol){
     #   # c <- "RELEASE_COMMENT"
     #   c_here <- c(c,colSelected)
@@ -305,13 +317,62 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     
     # replace STOCK_CU_INDEX and REL_CU_INDEX values by the PSF CUID
     sheetNew$release_site_CUID <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$release_site_CUID, 
-                                                                      conservation_units = conservation_units)
+                                                                      conservation_units = conservationunits_decoder)
     sheetNew$cuid_broodstock <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$cuid_broodstock, 
-                                                                    conservation_units = conservation_units)
+                                                                    conservation_units = conservationunits_decoder)
     
     # reorder columns and rows
     sheetNew <- sheetNew[field_PSF]
     sheetNew <- sheetNew[order(sheetNew$facilityID),]
+    
+    # check if multiple coordinate values are attributed to a unique release_site_name
+    sheetNew_cut <- sheetNew[,c("release_site_name","release_site_latitude","release_site_longitude")]
+    for(rs_i in 1:length(unique(sheetNew_cut$release_site_name))){
+      # rs_i <- 1
+      rs_here <- unique(sheetNew_cut$release_site_name)[rs_i]
+      sheetNew_cut2 <- sheetNew_cut[sheetNew_cut$release_site_name == rs_here,]
+      sheetNew_cut2 <- unique(sheetNew_cut2)
+      if(nrow(sheetNew_cut2) > 1){
+        print("WARNING: in DataEntry_releases")
+        print("The following release site has multiple coordinate values (and should not):")
+        print(sheetNew_cut2)
+      }
+    }
+    
+    #' sum total_release for a same combination of (i) release_site_name, 
+    #' (ii) release_stage, (iii) release_site_CUID and (iv) release_date:
+    nrow(sheetNew) # 31830
+    sheetNew_l <- list()
+    count <- 1
+    for(rsn in unique(sheetNew$release_site_name)){
+      # rsn <- unique(sheetNew$release_site_name)[1]
+      sheetNew_rsn <- sheetNew[sheetNew$release_site_name == rsn,]
+      for(rs in unique(sheetNew_rsn$release_stage)){
+        # rs <- unique(sheetNew_rsn$release_stage)[1]
+        sheetNew_rsn_rs <- sheetNew_rsn[sheetNew_rsn$release_stage == rs,]
+        for(cuid in unique(sheetNew_rsn_rs$release_site_CUID)){
+          # cuid <- unique(sheetNew_rsn_rs$release_site_CUID)[1]
+          sheetNew_rsn_rs_cuid <- sheetNew_rsn_rs[sheetNew_rsn_rs$release_site_CUID == cuid,]
+          for(rd in unique(sheetNew_rsn_rs_cuid$release_date)){
+            # rd <- unique(sheetNew_rsn_rs_cuid$release_date)[1]
+            sheetNew_rsn_rs_cuid_rd <- sheetNew_rsn_rs_cuid[sheetNew_rsn_rs_cuid$release_date == rd,]
+            slice <- sheetNew_rsn_rs_cuid_rd[1,,drop = F]
+            slice$total_release <- sum(sheetNew_rsn_rs_cuid_rd$total_release)
+            sheetNew_l[[count]] <- slice
+            count <- count + 1
+            # CHECK UP
+            if(length(unique(sheetNew_rsn_rs_cuid_rd$cuid_broodstock)) > 1){
+              print("WARNING: in DataEntry_releases")
+              print("The following release_site_name-release_stage-release_site_CUID-release_date combination has multiple cuid_broodstock:")
+              print("Ask Katy to know what to do")
+              print(sheetNew_rsn_rs_cuid_rd)
+            }
+          }
+        }
+      }
+    }
+    sheetNew <- do.call(rbind,sheetNew_l)
+    nrow(sheetNew) # 22441
     
     # remove duplicted rows (SEE TODO ABOVE ABOUT THAT)
     # nrow(DFO_df)
@@ -320,7 +381,7 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # sheetNew[sheetNew$cuid_broodstock != sheetNew$release_site_CUID,]
     
     # "release_site_name" ("RELEASE_SITE_NAME")
-    # QUESTION: unabbreviate names, e.g., 'Adams R Up' --> 'Adams River Upper'
+    # QUESTION: unabbreviate names, e.g., 'Adams R Up' --> 'Adams River Upper' --> wait to hear from Katy
     #' TODO: QUESTION: Should I do it? is that correct? Am I missing something?
     # release_site_abbrev <-        c("Cr","R","Up","Low","Sl","N","S","E","W","LK")
     # names(release_site_abbrev) <- c("Creek","River","Upper","Lower","Slough","North","South","East","West","Lake")
@@ -329,7 +390,25 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
   filePSFnew_l[[sheet_i]] <- sheetNew
 }
 
+#' In sheet DataEntry_releases, remove the row with NA values for release_site_latitude
+#' and release_site_longitude and places these in a new additional sheet
+toKeep <- !is.na(filePSFnew_l$DataEntry_releases$release_site_latitude) & 
+  !is.na(filePSFnew_l$DataEntry_releases$release_site_latitude)
+toKeepNot <- !toKeep
+DataEntry_releases_noNA <- filePSFnew_l$DataEntry_releases[toKeep,]
+DataEntry_releases_NA <- filePSFnew_l$DataEntry_releases[toKeepNot,]
+filePSFnew_l$DataEntry_releases <- DataEntry_releases_noNA
+filePSFnew_l$DataEntry_releases_NAcoord <- DataEntry_releases_NA
 
+#' In sheet DataEntry_facilitiescuids, remove the facilites (i.e., facilityID) 
+#' that do not have coordinate in sheet DataEntry_facilities and places these in 
+#' a new additional sheet
+facilityIDtoKeep <- filePSFnew_l$DataEntry_facilities$facilityid[!is.na(filePSFnew_l$DataEntry_facilities$facility_latitude) &
+                                                                   !is.na(filePSFnew_l$DataEntry_facilities$facility_longitude)]
+DataEntry_facilitiescuids_noNA <- filePSFnew_l$DataEntry_facilitiescuids[filePSFnew_l$DataEntry_facilitiescuids$facilityID %in% facilityIDtoKeep,]
+DataEntry_facilitiescuids_NA <- filePSFnew_l$DataEntry_facilitiescuids[!filePSFnew_l$DataEntry_facilitiescuids$facilityID %in% facilityIDtoKeep,]
+filePSFnew_l$DataEntry_facilitiescuids <- DataEntry_facilitiescuids_noNA
+filePSFnew_l$DataEntry_facilitiescuids_NAcoord <- DataEntry_facilitiescuids_NA
 
 # export the file
 date <- Sys.Date()
@@ -343,12 +422,30 @@ for(sh_i in 1:length(names(filePSFnew_l))){
     append <- T
   }
   sheetName <- names(filePSFnew_l)[sh_i]
-  write.xlsx(filePSFnew_l[sheetName], 
-             file = paste0(wd_data_dropbox,"/SWP_hatchery_data_TBR",date,".xlsx"),
+  sheet <- as.data.frame(filePSFnew_l[[sheetName]])
+  write.xlsx(sheet, 
+             file = paste0(wd_output,"/SWP_hatchery_data_TBR_",date,".xlsx"),
              sheetName = sheetName, 
              row.names = FALSE,
-             append = append)
+             append = append,
+             showNA = T)
+  print(sh_i)
 }
+
+
+# Notes for Katy
+# - 1) I implemented a CHECK to check that facilityname have a unique combination of facility_latitude and facility_longitude --> they do
+# - 2) I implemented a CHECK to check that release_site_name have a unique combination ofrelease_site_latitude and release_site_longitude --> they do
+# - 3) I sum total_release for a same combination of (i) release_site_name, (ii) release_stage, (iii) release_site_CUID and (iv) release_date
+# - 4) I implemented a CHECK in 3) above to very if multiple cuid_broodstock are present in a single combinations --> THERE ARE (wait to hear from Katy)
+# - 5) In sheet DataEntry_releases, I removed the row with NA values for release_site_latitude and release_site_longitude and places these in a new additional sheet called DataEntry_releases_NAcoord
+# - 6) In sheet DataEntry_facilitiescuids, I removed the facilites (i.e., facilityID) that do not have coordinate in sheet DataEntry_facilities and placed these in a new additional sheet called DataEntry_facilitiescuids_NAcoord
+# - 7) I cannot do anything about the 1st sheet ??? progratically, it has to be copy pasted by hand from the template and then filled by hand
+
+
+
+
+
 
 
 # OLD NOTES: -------

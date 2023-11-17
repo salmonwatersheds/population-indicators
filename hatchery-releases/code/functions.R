@@ -213,6 +213,8 @@ hatchery_template_fun <- function(wd_data,
 #' which comes from the PSF database.
 # cu_index <- DFO_df$REL_CU_INDEX
 # cuid <- NA
+# cu_index <- sheetNew$cu_index
+# conservation_units <- conservationunits_decoder
 cui_cu_index_conservation_units_fun <- function(cuid = NA, cu_index = NA,
                                                 conservation_units){
   
@@ -231,6 +233,7 @@ cui_cu_index_conservation_units_fun <- function(cuid = NA, cu_index = NA,
     # i <- 1
     val <- unique(input)[i]
     newVal <- conservation_units[,colOutput][conservation_units[,colInput] == val]
+    newVal <- newVal[!is.na(newVal)]
     if(length(newVal) == 0){ # there is not corresponding value
       print(paste0("The value '",val,"' does not have a match so NA is given instead."))
       newVal <- NA

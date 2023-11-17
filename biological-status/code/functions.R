@@ -340,13 +340,13 @@ HPD <- function(x, xmax = NA, na.rm = TRUE,n = 5000){
   return(output)
 }
 
-# Function which computes linear-regression estimates of parameters and MSY 
-# parameters (i.e., the simple linearized Ricker model) and plots. The function 
-# returns a list of the coefficients a, b and sigma.
-# Nyrs: the number of years for each CU
-# S and R:  year x CU matrices of fish counts for spawners and recruiters 
-# LNRS: log(R/S)     BSC: could be created inside the function with R and S to limit the number of parameters to pass in
-# StNames: the same of the CUs
+#' Function which computes linear-regression estimates of parameters and MSY 
+#' parameters (i.e., the simple linearized Ricker model) and plots. The function 
+#' returns a list of the coefficients a, b and sigma.
+#'- Nyrs: the number of years for each CU
+#'- S and R:  year x CU matrices of fish counts for spawners and recruiters 
+#'- LNRS: log(R/S)     BSC: could be created inside the function with R and S to limit the number of parameters to pass in
+#'- StNames: the same of the CUs
 linRegRicker_fun <- function(S, R, plot_figures = T){
   
   CUs <- colnames(S)
@@ -368,7 +368,7 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
   }else if(13 <= nCUs & nCUs < 17){
     ngrows <- 4
     ngcol <- 4
-  }else if(17 <= nCUs & nCUs < 20){
+  }else if(17 <= nCUs & nCUs < 21){
     ngrows <- 4
     ngcol <- 5
   }else if(21 <= nCUs & nCUs < 26){
@@ -387,11 +387,26 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
       omi = c(0.1,0.1,0.1,0.1)) # size outer margins in inches
   
   for(i in 1:nCUs){
-    
+    # i <- 1
     Rcu <- R[,i, drop = F]            # remove the NAs that are now present (to address SP's comment in HBSRM.R)
     Rcu <- Rcu[!is.na(Rcu),,drop = F]   
     Scu <- S[,i, drop = F]            
-    Scu <- Scu[!is.na(Scu), drop = F]
+    Scu <- Scu[!is.na(Scu),,drop = F]
+    
+    # remove rows in both Rcu and Scu that NAs
+    Rcu_df <- data.frame(year = as.numeric(rownames(Rcu)),
+                         R = Rcu[,1])
+    Scu_df <- data.frame(year = as.numeric(rownames(Scu)),
+                         S = Scu[,1])
+    RScu_df <- merge(x = Rcu_df, y = Scu_df, by = "year", all = T)
+    RScu_df <- RScu_df[!is.na(RScu_df$R),]
+    RScu_df <- RScu_df[!is.na(RScu_df$S),]
+    Rcu <- RScu_df$R
+    Scu <- RScu_df$S
+    
+    # replace 0s by 1 to avoid the lm(log(R/S)~ S) to crash
+    Rcu[Rcu == 0] <- 1
+    Scu[Scu == 0] <- 1
     
     LnRS <- log(Rcu/Scu)   # simple linearized Ricker model
     
@@ -583,10 +598,12 @@ modelBoot <- function(
 regions_fun <- function(){
   
   regions <- data.frame(
-    Central_coast = 'Central_coast',
+    #Central_coast = 'Central_coast',
+    Central_coast = 'Central Coast',
     Columbia = "Columbia", 
     Fraser = 'Fraser',
-    Haida_Gwaii = 'Haida_Gwaii',
+    # Haida_Gwaii = 'Haida_Gwaii',
+    Haida_Gwaii = 'Haida Gwaii',
     Nass = 'Nass',
     Skeena = 'Skeena',
     Yukon = 'Yukon')
@@ -1065,6 +1082,42 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
   return(biological_status_df)
 }
 
-
+#' Function that takes two matrices of same dimensions and with mathing 
+#' column and ronames ; typically the S and R matrices. It is possible that
+#' for data are missing in one matrix and not in another one for a same CU.
+#' The function remove the corresponding rows in the column of the matrix 
+#' that do not have missing data. The function was designed for the HBSR 
+#' modelling.
+cuSR_removeNA_fun <- function(R,S){
+  
+  colname_S <- colnames(S)
+  colname_R <- colnames(R)
+  if(identical(colname_R,colname_S) & identical(dim(R),dim(S))){
+    for(i_c in 1:ncol(S)){
+      # i_c <- 1
+      colnameHere <- colname_S[i_c]
+      S_here <- S[,colnameHere]
+      R_here <- R[,colnameHere]
+      R_here[is.na(S_here)] <- NA
+      S_here[is.na(R_here)] <- NA
+      S[,colnameHere] <- S_here
+      R[,colnameHere] <- R_here
+    }
+    
+  }else{
+    if(!identical(colname_R,colname_S)){
+      print("ERROR: Column names differ between S and R.")
+    }
+    if(identical(dim(R),dim(S))){
+      print("ERROR:dimesions  differ between S and R.")
+    }
+  }
+  
+  # col <- 3
+  # cbind(S[,col],R[,col])
+  output <- list(R,S)
+  names(output) <- c("R","S")
+  return(output)
+}
 
 

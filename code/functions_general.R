@@ -115,14 +115,18 @@ species_acronym_fun <- function(){
   #   name = c("Chinook","Chum","Coho","Pink","Sockeye","Steelhead","Cutthroat"),
   #   acronym = c("CK","CM","CO","PK","SX","SH","CT"))
   
+  # species_acronym <- data.frame(
+  #   Chinook = "CK",
+  #   Chum = "CM",         
+  #   Coho = "CO",         
+  #   Pink = "PK",
+  #   Sockeye = 'SX',
+  #   Steelhead = "SH",   
+  #   Cutthroat = "CT")   
+  
   species_acronym <- data.frame(
-    Chinook = "CK",
-    Chum = "CM",         # to check
-    Coho = "CO",         # to check
-    Pink = "PK",
-    Sockeye = 'SX',
-    Steelhead = "SH",   # to check
-    Cutthroat = "CT")   # to check
+    species_name = c("Chinook","Chum","Coho","Sockeye","Lake sockeye","River sockeye","Pink","Pink (even)","Pink (odd)","Steelhead","Cutthroat"),
+    species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"))
   
   return(species_acronym)
 }
@@ -180,4 +184,44 @@ even_odd_time_series_fun <- function(x){
 #' - Pink salmon have a consistent 2-year age-at-return 
 generationLengthEstiamte_df <- data.frame(species   = c("CM","CK","CO","SX","PK"),
                                           genLength = c(4,5,4,4,2))
+
+#' Function that retrieves datasets directly from the PSF database. Your EXTERNAL
+#' IP address must have been entered in the list of approved IP addressed (as Katy).
+#' For more detailed instructions see accessing-swp-database.pdf in:
+#' X Drive/1_PROJECTS/1_Active/Population Methods and Analysis/Resources/Accessing database
+#' A password is asked. 
+# name_dataset <- "Appdata.vwdl_conservationunits_decoder" # conservationunits_decoder.csv (has generation length for current spawner abundance calc)
+# name_dataset <- "Appdata.vwdl_dataset1cu_output"         # cuspawnerabundance.csv (has CU-level spawner abundance for calculating current spawner abundance for biostatus assessment)
+# name_dataset <- "Appdata.vwdl_dataset5_output"           # recruitsperspawner.csv (has R-S data for fitting HBSR models for benchmarks)
+retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
+                                               dsn_hostname = "data.salmonwatersheds.ca",
+                                               dsn_port = "5432",
+                                               dsn_uid = "salmonwatersheds",
+                                               name_dataset){
+  
+  require(RPostgreSQL)
+  
+  dsn_pwd <- readline(prompt="Enter database password: " )
+  
+  tryCatch({
+    drv <- dbDriver("PostgreSQL")
+    print("Connecting to Database...")
+    connec <- dbConnect(drv,
+                        dbname = dsn_database,
+                        host = dsn_hostname,
+                        port = dsn_port,
+                        user = dsn_uid,
+                        password = dsn_pwd)
+    print("Database Connected!")
+  },error=function(cond) {
+    print("Unable to connect to Database.")
+  })
+  
+  dataset <- dbGetQuery(
+    conn = connec,
+    statement = paste("SELECT * FROM",name_dataset)
+  )
+  
+  return(dataset)
+}
 

@@ -6,7 +6,7 @@
 #' Code adpated from Korman and English (2013).
 #' 
 #' Files imported (from dropbox):
-#' - species_SRdata_date.txt
+#' - species_SRdata_date.txt --> TO UPDATE
 #' 
 #' Files produced: 
 #' - output/region_species_SR_matrices.rds
@@ -41,6 +41,9 @@ wd_data <- wds_l$wd_data
 wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                                         wds_l$wd_population_indicator_data_input_dropbox,
+                                         sep = "/")
 
 # The datasets to input were outputted by other scripts 
 wd_data_input <- wd_output
@@ -52,18 +55,43 @@ source("Code/functions.R")
 library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.  ??? needed ?
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
-# option to export the figures
-print_fig <- F
-
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
 wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
 
 # Import species names and acronyms
-species_acronym <- species_acronym_fun()
+species_acronym_df <- species_acronym_fun()
 
 # Import region names
 regions_df <- regions_fun()
+
+#' Import the recruitsperspawner.csv from population-indicators/data_input or 
+#' download it from the PSF database
+fromDatabase <- F
+update_recruitsperspawner_csv <- F
+if(fromDatabase){
+  # kalum2253
+  recruitsperspawner <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_dataset5_output")
+  # head(recruitsperspawner)
+  # unique(recruitsperspawner$region)
+  # head(recruitsperspawner[recruitsperspawner$region == "Central Coast",],50)
+  
+  # replace -989898 values by NA
+  for(col in c("spawners","recruits","kf_alpha","lnrs","ricker_resid","r_s")){
+    # col <- "spawners"
+    recruitsperspawner[,col][recruitsperspawner[,col] == -989898] <- NA
+  }
+  
+  if(update_recruitsperspawner_csv){
+    write.csv(recruitsperspawner,
+              paste(wd_pop_indic_data_input_dropbox,"recruitsperspawner.csv",sep = "/"),
+              row.names = F)
+  }
+}else{
+  recruitsperspawner <- read.csv(paste(wd_pop_indic_data_input_dropbox,"recruitsperspawner.csv",sep = "/"),
+                                 header = T)
+}
+
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species
@@ -87,6 +115,10 @@ region <- c(
   regions_df$Yukon,
   regions_df$Nass)
 
+# all the regions
+region <- as.character(regions_df[1,])
+region <- region[region != "Columbia"]
+
 # **** BSC: issues to solve with *** DELETE CHUNK eventually
 # region <- regions_df$Fraser
 # species <- species_acronym$Pink   # one CU: Fraser River (odd)
@@ -100,10 +132,8 @@ region <- c(
 # Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-species <- c(species_acronym$Sockeye,    
-             species_acronym$Pink,
-             species_acronym$Cutthroat,
-             species_acronym$Chum)
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
+             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
@@ -124,59 +154,135 @@ for(i_rg in 1:length(region)){
   
   # i_rg <- 1
   
+  #*** OLD CODE BELOW TO REMOVE EVENTUALLY ***
+
   # set the path of the input data sets for that specific region
-  wd_data_input <- paste0(wd_data_regions[,region[i_rg]])
+  # wd_data_input <- paste0(wd_data_regions[,region[i_rg]])
   
   # Returns a list with the species and the corresponding path of the _SRdata files
   # (the most up to date)
-  fndata <- SRdata_path_species_fun(wd = wd_data_input, 
-                                    species = species, 
-                                    species_all = species_all)
+  # fndata <- SRdata_path_species_fun(wd = wd_data_input,
+  #                                   species = species,
+  #                                   species_all = species_all)
   
-  species <- fndata$species  # species is updated is was NULL or certain species do not have a file
-  fndata <- fndata$SRdata
+  # species <- fndata$species  # species is updated is was NULL or certain species do not have a file
+  # fndata <- fndata$SRdata
+  
+  #*** OLD CODE above TO REMOVE EVENTUALLY ***
+  
+  recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
+  
+  species <- unique(recruitsperspawner_rg$species_name)
+  
+  species <- species[species != "Steelhead"]
+  
+  species_acro <- sapply(X = species,FUN = function(sp){species_acronym_df$species_acro[species_acronym_df$species_name == sp]})
+  
+  # recruitsperspawner[recruitsperspawner$species_name == "Coho" & 
+  #                      recruitsperspawner$region == "Fraser",]
+  # unique(recruitsperspawner$species_name)
+  # unique(recruitsperspawner$region)
   
   # 
-  for(i_sp in 1:length(species)){
+  for(i_sp in 1:length(unique(species_acro))){
     
-    # i_sp <- 1
+    # i_sp <- 4
+    speciesAcroHere <- unique(species_acro)[i_sp]
+    speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
     
-    print(paste0("*** Plot printer for: ",
-                 region[i_rg]," - ",
-                 colnames(species_acronym[, species_acronym == species[i_sp],drop=F]),
-                 " (",species[i_sp],") ***"))
+    recruitsperspawner_rg_sp <- recruitsperspawner_rg[recruitsperspawner_rg$species_name %in% speciesHere,]
+    
+    print(paste0("*** Plot for: ",region[i_rg]," - ",speciesAcroHere," ***"))
     
     # Import the priors and counts from the SRdata.txt file. The function retain 
     # CUs with at least MinSRpts nb of data points and update their names in case 
     # the CUID and not the name was used.
-    d <- SRdata_fun(path_file = fndata[i_sp], wd_data = wd_data, MinSRpts = MinSRpts)
-    d_prior <- d$priors
-    d <- d$counts
+    # d_old <- SRdata_fun(path_file = fndata[i_sp], wd_data = wd_data, MinSRpts = MinSRpts)
+    # d_prior <- d_old$priors
+    # d_old <- d_old$counts
+    # CUs_old <- unique(d_old$CU)
+    # nCUs_old <- length(CUs_old)
+    # Yrs_old <- min(d_old$BY):max(d_old$BY)
+    # nYrs_old <- length(Yrs_old)
     
     # organize the data into a year x CU for R and S:
-    CUs <- unique(d$CU)
+    CUs <- unique(recruitsperspawner_rg_sp$cu_name_pse)
+    CUs_cuid <- sapply(X = CUs,FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
+    # unique(recruitsperspawner_rg_sp[,c("cu_name_pse","cuid")])
     nCUs <- length(CUs)
-    Yrs <- min(d$BY):max(d$BY)
+    Yrs <- min(recruitsperspawner_rg_sp$year):max(recruitsperspawner_rg_sp$year)
     nYrs <- length(Yrs)
-    
-    # unique(d[d$CU == CUs[1],]$BY)
-    # unique(d[d$CU == CUs[2],]$BY)
     
     S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
     for(j in 1:nCUs){
-      dj <- subset(d,CU == CUs[j])
-      S[as.character(dj$BY),j] <- dj$Esc  
-      R[as.character(dj$BY),j] <- dj$Rec
+      # j <- 1
+      dj <- subset(recruitsperspawner_rg_sp,cu_name_pse == CUs[j])
+      S[as.character(dj$year),j] <- dj$spawners # dj$Esc
+      R[as.character(dj$year),j] <- dj$recruits # dj$Rec
       
       # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
       # R[1:Nyrs[j],j] <- d1$Rec
     }
     
+    # S_old <- R_old <- matrix(nrow = nYrs_old, ncol = nCUs_old, dimnames = list(Yrs_old,CUs_old))
+    # for(j in 1:nCUs_old){
+    #   # j <- 1
+    #   # previous code
+    #   dj_old <- subset(d_old,CU == CUs_old[j])
+    #   S_old[as.character(dj_old$BY),j] <- dj_old$Esc
+    #   R_old[as.character(dj_old$BY),j] <- dj_old$Rec
+    #   
+    #   # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
+    #   # R[1:Nyrs[j],j] <- d1$Rec
+    # }
+    
+    # col <- 4
+    # cbind(S[,col],R[,col])#[28:nrow(S),]
+    # cbind(S_old[,col],R_old[,col])
+    
     # save the S and R matrix
-    SR_l <- list(S,R)
-    names(SR_l) <- c("S","R")
+    # SR_l <- list(S,R)
+    # names(SR_l) <- c("S","R")
+    
+    # remove the row with NAs for S or R of a same CU
+    SR_l <- cuSR_removeNA_fun(R = R, S = S)
+    R <- SR_l$R
+    S <- SR_l$S
+    
+    # replace 0s by 1 to avoid the lm(log(R/S)~ S) to crash
+    R <- apply(X = R,MARGIN = 2,FUN = function(c){
+      # c <- R[,3]
+      out <- c
+      out[which(out == 0)] <- 1
+      return(out)
+    })
+    S <- apply(X = S,MARGIN = 2,FUN = function(c){
+      # c <- R[,3]
+      out <- c
+      out[which(out == 0)] <- 1
+      return(out)
+    })
+    
+    # filter CUs with less than MinSRpts data points
+    CuToRemove <- c()
+    for(j in 1:ncol(S)){
+      # j <- 1
+      CUHere <- colnames(S)[j]
+      if(sum(!is.na(S[,CUHere])) < MinSRpts | sum(!is.na(R[,CUHere])) < MinSRpts){
+        CuToRemove <- c(CuToRemove,CUHere)
+      }
+    }
+    S <- S[,!colnames(S) %in% CuToRemove, drop = F]
+    R <- R[,!colnames(R) %in% CuToRemove, drop = F]
+    CUs <- CUs[!CUs %in% CuToRemove]
+    CUs_cuid <- sapply(X = CUs,FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
+    nCUs <- length(CUs)
+
+    # nameFile <- paste0(gsub(" ","_",region[i_rg]),"_",
+    #                    gsub(" ","_",species[i_sp]),"_",
+    #                    species_acro[i_sp],"_SR_matrices.rds")
     saveRDS(SR_l,
-            file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_SR_matrices.rds"))
+            file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_SR_matrices.rds"))
     
     # Set priors on b:
     # Previous method using the values in the _SRdata.txt file
@@ -299,12 +405,12 @@ for(i_rg in 1:length(region)){
     # BSC: it is exported in /Output for now but these should be exported someWhere
     # else becaue they are probably too big for github.
     saveRDS(post,
-            file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_posteriors_priorShift.rds"))
+            file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_posteriors_priorShift.rds"))
     
     # save the name of the corresponding CUs:
     CUs_df <- data.frame(CU = CUs)
     write.csv(x = CUs_df,
-              file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"), 
+              file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_CUs_names.csv"), 
               row.names = F)
     
     ##### INFERENCE ##### BSC: is that useful?

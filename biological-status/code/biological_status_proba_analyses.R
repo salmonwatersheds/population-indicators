@@ -52,10 +52,7 @@ wd_data_input <- wd_output
 # Import functions for this specific project
 source("Code/functions.R")
 
-# Load packages
 
-# option to export the figures
-print_fig <- F
 
 # Import species names and acronyms
 species_acronym <- species_acronym_fun()
@@ -81,29 +78,38 @@ species <- c(
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
 pattern <- "biological_status"
+region <- gsub(" ","_",region)
 
 biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       wd_output = wd_output,
                                                       region = region,
-                                                      species_all = F)
+                                                      species_all = species_all)
 
 
 write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
           row.names = F)
 head(biological_status_df)
 colnames(biological_status_df)
-
 nrow(biological_status_df) # 146
-
+unique(biological_status_df$comment)
 
 # discrepancies in CU names
 sum(gsub("_"," ",biological_status_df$CU) != biological_status_df$CU_pse)/nrow(biological_status_df)
 sum(gsub("_"," ",biological_status_df$CU) != biological_status_df$CU_dfo)/nrow(biological_status_df)
 sum(biological_status_df$CU_pse != biological_status_df$CU_dfo)/nrow(biological_status_df)
 
+# CUs with "Only NAs in cuspawnerabundance.csv for this CU" 
+biological_status_df[!is.na(biological_status_df$comment) & biological_status_df$comment == "Only NAs in cuspawnerabundance.csv for this CU" ,]
+
+# CUs with "Not recent enough data"
+biological_status_df[!is.na(biological_status_df$comment) & grepl("Not recent enough data",biological_status_df$comment),]
+
+# rest of the CUs with data:
+biological_status_df <- biological_status_df[is.na(biological_status_df$comment) | biological_status_df$comment == "",]
+nrow(biological_status_df) # 110
+
 # CUs that have contrasting biological status between Smsy80 and Smsy:
-colnamesSelect <- c("region","species","CU","CU_pse",colnames(biological_status_df)[grepl("Smsy_")])
-biological_status_df_cut <- biological_status_df
+colnamesSelect <- c("region","species","CU",colnames(biological_status_df)[grepl("Smsy_",colnames(biological_status_df))])
 
 biological_status_df$status_Smsy <- sapply(X = 1:nrow(biological_status_df), 
                                           FUN = function(r){

@@ -59,21 +59,70 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # option to export the figures
-print_fig <- F
+print_fig <- T
 
 # Import species names and acronyms
-species_acronym <- species_acronym_fun()
+species_acronym_df <- species_acronym_fun()
 
 # Import region names
 regions_df <- regions_fun()
 
 # import the conservationunits_decoder.csv (to access generation length)
-# To obtain the generation length and calculate the the "current spawner abundance".
+
 conservationunits_decoder <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
                                       header = T)
 
+#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+fromDatabase <- F
+update_file_csv <- F
+if(fromDatabase){
+  # kalum2253
+  conservationunits_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_conservationunits_decoder")
+  
+  # replace -989898 values by NA
+  for(col in colnames(conservationunits_decoder)){
+    # col <- colnames(conservationunits_decoder)[11]
+    conservationunits_decoder[,col][conservationunits_decoder[,col] == -989898] <- NA
+  }
+  
+  if(update_file_csv){
+    write.csv(conservationunits_decoder,
+              paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
+              row.names = F)
+  }
+}else{
+  conservationunits_decoder <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
+                                        header = T)
+}
+
+#' Import the cuspawnerabundance.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' To calculating current spawner abundance for biostatus assessment
+if(fromDatabase){
+  # 
+  cuspawnerabundance <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_dataset1cu_output")
+  
+  # replace -989898 values by NA
+  for(col in colnames(cuspawnerabundance)){
+    # col <- colnames(conservationunits_decoder)[11]
+    cuspawnerabundance[,col][cuspawnerabundance[,col] == -989898] <- NA
+  }
+  
+  if(update_file_csv){
+    write.csv(cuspawnerabundance,
+              paste(wd_pop_indic_data_input_dropbox,"cuspawnerabundance.csv",sep = "/"),
+              row.names = F)
+  }
+}else{
+  cuspawnerabundance <- read.csv(paste(wd_pop_indic_data_input_dropbox,"cuspawnerabundance.csv",sep = "/"),
+                                        header = T)
+}
+
+
 #------------------------------------------------------------------------------#
-# Selection of region(s) and species
+# Selection of region(s) and species and last year for current spawner abundance
 #------------------------------------------------------------------------------#
 
 # Choosing the region
@@ -97,25 +146,25 @@ region <- c(
 # all the regions
 region <- as.character(regions_df[1,])
 region <- region[region != "Columbia"]
-
+region <- gsub(" ","_",region)
+  
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
 # Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-species <- c(
-             species_acronym$Sockeye,    
-             species_acronym$Pink,
-             species_acronym$Coho
-             #species_acronym$Cutthroat,
-             #species_acronym$Chum
-             )
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
+             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
 
+# last year to calculate current spawner abundance
+yearCurrentAbundance <- 2021
+
+#
 for(i_rg in 1:length(region)){
   
   # i_rg <- 1
@@ -128,12 +177,22 @@ for(i_rg in 1:length(region)){
     species <- gsub(pattern = paste0(region[i_rg],"_"), replacement = "", x = species)
   }
   
+  
   # BSC: if case species is not NULL, write code to remove species for which there
   # is not dataset for that specific region
   
   for(i_sp in 1:length(species)){
     
     # i_sp <- 1
+    
+    #
+    speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro == species[i_sp]]
+    
+    cuspawnerabundance_rg_sp <- cuspawnerabundance[cuspawnerabundance$region == gsub("_"," ",region[i_rg]) &
+                                                     cuspawnerabundance$species_name %in% speciesHere,]
+    
+    conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == gsub("_"," ",region[i_rg]) &
+                                                                   conservationunits_decoder$species_name%in% speciesHere,]
     
     # Import the HBSRM outputs, i.e., the posterior distributions of:
     # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
@@ -245,6 +304,11 @@ for(i_rg in 1:length(region)){
     # exported datasets.
     SRm <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_SR_matrices.rds"))
     
+    # S and R in SRm potentially contains CUs that have only NAs, which are not
+    # in the vector CUs --> remove them
+    SRm$R <- SRm$R[,colnames(SRm$R) %in% CUs, drop = F]
+    SRm$S <- SRm$S[,colnames(SRm$S) %in% CUs, drop = F]
+    
     # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
     # if(print_fig){
     #   pathFile <- paste0(wd_figures,"/",region,"_",species[i_sp],"_benchmark_posteriors.pdf")
@@ -271,56 +335,72 @@ for(i_rg in 1:length(region)){
       # biological status probability with the average spawner abundance over the last generation
       #----------------------
       
-      spawnerAbundance <- SRm$S[, i]
+      CUname <- gsub(pattern = "_",replacement = " ",x = CUs[i])   # DFO Cu name --> not anymore it is pse naw and gsub might not be needed anymore
       
-      CUname <- gsub(pattern = "_",replacement = " ",x = CUs[i])   # DFO Cu name
+      spawnerAbundance <- cuspawnerabundance_rg_sp$estimated_count[cuspawnerabundance_rg_sp$cu_name_pse == CUname]
+      names(spawnerAbundance) <- cuspawnerabundance_rg_sp$year[cuspawnerabundance_rg_sp$cu_name_pse == CUname]
       
-      # quick fixes for dealing with ALL the variations in the CUs names
-      CUname <- CU_name_variations_fun(CUname = CUname,
-                                       spawnerAbundance = spawnerAbundance,
-                                       speciesAcronym =  species[i_sp])
-
-      speciesName <- species[i_sp]
-      if(speciesName[1] == "SX"){
-        speciesName <- c(speciesName,"SEL","SER")
-        # cf. unique(conservationunits_decoder$species_abbr)
-      }else if(speciesName[1] == "CN"){
-        speciesName <- c(speciesName,"CK")
-      }else if(speciesName[1] == "PK"){
-        speciesName <- c(speciesName,"PKO","PKE")
+      # 
+      currentSpawnerData_available <- T
+      
+      if(sum(!is.na(spawnerAbundance)) == 0){
+        # spawnerAbundance <- SRm$S[, i]
+        # print("The following CU has only NAs for spawner abundance:")
+        # print(paste(region[i_rg],species[i_sp],CUname))
+        currentSpawnerData_available <- F
+        yrFinal <- NA
+        #' Eric: if estimated is not available, we can't apply spawner-recruit 
+        #' benchmarks.
       }
       
-      conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$cu_name_pse %in% CUname &
-                                                                   conservationunits_decoder$species_abbr %in% speciesName,]
+      # quick fixes for dealing with ALL the variations in the CUs names
+      # CUname <- CU_name_variations_fun(CUname = CUname,
+      #                                  spawnerAbundance = spawnerAbundance,
+      #                                  speciesAcronym =  species[i_sp])
+      # 
+      # speciesName <- species[i_sp]
+      # if(speciesName[1] == "SX"){
+      #   speciesName <- c(speciesName,"SEL","SER")
+      #   # cf. unique(conservationunits_decoder$species_abbr)
+      # }else if(speciesName[1] == "CN"){
+      #   speciesName <- c(speciesName,"CK")
+      # }else if(speciesName[1] == "PK"){
+      #   speciesName <- c(speciesName,"PKO","PKE")
+      # }
+      
+      # conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$cu_name_pse %in% CUname &
+      #                                                              conservationunits_decoder$species_abbr %in% speciesName,]
       
       # conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$cu_name_dfo %in% CUname &           # USE cu_name_dfo and not cu_name_pse !!!
       #                                                              conservationunits_decoder$species_abbr %in% speciesName,]
       
-      if(nrow(conservationunits_decoder_cut) == 0){
+      conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp[conservationunits_decoder_rg_sp$cu_name_pse %in% CUname,]
+      
+      if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
         print("This CUS is not found in conservationunits_decoder:")
         print(paste(region[i_rg],species[i_sp],CUname))
         cat("\n")
-      }else if(nrow(conservationunits_decoder_cut) > 1){
-        if(length(unique(conservationunits_decoder_cut$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
+      }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1){
+        if(length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
           print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
           print(paste(region[i_rg],species[i_sp],CUname))
-          print(conservationunits_decoder_cut)
+          print(conservationunits_decoder_rg_sp_cu)
           cat("\n")
         }
-        conservationunits_decoder_cut <- conservationunits_decoder_cut[1,,drop = F]
+        conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
       }
       
-      # keep track of the different version of the CU names
-      CUname_pse <- conservationunits_decoder_cut$cu_name_pse
-      CUname_dfo <- conservationunits_decoder_cut$cu_name_dfo
+      # keep track of the different versions of the CU names
+      CUname_pse <- conservationunits_decoder_rg_sp_cu$cu_name_pse
+      CUname_dfo <- conservationunits_decoder_rg_sp_cu$cu_name_dfo
 
-      CU_genLegth <- conservationunits_decoder_cut$gen_length[1]
-      CU_genLegth_available <- TRUE
+      CU_genLength <- conservationunits_decoder_rg_sp_cu$gen_length[1]
+      CU_genLength_available <- TRUE
       
-      if(is.na(CU_genLegth)){
+      if(is.na(CU_genLength)){
         # find the mean over the CUs of the same species: NOT USED
         # conservationunits_decoder_sp <- conservationunits_decoder[conservationunits_decoder$species_abbr %in% speciesName,]
-        # CU_genLegth <- round(mean(conservationunits_decoder_sp$gen_length))
+        # CU_genLength <- round(mean(conservationunits_decoder_sp$gen_length))
         
         # From Tech-Report: 
         #' "Where CU-specific data on age-at-return are unavailable, we assume 
@@ -328,63 +408,97 @@ for(i_rg in 1:length(region)){
         #' - 5 years for Chinook CUs, 
         #' - 4 years for coho CUs, 
         #' - 4 years for chum CUs, 
-        #' - 4 years for sockeye CUs"
+        #' - 4 years for sockeye CUs"   --> BUT 5 years for the Cus in the northen region
         #' - Pink salmon have a consistent 2-year age-at-return and because 
         #' even- and odd-year lineages are considered separate CUs, the most 
         #' recent spawner abundance is simply the most recent year’s estimated 
         #' spawner abundance for this species
-        CU_genLegth <- generationLengthEstiamte_df$genLength[generationLengthEstiamte_df$species %in% speciesName]
-        CU_genLegth_available <- FALSE
+        CU_genLength <- generationLengthEstiamte_df$genLength[generationLengthEstiamte_df$species %in% speciesName]
+        CU_genLength_available <- FALSE
+        print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))
       }
       
-      # remove NAs at the tail and return the most recent year from which the 
-      # avergae spawner abundance is calculated:
-      while(is.na(tail(spawnerAbundance,1))){
-        spawnerAbundance <- spawnerAbundance[-length(spawnerAbundance)]
+      # OLD remove NAs at the tail and return the most recent year from which the 
+      # average spawner abundance is calculated:
+      # while(is.na(tail(spawnerAbundance,1))){
+      #   spawnerAbundance <- spawnerAbundance[-length(spawnerAbundance)]
+      # }
+      yrFinal <- tail(as.numeric(names(spawnerAbundance[!is.na(spawnerAbundance)])),1)
+      
+      #' add number of years to spawnerAbundance until yearCurrentAbundance if needed
+      yearsHere <- as.numeric(names(spawnerAbundance))
+      yearLast <- max(yearsHere)
+      while(yearLast < yearCurrentAbundance){
+        yearLast <- yearLast + 1
+        datapointHere <- NA
+        names(datapointHere) <- yearLast
+        spawnerAbundance <- c(spawnerAbundance,datapointHere)
       }
-      yrFinal <- as.numeric(names(spawnerAbundance)[length(spawnerAbundance)])
       
       # calculate the geometric mean over the last generation
-      spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLegth)
+      spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength)
       spawnerAbundance_lastGen_m <- mean_geom_fun(x = spawnerAbundance_lastGen)
       spawnerAbundance_lastGen_dataPointNb <- sum(!is.na(spawnerAbundance_lastGen))
-      
+      currentSpawnerData_availableRecentEnough <- T
+      if(sum(!is.na(spawnerAbundance_lastGen)) == 0){
+        currentSpawnerData_availableRecentEnough <- F
+      }
+
       # determine the number of time this CUs fall under the Red, Amber and Green 
       # status over all the simulations
-      status_Smsy <- status_Smsy80 <- c()
-      for(j in 1:length(post)){ # for each chain
-        # j <- 1
-        for(k in 1:nrow(post[[1]])){   # for each mcmc draw
-          # k <- 1
-          LB_Sgen <- SR_bench[i, "Sgen", j, k]
-          UB_Smsy <- SR_bench[i, "Smsy", j, k]
-          UB_Smsy80 <- UB_Smsy * .8
-          
-          if(!is.na(LB_Sgen) & !is.na(UB_Smsy)){
-            if(spawnerAbundance_lastGen_m <= LB_Sgen){
-              status_Smsy <- c(status_Smsy,'red')
-              status_Smsy80 <- c(status_Smsy80,"red")
-            }else if(spawnerAbundance_lastGen_m <= UB_Smsy80){
-              status_Smsy <- c(status_Smsy,'amber')
-              status_Smsy80 <- c(status_Smsy80,"amber")
-            }else if(spawnerAbundance_lastGen_m <= UB_Smsy){
-              status_Smsy <- c(status_Smsy,'amber')
-              status_Smsy80 <- c(status_Smsy80,"green")
+      if(currentSpawnerData_available & currentSpawnerData_availableRecentEnough){
+        
+        status_Smsy <- status_Smsy80 <- c()
+        for(j in 1:length(post)){ # for each chain
+          # j <- 1
+          for(k in 1:nrow(post[[1]])){   # for each mcmc draw
+            # k <- 1
+            LB_Sgen <- SR_bench[i, "Sgen", j, k]
+            UB_Smsy <- SR_bench[i, "Smsy", j, k]
+            UB_Smsy80 <- UB_Smsy * .8
+            
+            if(!is.na(LB_Sgen) & !is.na(UB_Smsy)){
+              if(spawnerAbundance_lastGen_m <= LB_Sgen){
+                status_Smsy <- c(status_Smsy,'red')
+                status_Smsy80 <- c(status_Smsy80,"red")
+              }else if(spawnerAbundance_lastGen_m <= UB_Smsy80){
+                status_Smsy <- c(status_Smsy,'amber')
+                status_Smsy80 <- c(status_Smsy80,"amber")
+              }else if(spawnerAbundance_lastGen_m <= UB_Smsy){
+                status_Smsy <- c(status_Smsy,'amber')
+                status_Smsy80 <- c(status_Smsy80,"green")
+              }else{
+                status_Smsy <- c(status_Smsy,'green')
+                status_Smsy80 <- c(status_Smsy80,"green")
+              }
             }else{
-              status_Smsy <- c(status_Smsy,'green')
-              status_Smsy80 <- c(status_Smsy80,"green")
+              status_Smsy <- c(status_Smsy,NA)
+              status_Smsy80 <- c(status_Smsy80,NA)
             }
-          }else{
-            status_Smsy <- c(status_Smsy,NA)
-            status_Smsy80 <- c(status_Smsy80,NA)
           }
         }
+        status_Smsy <- status_Smsy[!is.na(status_Smsy)]
+        status_Smsy80 <- status_Smsy80[!is.na(status_Smsy80)]
+        
+        status_Smsy_prob <- round(table(factor(status_Smsy,levels = c("red","amber","green")))/length(status_Smsy)*100,4)
+        status_Smsy80_prob <- round(table(factor(status_Smsy80,levels = c("red","amber","green")))/length(status_Smsy80)*100,4)
+        
+        comment <- ""
+      }else{
+        
+        status_Smsy_prob <- status_Smsy80_prob <- rep(NA,3)
+        names(status_Smsy_prob) <- names(status_Smsy80_prob) <- c("red","amber","green")
+        
+        if(!currentSpawnerData_available){
+          comment <- "Only NAs in cuspawnerabundance.csv for this CU"
+        }else if(!currentSpawnerData_availableRecentEnough){
+          comment <- paste0("Not recent enough data: last year with data is ",yrFinal," while generation length = ",CU_genLength," years and current year = ",yearCurrentAbundance)
+        }
       }
-      status_Smsy <- status_Smsy[!is.na(status_Smsy)]
-      status_Smsy80 <- status_Smsy80[!is.na(status_Smsy80)]
       
-      status_Smsy_prob <- round(table(factor(status_Smsy,levels = c("red","amber","green")))/length(status_Smsy)*100,4)
-      status_Smsy80_prob <- round(table(factor(status_Smsy80,levels = c("red","amber","green")))/length(status_Smsy80)*100,4)
+      if(length(yrFinal) == 0){
+        yrFinal <- NA
+      }
       
       biologicalStatus_df <- data.frame(region = region[i_rg],
                                         species = species[i_sp],
@@ -392,15 +506,16 @@ for(i_rg in 1:length(region)){
                                         CU_pse = CUname_pse,
                                         CU_dfo = CUname_dfo,
                                         year_last = yrFinal,
-                                        genLength = CU_genLegth,
-                                        genLength_available = CU_genLegth_available,
+                                        genLength = CU_genLength,
+                                        genLength_available = CU_genLength_available,
                                         genLength_dataPointNb = spawnerAbundance_lastGen_dataPointNb,
                                         status_Smsy_red   = status_Smsy_prob["red"],
                                         status_Smsy_amber = status_Smsy_prob["amber"],
                                         status_Smsy_green = status_Smsy_prob["green"],
                                         status_Smsy80_red   = status_Smsy80_prob["red"],
                                         status_Smsy80_amber = status_Smsy80_prob["amber"],
-                                        status_Smsy80_green = status_Smsy80_prob["green"])
+                                        status_Smsy80_green = status_Smsy80_prob["green"],
+                                        comment = comment)
 
       
       if(is.null(biologicalStatus_region_species_df)){
@@ -416,9 +531,16 @@ for(i_rg in 1:length(region)){
       
       if(print_fig){
         CUhere <- gsub(pattern = "/",'-',CUs[i])  # in case "/" is in the CU's name
+        CUhere <- gsub(pattern = "\\(","",CUhere)
+        CUhere <- gsub(pattern = "\\)","",CUhere)
+        
+        if(nchar(CUhere) > 25){   # the figure can't print if the number of characters is too large
+          CUhere <- substr(x = CUhere,start =  1,stop = 25) 
+        }
+        
         pathFile <- paste0(wd_figures,"/",region[i_rg],"_",species[i_sp],"_",CUhere,
                            "_benchmark_posteriors.jpeg")
-        
+  
         # pdf(file = pathFile, width = 8.5, height = 11)
         # pdf(file = pathFile, width = 15, height = 7.5)
         jpeg(file = pathFile, width = 30, height = 14, units = "cm", res = 300)
@@ -477,7 +599,9 @@ for(i_rg in 1:length(region)){
       
       u <- par('usr')
       for(j in 1:2){    # median, CI
+        # j <- 1
         for(k in 1:2){  # Sgen, Smsy
+          # k <- 1
           abline(v = benchSummary[[k]][j, 1], lty = c(2,1)[j], 
                  col = statusCols[c('r', 'g')[k]])
           # abline(v = benchSummary[[k]][j, 2], lty = c(2,1)[j], col = statusCols[c('r', 'g')[k]])
@@ -505,7 +629,6 @@ for(i_rg in 1:length(region)){
       
       dens <- list(density(SR_bench[i, "Sgen", , ], from = 0, to = maxS/1.5, na.rm = T), # BSC: I had to add na.rm = T
                    density(SR_bench[i, "Smsy", , ], from = 0, to = maxS/1.5, na.rm = T))
-      
       
       h1 <- hist(x = Sgen, col = paste0(statusCols['r'], 50), border = NA,
                  breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), main = "", 

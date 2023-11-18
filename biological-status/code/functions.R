@@ -21,14 +21,23 @@
 #' @return Returns the numeric value of Sgen1.
 #' 
 #' @examples 
-#' 
 calcSgen <- function(Sgen.hat, theta, Smsy){
   
   # the function returns:
   # - minimum: the value of Sgen.hat that minimises Sgen.optim(Sgen.hat, theta, Smsy)
   # in the interval c(0, Smsy)
   # - objective: the corresponding minimal value of Sgen.optim(Sgen.hat, theta, Smsy)
-  fit <- optimize(f = Sgen.optim, interval = c(0, Smsy), theta = theta, Smsy = Smsy)
+  # fit <- optimize(f = Sgen.optim, interval = c(0, Smsy), theta = theta, Smsy = Smsy)
+  
+  fit <- tryCatch({
+    optimize(f = Sgen.optim, interval = c(0, Smsy), theta = theta, Smsy = Smsy)
+  },
+  error = function(e){return(NULL)
+    })
+  
+  if(is.null(fit)){
+    return(Sgen1 = NA)
+  }
   
   # Give warning if Sgen1 is at upper or lower bound
   if(round(fit$minimum) == 0){

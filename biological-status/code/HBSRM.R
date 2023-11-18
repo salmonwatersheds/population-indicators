@@ -70,7 +70,7 @@ regions_df <- regions_fun()
 fromDatabase <- F
 update_recruitsperspawner_csv <- F
 if(fromDatabase){
-  # kalum2253
+  # 
   recruitsperspawner <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_dataset5_output")
   # head(recruitsperspawner)
   # unique(recruitsperspawner$region)

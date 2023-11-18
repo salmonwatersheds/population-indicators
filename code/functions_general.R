@@ -102,7 +102,11 @@ relationships_twoCol_df_fn <- function(df,col1,col2,printDF = F,n_eg = 3){
 # x <- c(450, NA, 350, 350)
 mean_geom_fun <- function(x){
   # exp(mean(log(x),na.rm = T))  # other equivalent formula 
-  gm <- prod(x, na.rm = T)^(1/sum(!is.na(x)))
+  if(sum(!is.na(x))> 0){
+    gm <- prod(x, na.rm = T)^(1/sum(!is.na(x)))
+  }else{
+    gm <- NA
+  }
   return(gm)
 }
 

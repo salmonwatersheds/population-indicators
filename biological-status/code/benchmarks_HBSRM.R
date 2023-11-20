@@ -200,10 +200,16 @@ for(i_rg in 1:length(region)){
     # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
     post <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_posteriors_priorShift.rds"))
     
-    # find the nb of CUs
-    CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"),
-                    header = T,stringsAsFactors = F)
-    CUs <- CUs$CU
+    # Import the S and R matrices used for fitting the HBSR model:
+    # BSC: the wd here will eventually have to be set to the final repo for the 
+    # exported datasets.
+    SRm <- readRDS(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_SR_matrices.rds"))
+    
+    # Find the nb of CUs
+    # CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"),
+    #                 header = T,stringsAsFactors = F)
+    # CUs <- CUs$CU
+    CUs <- colnames(SRm$R)
     nCUs <-length(CUs)
     
     nchains <- length(post) # 6 chains
@@ -306,8 +312,13 @@ for(i_rg in 1:length(region)){
     
     # S and R in SRm potentially contains CUs that have only NAs, which are not
     # in the vector CUs --> remove them
-    SRm$R <- SRm$R[,colnames(SRm$R) %in% CUs, drop = F]
-    SRm$S <- SRm$S[,colnames(SRm$S) %in% CUs, drop = F]
+    
+    # SRm$R <- SRm$R[,colnames(SRm$R) %in% CUs, drop = F]
+    # SRm$S <- SRm$S[,colnames(SRm$S) %in% CUs, drop = F]
+    
+    SRm$R <- SRm$R[,CUs, drop = F]
+    SRm$S <- SRm$S[,CUs, drop = F]
+    
     
     # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
     # if(print_fig){

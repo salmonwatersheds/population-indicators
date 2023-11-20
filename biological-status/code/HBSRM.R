@@ -244,7 +244,7 @@ for(i_rg in 1:length(region)){
     # SR_l <- list(S,R)
     # names(SR_l) <- c("S","R")
     
-    # remove the row with NAs for S or R of a same CU
+    # remove the row with NAs in S but not R and vice versa of a same CU 
     SR_l <- cuSR_removeNA_fun(R = R, S = S)
     R <- SR_l$R
     S <- SR_l$S
@@ -263,7 +263,9 @@ for(i_rg in 1:length(region)){
       return(out)
     })
     
-    # filter CUs with less than MinSRpts data points
+    #' filter CUs with less than MinSRpts data points 
+    #' TODO: looks like this did not work: the_SR_matrices.rds still contains CUs with only NAs, whose names are not in the filtered CUs
+    #' This is dealt with in benchamrks_HBSRM.R but still need to be addressed here.
     CuToRemove <- c()
     for(j in 1:ncol(S)){
       # j <- 1
@@ -275,12 +277,16 @@ for(i_rg in 1:length(region)){
     S <- S[,!colnames(S) %in% CuToRemove, drop = F]
     R <- R[,!colnames(R) %in% CuToRemove, drop = F]
     CUs <- CUs[!CUs %in% CuToRemove]
-    CUs_cuid <- sapply(X = CUs,FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
+    CUs_cuid <- sapply(X = CUs,FUN = function(cu){
+      unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])
+      })
     nCUs <- length(CUs)
 
     # nameFile <- paste0(gsub(" ","_",region[i_rg]),"_",
     #                    gsub(" ","_",species[i_sp]),"_",
     #                    species_acro[i_sp],"_SR_matrices.rds")
+    SR_l$R <- R
+    SR_l$S <- S
     saveRDS(SR_l,
             file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_SR_matrices.rds"))
     
@@ -408,6 +414,9 @@ for(i_rg in 1:length(region)){
             file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_posteriors_priorShift.rds"))
     
     # save the name of the corresponding CUs:
+    #' TODO: remove as this CSV might/should not be used if future, these CUs names
+    #' should be taken from the REGION_SPECIESACRO__SR_matrices.rds instead to 
+    #' reduce the risk of mistakes.
     CUs_df <- data.frame(CU = CUs)
     write.csv(x = CUs_df,
               file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_CUs_names.csv"), 

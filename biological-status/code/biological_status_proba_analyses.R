@@ -90,7 +90,7 @@ write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.cs
           row.names = F)
 head(biological_status_df)
 colnames(biological_status_df)
-nrow(biological_status_df) # 146
+nrow(biological_status_df) # 130
 unique(biological_status_df$comment)
 
 # discrepancies in CU names

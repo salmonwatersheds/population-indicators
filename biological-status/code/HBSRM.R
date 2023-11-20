@@ -111,13 +111,13 @@ region <- regions_df$Skeena
 
 # multiple regions:
 region <- c(
-  regions_df$Fraser,
-  regions_df$Yukon,
-  regions_df$Nass)
+  regions_df$Columbia,
+  regions_df$Transboundary,
+  regions_df$VIMI)
 
 # all the regions
 region <- as.character(regions_df[1,])
-region <- region[region != "Columbia"]
+# region <- region[region != "Columbia"]
 
 # **** BSC: issues to solve with *** DELETE CHUNK eventually
 # region <- regions_df$Fraser
@@ -152,7 +152,7 @@ MinSRpts <- 3
 
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
+  # i_rg <- 7
   
   #*** OLD CODE BELOW TO REMOVE EVENTUALLY ***
 
@@ -176,183 +176,195 @@ for(i_rg in 1:length(region)){
   
   species <- species[species != "Steelhead"]
   
-  species_acro <- sapply(X = species,FUN = function(sp){species_acronym_df$species_acro[species_acronym_df$species_name == sp]})
+  species_acro <- sapply(X = species,FUN = function(sp){
+    species_acronym_df$species_acro[species_acronym_df$species_name == sp]
+    })
+  
+  regionName <- region[i_rg]
+  if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+    regionName <- "VIMI"
+  }
   
   # recruitsperspawner[recruitsperspawner$species_name == "Coho" & 
   #                      recruitsperspawner$region == "Fraser",]
   # unique(recruitsperspawner$species_name)
   # unique(recruitsperspawner$region)
-  
-  # 
-  for(i_sp in 1:length(unique(species_acro))){
+  if(sum(!is.na(recruitsperspawner_rg$spawners)) == 0 | sum(!is.na(recruitsperspawner_rg$recruits)) == 0){
     
-    # i_sp <- 4
-    speciesAcroHere <- unique(species_acro)[i_sp]
-    speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
+    print(paste0("*** There is no data in recruitsperspawner.csv for salmon in ",region[i_rg]," ***"))
     
-    recruitsperspawner_rg_sp <- recruitsperspawner_rg[recruitsperspawner_rg$species_name %in% speciesHere,]
+  }else{
     
-    print(paste0("*** Plot for: ",region[i_rg]," - ",speciesAcroHere," ***"))
-    
-    # Import the priors and counts from the SRdata.txt file. The function retain 
-    # CUs with at least MinSRpts nb of data points and update their names in case 
-    # the CUID and not the name was used.
-    # d_old <- SRdata_fun(path_file = fndata[i_sp], wd_data = wd_data, MinSRpts = MinSRpts)
-    # d_prior <- d_old$priors
-    # d_old <- d_old$counts
-    # CUs_old <- unique(d_old$CU)
-    # nCUs_old <- length(CUs_old)
-    # Yrs_old <- min(d_old$BY):max(d_old$BY)
-    # nYrs_old <- length(Yrs_old)
-    
-    # organize the data into a year x CU for R and S:
-    CUs <- unique(recruitsperspawner_rg_sp$cu_name_pse)
-    CUs_cuid <- sapply(X = CUs,FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
-    # unique(recruitsperspawner_rg_sp[,c("cu_name_pse","cuid")])
-    nCUs <- length(CUs)
-    Yrs <- min(recruitsperspawner_rg_sp$year):max(recruitsperspawner_rg_sp$year)
-    nYrs <- length(Yrs)
-    
-    S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
-    for(j in 1:nCUs){
-      # j <- 1
-      dj <- subset(recruitsperspawner_rg_sp,cu_name_pse == CUs[j])
-      S[as.character(dj$year),j] <- dj$spawners # dj$Esc
-      R[as.character(dj$year),j] <- dj$recruits # dj$Rec
+    for(i_sp in 1:length(unique(species_acro))){
       
-      # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
-      # R[1:Nyrs[j],j] <- d1$Rec
-    }
-    
-    # S_old <- R_old <- matrix(nrow = nYrs_old, ncol = nCUs_old, dimnames = list(Yrs_old,CUs_old))
-    # for(j in 1:nCUs_old){
-    #   # j <- 1
-    #   # previous code
-    #   dj_old <- subset(d_old,CU == CUs_old[j])
-    #   S_old[as.character(dj_old$BY),j] <- dj_old$Esc
-    #   R_old[as.character(dj_old$BY),j] <- dj_old$Rec
-    #   
-    #   # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
-    #   # R[1:Nyrs[j],j] <- d1$Rec
-    # }
-    
-    # col <- 4
-    # cbind(S[,col],R[,col])#[28:nrow(S),]
-    # cbind(S_old[,col],R_old[,col])
-    
-    # save the S and R matrix
-    # SR_l <- list(S,R)
-    # names(SR_l) <- c("S","R")
-    
-    # remove the row with NAs in S but not R and vice versa of a same CU 
-    SR_l <- cuSR_removeNA_fun(R = R, S = S)
-    R <- SR_l$R
-    S <- SR_l$S
-    
-    # replace 0s by 1 to avoid the lm(log(R/S)~ S) to crash
-    R <- apply(X = R,MARGIN = 2,FUN = function(c){
-      # c <- R[,3]
-      out <- c
-      out[which(out == 0)] <- 1
-      return(out)
-    })
-    S <- apply(X = S,MARGIN = 2,FUN = function(c){
-      # c <- R[,3]
-      out <- c
-      out[which(out == 0)] <- 1
-      return(out)
-    })
-    
-    #' filter CUs with less than MinSRpts data points 
-    #' TODO: looks like this did not work: the_SR_matrices.rds still contains CUs with only NAs, whose names are not in the filtered CUs
-    #' This is dealt with in benchamrks_HBSRM.R but still need to be addressed here.
-    CuToRemove <- c()
-    for(j in 1:ncol(S)){
-      # j <- 1
-      CUHere <- colnames(S)[j]
-      if(sum(!is.na(S[,CUHere])) < MinSRpts | sum(!is.na(R[,CUHere])) < MinSRpts){
-        CuToRemove <- c(CuToRemove,CUHere)
+      # i_sp <- 4
+      speciesAcroHere <- unique(species_acro)[i_sp]
+      speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
+      
+      recruitsperspawner_rg_sp <- recruitsperspawner_rg[recruitsperspawner_rg$species_name %in% speciesHere,]
+      
+      print(paste0("*** Plot for: ",region[i_rg]," - ",speciesAcroHere," ***"))
+      
+      # Import the priors and counts from the SRdata.txt file. The function retain 
+      # CUs with at least MinSRpts nb of data points and update their names in case 
+      # the CUID and not the name was used.
+      # d_old <- SRdata_fun(path_file = fndata[i_sp], wd_data = wd_data, MinSRpts = MinSRpts)
+      # d_prior <- d_old$priors
+      # d_old <- d_old$counts
+      # CUs_old <- unique(d_old$CU)
+      # nCUs_old <- length(CUs_old)
+      # Yrs_old <- min(d_old$BY):max(d_old$BY)
+      # nYrs_old <- length(Yrs_old)
+      
+      # organize the data into a year x CU for R and S:
+      CUs <- unique(recruitsperspawner_rg_sp$cu_name_pse)
+      CUs_cuid <- sapply(X = CUs,FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
+      # unique(recruitsperspawner_rg_sp[,c("cu_name_pse","cuid")])
+      nCUs <- length(CUs)
+      Yrs <- min(recruitsperspawner_rg_sp$year):max(recruitsperspawner_rg_sp$year)
+      nYrs <- length(Yrs)
+      
+      S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
+      for(j in 1:nCUs){
+        # j <- 1
+        dj <- subset(recruitsperspawner_rg_sp,cu_name_pse == CUs[j])
+        S[as.character(dj$year),j] <- dj$spawners # dj$Esc
+        R[as.character(dj$year),j] <- dj$recruits # dj$Rec
+        
+        # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
+        # R[1:Nyrs[j],j] <- d1$Rec
       }
-    }
-    S <- S[,!colnames(S) %in% CuToRemove, drop = F]
-    R <- R[,!colnames(R) %in% CuToRemove, drop = F]
-    CUs <- CUs[!CUs %in% CuToRemove]
-    CUs_cuid <- sapply(X = CUs,FUN = function(cu){
-      unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])
+      
+      # S_old <- R_old <- matrix(nrow = nYrs_old, ncol = nCUs_old, dimnames = list(Yrs_old,CUs_old))
+      # for(j in 1:nCUs_old){
+      #   # j <- 1
+      #   # previous code
+      #   dj_old <- subset(d_old,CU == CUs_old[j])
+      #   S_old[as.character(dj_old$BY),j] <- dj_old$Esc
+      #   R_old[as.character(dj_old$BY),j] <- dj_old$Rec
+      #   
+      #   # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
+      #   # R[1:Nyrs[j],j] <- d1$Rec
+      # }
+      
+      # col <- 4
+      # cbind(S[,col],R[,col])#[28:nrow(S),]
+      # cbind(S_old[,col],R_old[,col])
+      
+      # save the S and R matrix
+      # SR_l <- list(S,R)
+      # names(SR_l) <- c("S","R")
+      
+      # remove the row with NAs in S but not R and vice versa of a same CU 
+      SR_l <- cuSR_removeNA_fun(R = R, S = S)
+      R <- SR_l$R
+      S <- SR_l$S
+      
+      # replace 0s by 1 to avoid the lm(log(R/S)~ S) to crash
+      R <- apply(X = R,MARGIN = 2,FUN = function(c){
+        # c <- R[,3]
+        out <- c
+        out[which(out == 0)] <- 1
+        return(out)
       })
-    nCUs <- length(CUs)
-
-    # nameFile <- paste0(gsub(" ","_",region[i_rg]),"_",
-    #                    gsub(" ","_",species[i_sp]),"_",
-    #                    species_acro[i_sp],"_SR_matrices.rds")
-    SR_l$R <- R
-    SR_l$S <- S
-    saveRDS(SR_l,
-            file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_SR_matrices.rds"))
-    
-    # Set priors on b:
-    # Previous method using the values in the _SRdata.txt file
-    # prSmax <- d_prior$prSmax
-    # prCV <- d_prior$prCV
-    # prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
-    # prtaub <- 1/prCV^2				# convert from cv to tau
-    
-    #### Estimate a and b by linreg and plot
-    if(show_figures){
-      if(.Platform$OS.type == "windows"){      # BSC: what to do with Linux? : x11()?
-        windows()                              # Also do we want it to open in a new window vs in Rstudio?
-      }else{
-        quartz()
+      S <- apply(X = S,MARGIN = 2,FUN = function(c){
+        # c <- R[,3]
+        out <- c
+        out[which(out == 0)] <- 1
+        return(out)
+      })
+      
+      #' filter CUs with less than MinSRpts data points 
+      #' TODO: looks like this did not work: the_SR_matrices.rds still contains CUs with only NAs, whose names are not in the filtered CUs
+      #' This is dealt with in benchamrks_HBSRM.R but still need to be addressed here.
+      CuToRemove <- c()
+      for(j in 1:ncol(S)){
+        # j <- 1
+        CUHere <- colnames(S)[j]
+        if(sum(!is.na(S[,CUHere])) < MinSRpts | sum(!is.na(R[,CUHere])) < MinSRpts){
+          CuToRemove <- c(CuToRemove,CUHere)
+        }
       }
-    }
-    
-    # LnRS <- log(R/S)   # BSC: now is created inside the function with R and S to limit the number of parameters to pass in
-    # inipars <- LinReg(Nyrs,LNRS,S,R,StNames)
-    # Display the RS plot and output the estimated parameter values:
-    inipars <- linRegRicker_fun(S = S, R = R, plot_figures = show_figures)
-    # BSC: linRegRicker_fun() was LinReg() and estSR()
-    # ***SP: Check with Eric about priors on b. ***
-    
-    
-    # BSC: this is temporary: see if it is possible to treat each CU separately in the
-    # JAGS chunk in case there are NAs that differ among CU.
-    # rowToKeep <- apply(X = S, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
-    # S <-  S[rowToKeep,,drop = F]
-    # rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
-    # R <-  R[rowToKeep,,drop = F]
-    
-    # Yrs <- as.numeric(rownames(R))
-    # nYrs <- length(Yrs)
-    
-    # LnRS <- log(R/S)
-    
-    #------------------------------------------------------------------------------#
-    #  Bayes model defined with rjags
-    #------------------------------------------------------------------------------#
-    
-    # Replace NAs with a value so that the model can run. Note that obs_lnRS still
-    # has NAs, so the it does not matter what pred_lnRS is for these cases because
-    # they are not considered in the likelihood calcutation (due to NAs in obs_lnRS).
-    S[is.na(S)] <- -99    # could put any value
-    nYrs <- nrow(S)
-    
-    # jags inputs:
-    jags.data <- list(
-      nCUs = nCUs,
-      nYrs = nYrs,
-      # rowsToKeep = rowsToKeep,
-      obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
-      S = S,         # data on observed spawners - matrix nYrs x nCU 
-      ln_Smsr = log(1/inipars$b))
-    # prmub = prmub, # prior on mu for b
-    # prtaub = prtaub #prior on tau for b
-    # ) # cov - not sure what this is
-    
-    jags.parms <- c("a", "b", "sd", "mu_a", "sd_a")
-    
-    # Definition of the model:
-    modelFilename = "Bayes_SR_model.txt"
-    cat("
+      S <- S[,!colnames(S) %in% CuToRemove, drop = F]
+      R <- R[,!colnames(R) %in% CuToRemove, drop = F]
+      CUs <- CUs[!CUs %in% CuToRemove]
+      CUs_cuid <- sapply(X = CUs,FUN = function(cu){
+        unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])
+      })
+      nCUs <- length(CUs)
+      
+      # nameFile <- paste0(gsub(" ","_",region[i_rg]),"_",
+      #                    gsub(" ","_",species[i_sp]),"_",
+      #                    species_acro[i_sp],"_SR_matrices.rds")
+      SR_l$R <- R
+      SR_l$S <- S
+      
+      saveRDS(SR_l,
+              file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_SR_matrices.rds"))
+      
+      # Set priors on b:
+      # Previous method using the values in the _SRdata.txt file
+      # prSmax <- d_prior$prSmax
+      # prCV <- d_prior$prCV
+      # prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
+      # prtaub <- 1/prCV^2				# convert from cv to tau
+      
+      #### Estimate a and b by linreg and plot
+      if(show_figures){
+        if(.Platform$OS.type == "windows"){      # BSC: what to do with Linux? : x11()?
+          windows()                              # Also do we want it to open in a new window vs in Rstudio?
+        }else{
+          quartz()
+        }
+      }
+      
+      # LnRS <- log(R/S)   # BSC: now is created inside the function with R and S to limit the number of parameters to pass in
+      # inipars <- LinReg(Nyrs,LNRS,S,R,StNames)
+      # Display the RS plot and output the estimated parameter values:
+      inipars <- linRegRicker_fun(S = S, R = R, plot_figures = show_figures)
+      # BSC: linRegRicker_fun() was LinReg() and estSR()
+      # ***SP: Check with Eric about priors on b. ***
+      
+      
+      # BSC: this is temporary: see if it is possible to treat each CU separately in the
+      # JAGS chunk in case there are NAs that differ among CU.
+      # rowToKeep <- apply(X = S, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
+      # S <-  S[rowToKeep,,drop = F]
+      # rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
+      # R <-  R[rowToKeep,,drop = F]
+      
+      # Yrs <- as.numeric(rownames(R))
+      # nYrs <- length(Yrs)
+      
+      # LnRS <- log(R/S)
+      
+      #------------------------------------------------------------------------------#
+      #  Bayes model defined with rjags
+      #------------------------------------------------------------------------------#
+      
+      # Replace NAs with a value so that the model can run. Note that obs_lnRS still
+      # has NAs, so the it does not matter what pred_lnRS is for these cases because
+      # they are not considered in the likelihood calcutation (due to NAs in obs_lnRS).
+      S[is.na(S)] <- -99    # could put any value
+      nYrs <- nrow(S)
+      
+      # jags inputs:
+      jags.data <- list(
+        nCUs = nCUs,
+        nYrs = nYrs,
+        # rowsToKeep = rowsToKeep,
+        obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
+        S = S,         # data on observed spawners - matrix nYrs x nCU 
+        ln_Smsr = log(1/inipars$b))
+      # prmub = prmub, # prior on mu for b
+      # prtaub = prtaub #prior on tau for b
+      # ) # cov - not sure what this is
+      
+      jags.parms <- c("a", "b", "sd", "mu_a", "sd_a")
+      
+      # Definition of the model:
+      modelFilename = "Bayes_SR_model.txt"
+      cat("
     model{
     
     	# Hyper priors
@@ -386,51 +398,52 @@ for(i_rg in 1:length(region)){
     		}
     	}
     }", fill = TRUE, file = modelFilename)
-    
-    # Run Model
-    print("Running Parallel")
-    # **SP: Why have this message when it's not actually running in parallel?
-    # **BSC: TODO: get the parallele to work on windows, MAC and Linuxf
-    # https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
-    
-    ptm = proc.time()
-    
-    jagsfit.p <- jags(data = jags.data,  
-                      parameters.to.save = jags.parms,
-                      n.thin = 10,                     # thinning rate
-                      n.iter = 100000, 
-                      model.file = modelFilename, 
-                      n.burnin = 5000, 
-                      n.chains = 6)
-    
-    endtime <- proc.time()-ptm
-    endtime[3]/60
-    
-    post <- as.mcmc(jagsfit.p)
-    
-    # BSC: it is exported in /Output for now but these should be exported someWhere
-    # else becaue they are probably too big for github.
-    saveRDS(post,
-            file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_posteriors_priorShift.rds"))
-    
-    # save the name of the corresponding CUs:
-    #' TODO: remove as this CSV might/should not be used if future, these CUs names
-    #' should be taken from the REGION_SPECIESACRO__SR_matrices.rds instead to 
-    #' reduce the risk of mistakes.
-    CUs_df <- data.frame(CU = CUs)
-    write.csv(x = CUs_df,
-              file = paste0(wd_output,"/",gsub(" ","_",region[i_rg]),"_",speciesAcroHere,"_CUs_names.csv"), 
-              row.names = F)
-    
-    ##### INFERENCE ##### BSC: is that useful?
-    mypost <- as.matrix(post, chain = F)
-    gelman.diag(post, multivariate = F)
-    model.probs <- round(cbind(est = colMeans(mypost),
-                               sd = apply(mypost,2,sd),
-                               ci = t(apply(mypost,2,quantile,c(.025,.975)))),
-                         digits = 8)
-    model.probs
-  } # species loop
+      
+      # Run Model
+      print("Running Parallel")
+      # **SP: Why have this message when it's not actually running in parallel?
+      # **BSC: TODO: get the parallele to work on windows, MAC and Linuxf
+      # https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
+      
+      ptm = proc.time()
+      
+      jagsfit.p <- jags(data = jags.data,  
+                        parameters.to.save = jags.parms,
+                        n.thin = 10,                     # thinning rate
+                        n.iter = 100000, 
+                        model.file = modelFilename, 
+                        n.burnin = 5000, 
+                        n.chains = 6)
+      
+      endtime <- proc.time()-ptm
+      endtime[3]/60
+      
+      post <- as.mcmc(jagsfit.p)
+      
+      # BSC: it is exported in /Output for now but these should be exported someWhere
+      # else becaue they are probably too big for github.
+      saveRDS(post,
+              file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_posteriors_priorShift.rds"))
+      
+      # save the name of the corresponding CUs:
+      #' TODO: remove as this CSV might/should not be used if future, these CUs names
+      #' should be taken from the REGION_SPECIESACRO__SR_matrices.rds instead to 
+      #' reduce the risk of mistakes.
+      CUs_df <- data.frame(CU = CUs)
+      write.csv(x = CUs_df,
+                file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_CUs_names.csv"), 
+                row.names = F)
+      
+      ##### INFERENCE ##### BSC: is that useful?
+      mypost <- as.matrix(post, chain = F)
+      gelman.diag(post, multivariate = F)
+      model.probs <- round(cbind(est = colMeans(mypost),
+                                 sd = apply(mypost,2,sd),
+                                 ci = t(apply(mypost,2,quantile,c(.025,.975)))),
+                           digits = 8)
+      model.probs
+    } # species loop
+  }  # if there is data for this region
 } # region loop
 
 

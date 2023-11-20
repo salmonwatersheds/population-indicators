@@ -67,7 +67,6 @@ regions_df <- regions_fun()
 #' Import the files for all regions, species and CUs and rbind them to a single 
 #' dataframe.
 region <- as.character(regions_df[1,])
-region <- region[region != "Columbia"]
 species <- c(
   species_acronym$Sockeye,    
   species_acronym$Pink,
@@ -78,7 +77,6 @@ species <- c(
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
 pattern <- "biological_status"
-region <- gsub(" ","_",region)
 
 biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       wd_output = wd_output,
@@ -92,7 +90,7 @@ write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.cs
 
 head(biological_status_df)
 colnames(biological_status_df)
-nrow(biological_status_df) # 130
+nrow(biological_status_df) # 142
 unique(biological_status_df$comment)
 
 # discrepancies in CU names
@@ -108,7 +106,7 @@ biological_status_df[!is.na(biological_status_df$comment) & grepl("Not recent en
 
 # rest of the CUs with data:
 biological_status_df <- biological_status_df[is.na(biological_status_df$comment) | biological_status_df$comment == "",] # ?! there should not be NAs...
-nrow(biological_status_df) # 110
+nrow(biological_status_df) # 113
 
 biological_status_df <- biological_status_df[,!colnames(biological_status_df) %in% c("CU_pse","CU_dfo","comment")]
 
@@ -155,4 +153,5 @@ final <- merge(x = biological_status_df,
                by = c("region","species","CU"),
                all.x = T)
 
+View(final)
 

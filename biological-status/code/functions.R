@@ -615,6 +615,8 @@ regions_fun <- function(){
     Haida_Gwaii = 'Haida Gwaii',
     Nass = 'Nass',
     Skeena = 'Skeena',
+    Transboundary = "Transboundary",
+    VIMI = "Vancouver Island & Mainland Inlets",
     Yukon = 'Yukon')
   
   return(regions)
@@ -1062,9 +1064,15 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
 rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
                                           species_all = F){
   
+  region <- gsub(" ","_",region)
+  
   biological_status_df <- NULL
   for(rg in region){
-    # rg <- regions_df[1,1]
+    # rg <- region[7]
+    
+    if(rg == "Vancouver_Island_&_Mainland_Inlets"){
+      rg <- "VIMI"
+    }
     
     # returns all the files with pattern rg and "biological_status"
     list_files <- list.files(path = paste0(wd_output))
@@ -1076,15 +1084,19 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
       list_files <- unlist(list_files_bis) # this gets rides of the empty elements
     }
     
-    # import these files and rbind them
-    for(i_f in 1:length(list_files)){
-      # i_f <- 1
-      fileHere <- read.csv(file = paste(wd_output,list_files[i_f],sep="/"),header = T)
-      
-      if(is.null(biological_status_df)){
-        biological_status_df <- fileHere
-      }else{
-        biological_status_df <- rbind(biological_status_df,fileHere)
+    if(length(list_files) == 0){
+      print(paste0("*** There is no data in for salmon in ",rg," ***"))
+    }else{
+      # import these files and rbind them
+      for(i_f in 1:length(list_files)){
+        # i_f <- 1
+        fileHere <- read.csv(file = paste(wd_output,list_files[i_f],sep="/"),header = T)
+        
+        if(is.null(biological_status_df)){
+          biological_status_df <- fileHere
+        }else{
+          biological_status_df <- rbind(biological_status_df,fileHere)
+        }
       }
     }
   }

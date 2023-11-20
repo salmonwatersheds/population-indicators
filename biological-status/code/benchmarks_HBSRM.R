@@ -335,7 +335,7 @@ for(i_rg in 1:length(region)){
     # upper threshold Smsy and 80% of Smsy
     biologicalStatus_region_species_df <- NULL
     
-    statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F")  # BSC: those are not colour blind friendly
+    statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F") 
     # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
     # layout(matrix(data = 1:(nCUs * 2), nrow = nCUs, byrow = T))
     for(i in 1:nCUs){
@@ -350,19 +350,6 @@ for(i_rg in 1:length(region)){
       
       spawnerAbundance <- cuspawnerabundance_rg_sp$estimated_count[cuspawnerabundance_rg_sp$cu_name_pse == CUname]
       names(spawnerAbundance) <- cuspawnerabundance_rg_sp$year[cuspawnerabundance_rg_sp$cu_name_pse == CUname]
-      
-      # 
-      currentSpawnerData_available <- T
-      
-      if(sum(!is.na(spawnerAbundance)) == 0){
-        # spawnerAbundance <- SRm$S[, i]
-        # print("The following CU has only NAs for spawner abundance:")
-        # print(paste(region[i_rg],species[i_sp],CUname))
-        currentSpawnerData_available <- F
-        yrFinal <- NA
-        #' Eric: if estimated is not available, we can't apply spawner-recruit 
-        #' benchmarks.
-      }
       
       # quick fixes for dealing with ALL the variations in the CUs names
       # CUname <- CU_name_variations_fun(CUname = CUname,
@@ -434,7 +421,19 @@ for(i_rg in 1:length(region)){
       # while(is.na(tail(spawnerAbundance,1))){
       #   spawnerAbundance <- spawnerAbundance[-length(spawnerAbundance)]
       # }
-      yrFinal <- tail(as.numeric(names(spawnerAbundance[!is.na(spawnerAbundance)])),1)
+      
+      if(sum(!is.na(spawnerAbundance)) == 0){
+        # spawnerAbundance <- SRm$S[, i]
+        # print("The following CU has only NAs for spawner abundance:")
+        # print(paste(region[i_rg],species[i_sp],CUname))
+        currentSpawnerData_available <- F
+        yrFinal <- NA
+        #' Eric: if estimated is not available, we can't apply spawner-recruit 
+        #' benchmarks.
+      }else{
+        currentSpawnerData_available <- T
+        yrFinal <- tail(as.numeric(names(spawnerAbundance[!is.na(spawnerAbundance)])),1)
+      }
       
       #' add number of years to spawnerAbundance until yearCurrentAbundance if needed
       yearsHere <- as.numeric(names(spawnerAbundance))
@@ -450,9 +449,11 @@ for(i_rg in 1:length(region)){
       spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength)
       spawnerAbundance_lastGen_m <- mean_geom_fun(x = spawnerAbundance_lastGen)
       spawnerAbundance_lastGen_dataPointNb <- sum(!is.na(spawnerAbundance_lastGen))
-      currentSpawnerData_availableRecentEnough <- T
+      
       if(sum(!is.na(spawnerAbundance_lastGen)) == 0){
         currentSpawnerData_availableRecentEnough <- F
+      }else{
+        currentSpawnerData_availableRecentEnough <- T
       }
 
       # determine the number of time this CUs fall under the Red, Amber and Green 
@@ -495,6 +496,7 @@ for(i_rg in 1:length(region)){
         status_Smsy80_prob <- round(table(factor(status_Smsy80,levels = c("red","amber","green")))/length(status_Smsy80)*100,4)
         
         comment <- ""
+        
       }else{
         
         status_Smsy_prob <- status_Smsy80_prob <- rep(NA,3)
@@ -507,9 +509,9 @@ for(i_rg in 1:length(region)){
         }
       }
       
-      if(length(yrFinal) == 0){
-        yrFinal <- NA
-      }
+      # if(length(yrFinal) == 0){
+      #   yrFinal <- NA
+      # }
       
       biologicalStatus_df <- data.frame(region = region[i_rg],
                                         species = species[i_sp],
@@ -527,7 +529,7 @@ for(i_rg in 1:length(region)){
                                         status_Smsy80_amber = status_Smsy80_prob["amber"],
                                         status_Smsy80_green = status_Smsy80_prob["green"],
                                         comment = comment)
-
+      
       
       if(is.null(biologicalStatus_region_species_df)){
         biologicalStatus_region_species_df <- biologicalStatus_df
@@ -694,7 +696,7 @@ for(i_rg in 1:length(region)){
     
     write.csv(x = benchSummary_region_species_df, 
               file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_benchmarks_summary.csv"),
-              row.names = F)
+              row.names = F,)
     
     write.csv(x = biologicalStatus_region_species_df, 
               file = paste0(wd_output,"/",region[i_rg],"_",species[i_sp],"_biological_status.csv"),

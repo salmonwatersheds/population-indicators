@@ -85,9 +85,11 @@ biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       region = region,
                                                       species_all = species_all)
 
-
+#
 write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
           row.names = F)
+
+
 head(biological_status_df)
 colnames(biological_status_df)
 nrow(biological_status_df) # 130
@@ -105,8 +107,10 @@ biological_status_df[!is.na(biological_status_df$comment) & biological_status_df
 biological_status_df[!is.na(biological_status_df$comment) & grepl("Not recent enough data",biological_status_df$comment),]
 
 # rest of the CUs with data:
-biological_status_df <- biological_status_df[is.na(biological_status_df$comment) | biological_status_df$comment == "",]
+biological_status_df <- biological_status_df[is.na(biological_status_df$comment) | biological_status_df$comment == "",] # ?! there should not be NAs...
 nrow(biological_status_df) # 110
+
+biological_status_df <- biological_status_df[,!colnames(biological_status_df) %in% c("CU_pse","CU_dfo","comment")]
 
 # CUs that have contrasting biological status between Smsy80 and Smsy:
 colnamesSelect <- c("region","species","CU",colnames(biological_status_df)[grepl("Smsy_",colnames(biological_status_df))])
@@ -131,7 +135,6 @@ biological_status_df$status_Smsy80 <- sapply(X = 1:nrow(biological_status_df),
 biological_status_df[biological_status_df$status_Smsy != biological_status_df$status_Smsy80,]
 # that's not a lot of CUs!
 
-
 #' Import the associated benchmark values
 pattern <- "benchmarks_summary"
 
@@ -141,12 +144,15 @@ benchmarks_summary_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                        species_all = F)
 
 head(benchmarks_summary_df)
-nrow(unique(benchmarks_summary_df[,c("region","species","CU")])) # 146
+nrow(unique(benchmarks_summary_df[,c("region","species","CU")])) # 130
+
+benchmarks_summary_df
+benchmarks_summary_df_Smsy_HPD <- benchmarks_summary_df[benchmarks_summary_df$benchmark == "Smsy" & benchmarks_summary_df$method == "HPD",]
 
 
-
-
-
-
+final <- merge(x = biological_status_df, 
+               y = benchmarks_summary_df_Smsy_HPD[,c("region","species","CU","m")],
+               by = c("region","species","CU"),
+               all.x = T)
 
 

@@ -229,3 +229,59 @@ retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
   return(dataset)
 }
 
+#' Function to return one of the datasets (as a data frame) from the PSF database.
+#' The function replace the values "-989898" by NA.
+#'- nameDataSet: the name of the dataset, either in the database or the corresponding CSV file
+#'- fromDatabase: if TRUE, the dataset is pulled directly from the database,not the CSV file
+#'- update_file_csv: if TRUE (and fromDatabase is TRUE), the CSV file is updated
+#'- wd: where the CSV files are located.
+# nameDataSet <- datasetsNames_database_fun()$name_DB[1]
+datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv = F,
+                                  wd){
+
+  datasetsNames_database <- datasetsNames_database_fun()
+  
+  if(nameDataSet %in% datasetsNames_database$name_DB){
+    nameFileDB <- nameDataSet
+    nameFileCVS <- datasetsNames_database$name_CSV[datasetsNames_database$name_DB == nameDataSet]
+  }else if(nameDataSet %in% datasetsNames_database$name_CSV){
+    nameFileCVS <- nameDataSet
+    nameFileDB <- datasetsNames_database$name_DB[datasetsNames_database$name_CSV == nameDataSet]
+  }else{
+    print("The name of the dataset entered is not in datasetsNames_database_fun().")
+    output <- NA
+  }
+  
+  if(fromDatabase){
+    output <- retrieve_data_from_PSF_databse_fun(name_dataset = nameFileDB)
+    # replace -989898 values by NA
+    for(col in colnames(output)){
+      # col <- colnames(conservationunits_decoder)[11]
+      output[,col][output[,col] == -989898] <- NA
+    }
+    
+    if(update_file_csv){
+      write.csv(output, paste(wd,nameFileCVS,sep = "/"), row.names = F)
+    }
+  }else{
+    output <- read.csv(paste(wd,nameFileCVS,sep = "/"), header = T)
+  }
+  return(output)
+}
+
+#' Function that returns a data frame of the names of the datasets that can be 
+#' pulled from the database and the name of the corresponding CSV files already 
+#' downloaded. 
+datasetsNames_database_fun <- function(){
+  
+  out_df <- data.frame(name_DB = c("Appdata.vwdl_conservationunits_decoder",
+                                   "Appdata.vwdl_dataset1cu_output",
+                                   "Appdata.vwdl_dataset5_output"),
+                       name_CSV = c("conservationunits_decoder.csv",
+                                    "cuspawnerabundance.csv",
+                                    "recruitsperspawner.csv"))
+  return(out_df)
+}
+
+
+

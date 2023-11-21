@@ -97,17 +97,8 @@ region <- region[region != "Columbia"]
 # Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-species <- c(
-  species_acronym$Sockeye,    
-  species_acronym$Pink,
-  species_acronym$Coho
-  #species_acronym$Cutthroat,
-  #species_acronym$Chum
-)
-
-species <- species_acronym$Chinook
-species <- species_acronym$Coho
-species <- species_acronym$Pink
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
+             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 

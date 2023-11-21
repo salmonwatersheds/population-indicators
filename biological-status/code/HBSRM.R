@@ -65,33 +65,19 @@ species_acronym_df <- species_acronym_fun()
 # Import region names
 regions_df <- regions_fun()
 
+#' Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
 #' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
 fromDatabase <- F
 update_recruitsperspawner_csv <- F
-if(fromDatabase){
-  # 
-  recruitsperspawner <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_dataset5_output")
-  # head(recruitsperspawner)
-  # unique(recruitsperspawner$region)
-  # head(recruitsperspawner[recruitsperspawner$region == "Central Coast",],50)
-  
-  # replace -989898 values by NA
-  for(col in c("spawners","recruits","kf_alpha","lnrs","ricker_resid","r_s")){
-    # col <- "spawners"
-    recruitsperspawner[,col][recruitsperspawner[,col] == -989898] <- NA
-  }
-  
-  if(update_recruitsperspawner_csv){
-    write.csv(recruitsperspawner,
-              paste(wd_pop_indic_data_input_dropbox,"recruitsperspawner.csv",sep = "/"),
-              row.names = F)
-  }
-}else{
-  recruitsperspawner <- read.csv(paste(wd_pop_indic_data_input_dropbox,"recruitsperspawner.csv",sep = "/"),
-                                 header = T)
-}
 
+recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species

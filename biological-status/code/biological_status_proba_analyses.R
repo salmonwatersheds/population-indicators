@@ -52,8 +52,6 @@ wd_data_input <- wd_output
 # Import functions for this specific project
 source("Code/functions.R")
 
-
-
 # Import species names and acronyms
 species_acronym <- species_acronym_fun()
 
@@ -64,16 +62,15 @@ regions_df <- regions_fun()
 # Analyses
 #------------------------------------------------------------------------------#
 
+# Import biological status based on HBSRM ------
+
 #' Import the files for all regions, species and CUs and rbind them to a single 
 #' dataframe.
 region <- as.character(regions_df[1,])
-species <- c(
-  species_acronym$Sockeye,    
-  species_acronym$Pink,
-  species_acronym$Coho
-  #species_acronym$Cutthroat,
-  #species_acronym$Chum
-)
+
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
+             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
+
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
 pattern <- "biological_status"
@@ -108,7 +105,9 @@ biological_status_df[!is.na(biological_status_df$comment) & grepl("Not recent en
 biological_status_df <- biological_status_df[is.na(biological_status_df$comment) | biological_status_df$comment == "",] # ?! there should not be NAs...
 nrow(biological_status_df) # 113
 
-biological_status_df <- biological_status_df[,!colnames(biological_status_df) %in% c("CU_pse","CU_dfo","comment")]
+colToRemove_biostatus <- c("CU_pse","CU_dfo","genLength_available","comment")
+
+biological_status_df <- biological_status_df[,!colnames(biological_status_df) %in% colToRemove_biostatus]
 
 # CUs that have contrasting biological status between Smsy80 and Smsy:
 colnamesSelect <- c("region","species","CU",colnames(biological_status_df)[grepl("Smsy_",colnames(biological_status_df))])
@@ -133,7 +132,7 @@ biological_status_df$status_Smsy80 <- sapply(X = 1:nrow(biological_status_df),
 biological_status_df[biological_status_df$status_Smsy != biological_status_df$status_Smsy80,]
 # that's not a lot of CUs!
 
-#' Import the associated benchmark values
+#' Import the benchmark values associated with the HBSRM ------
 pattern <- "benchmarks_summary"
 
 benchmarks_summary_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
@@ -148,10 +147,57 @@ benchmarks_summary_df
 benchmarks_summary_df_Smsy_HPD <- benchmarks_summary_df[benchmarks_summary_df$benchmark == "Smsy" & benchmarks_summary_df$method == "HPD",]
 
 
-final <- merge(x = biological_status_df, 
-               y = benchmarks_summary_df_Smsy_HPD[,c("region","species","CU","m")],
-               by = c("region","species","CU"),
-               all.x = T)
+final_HBSRM <- merge(x = biological_status_df, 
+                     y = benchmarks_summary_df_Smsy_HPD[,c("region","species","CU","m")],
+                     by = c("region","species","CU"),
+                     all.x = T)
 
-View(final)
+View(final_HBSRM)
+
+#
+#' Import the biological status based on historical spawner abundance -----
+pattern <- "biological_status_SH_percentiles"
+
+biological_status_HSPercent_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                                wd_output = wd_output,
+                                                                region = region,
+                                                                species_all = F)
+
+biological_status_HSPercent_df <- biological_status_HSPercent_df[,! colnames(biological_status_HSPercent_df) %in% colToRemove_biostatus]
+
+biological_status_HSPercent_df <- biological_status_HSPercent_df[!is.na(biological_status_HSPercent_df$status_HSPercent_red),]
+
+biological_status_HSPercent_df$status_HS <- sapply(X = 1:nrow(biological_status_HSPercent_df), 
+                                                   FUN = function(r){
+                                                     # r <- 1
+                                                     slice <- biological_status_HSPercent_df[r,colnames(biological_status_HSPercent_df)[grepl("status_HSPercent_",colnames(biological_status_HSPercent_df))]]
+                                                     out <- c("red","amber","green")[slice == max(slice)]
+                                                     return(out)
+                                                   })
+
+biostat_HBSR_SH <- merge(x = biological_status_df[,c("region","species","CU","status_Smsy","status_Smsy80")], 
+                         y = biological_status_HSPercent_df[,c("region","species","CU","status_HS")], 
+                         by = c("region","species","CU"),
+                         all = T)
+biostat_HBSR_SH
+
+biostat_HBSR_SH_noNA <- biostat_HBSR_SH[!is.na(biostat_HBSR_SH$status_Smsy80) & !is.na(biostat_HBSR_SH$status_HS),]
+
+biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy == biostat_HBSR_SH_noNA$status_HS,]
+biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy80 == biostat_HBSR_SH_noNA$status_HS,]
+biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy != biostat_HBSR_SH_noNA$status_HS,]
+biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy80 != biostat_HBSR_SH_noNA$status_HS,]
+
+#
+#' Import the historical spawner abundance benchmark values ------
+pattern <- "HS_percentiles_summary"
+
+benchmarks_summary_HSPercent_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                                 wd_output = wd_output,
+                                                                 region = region,
+                                                                 species_all = F)
+
+head(benchmarks_summary_HSPercent_df)
+
+
 

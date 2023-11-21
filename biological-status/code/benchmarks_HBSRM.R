@@ -67,58 +67,28 @@ species_acronym_df <- species_acronym_fun()
 # Import region names
 regions_df <- regions_fun()
 
-# import the conservationunits_decoder.csv (to access generation length)
-
-conservationunits_decoder <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
-                                      header = T)
-
-#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
-#' download it from the PSF database.
-#' # To obtain the generation length and calculate the the "current spawner abundance".
-fromDatabase <- F
-update_file_csv <- F
-if(fromDatabase){
-  # kalum2253
-  conservationunits_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_conservationunits_decoder")
-  
-  # replace -989898 values by NA
-  for(col in colnames(conservationunits_decoder)){
-    # col <- colnames(conservationunits_decoder)[11]
-    conservationunits_decoder[,col][conservationunits_decoder[,col] == -989898] <- NA
-  }
-  
-  if(update_file_csv){
-    write.csv(conservationunits_decoder,
-              paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
-              row.names = F)
-  }
-}else{
-  conservationunits_decoder <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
-                                        header = T)
-}
+#' Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
 
 #' Import the cuspawnerabundance.csv from population-indicators/data_input or 
 #' download it from the PSF database.
 #' To calculating current spawner abundance for biostatus assessment
-if(fromDatabase){
-  # 
-  cuspawnerabundance <- retrieve_data_from_PSF_databse_fun(name_dataset = "Appdata.vwdl_dataset1cu_output")
-  
-  # replace -989898 values by NA
-  for(col in colnames(cuspawnerabundance)){
-    # col <- colnames(conservationunits_decoder)[11]
-    cuspawnerabundance[,col][cuspawnerabundance[,col] == -989898] <- NA
-  }
-  
-  if(update_file_csv){
-    write.csv(cuspawnerabundance,
-              paste(wd_pop_indic_data_input_dropbox,"cuspawnerabundance.csv",sep = "/"),
-              row.names = F)
-  }
-}else{
-  cuspawnerabundance <- read.csv(paste(wd_pop_indic_data_input_dropbox,"cuspawnerabundance.csv",sep = "/"),
-                                        header = T)
-}
+fromDatabase <- F
+update_file_csv <- F
+
+cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+
+#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
 
 
 #------------------------------------------------------------------------------#

@@ -499,8 +499,8 @@ medQuan <- function(x, na.rm = TRUE){
 #' @examples
 #'
 #' @export
-
-
+# series <- spawnerAbundance
+# nBoot <- 10000
 modelBoot <- function(
     series, 
     numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
@@ -525,7 +525,7 @@ modelBoot <- function(
       series <- series[1:length(series) %% 2 == 0]
     }
     
-    n <- length(series)
+    n <- length(series) 
     
     ar.fit <- ar(
       log(series), # spawner time series
@@ -549,22 +549,34 @@ modelBoot <- function(
       ncol = 2, 
       dimnames = list(c(1:nBoot), c("lower", "upper")))
     
+    #' Bruno: related to TODO below
+    series_noNA <- series[!is.na(series)]
+    n_noNA <- length(series_noNA)
+    
     # Model bootstrap:
     for(i in 1:nBoot){
-      
+      # i <- 1
       # Initialize the simulated time series using the true data for the first
       # 1:numLags points, starting from a random place in the timeseries
-      j.init <- sample(1 : (n - numLags + 1), 1) # starting point for initialization
-      obs.star.log[1:numLags, i] <- log(series[j.init:(j.init + numLags - 1)])
+      
+      #' TODO: QUESTION: should we sample in the non-NA data? instead? OK Steph
+      #' Like so:
+      j.init <- sample(1:(n_noNA - numLags + 1), 1) # starting point for initialization
+      obs.star.log[1:numLags, i] <- log(series_noNA[j.init:(j.init + numLags - 1)])
+      
+      #older code:
+      # j.init <- sample(1:(n - numLags + 1), 1) # starting point for initialization
+      # obs.star.log[1:numLags, i] <- log(series[j.init:(j.init + numLags - 1)])
       
       for(j in 1:n){ # For each timepoint in the simulated series
-        obs.star.log[(numLags + j), i] <- ar.fit$x.mean + ar.fit$ar %*% (obs.star.log[j:(j + numLags - 1), i] - ar.fit$x.mean) + res.star[j, i]
+        obs.star.log[(numLags + j), i] <- ar.fit$x.mean + ar.fit$ar %*% (obs.star.log[j:(numLags + j - 1), i] - ar.fit$x.mean) + res.star[j, i]
       } #end j
+      
+      # obs.star.log[,i]
       
       HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
     } # end bootstrap loop
     
-    #
     # plot(x = 1:(n+1), y = obs.star.log[,1], type = 'l', col = alpha('grey10',alpha = 0.5),
     #      lwd = 1.5, ylim = c(0,25))
     # for(i in 2:1000){
@@ -589,13 +601,15 @@ modelBoot <- function(
     ouptup <- list(m = HS_benchmedian, 
                    CI = HS_benchCI, 
                    simulatedSeries = obs.star, 
-                   benchmarks = benchmarks)
+                   benchmarks = benchmarks,
+                   benchmarkBoot = HS_benchBoot)
   }else{
     
     ouptup <- list(m = c(NA,NA), 
                    CI = matrix(NA,nrow = 2, ncol = 2), 
                    simulatedSeries = NA, 
-                   benchmarks = benchmarks)
+                   benchmarks = benchmarks,
+                   benchmarkBoot = NA)
   }
   
   return(ouptup)
@@ -1068,7 +1082,7 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
   
   biological_status_df <- NULL
   for(rg in region){
-    # rg <- region[7]
+    # rg <- region[1]
     
     if(rg == "Vancouver_Island_&_Mainland_Inlets"){
       rg <- "VIMI"
@@ -1077,6 +1091,11 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
     # returns all the files with pattern rg and "biological_status"
     list_files <- list.files(path = paste0(wd_output))
     list_files <- list_files[grepl(rg,list_files) & grepl(pattern,list_files)]
+    
+    if(pattern == "biological_status"){
+      list_filesToRemove <- list_files[grepl("SH_percentiles",list_files)]
+      list_files <- list_files[! list_files %in% list_filesToRemove]
+    }
     
     # select the species required
     if(!species_all & !is.na(species[1])){

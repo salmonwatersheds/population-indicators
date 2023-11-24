@@ -62,17 +62,19 @@ regions_df <- regions_fun()
 # Analyses
 #------------------------------------------------------------------------------#
 
-# Import biological status based on HBSRM ------
-
-#' Import the files for all regions, species and CUs and rbind them to a single 
-#' dataframe.
+# select all the regions
 region <- as.character(regions_df[1,])
 
+# select certain species
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
+
+# Import biological status based on HBSRM ------
+
+
 pattern <- "biological_status"
 
 biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,

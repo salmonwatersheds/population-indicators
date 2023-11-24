@@ -267,13 +267,66 @@ mismatch_NAsPastYr_l   # CUs with missing values in past years but values presen
 mismatch_NAsPastYr_l   # CU with missing data in the past for recruitsperspawner$spawners (1)
 mismatch_diffYr_l      # CUs with differing counts (40)
 
-
-
 #
-# --------
+# check why there are identical biological status probabilities between Smsy and Smsy80 --------
 
+biological_status_df <- read.csv(paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
+                                 header = T)
 
+biological_status_df_noNA <- biological_status_df[!is.na(biological_status_df$status_Smsy80_red),]
 
+colHere <- colnames(biological_status_df_noNA)[grepl("status_Smsy",colnames(biological_status_df_noNA))]
+colHere_Smsy80 <- colHere[grepl("80",colHere)]
+colHere_Smsy <- colHere[!colHere %in% colHere_Smsy80]
+
+for(col in colHere){
+  biological_status_df_noNA[,col] <- round(biological_status_df_noNA[,col],4)
+}
+
+identicalBool <- sapply(X = 1:nrow(biological_status_df_noNA), FUN = function(r){
+  # r <- 1
+  DF <- biological_status_df_noNA[r,,drop = F]
+  ident <- c()
+  for(i in 1:3){
+    ident <- c(ident,DF[,colHere_Smsy][,i] == DF[,colHere_Smsy80][,i])
+  }
+  if(sum(ident) == 3){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+})
+
+dupli_df <- biological_status_df_noNA[identicalBool,!colnames(biological_status_df_noNA) %in% c("CU_pse","CU_dfo","comment")]
+nrow(dupli_df) # 46
+
+dupli_remain_df <- dupli_df
+# Central_Coast      CK Rivers Inlet
+
+#' There are multiple cases where the match makes sense:
+
+#' CASE 1: current spawner abundance is consistently higher than Smsy:
+dupli_df_largerSmsy <- dupli_remain_df[dupli_remain_df$status_Smsy_green == 100,]
+nrow(dupli_df_largerSmsy) # 10
+
+dupli_remain_df <- dupli_remain_df[dupli_remain_df$status_Smsy_green < 100,]
+nrow(dupli_remain_df) # 36
+
+#' CASE 2: current spawner abundance is consistently < Sgen:
+dupli_df_smallerSgen <- dupli_remain_df[dupli_remain_df$status_Smsy_red == 100,]
+nrow(dupli_df_smallerSgen) # 9
+
+dupli_remain_df <- dupli_remain_df[dupli_remain_df$status_Smsy_red < 100,]
+nrow(dupli_remain_df) # 27
+
+#' CASE 3: current spawner abundance is always < Smsy80
+dupli_df_smallerSmsy80 <- dupli_remain_df[dupli_remain_df$status_Smsy80_green == 0,]
+nrow(dupli_df_smallerSmsy80) # 27
+
+dupli_remain_df <- dupli_remain_df[dupli_remain_df$status_Smsy80_green > 0,]
+nrow(dupli_remain_df) # 0
+
+# CONCLUSION: All good 
 
 
 

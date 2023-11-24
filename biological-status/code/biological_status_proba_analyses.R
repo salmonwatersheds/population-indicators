@@ -53,7 +53,7 @@ wd_data_input <- wd_output
 source("Code/functions.R")
 
 # Import species names and acronyms
-species_acronym <- species_acronym_fun()
+species_acronym_df <- species_acronym_fun()
 
 # Import region names
 regions_df <- regions_fun()
@@ -73,10 +73,8 @@ species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == 
 species_all <- TRUE
 
 # Import biological status based on HBSRM ------
-
-
+# Import all the CSV files for each combination of region - species and rbind them
 pattern <- "biological_status"
-
 biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       wd_output = wd_output,
                                                       region = region,
@@ -85,7 +83,6 @@ biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
 #
 write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
           row.names = F)
-
 
 head(biological_status_df)
 colnames(biological_status_df)

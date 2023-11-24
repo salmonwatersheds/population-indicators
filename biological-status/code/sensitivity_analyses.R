@@ -178,9 +178,17 @@ names(count) <- 1:max(nb_cu_dataPt_df$nb_dataPt)
 colours <- rep("grey60",length(count))
 colours[as.numeric(names(count)) %in% c(10,15,20)] <- "red"
 
+printFig <- T
+if(printFig){
+  jpeg(paste0(wd_figures,"/Sensitivity_dataPointNb_cut.jpg"),
+       width = 30, height = 20, units = "cm", res = 300)
+}
+par(mar=c(5,5,0.5,0.5))
 barplot(count, ylab = " Number of CUs", xlab = "minimum number of data points allowed",
         axis.lty=1, col = colours)
-
+if(printFig){
+  dev.off()
+}
 
 #'* Question: What is the effect of reducing nBoot (= 10000) in modelBoot() on *
 #'* the CV of the medium benchmarks and their CI ? *
@@ -229,6 +237,7 @@ for(j in nb_dataPt){
 
 nb_cu_dataPt_df_20 <- nb_cu_dataPt_df[nb_cu_dataPt_df$nb_dataPt >= 20,]
 
+printFig <- F
 yr_nb <- c(10,15,20,30)
 nb_dataPt <- c(40,50,60,68)
 
@@ -255,7 +264,7 @@ for(j in nb_dataPt){
   
   sensitivity_HSPercentBM_CV_figure_fun(benchSummary_nbYear_CV, 
                                         wd_figures, 
-                                        printFig = T,
+                                        printFig = printFig,
                                         xvar = "dataPointNb")
 }
 

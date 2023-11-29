@@ -111,6 +111,82 @@ recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
+# Fixes spawners for the Yukon ------
+
+#' * Fixe recruitsperspawner$spawners for the Yukon *
+#' - values for recruitsperspawner$spawners are in the 1000s and without decimals 
+#' - go in the original datasets and find the original values.
+#' - update mismatch_diffYr_l
+#' - update the dataset5
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/Data")
+filename <- "Connorsetal2022_brood_table.csv"
+yukonOriginal <- read.csv(paste(path,filename,sep ="/"),header = T)
+head(yukonOriginal)
+nrow(yukonOriginal) # 280
+colnames(yukonOriginal)[colnames(yukonOriginal) == "BroodYear"] <- "year"
+yukonOriginal <- yukonOriginal[,colnames(yukonOriginal) != "X"]
+
+cuid_yukon <- unique(yukonOriginal$cuid)
+for(cu in cuid_yukon){
+  # cu <- cuid_yukon[1]
+  original <- yukonOriginal[yukonOriginal$cuid == cu,]$S_med
+  
+  spawners <- recruitsperspawner[recruitsperspawner$region == "Yukon" &
+                                   recruitsperspawner$species_name == "Chinook" & 
+                                   recruitsperspawner$cuid == cu,]$spawners
+  
+  spawners_noNA <- spawners[!is.na(spawners)]
+  
+  if(!identical(round(original),spawners_noNA)){
+    print(paste("Different numbers for CU",cu))
+    print(round(original))
+    print(spawners_noNA)
+  }
+  
+  recruitsperspawner[recruitsperspawner$region == "Yukon" &
+                       recruitsperspawner$species_name == "Chinook" & 
+                       recruitsperspawner$cuid == cu,]$spawners[!is.na(spawners)] <- round(original * 1000)
+}
+
+#' * Replace the value in dataset_5.Dec162022csv *
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/Output")
+filename <- "dataset_5.Dec162022.csv"
+
+dataset_5 <- read.csv(paste(path,filename,sep ="/"),header = T)
+dataset_5 <- dataset_5[,colnames(dataset_5) != "X"]
+head(dataset_5)
+
+cuid_yukon <- unique(yukonOriginal$cuid)
+for(cu in cuid_yukon){
+  # cu <- cuid_yukon[1]
+  spawners <- recruitsperspawner[recruitsperspawner$region == "Yukon" &
+                                   recruitsperspawner$species_name == "Chinook" & 
+                                   recruitsperspawner$cuid == cu,]$spawners
+  dspawners_5 <- dataset_5[dataset_5$Species == "Chinook" & 
+                             dataset_5$CUID == cu,]$Spawners
+  
+  if(!identical(round(spawners/1000),dspawners_5)){
+    print(paste("Different numbers for CU",cu))
+  }
+  
+  dataset_5[dataset_5$Species == "Chinook" &
+              dataset_5$CUID == cu,]$Spawners <- spawners
+}
+
+write.csv(dataset_5,paste0(path,"/dataset_5.Nov282023.csv"),row.names = F)
+
+# Fixes spawners for the Central Coast WAIT TO HEAR FROM THEM ------
+
+#' * Replace the value in All-OUTPUT--nonlegacy-mode_20220222.xlsx *
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/cc-recons-2021")
+filename <- "All-OUTPUT--nonlegacy-mode_20220222.xlsx"
+
+# Wait for Eric to share rencent (2020) run reconstruction
+
+# To update this output dataset5 for the database: https://www.dropbox.com/scl/fi/hlv4n3go8ewavb9vm7c9r/dataset_5.Dec162022.csv?rlkey=5lxtr2s1ybk7jdx8eeumbcznv&dl=0 
+# Central coast age data: https://www.dropbox.com/scl/fi/y360sr7hqie2ale3uolll/All-OUTPUT-nonlegacy-mode_20220222.xlsx?rlkey=szlb0pzfscdrvj6b9y3skmw33&dl=0 
+
+
 #
 # Check that the data spawner abundance data matches between cuspawnerabundance and recruitsperspawner -------
 
@@ -172,9 +248,9 @@ for(r in 1:nrow(mergedDF)){
     count_identical <- count_identical + 1
   }
 }
-length(mismatch_l) # 143
+length(mismatch_l) # 135
 mismatch_l[[5]]
-length(identical_l) # 41
+length(identical_l) # 49
 identical_l[[1]]
 
 mismatch_remain_l <- mismatch_l
@@ -203,7 +279,7 @@ length(mismatch_allNAs_cuspawnerabundance_l) # 1
 
 mismatch_remain_l <- mismatch_remain_l[!names(mismatch_remain_l) %in% names(mismatch_allNAs_recruitsperspawner_l)]
 mismatch_remain_l <- mismatch_remain_l[!names(mismatch_remain_l) %in% names(mismatch_allNAs_cuspawnerabundance_l)]
-length(mismatch_remain_l) # 134
+length(mismatch_remain_l) # 126
 
 #' CUs with missing values in recruitsperspawner$spawners only in the recent years,
 #' otherwise all rest of the data is identical
@@ -222,7 +298,7 @@ for(i in 1:length(mismatch_remain_l)){
 }
 length(mismatch_NAsRecentYr_l) # 93
 mismatch_remain_l <- mismatch_remain_l[!names(mismatch_remain_l) %in% names(mismatch_NAsRecentYr_l)]
-length(mismatch_remain_l) # 41
+length(mismatch_remain_l) # 33
 
 #' CUs with missing values in past years but values present are identical and 
 #' the ones with contrasting values:
@@ -248,7 +324,7 @@ for(i in 1:length(mismatch_remain_l)){
 }
 length(mismatch_NAsPastYr_l) # 1
 mismatch_NAsPastYr_l
-length(mismatch_diffYr_l)    # 40
+length(mismatch_diffYr_l)    # 32
 mismatch_diffYr_l[[1]]
 mismatch_diffYr_l[[2]]
 mismatch_diffYr_l[[3]]
@@ -258,14 +334,101 @@ mismatch_remain_l <- mismatch_remain_l[!names(mismatch_remain_l) %in% names(mism
 length(mismatch_remain_l) # 0
 
 #' Final lists:
-identical_l       # the list of CUs that with identical spawner abundances (41)
-mismatch_l        # the list of CUs with mistmatches (143) 
+identical_l       # the list of CUs that with identical spawner abundances (49)
+mismatch_l        # the list of CUs with mistmatches (135) 
 mismatch_allNAs_recruitsperspawner_l # only NAs in recruitsperspawner$spawners (8)
 mismatch_allNAs_cuspawnerabundance_l # only NAs in cuspawnerabundance$estimated_count (1)
-mismatch_NAsRecentYr_l #  CUs with missing values in recruitsperspawner$spawners only in the recent years, rest is identical (93)
+mismatch_NAsRecentYr_l # CUs with missing values in recruitsperspawner$spawners only in the recent years, rest is identical (93)
 mismatch_NAsPastYr_l   # CUs with missing values in past years but values present are identical (1)
 mismatch_NAsPastYr_l   # CU with missing data in the past for recruitsperspawner$spawners (1)
-mismatch_diffYr_l      # CUs with differing counts (40)
+mismatch_diffYr_l      # CUs with differing counts (32)
+
+toExclude <- c("Central Coast","Haida Gwaii")
+regionsToKeep <- sapply(X = names(mismatch_diffYr_l),FUN = function(n){
+  return(sub("\\ -.*", "", n))
+})
+regionsToKeep <- unique(regionsToKeep)
+regionsToKeep <- regionsToKeep[! regionsToKeep %in% toExclude]
+printFig <- F
+for(rg in regionsToKeep){
+  # rg <- regionsToKeep[3]
+  cu_l <- mismatch_diffYr_l[grepl(rg,names(mismatch_diffYr_l))]
+
+  speciesHere <- sapply(X = names(cu_l),FUN = function(n){
+    # n <- names(cu_l)[1]
+    out <- strsplit(x = n,split = " - ")[[1]]
+    out <- out[2]
+    return(out)
+  })
+  speciesHere[grepl("Pink",speciesHere)] <- "Pink" # pool the odd and even Pink species together
+  speciesHere <- unique(speciesHere)
+  
+  for(sp in speciesHere){
+    # sp <- speciesHere[1]
+    cu_lcut <- cu_l[grepl(sp,names(cu_l))]
+    CU_n <- length(cu_lcut)
+    points_n_v <- sapply(X = cu_lcut, FUN = function(d){nrow(d)})
+    
+    yrange <- sapply(X = cu_lcut, FUN = function(d){
+      return(range(d$spawners))
+    })
+    xrange <- sapply(X = cu_lcut, FUN = function(d){
+      return(range(d$estimated_count))
+    })
+    ymin <- min(yrange[1,])
+    ymax <- max(yrange[2,])
+    xmin <- min(xrange[1,])
+    xmax <- max(xrange[2,])
+    
+    CUsHere <- sub(".*\\- ", "",names(cu_lcut))
+    
+    log10Trans <- F
+    conditionsforLogTrans <- (rg == "Skeena" & sp == "Lake sockeye") |
+                             (rg == "Vancouver Island & Mainland Inlets" & sp == "Pink")
+    if(conditionsforLogTrans){
+      log10Trans <- T
+    }
+    
+    xlab <- 'Estimated counts (cuspawnerabundance)'
+    ylab <- "Spawners (recruitsperspawner)"
+    
+    if(log10Trans){
+      ymin <- log10(ymin)
+      ymax <- log10(ymax)
+      xmin <- log10(xmin)
+      xmax <- log10(xmax)
+      xlab <- paste0(xlab,' (log10)')
+      ylab <- paste0(ylab,' (log10)')
+    }
+    
+    if(printFig){
+      jpeg(filename = paste0(wd_figures,"/checks_spawners_vs_estimated_counts - ",rg," - ",sp,".jpg"),
+           width = 25, height = 25, units = "cm", res = 300)
+    }
+
+    plot(NULL, xlim = c(xmin,xmax), ylim = c(ymin,ymax),xlab = xlab,ylab = ylab,
+         main = paste(rg,sp,sep = " - "))
+    pointsCol <- rainbow(n = length(points_n_v))
+    for(cu_i in 1:CU_n){
+      # cu_i <- 1
+      dsHere <- cu_l[[cu_i]]
+      x <- cu_l[[cu_i]]$estimated_count
+      y <- cu_l[[cu_i]]$spawners
+      if(log10Trans){
+        x <- log10(x)
+        y <- log10(y)
+      }
+      points(x = x, y = y, col = pointsCol[cu_i], pch = 16)
+      reg <- lm(y ~ x)
+      lines(x = x, y = predict(object = reg), col = pointsCol[cu_i], lwd = 2)
+    }
+    abline(a = 0, b = 1, lwd = 2, lty = 2)
+    legend("topleft",CUsHere,fill = pointsCol,bty = "n")
+  }
+  if(printFig){
+    dev.off()
+  }
+}
 
 #
 # check why there are identical biological status probabilities between Smsy and Smsy80 --------
@@ -328,6 +491,6 @@ nrow(dupli_remain_df) # 0
 
 # CONCLUSION: All good 
 
-
+# -------
 
 

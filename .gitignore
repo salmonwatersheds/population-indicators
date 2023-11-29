@@ -37,3 +37,7 @@ rsconnect/
 
 # macOS desktop services store
 .DS_Store
+
+# The input files that we do not push to github for now
+data_input/
+

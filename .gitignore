@@ -41,3 +41,16 @@ rsconnect/
 # The input files that we do not push to github for now
 data_input/
 
+#biological-status/data/
+biological-status/figures/
+biological-status/output/
+biological-status/output_OLD/
+
+#hatchery-release/data/
+hatchery-release/output/
+
+spawner-surveys/data/
+spawner-surveys/references/
+spawner-surveys/output/
+
+

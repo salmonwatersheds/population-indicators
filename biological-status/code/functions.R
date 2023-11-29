@@ -500,12 +500,13 @@ medQuan <- function(x, na.rm = TRUE){
 #'
 #' @export
 # series <- spawnerAbundance
-# nBoot <- 10000
+# nBoot <- 5000
+# benchmarks <- c(0.25,0.75, 0.5)
 modelBoot <- function(
     series, 
     numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
     nBoot = 10000, 
-    benchmarks = c(0.25, 0.5)
+    benchmarks = c(0.25, 0.75) # c(0.25, 0.5)
 ){
   
   if(sum(!is.na(series)) > 1){ # if there is at least two data points (to avoid crashing)
@@ -543,11 +544,14 @@ modelBoot <- function(
     
     obs.star.log <- matrix(nrow = n + numLags, ncol = nBoot) 
     
+    #
+    benchmarksNames <- paste0("benchmark_",benchmarks)
+    
     # Matrix to store bootstrapped values of CI
     HS_benchBoot <- matrix(
       nrow = nBoot, 
-      ncol = 2, 
-      dimnames = list(c(1:nBoot), c("lower", "upper")))
+      ncol = length(benchmarksNames), 
+      dimnames = list(c(1:nBoot), benchmarksNames))
     
     series_noNA <- series[!is.na(series)]
     n_noNA <- length(series_noNA)
@@ -602,8 +606,8 @@ modelBoot <- function(
                    benchmarkBoot = HS_benchBoot)
   }else{
     
-    ouptup <- list(m = c(NA,NA), 
-                   CI = matrix(NA,nrow = 2, ncol = 2), 
+    ouptup <- list(m = rep(NA,length(benchmarks)), 
+                   CI = matrix(NA,nrow = 2, ncol = length(benchmarks)), 
                    simulatedSeries = NA, 
                    benchmarks = benchmarks,
                    benchmarkBoot = NA)

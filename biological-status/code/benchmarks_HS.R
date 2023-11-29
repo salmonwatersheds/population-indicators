@@ -137,10 +137,13 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 # unique(spawner_abundance$species_name)
 
 # The benchmarks to use
-benchmarks <- c(0.25, 0.75) # was c(0.25, 0.5)
+benchmarks <- c(0.25, 0.5, 0.75) # was c(0.25, 0.5)
 
 # last year to calculate current spawner abundance
 yearCurrentAbundance <- 2021
+
+# 
+nBoot <- 5000
 
 #
 for(i_rg in 1:length(region)){
@@ -244,20 +247,21 @@ for(i_rg in 1:length(region)){
           numLags <- 1
           modelCI <- modelBoot(series = spawnerAbundance, 
                                numLags = numLags, # numLags is the lag for the autocorrelation; default is just 1 year
-                               nBoot = 10000,
-                               benchmarks = benchmarks)
+                               nBoot = nBoot,
+                               benchmarks = benchmarks)  # to be able to compare
           
           # place the information a dataframe
-          benchSummary_df <- data.frame(region = rep(region[i_rg],2),
-                                        species = rep(speciesAcroHere,2),
-                                        CU = rep(CUs[i_cu],2),
-                                        benchmark = c('lower','upper'),
-                                        method = rep('HS_percentiles',2))
+          
+          benchSummary_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
+                                        species = rep(speciesAcroHere,length(benchmarks)),
+                                        CU = rep(CUs[i_cu],length(benchmarks)),
+                                        benchmark = paste0("benchmark_",benchmarks), # c('lower','upper'),
+                                        method = rep('HS_percentiles',length(benchmarks)))
           
           benchSummary_df$m <- modelCI$m
-          benchSummary_df$CI025 <- modelCI$CI[,1]
-          benchSummary_df$CI975 <- modelCI$CI[,2]
-          benchSummary_df$benchmarks <- rep(paste(benchmarks,collapse = "-"),2)
+          benchSummary_df$CI025 <- modelCI$CI[1,]
+          benchSummary_df$CI975 <- modelCI$CI[2,]
+          benchSummary_df$benchmarks <- rep(paste(benchmarks,collapse = "-"),length(benchmarks))
           benchSummary_df$dataPointNb <- sum(!is.na(spawnerAbundance))
           benchSummary_df$comment <- comment
           
@@ -353,29 +357,47 @@ for(i_rg in 1:length(region)){
           # status over all the simulations
           if(currentSpawnerData_available & currentSpawnerData_availableRecentEnough){
             
-            status_HSPercent <- c()
+            status_HSPercent_075 <- c()
+            status_HSPercent_05 <- c()
             
             for(j in 1:nrow(modelCI$benchmarkBoot)){
               # j <- 1
-              LB <- modelCI$benchmarkBoot[j,1]
-              UB <- modelCI$benchmarkBoot[j,2]
+              LB <- modelCI$benchmarkBoot[j,"benchmark_0.25"]
+              UB_075 <- modelCI$benchmarkBoot[j,"benchmark_0.75"]
+              UB_05 <- modelCI$benchmarkBoot[j,"benchmark_0.5"]
               #
-              if(!is.na(LB) & !is.na(UB)){
+              if(!is.na(LB) & !is.na(UB_05) & !is.na(UB_075)){
+                
                 if(spawnerAbundance_lastGen_m <= LB){
-                  status_HSPercent <- c(status_HSPercent,'red')
-                }else if(spawnerAbundance_lastGen_m <= UB){
-                  status_HSPercent <- c(status_HSPercent,'amber')
+                  status_HSPercent_075 <- c(status_HSPercent_075,'red')
+                  status_HSPercent_05 <- c(status_HSPercent_05,'red')
+                  
+                }else if(spawnerAbundance_lastGen_m <= UB_05){
+                  status_HSPercent_075 <- c(status_HSPercent_075,'amber')
+                  status_HSPercent_05 <- c(status_HSPercent_05,'amber')
+                  
+                }else if(spawnerAbundance_lastGen_m <= UB_075){
+                  status_HSPercent_075 <- c(status_HSPercent_075,'amber')
+                  status_HSPercent_05 <- c(status_HSPercent_05,'green')
+                  
                 }else{
-                  status_HSPercent <- c(status_HSPercent,'green')
+                  status_HSPercent_075 <- c(status_HSPercent_075,'green')
+                  status_HSPercent_05 <- c(status_HSPercent_05,'green')
                 }
               }else{
-                status_HSPercent <- c(status_HSPercent,NA)
-                status_HSPercent80 <- c(status_HSPercent80,NA)
+                status_HSPercent_075 <- c(status_HSPercent_075,NA)
+                status_HSPercent_05 <- c(status_HSPercent_05,NA)
               }
             }
             
-            status_HSPercent <- status_HSPercent[!is.na(status_HSPercent)]
-            status_HSPercent_prob <- round(table(factor(status_HSPercent,levels = c("red","amber","green")))/length(status_HSPercent)*100,4)
+            status_HSPercent_05 <- status_HSPercent_05[!is.na(status_HSPercent_05)]
+            status_HSPercent_075 <- status_HSPercent_075[!is.na(status_HSPercent_075)]
+            
+            status_HSPercent_prob_05 <- round(table(factor(status_HSPercent_05,
+                                                           levels = c("red","amber","green")))/length(status_HSPercent_05)*100,4)
+            status_HSPercent_prob_075 <- round(table(factor(status_HSPercent_075,
+                                                           levels = c("red","amber","green")))/length(status_HSPercent_075)*100,4)
+            
             comment <- ""
             
           }else{
@@ -390,18 +412,21 @@ for(i_rg in 1:length(region)){
             }
           }
           
-          biologicalStatus_df <- data.frame(region = rep(region[i_rg],2),
-                                            species = rep(speciesAcroHere,2),
-                                            CU = rep(CUs[i_cu],2))
+          biologicalStatus_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
+                                            species = rep(speciesAcroHere,length(benchmarks)),
+                                            CU = rep(CUs[i_cu],length(benchmarks)))
           biologicalStatus_df$CU_pse <- CUname_pse
           biologicalStatus_df$CU_dfo <- CUname_dfo
           biologicalStatus_df$year_last <- yrFinal
           biologicalStatus_df$genLength <- CU_genLength
           biologicalStatus_df$genLength_available <- CU_genLength_available
           biologicalStatus_df$genLength_dataPointNb <- spawnerAbundance_lastGen_dataPointNb
-          biologicalStatus_df$status_HSPercent_red <- status_HSPercent_prob["red"]
-          biologicalStatus_df$status_HSPercent_amber <- status_HSPercent_prob["amber"]
-          biologicalStatus_df$status_HSPercent_green <- status_HSPercent_prob["green"]
+          biologicalStatus_df$status_HSPercent_05_red <- status_HSPercent_prob_05["red"]
+          biologicalStatus_df$status_HSPercent_05_amber <- status_HSPercent_prob_05["amber"]
+          biologicalStatus_df$status_HSPercent_05_green <- status_HSPercent_prob_05["green"]
+          biologicalStatus_df$status_HSPercent_075_red <- status_HSPercent_prob_075["red"]
+          biologicalStatus_df$status_HSPercent_075_amber <- status_HSPercent_prob_075["amber"]
+          biologicalStatus_df$status_HSPercent_075_green <- status_HSPercent_prob_075["green"]
           biologicalStatus_df$comment <- comment
           
           

@@ -129,23 +129,43 @@ yukonOriginal <- yukonOriginal[,colnames(yukonOriginal) != "X"]
 cuid_yukon <- unique(yukonOriginal$cuid)
 for(cu in cuid_yukon){
   # cu <- cuid_yukon[1]
-  original <- yukonOriginal[yukonOriginal$cuid == cu,]$S_med
+  S_original <- yukonOriginal[yukonOriginal$cuid == cu,]$S_med
+  
+  R_original <- yukonOriginal[yukonOriginal$cuid == cu,]$R_med
   
   spawners <- recruitsperspawner[recruitsperspawner$region == "Yukon" &
                                    recruitsperspawner$species_name == "Chinook" & 
                                    recruitsperspawner$cuid == cu,]$spawners
   
+  recruits <- recruitsperspawner[recruitsperspawner$region == "Yukon" &
+                                   recruitsperspawner$species_name == "Chinook" & 
+                                   recruitsperspawner$cuid == cu,]$recruits
+  
+  
   spawners_noNA <- spawners[!is.na(spawners)]
   
-  if(!identical(round(original),spawners_noNA)){
+  if(!identical(round(S_original),spawners_noNA)){
     print(paste("Different numbers for CU",cu))
-    print(round(original))
+    print(round(S_original))
     print(spawners_noNA)
+  }
+  
+  recruits_noNA <- recruits[!is.na(recruits)]
+  R_original_noNA <- R_original[!is.na(R_original)] 
+  
+  if(!identical(round(R_original_noNA),recruits_noNA)){
+    print(paste("Different numbers for CU",cu))
+    print(round(R_original))
+    print(recruits_noNA)
   }
   
   recruitsperspawner[recruitsperspawner$region == "Yukon" &
                        recruitsperspawner$species_name == "Chinook" & 
-                       recruitsperspawner$cuid == cu,]$spawners[!is.na(spawners)] <- round(original * 1000)
+                       recruitsperspawner$cuid == cu,]$spawners[!is.na(spawners)] <- round(S_original * 1000)
+  
+  recruitsperspawner[recruitsperspawner$region == "Yukon" &
+                       recruitsperspawner$species_name == "Chinook" & 
+                       recruitsperspawner$cuid == cu,]$recruits[!is.na(recruits)] <- round(R_original_noNA * 1000)
 }
 
 #' * Replace the value in dataset_5.Dec162022csv *
@@ -159,18 +179,29 @@ head(dataset_5)
 cuid_yukon <- unique(yukonOriginal$cuid)
 for(cu in cuid_yukon){
   # cu <- cuid_yukon[1]
-  spawners <- recruitsperspawner[recruitsperspawner$region == "Yukon" &
+  spaw_recr <- recruitsperspawner[recruitsperspawner$region == "Yukon" &
                                    recruitsperspawner$species_name == "Chinook" & 
-                                   recruitsperspawner$cuid == cu,]$spawners
-  dspawners_5 <- dataset_5[dataset_5$Species == "Chinook" & 
-                             dataset_5$CUID == cu,]$Spawners
+                                   recruitsperspawner$cuid == cu,][,c("spawners","recruits")]
   
-  if(!identical(round(spawners/1000),dspawners_5)){
+  spaw_recr_5 <- dataset_5[dataset_5$Species == "Chinook" & 
+                             dataset_5$CUID == cu,][,c("Spawners","Recruits")]
+  
+  spaw_recr_5 <- apply(spaw_recr_5,2,as.numeric) # was integer, which prevent from comparing values
+  
+  s <- round(spaw_recr$spawners/1000)
+  r <- round(spaw_recr$recruits/1000)
+  cond_s <- identical(s,spaw_recr_5[,"Spawners"])
+  cond_r <- identical(r,spaw_recr_5[,"Recruits"])
+  
+  if(!cond_s | !cond_r){
     print(paste("Different numbers for CU",cu))
   }
   
   dataset_5[dataset_5$Species == "Chinook" &
-              dataset_5$CUID == cu,]$Spawners <- spawners
+              dataset_5$CUID == cu,]$Spawners <- spaw_recr$spawners
+  
+  dataset_5[dataset_5$Species == "Chinook" &
+              dataset_5$CUID == cu,]$Recruits <- spaw_recr$recruits
 }
 
 write.csv(dataset_5,paste0(path,"/dataset_5.Nov282023.csv"),row.names = F)

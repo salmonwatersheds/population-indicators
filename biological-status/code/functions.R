@@ -1598,3 +1598,123 @@ sensitivity_nbYear_HSPercentBM_fun <- function(region,species,CU,
   modelCI_l_i <- rbind(benchSummary_ref,modelCI_l_i)
   return(modelCI_l_i)
 }
+
+#' Function that ...
+#' - biological_status_df: dataframe returned by rbind_biologicalStatusCSV_fun() 
+#' and with argument pattern = "biological_status" or "biological_status_SH_percentiles".
+#' -  
+# wd <- wd_figures
+# group_var <- "species"
+biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
+                                          group_var = c("region","species")){
+  
+  
+  head(biological_status_df)
+  # identify the dataset:
+  colBench <- colnames(biological_status_df)[grepl("status_",colnames(biological_status_df))]
+  
+  if(grepl("Smsy",colBench)[1]){
+    status1 <- colBench[grepl("Smsy_",colBench)]
+    status2 <- colBench[grepl("Smsy80_",colBench)]
+    figName <- "_Smsy_Smsy80_"
+  }else if(grepl("HSPercent",colBench)[1]){
+    status1 <- colBench[grepl("HSPercent_075",colBench)]
+    status2 <- colBench[grepl("HSPercent_05",colBench)]
+    figName <- "HSPercent_75_50"
+  }
+  
+  # remove row with NAs
+  biological_status_df <- biological_status_df[!is.na(biological_status_df[,colBench[1]]),] 
+  
+  colToRemove_biostatus <- c("CU_pse","CU_dfo","genLength_available","comment")
+  biological_status_df <- biological_status_df[,!colnames(biological_status_df) %in% colToRemove_biostatus]
+  
+  # CUs that have contrasting biological status between Smsy80 and Smsy:
+  colnamesSelect <- c("region","species","CU",colBench)
+  
+  biological_status_df$status1 <- sapply(X = 1:nrow(biological_status_df), 
+                                         FUN = function(r){
+                                           # r <- 1
+                                           slice <- biological_status_df[r,status1]
+                                           out <- c("red","amber","green")[slice == max(slice)]
+                                           return(out)
+                                         })
+  
+  biological_status_df$status2 <- sapply(X = 1:nrow(biological_status_df), 
+                                         FUN = function(r){
+                                           # r <- 1
+                                           slice <- biological_status_df[r,status2]
+                                           out <- c("red","amber","green")[slice == max(slice)]
+                                           return(out)
+                                         })
+  
+  # nrow(biological_status_df[biological_status_df$status1 != biological_status_df$status2,])
+  
+  # Figure
+  
+  if(! group_var %in% c("region","species")){
+    print(paste("The argument group_var differ from possible values:",paste(c("region","species"), collapse = ", ")))
+    print("region is selected.")
+    group_var <- "region"
+  }
+  
+  table_var <- NULL
+  
+  group_var_val <- unique(biological_status_df[,group_var])
+  for(var in group_var_val){
+    # var <- group_var_val[1]
+    biological_status_df_cut <- biological_status_df[biological_status_df[,group_var] == var,]
+    
+    tableHere <- data.frame(variable = var,
+                            n_same = sum(biological_status_df_cut$status1 == biological_status_df_cut$status2),
+                            n_diff = sum(biological_status_df_cut$status1 != biological_status_df_cut$status2))
+    
+    colnames(tableHere)[1] <- group_var
+    
+    
+    if(is.null(table_var)){
+      table_var <- tableHere
+    }else{
+      table_var <- rbind(table_var,tableHere)
+    }
+  }
+  
+  table_var_m <- as.matrix(table_var[,c(2:3)])
+  rownames(table_var_m) <- table_var[,group_var]
+  colours <- rainbow(n = nrow(table_var_m))
+  if(printFig){
+    jpeg(paste0(wd_figures,"/comparison_bioStatus",figName,group_var,".jpg"), 
+         width = 20,height = 15, units = "cm", res = 300)
+  }
+  
+  if(group_var == "species"){
+    species_acronym_df <- species_acronym_fun()
+    rownamesSp <- sapply(X = table_var[,group_var], FUN = function(sp){
+      return(species_acronym_df$species_name[species_acronym_df$species_acro == sp][1])
+    })
+    rownames(table_var_m) <- rownamesSp
+  }
+  
+  par(mar=c(5,4.5,3,0.5))
+  barplot(height = table_var_m,
+          main = paste0("Comparison by ",group_var),
+          ylab = "Number of CUs", xlab = "Biological status difference",
+          col = colours, 
+          names.arg = c("Same","Different"))
+  
+  if(group_var == "species"){
+    var_legend <- paste(rev(rownames(table_var_m)),"                 ")
+  }else{
+    var_legend <- rev(rownames(table_var_m))
+  }
+  legend("topright",var_legend,fill = rev(colours), bty = "n")
+  
+  if(printFig){
+    dev.off()
+  }
+}
+
+
+
+
+

@@ -79,8 +79,6 @@ biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       wd_output = wd_output,
                                                       region = region,
                                                       species_all = species_all)
-printFig <- F
-
 #
 # write.csv(biological_status_df,paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
 #           row.names = F)
@@ -90,133 +88,19 @@ colnames(biological_status_df)
 nrow(biological_status_df) # 142
 unique(biological_status_df$comment)
 
-# discrepancies in CU names
-sum(gsub("_"," ",biological_status_df$CU) != biological_status_df$CU_pse)/nrow(biological_status_df)
-sum(gsub("_"," ",biological_status_df$CU) != biological_status_df$CU_dfo)/nrow(biological_status_df)
-sum(biological_status_df$CU_pse != biological_status_df$CU_dfo)/nrow(biological_status_df)
+printFig <- T
 
-# CUs with "Only NAs in cuspawnerabundance.csv for this CU" 
-biological_status_df[!is.na(biological_status_df$comment) & 
-                       biological_status_df$comment == "Only NAs in cuspawnerabundance.csv for this CU",]
+biological_status_compare_fun(biological_status_df = biological_status_df,
+                              wd = wd_figures, 
+                              printFig = printFig, 
+                              group_var = "region")
 
-# CUs with "Not recent enough data"
-biological_status_df[!is.na(biological_status_df$comment) &
-                       grepl("Not recent enough data",biological_status_df$comment),]
+biological_status_compare_fun(biological_status_df = biological_status_df,
+                              wd = wd_figures, 
+                              printFig = printFig, 
+                              group_var = "species")
 
-# rest of the CUs with data:
-biological_status_df <- biological_status_df[is.na(biological_status_df$comment) |
-                                               biological_status_df$comment == "",] # ?! there should not be NAs...
-nrow(biological_status_df) # 113
-
-colToRemove_biostatus <- c("CU_pse","CU_dfo","genLength_available","comment")
-
-biological_status_df <- biological_status_df[,!colnames(biological_status_df) %in% colToRemove_biostatus]
-
-# CUs that have contrasting biological status between Smsy80 and Smsy:
-colnamesSelect <- c("region","species","CU",
-                    colnames(biological_status_df)[grepl("Smsy_",colnames(biological_status_df))])
-
-biological_status_df$status_Smsy <- sapply(X = 1:nrow(biological_status_df), 
-                                          FUN = function(r){
-                                            # r <- 1
-                                            slice <- biological_status_df[r,colnames(biological_status_df)[grepl("Smsy_",colnames(biological_status_df))]]
-                                            out <- c("red","amber","green")[slice == max(slice)]
-                                            return(out)
-                                          })
-
-biological_status_df$status_Smsy80 <- sapply(X = 1:nrow(biological_status_df), 
-                                           FUN = function(r){
-                                             # r <- 1
-                                             slice <- biological_status_df[r,colnames(biological_status_df)[grepl("Smsy80_",colnames(biological_status_df))]]
-                                             out <- c("red","amber","green")[slice == max(slice)]
-                                             return(out)
-                                           })
-
-# 
-biological_status_df[biological_status_df$status_Smsy != biological_status_df$status_Smsy80,]
-# that's not a lot of CUs!
-
-# Figure
-rDiff <- nrow(biological_status_df[biological_status_df$status_Smsy != biological_status_df$status_Smsy80,])
-rSame <- nrow(biological_status_df[biological_status_df$status_Smsy == biological_status_df$status_Smsy80,])
-
-table_region <- NULL
-
-regions <- unique(biological_status_df$region)
-for(rg in regions){
-  # rg <- regions[1]
-  biological_status_df_cut <- biological_status_df[biological_status_df$region == rg,]
-  
-  tableHere <- data.frame(region = rg,
-                          n_same = sum(biological_status_df_cut$status_Smsy == biological_status_df_cut$status_Smsy80),
-                          n_diff = sum(biological_status_df_cut$status_Smsy != biological_status_df_cut$status_Smsy80))
-  if(is.null(table_region)){
-    table_region <- tableHere
-  }else{
-    table_region <- rbind(table_region,tableHere)
-  }
-}
-
-table_region_m <- as.matrix(table_region[,c(2:3)])
-rownames(table_region_m) <- table_region$region
-colours <- rainbow(n = nrow(table_region_m))
-if(printFig){
-  jpeg(paste0(wd_figures,"/comparison_bioStatus_Smsy_Smsy80_regions.jpg"), 
-       width = 20,height = 15, units = "cm", res = 300)
-}
-par(mar=c(5,4.5,3,0.5))
-barplot(height = table_region_m,
-        main = "Comparison by regions",
-        ylab = "Number of CUs", xlab = "Biological status difference",
-        col = colours, 
-        names.arg = c("Same","Different"))
-legend("topright",rev(rownames(table_region_m)),fill = rev(colours), bty = "n")
-if(printFig){
-  dev.off()
-}
-
-# figure for species
-table_species <- NULL
-species <- unique(biological_status_df$species)
-for(sp in species){
-  # sp <- species[1]
-  biological_status_df_cut <- biological_status_df[biological_status_df$species == sp,]
-  
-  tableHere <- data.frame(species = sp,
-                          n_same = sum(biological_status_df_cut$status_Smsy == biological_status_df_cut$status_Smsy80),
-                          n_diff = sum(biological_status_df_cut$status_Smsy != biological_status_df_cut$status_Smsy80))
-  if(is.null(table_species)){
-    table_species <- tableHere
-  }else{
-    table_species <- rbind(table_species,tableHere)
-  }
-}
-
-table_species_m <- as.matrix(table_species[,c(2:3)])
-
-rownamesSp <- sapply(X = table_species$species, FUN = function(sp){
-  return(species_acronym_df$species_name[species_acronym_df$species_acro == sp][1])
-})
-rownames(table_species_m) <- rownamesSp
-colours <- rainbow(n = nrow(table_species_m))
-if(printFig){
-  jpeg(paste0(wd_figures,"/comparison_bioStatus_Smsy_Smsy80_species.jpg"), 
-       width = 20,height = 15, units = "cm", res = 300)
-}
-par(mar=c(5,4.5,3,0.5))
-barplot(height = table_species_m,
-        main = "Comparison by species",
-        ylab = "Number of CUs", xlab = "Biological status difference",
-        col = colours, 
-        names.arg = c("Same","Different"))
-sp_legend <- paste(rev(rownames(table_species_m)),"                 ")
-legend("topright",sp_legend,fill = rev(colours), bty = "n")
-if(printFig){
-  dev.off()
-}
-
-
-#' Import the benchmark values associated with the HBSRM ------
+# Import the benchmark values associated with the HBSRM ------
 pattern <- "benchmarks_summary"
 
 benchmarks_summary_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
@@ -239,41 +123,183 @@ final_HBSRM <- merge(x = biological_status_df,
 View(final_HBSRM)
 
 #
-#' Import the biological status based on historical spawner abundance -----
+# Import the biological status based on historical spawner abundance -----
 pattern <- "biological_status_SH_percentiles"
 
-biological_status_HSPercent_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                                wd_output = wd_output,
-                                                                region = region,
-                                                                species_all = F)
+biological_status_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                      wd_output = wd_output,
+                                                      region = region,
+                                                      species_all = species_all)
 
-biological_status_HSPercent_df <- biological_status_HSPercent_df[,! colnames(biological_status_HSPercent_df) %in% colToRemove_biostatus]
+nrow(biological_status_df) # 428
 
-biological_status_HSPercent_df <- biological_status_HSPercent_df[!is.na(biological_status_HSPercent_df$status_HSPercent_red),]
+# remove CUs with less than 20 data points
+biological_status_df <- biological_status_df[biological_status_df$dataPointNb >= 20,]
+nrow(biological_status_df) # 206
 
-biological_status_HSPercent_df$status_HS <- sapply(X = 1:nrow(biological_status_HSPercent_df), 
-                                                   FUN = function(r){
-                                                     # r <- 1
-                                                     slice <- biological_status_HSPercent_df[r,colnames(biological_status_HSPercent_df)[grepl("status_HSPercent_",colnames(biological_status_HSPercent_df))]]
-                                                     out <- c("red","amber","green")[slice == max(slice)]
-                                                     return(out)
-                                                   })
+printFig <- T
 
-biostat_HBSR_SH <- merge(x = biological_status_df[,c("region","species","CU","status_Smsy","status_Smsy80")], 
-                         y = biological_status_HSPercent_df[,c("region","species","CU","status_HS")], 
-                         by = c("region","species","CU"),
-                         all = T)
-biostat_HBSR_SH
+biological_status_compare_fun(biological_status_df = biological_status_df,
+                              wd = wd_figures, 
+                              printFig = printFig, 
+                              group_var = "region")
 
-biostat_HBSR_SH_noNA <- biostat_HBSR_SH[!is.na(biostat_HBSR_SH$status_Smsy80) & !is.na(biostat_HBSR_SH$status_HS),]
-
-biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy == biostat_HBSR_SH_noNA$status_HS,]
-biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy80 == biostat_HBSR_SH_noNA$status_HS,]
-biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy != biostat_HBSR_SH_noNA$status_HS,]
-biostat_HBSR_SH_noNA[biostat_HBSR_SH_noNA$status_Smsy80 != biostat_HBSR_SH_noNA$status_HS,]
+biological_status_compare_fun(biological_status_df = biological_status_df,
+                              wd = wd_figures, 
+                              printFig = printFig, 
+                              group_var = "species")
 
 #
-#' Import the historical spawner abundance benchmark values ------
+# Compare biological status between HBSR and HS percentiles approach -----
+
+# Import biostatus obtained from HS percentiles:
+pattern <- "biological_status_SH_percentiles"
+bioStatus_HSPercent <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                      wd_output = wd_output,
+                                                      region = region,
+                                                      species_all = species_all)
+
+# remove NAs
+bioStatus_HSPercent <- bioStatus_HSPercent[!is.na(bioStatus_HSPercent$status_HSPercent_05_red),]
+
+# remove Cus with less than 20 data points
+bioStatus_HSPercent <- bioStatus_HSPercent[bioStatus_HSPercent$dataPointNb >= 20,]
+nrow(bioStatus_HSPercent) # 158
+
+# add column bioStatus for 0.25 - 0.75 benchmarks:
+colProba <- colnames(bioStatus_HSPercent)[grepl("_075_",colnames(bioStatus_HSPercent))]
+bioStatus_HSPercent$bioStatus_HSPercent <- sapply(X = 1:nrow(bioStatus_HSPercent), 
+                                                  FUN = function(r){
+                                                    # r <- 1
+                                                    slice <- bioStatus_HSPercent[r,colProba]
+                                                    out <- c("red","amber","green")[slice == max(slice)]
+                                                    return(out)
+                                                  })
+
+colToKeep_HSPercent <- c("region","species","CU_pse","bioStatus_HSPercent")
+
+# Import biostatus obtained from HBSR:
+pattern <- "biological_status"
+bioStatus_HBSR <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                wd_output = wd_output,
+                                                region = region,
+                                                species_all = species_all)
+# remove CUs with NAs
+bioStatus_HBSR <- bioStatus_HBSR[!is.na(bioStatus_HBSR$status_Smsy_red),]
+
+# add column bioStatus for Sgen - Smsy benchmarks:
+colProba <- colnames(bioStatus_HBSR)[grepl("_Smsy_",colnames(bioStatus_HBSR))]
+bioStatus_HBSR$bioStatus_HBSR <- sapply(X = 1:nrow(bioStatus_HBSR), 
+                                                  FUN = function(r){
+                                                    # r <- 1
+                                                    slice <- bioStatus_HBSR[r,colProba]
+                                                    out <- c("red","amber","green")[slice == max(slice)]
+                                                    return(out)
+                                                  })
+
+colToKeep_HBSR <- c("region","species","CU_pse","bioStatus_HBSR")
+
+# merge the two datasets:
+
+bioStatus_merged <- merge(x = bioStatus_HBSR[,colToKeep_HBSR],
+                          y = bioStatus_HSPercent[,colToKeep_HSPercent], 
+                          by = c("region","species","CU_pse"),
+                          all = T)
+
+nrow(bioStatus_merged) # 221
+
+# count how many CUs have the same biostatus with both approaches
+bioStatus_merged_same <- bioStatus_merged[bioStatus_merged$bioStatus_HBSR == bioStatus_merged$bioStatus_HSPercent,]
+bioStatus_merged_same <- bioStatus_merged_same[!is.na(bioStatus_merged_same$region),]
+
+countHere <- table(bioStatus_merged_same$bioStatus_HBSR)[c("red","amber","green")]
+sum(countHere) # 19
+
+table_n <- data.frame(bioStatus = c("red","amber","green"),
+                      n_same = as.numeric(countHere))
+
+# counts for how many CUs have only values for HBSR
+bioStatus_merged_HBSR_only <- bioStatus_merged[!is.na(bioStatus_merged$bioStatus_HBSR) & 
+                                                 is.na(bioStatus_merged$bioStatus_HSPercent),]
+
+countHere <- table(bioStatus_merged_HBSR_only$bioStatus_HBSR)[c("red","amber","green")]
+sum(countHere) # 63
+
+table_n$HBSR_only <- as.numeric(countHere)
+
+# counts for how many CUs have only values for HS benchmarks
+bioStatus_merged_HSBench_only <- bioStatus_merged[is.na(bioStatus_merged$bioStatus_HBSR) & 
+                                                    !is.na(bioStatus_merged$bioStatus_HSPercent),]
+
+countHere <- table(bioStatus_merged_HSBench_only$bioStatus_HSPercent)[c("red","amber","green")]
+sum(countHere) # 108
+
+table_n$HSBench_only <- as.numeric(countHere)
+
+# counts for how many CUs have different biostatus
+bioStatus_merged_diff <- bioStatus_merged[bioStatus_merged$bioStatus_HBSR != bioStatus_merged$bioStatus_HSPercent,]
+bioStatus_merged_diff <- bioStatus_merged_diff[!is.na(bioStatus_merged_diff$region),]
+nrow(bioStatus_merged_diff) # 31
+
+# make all column for counts for HBSR 
+countHere <- table(bioStatus_merged_diff$bioStatus_HBSR)[c("red","amber","green")]
+sum(countHere) # 31
+
+table_n$diff <- as.numeric(countHere)
+
+table_m <- as.matrix(table_n[,c("n_same","HBSR_only","HSBench_only","diff")])
+rownames(table_m) <- table_n$bioStatus
+
+coloursStatus <- rev(c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F"))
+
+if(printFig){
+  jpeg(paste0(wd_figures,"/comparison_bioStatus_HBSR_HSPercent.jpg"), 
+       width = 20,height = 15, units = "cm", res = 300)
+}
+barplot(height = table_m, col = coloursStatus, 
+        ylab = "Number of CUs",xlab = "Biological status difference",
+        main = "Bio-status differences with HBSR vs. HS percentiles approaches",
+        names.arg = c('Same','HBSR only','HS percent only','Different'))
+#polygon(x = c(1,2,2,1),y = c(20,20,60,60))
+offset <- .2
+barLarger <- 1
+x0 <- offset*4 + (ncol(table_m)-1)*barLarger + barLarger/2
+x1 <- x0 + barLarger/2
+# create a polygons for each possible combination of biostatus
+height <- 0
+for(bs in c("red","amber","green")){
+  # bs <- c("red","amber","green")[2]
+  bioStatus_merged_diff_cut <- bioStatus_merged_diff[bioStatus_merged_diff$bioStatus_HBSR == bs,]
+  if(nrow(bioStatus_merged_diff) > 0){
+    bioStatusHSPercentHere <- unique(bioStatus_merged_diff_cut$bioStatus_HSPercent)
+    for(bshsp in bioStatusHSPercentHere){
+      # bshsp <- bioStatusHSPercentHere[]
+      colourHere <- coloursStatus[bshsp == c("red","amber","green")]
+      bioStatus_merged_diff_cut2 <- bioStatus_merged_diff_cut[bioStatus_merged_diff_cut$bioStatus_HSPercent == bshsp,]
+      heightUP <- nrow(bioStatus_merged_diff_cut2) + height
+      polygon(x = c(x0,x1,x1,x0),y = c(height,height,heightUP,heightUP),col = colourHere)
+      height <- heightUP
+    }
+  }
+}
+# add the correspondging method for the lab bar
+text(labels = "HBSR",x = x0 - barLarger/4, y = height, pos = 3, cex = .8)
+text(labels = "HS percent",x = x0 + barLarger/4, y = height, pos = 3, cex = .8)
+#
+if(printFig){
+  dev.off()
+}
+
+# big contrasts:
+bioStatus_merged_diff[bioStatus_merged_diff$bioStatus_HBSR == "green" & bioStatus_merged_diff$bioStatus_HSPercent == "red",]
+# Skeena      SX Stephens
+
+bioStatus_merged_diff[bioStatus_merged_diff$bioStatus_HBSR == "red" & bioStatus_merged_diff$bioStatus_HSPercent == "green",]
+
+
+
+
+# Import the historical spawner abundance benchmark values ------
 pattern <- "HS_percentiles_summary"
 
 benchmarks_summary_HSPercent_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,

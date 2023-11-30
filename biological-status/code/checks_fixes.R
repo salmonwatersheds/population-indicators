@@ -204,7 +204,7 @@ for(cu in cuid_yukon){
               dataset_5$CUID == cu,]$Recruits <- spaw_recr$recruits
 }
 
-write.csv(dataset_5,paste0(path,"/dataset_5.Nov282023.csv"),row.names = F)
+# write.csv(dataset_5,paste0(path,"/dataset_5.Nov282023.csv"),row.names = F)
 
 # Fixes spawners for the Central Coast WAIT TO HEAR FROM THEM ------
 

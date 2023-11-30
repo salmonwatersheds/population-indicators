@@ -89,7 +89,7 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Central_coast)
 
-region <- regions_df$Haida_Gwaii
+region <- regions_df$Central_coast
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -101,6 +101,8 @@ region <- as.character(regions_df[1,])
 # If we specify the species:
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
+
+species <- species_acronym_df$species_name[species_acronym_df$species_acro == "CM"]
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
@@ -167,7 +169,7 @@ for(i_rg in 1:length(region)){
   }else{
     # return the full name of the species
     species <- sapply(X = species, FUN = function(x){
-      output <- names(species_acronym)[species_acronym == x]
+      output <- species_acronym_df$species_name[species_acronym_df$species_acro == x]
       return(output)
     })
   }
@@ -222,7 +224,7 @@ for(i_rg in 1:length(region)){
         
         for(i_cu in 1:length(CUs)){
           
-          # i_cu <- 1
+          # i_cu <- 3
           
           # subset cuspawnerabundance_rg_sp
           cuspawnerabundance_rg_sp_cu <- cuspawnerabundance_rg_sp[cuspawnerabundance_rg_sp$cu_name_pse == CUs[i_cu],]
@@ -402,8 +404,10 @@ for(i_rg in 1:length(region)){
             
           }else{
             
-            status_HSPercent_prob <- rep(NA,3)
-            names(status_HSPercent_prob) <- c("red","amber","green")
+            status_HSPercent_prob_05 <- rep(NA,3)
+            status_HSPercent_prob_075 <- rep(NA,3)
+            names(status_HSPercent_prob_05) <- c("red","amber","green")
+            names(status_HSPercent_prob_075) <- c("red","amber","green")
             
             if(!currentSpawnerData_available){
               comment <- "Only NAs in cuspawnerabundance.csv for this CU"
@@ -412,14 +416,15 @@ for(i_rg in 1:length(region)){
             }
           }
           
-          biologicalStatus_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
-                                            species = rep(speciesAcroHere,length(benchmarks)),
-                                            CU = rep(CUs[i_cu],length(benchmarks)))
+          biologicalStatus_df <- data.frame(region = region[i_rg],
+                                            species = speciesAcroHere,
+                                            CU = CUs[i_cu])
           biologicalStatus_df$CU_pse <- CUname_pse
           biologicalStatus_df$CU_dfo <- CUname_dfo
           biologicalStatus_df$year_last <- yrFinal
           biologicalStatus_df$genLength <- CU_genLength
           biologicalStatus_df$genLength_available <- CU_genLength_available
+          biologicalStatus_df$dataPointNb <- sum(!is.na(spawnerAbundance))
           biologicalStatus_df$genLength_dataPointNb <- spawnerAbundance_lastGen_dataPointNb
           biologicalStatus_df$status_HSPercent_05_red <- status_HSPercent_prob_05["red"]
           biologicalStatus_df$status_HSPercent_05_amber <- status_HSPercent_prob_05["amber"]

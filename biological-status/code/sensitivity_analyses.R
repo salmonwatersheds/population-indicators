@@ -160,6 +160,8 @@ sapply(X = yr_nb, FUN = function(yr){
   names(out) <- paste0(yr,"yr")
   return(out)
 })
+# 3yr  5yr 10yr 15yr 20yr 
+# 0.0  0.0  0.0  2.7  7.2 
 
 sapply(X = yr_nb, FUN = function(yr){
   # yr <- yr_nb[4]
@@ -168,7 +170,8 @@ sapply(X = yr_nb, FUN = function(yr){
   names(out) <- paste0(yr,"yr")
   return(out)
 })
-
+# 3yr  5yr 10yr 15yr 20yr 
+# 0    0    0    6   16 
 
 count <- c()
 for(i in 1:max(nb_cu_dataPt_df$nb_dataPt)){

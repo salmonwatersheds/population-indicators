@@ -788,7 +788,16 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
   return(output)
 }
 
+
+#' Function that find alternative CU names that are in the PSE
+#' 
+# CUname <- cu_notFound
+# speciesAcronym <- spAcroHere
 CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym = NA){
+  
+  species_acronym_df <- species_acronym_fun()
+  
+  
   # quick fixes for now
   #' TODO fix that in the data base? Or anywhere else?
   if(CUname[1] == "Mussel-Kynock"){
@@ -943,15 +952,16 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
     CUname <- c(CUname,CUname_bis)
   }
   # remove the species acronym present in certain CU names
-  if(sum(sapply(X = speciesAcronyms,   
+  if(sum(sapply(X = unique(species_acronym_df$species_acro),   
                 FUN = function(spa){
                   grepl(pattern = paste0(" ",spa),x = CUname[1])}))){
     
-    spAcroTF <- sapply(X = speciesAcronyms, 
+    
+    spAcroTF <- sapply(X = species_acronym_df$species_acro, 
                        FUN = function(spa){
                          grepl(pattern = paste0(" ",spa),x = CUname[1])})
     
-    patternToRemove <- paste0(" ",speciesAcronyms[spAcroTF])
+    patternToRemove <- paste0(" ",species_acronym_df$species_acro[spAcroTF])
     CUname_bis <- sapply(X = CUname, FUN = function(cu){         
       gsub(pattern = patternToRemove,replacement = "",x = cu)})
     names(CUname_bis) <- NULL
@@ -1033,7 +1043,7 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
     names(CUname_bis) <- NULL
     CUname <- unique(c(CUname,CUname_bis))
   }
-  if(grepl(pattern = "Morice",x = CUname[1]) & species_acronym %in% c("SX","SEL","SER")){     # otherwise it is Morice for SH
+  if(grepl(pattern = "Morice",x = CUname[1]) & speciesAcronym %in% c("SX","SEL","SER")){     # otherwise it is Morice for SH
     CUname_bis <- sapply(X = CUname, FUN = function(cu){         
       gsub(pattern = "Morice",replacement = "Morice/Atna",x = cu)})
     names(CUname_bis) <- NULL
@@ -1620,7 +1630,7 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
   }else if(grepl("HSPercent",colBench)[1]){
     status1 <- colBench[grepl("HSPercent_075",colBench)]
     status2 <- colBench[grepl("HSPercent_05",colBench)]
-    figName <- "HSPercent_75_50"
+    figName <- "HSPercent_75_50_"
   }
   
   # remove row with NAs

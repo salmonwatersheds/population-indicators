@@ -111,6 +111,13 @@ recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
+#' Import the recruitsperspawner.csv from population-indicators/data_input or 
+#' download it from the PSF database
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
 # Fixes spawners for the Yukon ------
 
 #' * Fixe recruitsperspawner$spawners for the Yukon *
@@ -208,14 +215,196 @@ for(cu in cuid_yukon){
 
 # Fixes spawners for the Central Coast WAIT TO HEAR FROM THEM ------
 
-#' * Replace the value in All-OUTPUT--nonlegacy-mode_20220222.xlsx *
+#' Use recent (2020) run reconstruction: All-OUTPUT--nonlegacy-mode_20220222.xlsx
+#' https://www.dropbox.com/scl/fi/y360sr7hqie2ale3uolll/All-OUTPUT-nonlegacy-mode_20220222.xlsx?rlkey=szlb0pzfscdrvj6b9y3skmw33&dl=0
+
+#' And format the the file like dataset_5.Nov282023.csv for the Yukon.
+ 
+#' Notes:
+#' - Field Escape is “escapement” which is equal to spawners in dataset 5.
+#' - The TR4 etc. are the “total recruits” at age 4 - Check with Eric that this is not returns!
+
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/Output")
+filename <- "dataset_5.Nov282023.csv"
+dataset_5_Yukon <- read.csv(paste(path,filename,sep = "/"))
+head(dataset_5_Yukon)
+
+
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/cc-recons-2021")
 filename <- "All-OUTPUT--nonlegacy-mode_20220222.xlsx"
 
-# Wait for Eric to share rencent (2020) run reconstruction
+library(readxl)
+sheet_1 <- read_excel(path = paste(path,filename,sep = "/"), sheet = 1, 
+                      guess_max = 10000) # increased to avoid having TR2 returned as "logical" :https://stackoverflow.com/questions/50947838/numerical-column-in-excel-gets-converted-as-logical
+sheet_1 <- as.data.frame(sheet_1)
+head(sheet_1)
 
-# To update this output dataset5 for the database: https://www.dropbox.com/scl/fi/hlv4n3go8ewavb9vm7c9r/dataset_5.Dec162022.csv?rlkey=5lxtr2s1ybk7jdx8eeumbcznv&dl=0 
-# Central coast age data: https://www.dropbox.com/scl/fi/y360sr7hqie2ale3uolll/All-OUTPUT-nonlegacy-mode_20220222.xlsx?rlkey=szlb0pzfscdrvj6b9y3skmw33&dl=0 
+# check that "Total" is the sum of the total recruits at a given age (e.g. TR4)
+sum <- rowSums(sheet_1[,grepl("TR",colnames(sheet_1))],na.rm = T)
+tot <- sheet_1$Total
+identical(round(sum,4),round(tot,4)) # all good
+
+fieldToKeep1 <- c("SpeciesId","CU","CU_Name","BroodYear","Escape","Total")
+
+
+dataset_5_CC <- sheet_1[,fieldToKeep1] 
+
+
+# "Species"      
+unique(dataset_5_Yukon$Species)
+unique(conservationunits_decoder$species_name)
+unique(dataset_5_CC$SpeciesId)
+dataset_5_CC$SpeciesId <- toupper(dataset_5_CC$SpeciesId)
+dataset_5_CC$Species <- NA
+
+SpeciesId <- unique(dataset_5_CC$SpeciesId)
+names(SpeciesId) <- c("Chum","Chinook","Coho","Pink (even)","Pink (odd)","Sockeye")
+
+for(spid in SpeciesId){
+  dataset_5_CC$Species[dataset_5_CC$SpeciesId == spid] <- names(SpeciesId)[SpeciesId == spid]
+}
+
+# "Year" --> "BroodYear"
+colnames(dataset_5_CC)[colnames(dataset_5_CC) == "BroodYear"] <- "Year"
+
+# "Spawners" --> "Escape"
+colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Escape"] <- "Spawners"
+
+# "Recruits" --> "Total"
+colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Total"] <- "Recruits"
+
+# CUID" --> not in dataset_5_CC
+unique(dataset_5_Yukon$CUID)
+unique(conservationunits_decoder$cuid)
+unique(conservationunits_decoder$cu_name_pse)
+unique(conservationunits_decoder$cu_name_dfo)
+
+CU_Name <- unique(dataset_5_CC$CU_Name) # cu_name_pse or cu_name_dfo ?
+cu_name_pse <- unique(conservationunits_decoder$cu_name_pse)
+cu_name_dfo <- unique(conservationunits_decoder$cu_name_dfo)
+sum(! CU_Name %in% cu_name_pse) # 45
+sum(! CU_Name %in% cu_name_dfo) # 68 ?!
+
+# There are 45 Cus with typos in their names --> fix them
+CU_Name_notFound <- CU_Name[! CU_Name %in% cu_name_pse]
+length(CU_Name_notFound)
+CU_correctName <- data.frame(CU_Name_notFound = CU_Name_notFound,
+                             cu_name_pse = NA)
+
+# 1st try lowering letters
+cu_name_pse_lowerC <- tolower(cu_name_pse)
+for(r in 1:nrow(CU_correctName)){
+  # r <- 3
+  name_lowerc <- tolower(CU_correctName$CU_Name_notFound[r])
+  if(name_lowerc %in% cu_name_pse_lowerC){
+    nameCorrect <- cu_name_pse[tolower(cu_name_pse) == name_lowerc]
+    CU_correctName$cu_name_pse[r] <- nameCorrect
+    dataset_5_CC$CU_Name[dataset_5_CC$CU_Name == CU_correctName$CU_Name_notFound[r]] <- nameCorrect
+  }
+}
+
+CU_Name <- unique(dataset_5_CC$CU_Name)
+CU_Name_notFound <- CU_Name[! CU_Name %in% cu_name_pse]
+length(CU_Name_notFound) # 37
+
+# 2nd try using CU_name_variations_fun()
+CU_correctName <- CU_correctName[is.na(CU_correctName$cu_name_pse),]
+for(r in 1:nrow(CU_correctName)){
+  # r <- 3
+  name_lowerc <- CU_correctName$CU_Name_notFound[r]
+  if(name_lowerc %in% cu_name_pse_lowerC){
+    nameCorrect <- cu_name_pse[tolower(cu_name_pse) == name_lowerc]
+    CU_correctName$cu_name_pse[r] <- nameCorrect
+    dataset_5_CC$CU_Name[dataset_5_CC$CU_Name == CU_correctName$CU_Name_notFound[r]] <- nameCorrect
+  }
+}
+
+
+
+
+cu_name_pse[grepl("Hugh-Burke",cu_name_pse)] # --> replace " " by "-"
+cu_name_pse[grepl("Bella Coola-Dean Rivers",cu_name_pse)]
+cu_name_pse[grepl("Bella Coola",cu_name_pse)]
+
+
+CU_Name_notFound
+
+
+for(i in 1:length(CU_Name_notFound)){
+  # i <- 1
+  cu_notFound <- CU_Name_notFound[i]
+  spAcroHere <- dataset_5_CC$SpeciesId[dataset_5_CC$CU_Name == cu_notFound][1]
+  CU_name_variations_fun(CUname =cu_notFound,
+                         speciesAcronym = spAcroHere)
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+unique(conservationunits_decoder$cuid)
+
+unique(conservationunits_decoder$cu_name_pse)
+unique(conservationunits_decoder$cu_name_dfo)
+unique(conservationunits_decoder$species_abbr)
+
+
+unique(dataset_5_CC$SpeciesId) # "CM"  "CN"  "CO"  "PKe" "PKo" "SX"
+unique(conservationunits_decoder$species_abbr) # "SEL" "SER" "PKO" "PKE" "CK"  "CO"  "CM"  "SH" 
+
+
+unique(dataset_5_CC$CU) # "CM_12"         "CM_13"         "CM_15"         "CM_16" 
+
+
+
+
+head(conservationunits_decoder)
+
+c("cuid","cu_name_pse","cu_name_dfo","cu_index")
+
+# WAITING TO HEAR FROM ERIC about these questions:
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1701453222964599?thread_ts=1701197234.664189&cid=CJ5RVHVCG
+
+# QUESTION: what is R_S exactly? Looks like Recruits/Spawners but not exactly.
+dataset_5_Yukon$R_S
+sum(is.na(dataset_5_Yukon$R_S))
+dataset_5_Yukon$Recruits/dataset_5_Yukon$Spawners
+
+unique(dataset_5_Yukon$R_S)
+
+dataset_5_Yukon_no0 <- dataset_5_Yukon[dataset_5_Yukon$R_S != 0,]
+
+R_S_no0 <- dataset_5_Yukon_no0$R_S
+
+Rrecruits_Spawners_no0 <- dataset_5_Yukon_no0$Recruits / dataset_5_Yukon_no0$Spawners
+
+plot(R_S_no0 ~ Rrecruits_Spawners_no0,ylab="R_S",xlab = "Recruits/Spawners")
+abline(0,1)
+
+plot(R_S_no0 ~ round(Rrecruits_Spawners_no0),ylab="R_S",xlab = "round(Recruits/Spawners)")
+abline(0,1)
+
+dataset_5_Yukon[is.infinite(dataset_5_Yukon$R_S),] # ?! what is that about?
+
+
+#...
+
+# Export file:
+pathOutput <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/central-coast-status")
+filename <- "dataset_5.Dec012023.csv"
 
 
 #

@@ -59,7 +59,7 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # option to export the figures
-print_fig <- T
+print_fig <- F
 
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
@@ -107,6 +107,8 @@ region <- c(
   regions_df$Columbia,
   regions_df$Transboundary,
   regions_df$VIMI)
+
+region <- regions_df$VIMI
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -182,6 +184,27 @@ for(i_rg in 1:length(region)){
       # CUs <- CUs$CU
       CUs <- colnames(SRm$R)
       nCUs <-length(CUs)
+      
+      # find the corresponding cuid 
+      cuids <- sapply(X = CUs, function(cu){
+        # cu <- CUs[6]
+        regionHere <- gsub("_"," ",region[i_rg])
+        conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == regionHere &
+                                                                     conservationunits_decoder$species_name %in% speciesHere & 
+                                                                     conservationunits_decoder$cu_name_pse == cu,]
+        
+        # we could probably simply use pooledcuid
+        if(nrow(conservationunits_decoder_cut) == 1){
+          out <- conservationunits_decoder_cut$cuid
+        }else{
+          out <- unique(conservationunits_decoder_cut$pooledcuid)
+        }
+        
+        if(length(out) == 0){
+          print(paste("There is no cuid for:",region[i_rg],"-",speciesHere,"-",cu))
+        }
+        return(out)
+      })
       
       nchains <- length(post) # 6 chains
       # parameter names
@@ -289,7 +312,6 @@ for(i_rg in 1:length(region)){
       
       SRm$R <- SRm$R[,CUs, drop = F]
       SRm$S <- SRm$S[,CUs, drop = F]
-      
       
       # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
       # if(print_fig){
@@ -423,8 +445,10 @@ for(i_rg in 1:length(region)){
         
         if(sum(!is.na(spawnerAbundance_lastGen)) == 0){
           currentSpawnerData_availableRecentEnough <- F
+          yrInitial <- NA
         }else{
           currentSpawnerData_availableRecentEnough <- T
+          yrInitial <- as.numeric(names(spawnerAbundance_lastGen[!is.na(spawnerAbundance_lastGen)]))[1]
         }
         
         # determine the number of time this CUs fall under the Red, Amber and Green 
@@ -486,10 +510,13 @@ for(i_rg in 1:length(region)){
         
         biologicalStatus_df <- data.frame(region = region[i_rg],
                                           species = species[i_sp],
+                                          cuid = cuids[i],
                                           CU = CUs[i],
                                           CU_pse = CUname_pse,
                                           CU_dfo = CUname_dfo,
+                                          current_spawner_abundance = spawnerAbundance_lastGen_m,
                                           year_last = yrFinal,
+                                          year_first = yrInitial,
                                           genLength = CU_genLength,
                                           genLength_available = CU_genLength_available,
                                           genLength_dataPointNb = spawnerAbundance_lastGen_dataPointNb,
@@ -500,7 +527,6 @@ for(i_rg in 1:length(region)){
                                           status_Smsy80_amber = status_Smsy80_prob["amber"],
                                           status_Smsy80_green = status_Smsy80_prob["green"],
                                           comment = comment)
-        
         
         if(is.null(biologicalStatus_region_species_df)){
           biologicalStatus_region_species_df <- biologicalStatus_df

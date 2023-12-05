@@ -188,6 +188,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(unique(species_acro))){
+      
       # i_sp <- 1
       
       speciesAcroHere <- unique(species_acro)[i_sp]
@@ -216,6 +217,26 @@ for(i_rg in 1:length(region)){
         # find the CUs present
         CUs <- unique(cuspawnerabundance_rg_sp$cu_name_pse)
         
+        # find the corresponding cuid 
+        cuids <- sapply(X = CUs, function(cu){
+          # cu <- CUs[6]
+          conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
+                                                                     conservationunits_decoder$species_name %in% species_i & 
+                                                                     conservationunits_decoder$cu_name_pse == cu,]
+          
+          # we could probably simply use pooledcuid
+          if(nrow(conservationunits_decoder_cut) == 1){
+            out <- conservationunits_decoder_cut$cuid
+          }else{
+            out <- unique(conservationunits_decoder_cut$pooledcuid)
+          }
+
+          if(length(out) == 0){
+            print(paste("There is no cuid for:",region[i_rg],"-",species_i,"-",cu))
+          }
+          return(out)
+        })
+        
         # create a dataframe to retain the benchmark information for all the CUs of
         # the species in the region
         benchSummary_region_species_df <- NULL
@@ -224,7 +245,7 @@ for(i_rg in 1:length(region)){
         
         for(i_cu in 1:length(CUs)){
           
-          # i_cu <- 3
+          # i_cu <- 1
           
           # subset cuspawnerabundance_rg_sp
           cuspawnerabundance_rg_sp_cu <- cuspawnerabundance_rg_sp[cuspawnerabundance_rg_sp$cu_name_pse == CUs[i_cu],]
@@ -256,11 +277,15 @@ for(i_rg in 1:length(region)){
           
           benchSummary_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
                                         species = rep(speciesAcroHere,length(benchmarks)),
+                                        cuid = cuids[i_cu],
                                         CU = rep(CUs[i_cu],length(benchmarks)),
                                         benchmark = paste0("benchmark_",benchmarks), # c('lower','upper'),
                                         method = rep('HS_percentiles',length(benchmarks)))
           
-          benchSummary_df$m <- modelCI$m
+          benchSummary_df$m <- c(quantile(spawnerAbundance, 0.25, na.rm = T),
+                                 quantile(spawnerAbundance, 0.5, na.rm = T),
+                                 quantile(spawnerAbundance, 0.75, na.rm = T))
+          benchSummary_df$m_sim <- modelCI$m
           benchSummary_df$CI025 <- modelCI$CI[1,]
           benchSummary_df$CI975 <- modelCI$CI[2,]
           benchSummary_df$benchmarks <- rep(paste(benchmarks,collapse = "-"),length(benchmarks))
@@ -326,6 +351,7 @@ for(i_rg in 1:length(region)){
             # print("The following CU has only NAs for spawner abundance:")
             # print(paste(region[i_rg],species[i_sp],CUname))
             currentSpawnerData_available <- F
+            yrInitial <- NA
             yrFinal <- NA
             #' Eric: if estimated is not available, we can't apply spawner-recruit 
             #' benchmarks.
@@ -351,8 +377,12 @@ for(i_rg in 1:length(region)){
           
           if(sum(!is.na(spawnerAbundance_lastGen)) == 0){
             currentSpawnerData_availableRecentEnough <- F
+            # the 1st year with data for the calculation of the current spawner abundance
+            yrInitial <- NA
           }else{
             currentSpawnerData_availableRecentEnough <- T
+            # the 1st year with data for the calculation of the current spawner abundance
+            yrInitial <- as.numeric(names(spawnerAbundance_lastGen[!is.na(spawnerAbundance_lastGen)]))[1]
           }
           
           # determine the number of time this CUs fall under the Red, Amber and Green 
@@ -418,10 +448,13 @@ for(i_rg in 1:length(region)){
           
           biologicalStatus_df <- data.frame(region = region[i_rg],
                                             species = speciesAcroHere,
+                                            cuid = cuids[i_cu],
                                             CU = CUs[i_cu])
           biologicalStatus_df$CU_pse <- CUname_pse
           biologicalStatus_df$CU_dfo <- CUname_dfo
+          biologicalStatus_df$current_spawner_abundance <- spawnerAbundance_lastGen_m
           biologicalStatus_df$year_last <- yrFinal
+          biologicalStatus_df$year_first <- yrInitial
           biologicalStatus_df$genLength <- CU_genLength
           biologicalStatus_df$genLength_available <- CU_genLength_available
           biologicalStatus_df$dataPointNb <- sum(!is.na(spawnerAbundance))
@@ -434,6 +467,7 @@ for(i_rg in 1:length(region)){
           biologicalStatus_df$status_HSPercent_075_green <- status_HSPercent_prob_075["green"]
           biologicalStatus_df$comment <- comment
           
+          spawnerAbundance_lastGen_m
           
           if(is.null(biologicalStatus_region_species_df)){
             biologicalStatus_region_species_df <- biologicalStatus_df

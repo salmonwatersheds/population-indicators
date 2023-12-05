@@ -130,8 +130,9 @@ species_acronym_fun <- function(){
   
   species_acronym <- data.frame(
     species_name = c("Chinook","Chum","Coho","Sockeye","Lake sockeye","River sockeye","Pink","Pink (even)","Pink (odd)","Steelhead","Cutthroat"),
-    species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"))
-  
+    species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"),
+    species_acro_details = c("CK","CM","CO","SX","LSX","RSX","PK","PKE","PKO","SH","CT"))
+    
   return(species_acronym)
 }
 
@@ -276,10 +277,12 @@ datasetsNames_database_fun <- function(){
   
   out_df <- data.frame(name_DB = c("Appdata.vwdl_conservationunits_decoder",
                                    "Appdata.vwdl_dataset1cu_output",
-                                   "Appdata.vwdl_dataset5_output"),
+                                   "Appdata.vwdl_dataset5_output",
+                                   "Appdata.vwdl_streamspawnersurveys_output"),
                        name_CSV = c("conservationunits_decoder.csv",
                                     "cuspawnerabundance.csv",
-                                    "recruitsperspawner.csv"))
+                                    "recruitsperspawner.csv",
+                                    "streamspawnersurveys_output"))
   return(out_df)
 }
 

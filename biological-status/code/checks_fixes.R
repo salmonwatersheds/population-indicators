@@ -181,6 +181,7 @@ filename <- "dataset_5.Dec162022.csv"
 
 dataset_5 <- read.csv(paste(path,filename,sep ="/"),header = T)
 dataset_5 <- dataset_5[,colnames(dataset_5) != "X"]
+dataset_5_older <- dataset_5
 head(dataset_5)
 
 cuid_yukon <- unique(yukonOriginal$cuid)
@@ -211,8 +212,26 @@ for(cu in cuid_yukon){
               dataset_5$CUID == cu,]$Recruits <- spaw_recr$recruits
 }
 
+# update R_S:
+dataset_5$R_S <- dataset_5$Recruits / dataset_5$Spawners
+
 # write.csv(dataset_5,paste0(path,"/dataset_5.Nov282023.csv"),row.names = F)
 
+# Checks:
+
+plot(y = dataset_5$R_S, x = dataset_5$Recruits / dataset_5$Spawners, 
+     ylab = "R_S", xlab = "rectruits/spawners")
+abline(a = 0, b = 1)
+
+plot(y = dataset_5$R_S, x = round(dataset_5$Recruits/1000) / round(dataset_5$Spawners/1000), 
+     ylab = "R_S", xlab = "rectruits/spawners")
+abline(a = 0, b = 1)
+
+plot(y = dataset_5_older$R_S, x = dataset_5_older$Recruits / dataset_5_older$Spawners, 
+     ylab = "R_S", xlab = "rectruits/spawners")
+abline(a = 0, b = 1)
+
+#
 # Fixes spawners for the Central Coast WAIT TO HEAR FROM THEM ------
 
 #' Use recent (2020) run reconstruction: All-OUTPUT--nonlegacy-mode_20220222.xlsx
@@ -224,12 +243,13 @@ for(cu in cuid_yukon){
 #' - Field Escape is “escapement” which is equal to spawners in dataset 5.
 #' - The TR4 etc. are the “total recruits” at age 4 - Check with Eric that this is not returns!
 
+# Import the dataset_5_Yukon for comparison of the fields:
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/Output")
 filename <- "dataset_5.Nov282023.csv"
 dataset_5_Yukon <- read.csv(paste(path,filename,sep = "/"))
 head(dataset_5_Yukon)
 
-
+# Import the run reconstruction file with the updated data:
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/cc-recons-2021")
 filename <- "All-OUTPUT--nonlegacy-mode_20220222.xlsx"
 
@@ -246,40 +266,57 @@ identical(round(sum,4),round(tot,4)) # all good
 
 fieldToKeep1 <- c("SpeciesId","CU","CU_Name","BroodYear","Escape","Total")
 
-
 dataset_5_CC <- sheet_1[,fieldToKeep1] 
 
+# Import the CentralCoast_CUs_final_withCUID_decoder
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/central-coast-status/Data")
+filename <- "CentralCoast_CUs_final_withCUID_decoder.csv"
+decoder_centralCoast <- read.csv(paste(path,filename,sep = "/"))
 
-# "Species"      
+# Update fields:
+
+# CHANGE: add column "Species"
 unique(dataset_5_Yukon$Species)
 unique(conservationunits_decoder$species_name)
 unique(dataset_5_CC$SpeciesId)
 dataset_5_CC$SpeciesId <- toupper(dataset_5_CC$SpeciesId)
 dataset_5_CC$Species <- NA
-
 SpeciesId <- unique(dataset_5_CC$SpeciesId)
 names(SpeciesId) <- c("Chum","Chinook","Coho","Pink (even)","Pink (odd)","Sockeye")
+SpeciesId
 
 for(spid in SpeciesId){
   dataset_5_CC$Species[dataset_5_CC$SpeciesId == spid] <- names(SpeciesId)[SpeciesId == spid]
 }
 
-# "Year" --> "BroodYear"
+# CHANGE: rename "BroodYear" to "Year" 
 colnames(dataset_5_CC)[colnames(dataset_5_CC) == "BroodYear"] <- "Year"
 
-# "Spawners" --> "Escape"
+# CHANGE: rename "Escape" "Spawners" 
 colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Escape"] <- "Spawners"
 
-# "Recruits" --> "Total"
+# CHANGE: rename "Total" to "Recruits"
 colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Total"] <- "Recruits"
 
-# CUID" --> not in dataset_5_CC
+# CHNAGE: add CUID" --> not in dataset_5_CC
+# match dataset_5_CC$CU with decoder_centralCoast$trtc_cu
+
 unique(dataset_5_Yukon$CUID)
 unique(conservationunits_decoder$cuid)
 unique(conservationunits_decoder$cu_name_pse)
 unique(conservationunits_decoder$cu_name_dfo)
 
 CU_Name <- unique(dataset_5_CC$CU_Name) # cu_name_pse or cu_name_dfo ?
+
+sum(!CU_Name %in% decoder_centralCoast$cuname) # 77
+sum(!CU_Name %in% decoder_centralCoast$culabel) # 77
+sum(!CU_Name %in% decoder_centralCoast$CU) # 77
+
+
+
+
+
+
 cu_name_pse <- unique(conservationunits_decoder$cu_name_pse)
 cu_name_dfo <- unique(conservationunits_decoder$cu_name_dfo)
 sum(! CU_Name %in% cu_name_pse) # 45
@@ -377,27 +414,6 @@ c("cuid","cu_name_pse","cu_name_dfo","cu_index")
 
 # WAITING TO HEAR FROM ERIC about these questions:
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1701453222964599?thread_ts=1701197234.664189&cid=CJ5RVHVCG
-
-# QUESTION: what is R_S exactly? Looks like Recruits/Spawners but not exactly.
-dataset_5_Yukon$R_S
-sum(is.na(dataset_5_Yukon$R_S))
-dataset_5_Yukon$Recruits/dataset_5_Yukon$Spawners
-
-unique(dataset_5_Yukon$R_S)
-
-dataset_5_Yukon_no0 <- dataset_5_Yukon[dataset_5_Yukon$R_S != 0,]
-
-R_S_no0 <- dataset_5_Yukon_no0$R_S
-
-Rrecruits_Spawners_no0 <- dataset_5_Yukon_no0$Recruits / dataset_5_Yukon_no0$Spawners
-
-plot(R_S_no0 ~ Rrecruits_Spawners_no0,ylab="R_S",xlab = "Recruits/Spawners")
-abline(0,1)
-
-plot(R_S_no0 ~ round(Rrecruits_Spawners_no0),ylab="R_S",xlab = "round(Recruits/Spawners)")
-abline(0,1)
-
-dataset_5_Yukon[is.infinite(dataset_5_Yukon$R_S),] # ?! what is that about?
 
 
 #...

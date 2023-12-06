@@ -157,9 +157,10 @@ for(i_rg in 1:length(region)){
     region_i <- "Central Coast"
   }
   
-  regionName <- region[i_rg]
   if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
     regionName <- "VIMI"
+  }else{
+    regionName <- regionName <- gsub(" ","_",region[i_rg])
   }
   
   cuspawnerabundance_rg <- cuspawnerabundance[cuspawnerabundance$region == region_i,]
@@ -480,11 +481,11 @@ for(i_rg in 1:length(region)){
         
         print(paste0("*** ",regionName,"_",speciesAcroHere," done ***"))
         write.csv(x = benchSummary_region_species_df, 
-                  file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_benchmarks_HS_percentiles_summary.csv"),
+                  file = paste0(wd_output,"/",regionName,"_",speciesAcroHere,"_benchmarks_HS_percentiles_summary.csv"),
                   row.names = F) # keep region[i_rg] and not region_i because of "Central coast" is used to name the other files and not "Central Coast"
         
         write.csv(x = biologicalStatus_region_species_df, 
-                  file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_biological_status_SH_percentiles.csv"),
+                  file = paste0(wd_output,"/",regionName,"_",speciesAcroHere,"_biological_status_SH_percentiles.csv"),
                   row.names = F)
         
       } # if there is data for this species

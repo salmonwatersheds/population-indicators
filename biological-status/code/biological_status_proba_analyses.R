@@ -211,51 +211,47 @@ bioStatus_merged <- merge(x = bioStatus_HBSR[,colToKeep_HBSR],
                           by = c("region","species","CU_pse"),
                           all = T)
 
-nrow(bioStatus_merged) # 221
+nrow(bioStatus_merged) # 159
+nrow(unique(bioStatus_merged[,c("region","species","CU_pse")]))
 
 # count how many CUs have the same biostatus with both approaches
-bioStatus_merged_same <- bioStatus_merged[bioStatus_merged$bioStatus_HBSR == bioStatus_merged$bioStatus_HSPercent,]
-bioStatus_merged_same <- bioStatus_merged_same[!is.na(bioStatus_merged_same$region),]
+bioStatus_merged_noNA <- bioStatus_merged[!is.na(bioStatus_merged$bioStatus_HBSR) &
+                                            !is.na(bioStatus_merged$bioStatus_HSPercent),]
+nrow(bioStatus_merged_same_noNA) # 112
 
-countHere <- table(bioStatus_merged_same$bioStatus_HBSR)[c("red","amber","green")]
-sum(countHere) # 19
-
+# Same status:
+bioStatus_merged_same <- bioStatus_merged_same_noNA[bioStatus_merged_same_noNA$bioStatus_HBSR == bioStatus_merged_same_noNA$bioStatus_HSPercent,]
+nrow(bioStatus_merged_same) # 50
+countHere <- table(factor(bioStatus_merged_same$bioStatus_HBSR,levels = c("red","amber","green")))
 table_n <- data.frame(bioStatus = c("red","amber","green"),
                       n_same = as.numeric(countHere))
 
-# counts for how many CUs have only values for HBSR
+# Status only values for HBSR:
 bioStatus_merged_HBSR_only <- bioStatus_merged[!is.na(bioStatus_merged$bioStatus_HBSR) & 
                                                  is.na(bioStatus_merged$bioStatus_HSPercent),]
-
-countHere <- table(bioStatus_merged_HBSR_only$bioStatus_HBSR)[c("red","amber","green")]
-sum(countHere) # 63
-
+nrow(bioStatus_merged_HBSR_only) # 1
+countHere <- table(factor(bioStatus_merged_HBSR_only$bioStatus_HBSR,levels = c("red","amber","green")))
 table_n$HBSR_only <- as.numeric(countHere)
 
-# counts for how many CUs have only values for HS benchmarks
+# Status only values for HS benchmarks:
 bioStatus_merged_HSBench_only <- bioStatus_merged[is.na(bioStatus_merged$bioStatus_HBSR) & 
                                                     !is.na(bioStatus_merged$bioStatus_HSPercent),]
-
-countHere <- table(bioStatus_merged_HSBench_only$bioStatus_HSPercent)[c("red","amber","green")]
-sum(countHere) # 108
-
+nrow(bioStatus_merged_HSBench_only) # 46
+countHere <- table(factor(bioStatus_merged_HSBench_only$bioStatus_HSPercent,levels = c("red","amber","green")))
 table_n$HSBench_only <- as.numeric(countHere)
 
-# counts for how many CUs have different biostatus
-bioStatus_merged_diff <- bioStatus_merged[bioStatus_merged$bioStatus_HBSR != bioStatus_merged$bioStatus_HSPercent,]
-bioStatus_merged_diff <- bioStatus_merged_diff[!is.na(bioStatus_merged_diff$region),]
-nrow(bioStatus_merged_diff) # 31
-
-# make all column for counts for HBSR 
-countHere <- table(bioStatus_merged_diff$bioStatus_HBSR)[c("red","amber","green")]
-sum(countHere) # 31
-
+# Differt status:
+bioStatus_merged_diff <- bioStatus_merged_same_noNA[bioStatus_merged_same_noNA$bioStatus_HBSR != bioStatus_merged_same_noNA$bioStatus_HSPercent,]
+nrow(bioStatus_merged_diff) # 62
+countHere <- table(factor(bioStatus_merged_diff$bioStatus_HBSR,levels = c("red","amber","green")))
 table_n$diff <- as.numeric(countHere)
 
 table_m <- as.matrix(table_n[,c("n_same","HBSR_only","HSBench_only","diff")])
 rownames(table_m) <- table_n$bioStatus
 
 coloursStatus <- rev(c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F"))
+
+printFig <- T
 
 if(printFig){
   jpeg(paste0(wd_figures,"/comparison_bioStatus_HBSR_HSPercent.jpg"), 
@@ -300,6 +296,8 @@ bioStatus_merged_diff[bioStatus_merged_diff$bioStatus_HBSR == "green" & bioStatu
 # Skeena      SX Stephens
 
 bioStatus_merged_diff[bioStatus_merged_diff$bioStatus_HBSR == "red" & bioStatus_merged_diff$bioStatus_HSPercent == "green",]
+
+bioStatus_merged_HBSR_only
 
 #
 # Decision rules for HS percentile benchmarks (TEMPORARY LOCATION) -------

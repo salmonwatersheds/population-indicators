@@ -113,7 +113,7 @@ region <- regions_df$VIMI
 # all the regions
 region <- as.character(regions_df[1,])
 #region <- region[region != "Columbia"]
-region <- gsub(" ","_",region)
+# region <- gsub(" ","_",region)
   
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
@@ -136,9 +136,15 @@ for(i_rg in 1:length(region)){
   
   # i_rg <- 1
   
-  regionName <- region[i_rg]
+  region_i <- gsub("_"," ",region[i_rg])
+  if(region_i == "Central coast"){
+    region_i <- "Central Coast"
+  }
+  
   if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
     regionName <- "VIMI"
+  }else{
+    regionName <- regionName <- gsub(" ","_",region[i_rg])
   }
   
   if(species_all){
@@ -161,10 +167,10 @@ for(i_rg in 1:length(region)){
       
       speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro == species[i_sp]]
       
-      cuspawnerabundance_rg_sp <- cuspawnerabundance[cuspawnerabundance$region == gsub("_"," ",region[i_rg]) &
+      cuspawnerabundance_rg_sp <- cuspawnerabundance[cuspawnerabundance$region == region_i &
                                                        cuspawnerabundance$species_name %in% speciesHere,]
       
-      conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == gsub("_"," ",region[i_rg]) &
+      conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == region_i &
                                                                      conservationunits_decoder$species_name%in% speciesHere,]
       
       # Import the HBSRM outputs, i.e., the posterior distributions of:
@@ -188,7 +194,7 @@ for(i_rg in 1:length(region)){
       # find the corresponding cuid 
       cuids <- sapply(X = CUs, function(cu){
         # cu <- CUs[6]
-        regionHere <- gsub("_"," ",region[i_rg])
+        regionHere <- region_i
         conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == regionHere &
                                                                      conservationunits_decoder$species_name %in% speciesHere & 
                                                                      conservationunits_decoder$cu_name_pse == cu,]

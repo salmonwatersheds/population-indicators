@@ -373,7 +373,7 @@ for(i_rg in 1:length(region)){
             spawnerAbundance <- c(spawnerAbundance,datapointHere)
           }
           
-          # calculate the geometric mean over the last generation
+          # calculate current spawner abundance = the geometric mean over the last generation
           spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength)
           spawnerAbundance_lastGen_m <- mean_geom_fun(x = spawnerAbundance_lastGen)
           spawnerAbundance_lastGen_dataPointNb <- sum(!is.na(spawnerAbundance_lastGen))

@@ -669,8 +669,8 @@ for(rg in regionsToKeep){
 }
 
 #
-# check why there are identical biological status probabilities between Smsy and Smsy80 --------
-
+# Check why there are identical biological status probabilities between Smsy and Smsy80 --------
+# 
 biological_status_df <- read.csv(paste0(wd_output,"/Biological_status_HBSRM_all.csv"),
                                  header = T)
 
@@ -729,6 +729,129 @@ nrow(dupli_remain_df) # 0
 
 # CONCLUSION: All good 
 
+#
+# Katy's request about Columbia Lake SX CU 1300 dataset_101 and dataset_102 ------
+# https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1701474308941739
+#' - update dataset 101 file for Columbia that includes the percentile confidence
+#' intervals for cuid 1300 Osoyoos lake sockeye?
+#' - fields 25%_spw_lower, 25%_spw_upper, 75%_spw_lower, 75%_spw_upper are empty in database
+#' 
+
+#'* Import the most recent dataset_101 *
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
+pattern <- "dataset_101"
+filesList <- list.files(path = path)
+filesList <- filesList[grepl(pattern,filesList)]
+mostRecentF <- filesList[file.info(paste(path,filesList,sep = "/"))$mtime == max(file.info(paste(path,filesList,sep = "/"))$mtime)]
+# "dataset_101.May272022.csv"
+dataset_101 <- read.csv(paste(path,mostRecentF,sep = "/"),header = T)
+dataset_101 <- dataset_101[,-1]
+head(dataset_101)
+nrow(dataset_101)
+
+# Import another dataset_101 file from Fraser_VIMI for comparison because the headers
+# are bit different:
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Fraser status assessment/Output")
+pattern <- "dataset_101"
+filesList <- list.files(path = path)
+filesList <- filesList[grepl(pattern,filesList)]
+mostRecentF <- filesList[file.info(paste(path,filesList,sep = "/"))$mtime == max(file.info(paste(path,filesList,sep = "/"))$mtime)]
+dataset_101_VIMI <- read.csv(paste(path,mostRecentF,sep = "/"),header = T)
+dataset_101_VIMI <- dataset_101_VIMI[,-1]
+head(dataset_101_VIMI)
+
+# Import the benchmarks values and biostatus:
+pattern <- "biological_status_SH_percentiles"
+biological_status_percentiles <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                                wd_output = wd_output,
+                                                                region = region,
+                                                                species_all = species_all)
+pattern <- "HS_percentiles_summary"
+benchmarks_summary_percentiles <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                                 wd_output = wd_output,
+                                                                 region = region,
+                                                                 species_all = F)
+
+# 
+benchmarks_summary_percentiles_1300 <- benchmarks_summary_percentiles[benchmarks_summary_percentiles$region == "Columbia" &
+                                                                      benchmarks_summary_percentiles$cuid == 1300,]
+
+biological_status_percentiles_1300 <- biological_status_percentiles[biological_status_percentiles$region == "Columbia"  &
+                                                                    biological_status_percentiles$cuid == 1300,]
+
+# Fill dataset_101
+
+# CHANGE: rename "cu" by "cuid"
+colnames(dataset_101)[colnames(dataset_101)== "cu"] <- "cuid"
+
+# CHANGE: change "hist_" for "percentile_"
+col_hist <- colnames(dataset_101)[grepl("hist_",colnames(dataset_101))]
+colnames(dataset_101)[colnames(dataset_101) %in% col_hist] <- gsub("hist","percentile",col_hist)
+
+# CHANGE: add percentile_red_prob for each of the three colours (USE THE 0.5 upper threshold!!!)
+dataset_101$percentile_prob_red <- biological_status_percentiles_1300$status_HSPercent_05_red
+dataset_101$percentile_prob_yellow <- biological_status_percentiles_1300$status_HSPercent_05_amber
+dataset_101$percentile_prob_green <- biological_status_percentiles_1300$status_HSPercent_05_green
+
+# CHANGE: add percentile status
+prob_status <- as.numeric(dataset_101[,c("percentile_prob_red","percentile_prob_yellow","percentile_prob_green")])
+dataset_101$percentile_status <- c("poor","fair","good")[prob_status == max(prob_status)]
+
+# CHANGE: fill the percentile_red/yellow/green columns
+colHere <- paste0("percentile_",c("red","yellow","green"))
+dataset_101[,colHere] <- "#FFFFFF"
+dataset_101[,colHere][prob_status == max(prob_status)] <- c("#CC0000","#FFFF00","#009900")[prob_status == max(prob_status)]
+
+# CHANGE: add extinct
+dataset_101$extinct <- NA
+
+# CHANGE: drop location
+dataset_101 <- dataset_101[,colnames(dataset_101) != "location"]
+
+# write CSV with date:
+date <- Sys.Date()
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
+write.csv(dataset_101,paste0(path,"/","dataset_101_",date,".csv"),row.names = F)
+
+
+#'* Import the most recent dataset_102 *
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
+pattern <- "dataset_102"
+filesList <- list.files(path = path)
+filesList <- filesList[grepl(pattern,filesList)]
+mostRecentF <- filesList[file.info(paste(path,filesList,sep = "/"))$mtime == max(file.info(paste(path,filesList,sep = "/"))$mtime)]
+# mostRecentF <- "dataset_102.May272022.csv"
+dataset_102 <- read.csv(paste(path,mostRecentF,sep = "/"),header = T)
+dataset_102 <- dataset_102[,-1]
+head(dataset_102)
+nrow(dataset_102)
+
+# CHANGE: rename "cu" by "cuid"
+colnames(dataset_102)[colnames(dataset_102) == "cu"] <- "cuid"
+
+# CHANGE: change "hist_" for "percentile_"
+col_hist <- colnames(dataset_102)[grepl("hist_",colnames(dataset_102))]
+colnames(dataset_102)[colnames(dataset_102) %in% col_hist] <- gsub("hist","percentile",col_hist)
+
+# CHANGE: fill the dataset
+dataset_102$curr_spw[dataset_102$location == 1300] <- round(biological_status_percentiles_1300$current_spawner_abundance)
+dataset_102$curr_spw_start_year[dataset_102$location == 1300] <- biological_status_percentiles_1300$year_first
+dataset_102$curr_spw_end_year[dataset_102$location == 1300] <- biological_status_percentiles_1300$year_last
+dataset_102$X25._spw[dataset_102$location == 1300] <- benchmarks_summary_percentiles_1300$m[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.25"]
+dataset_102$X75._spw[dataset_102$location == 1300] <- benchmarks_summary_percentiles_1300$m[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.5"]
+
+# CHANGE: add columns for 95% CI of the benchmarks
+dataset_102$`25%_spw_lower` <- c(benchmarks_summary_percentiles_1300[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.25","CI025"],NA)
+dataset_102$`25%_spw_upper` <- c(benchmarks_summary_percentiles_1300[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.25","CI975"],NA)
+dataset_102$`75%_spw_lower` <- c(benchmarks_summary_percentiles_1300[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.5","CI025"],NA)
+dataset_102$`75%_spw_upper` <- c(benchmarks_summary_percentiles_1300[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.5","CI975"],NA)
+
+date <- Sys.Date()
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
+# write.csv(dataset_102,paste0(path,"/","dataset_102_",date,".csv"),row.names = F)
+
+#
 # -------
+#
 
 

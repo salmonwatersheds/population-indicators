@@ -301,6 +301,8 @@ colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Total"] <- "Recruits"
 # CHNAGE: add CUID" --> not in dataset_5_CC
 # match dataset_5_CC$CU with decoder_centralCoast$trtc_cu
 
+
+
 unique(dataset_5_Yukon$CUID)
 unique(conservationunits_decoder$cuid)
 unique(conservationunits_decoder$cu_name_pse)
@@ -312,8 +314,8 @@ sum(!CU_Name %in% decoder_centralCoast$cuname) # 77
 sum(!CU_Name %in% decoder_centralCoast$culabel) # 77
 sum(!CU_Name %in% decoder_centralCoast$CU) # 77
 
-
-
+identical(decoder_centralCoast$cuname,decoder_centralCoast$culabel)
+identical(decoder_centralCoast$cuname,decoder_centralCoast$CU)
 
 
 

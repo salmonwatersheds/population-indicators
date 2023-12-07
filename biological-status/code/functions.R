@@ -1630,7 +1630,7 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
   }else if(grepl("HSPercent",colBench)[1]){
     status1 <- colBench[grepl("HSPercent_075",colBench)]
     status2 <- colBench[grepl("HSPercent_05",colBench)]
-    figName <- "HSPercent_75_50_"
+    figName <- "Percentiles_75_50_"
   }
   
   # remove row with NAs
@@ -1709,7 +1709,7 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
   barplot(height = table_var_m,
           main = paste0("Comparison by ",group_var),
           ylab = "Number of CUs", xlab = "Biological status difference",
-          col = colours, 
+          col = colours, las = 1,
           names.arg = c("Same","Different"))
   
   if(group_var == "species"){

@@ -132,6 +132,8 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
+nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")]))
+
 # Import the spawner_abundance.csv, downloaded from SPS work. OLDER CODE
 # spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/data")
 # spawner_abundance <- read.csv(paste0(spawner_abundance_path,"/spawner_abundance.csv"),header = T)

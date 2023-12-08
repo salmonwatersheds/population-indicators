@@ -117,9 +117,9 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
-
-# Fixes spawners for the Yukon ------
-
+#
+# Fixes spawners for the Yukon Dataset_5 ------
+#
 #' * Fixe recruitsperspawner$spawners for the Yukon *
 #' - values for recruitsperspawner$spawners are in the 1000s and without decimals 
 #' - go in the original datasets and find the original values.
@@ -232,7 +232,7 @@ plot(y = dataset_5_older$R_S, x = dataset_5_older$Recruits / dataset_5_older$Spa
 abline(a = 0, b = 1)
 
 #
-# Fixes spawners for the Central Coast WAIT TO HEAR FROM THEM ------
+# Fixes spawners for the Central Coast Dataset_5 ------
 
 #' Use recent (2020) run reconstruction: All-OUTPUT--nonlegacy-mode_20220222.xlsx
 #' https://www.dropbox.com/scl/fi/y360sr7hqie2ale3uolll/All-OUTPUT-nonlegacy-mode_20220222.xlsx?rlkey=szlb0pzfscdrvj6b9y3skmw33&dl=0
@@ -240,7 +240,7 @@ abline(a = 0, b = 1)
 #' And format the the file like dataset_5.Nov282023.csv for the Yukon.
  
 #' Notes:
-#' - Field Escape is “escapement” which is equal to spawners in dataset 5.
+#' - Field "Escape" is “escapement” which is equal to "spawners" in dataset 5.
 #' - The TR4 etc. are the “total recruits” at age 4 - Check with Eric that this is not returns!
 
 # Import the dataset_5_Yukon for comparison of the fields:
@@ -248,6 +248,7 @@ path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-st
 filename <- "dataset_5.Nov282023.csv"
 dataset_5_Yukon <- read.csv(paste(path,filename,sep = "/"))
 head(dataset_5_Yukon)
+max(dataset_5_Yukon$Year) # 2019
 
 # Import the run reconstruction file with the updated data:
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/cc-recons-2021")
@@ -266,164 +267,282 @@ identical(round(sum,4),round(tot,4)) # all good
 
 fieldToKeep1 <- c("SpeciesId","CU","CU_Name","BroodYear","Escape","Total")
 
-dataset_5_CC <- sheet_1[,fieldToKeep1] 
-
-# Import the CentralCoast_CUs_final_withCUID_decoder
-path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/central-coast-status/Data")
-filename <- "CentralCoast_CUs_final_withCUID_decoder.csv"
-decoder_centralCoast <- read.csv(paste(path,filename,sep = "/"))
+dataset_5_all <- sheet_1[,fieldToKeep1] 
 
 # Update fields:
 
 # CHANGE: add column "Species"
 unique(dataset_5_Yukon$Species)
 unique(conservationunits_decoder$species_name)
-unique(dataset_5_CC$SpeciesId)
-dataset_5_CC$SpeciesId <- toupper(dataset_5_CC$SpeciesId)
-dataset_5_CC$Species <- NA
-SpeciesId <- unique(dataset_5_CC$SpeciesId)
+unique(dataset_5_all$SpeciesId)
+dataset_5_all$SpeciesId <- toupper(dataset_5_all$SpeciesId)
+dataset_5_all$Species <- NA
+SpeciesId <- unique(dataset_5_all$SpeciesId)
 names(SpeciesId) <- c("Chum","Chinook","Coho","Pink (even)","Pink (odd)","Sockeye")
 SpeciesId
 
 for(spid in SpeciesId){
-  dataset_5_CC$Species[dataset_5_CC$SpeciesId == spid] <- names(SpeciesId)[SpeciesId == spid]
+  dataset_5_all$Species[dataset_5_all$SpeciesId == spid] <- names(SpeciesId)[SpeciesId == spid]
 }
 
 # CHANGE: rename "BroodYear" to "Year" 
-colnames(dataset_5_CC)[colnames(dataset_5_CC) == "BroodYear"] <- "Year"
+colnames(dataset_5_all)[colnames(dataset_5_all) == "BroodYear"] <- "Year"
 
 # CHANGE: rename "Escape" "Spawners" 
-colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Escape"] <- "Spawners"
+colnames(dataset_5_all)[colnames(dataset_5_all) == "Escape"] <- "Spawners"
 
 # CHANGE: rename "Total" to "Recruits"
-colnames(dataset_5_CC)[colnames(dataset_5_CC) == "Total"] <- "Recruits"
+colnames(dataset_5_all)[colnames(dataset_5_all) == "Total"] <- "Recruits"
 
-# CHNAGE: add CUID" --> not in dataset_5_CC
-# match dataset_5_CC$CU with decoder_centralCoast$trtc_cu
-
-
-
-unique(dataset_5_Yukon$CUID)
-unique(conservationunits_decoder$cuid)
-unique(conservationunits_decoder$cu_name_pse)
-unique(conservationunits_decoder$cu_name_dfo)
-
-CU_Name <- unique(dataset_5_CC$CU_Name) # cu_name_pse or cu_name_dfo ?
-
-sum(!CU_Name %in% decoder_centralCoast$cuname) # 77
-sum(!CU_Name %in% decoder_centralCoast$culabel) # 77
-sum(!CU_Name %in% decoder_centralCoast$CU) # 77
-
-identical(decoder_centralCoast$cuname,decoder_centralCoast$culabel)
-identical(decoder_centralCoast$cuname,decoder_centralCoast$CU)
-
-
-
-cu_name_pse <- unique(conservationunits_decoder$cu_name_pse)
-cu_name_dfo <- unique(conservationunits_decoder$cu_name_dfo)
-sum(! CU_Name %in% cu_name_pse) # 45
-sum(! CU_Name %in% cu_name_dfo) # 68 ?!
-
-# There are 45 Cus with typos in their names --> fix them
-CU_Name_notFound <- CU_Name[! CU_Name %in% cu_name_pse]
-length(CU_Name_notFound)
-CU_correctName <- data.frame(CU_Name_notFound = CU_Name_notFound,
-                             cu_name_pse = NA)
-
-# 1st try lowering letters
-cu_name_pse_lowerC <- tolower(cu_name_pse)
-for(r in 1:nrow(CU_correctName)){
-  # r <- 3
-  name_lowerc <- tolower(CU_correctName$CU_Name_notFound[r])
-  if(name_lowerc %in% cu_name_pse_lowerC){
-    nameCorrect <- cu_name_pse[tolower(cu_name_pse) == name_lowerc]
-    CU_correctName$cu_name_pse[r] <- nameCorrect
-    dataset_5_CC$CU_Name[dataset_5_CC$CU_Name == CU_correctName$CU_Name_notFound[r]] <- nameCorrect
-  }
-}
-
-CU_Name <- unique(dataset_5_CC$CU_Name)
-CU_Name_notFound <- CU_Name[! CU_Name %in% cu_name_pse]
-length(CU_Name_notFound) # 37
-
-# 2nd try using CU_name_variations_fun()
-CU_correctName <- CU_correctName[is.na(CU_correctName$cu_name_pse),]
-for(r in 1:nrow(CU_correctName)){
-  # r <- 3
-  name_lowerc <- CU_correctName$CU_Name_notFound[r]
-  if(name_lowerc %in% cu_name_pse_lowerC){
-    nameCorrect <- cu_name_pse[tolower(cu_name_pse) == name_lowerc]
-    CU_correctName$cu_name_pse[r] <- nameCorrect
-    dataset_5_CC$CU_Name[dataset_5_CC$CU_Name == CU_correctName$CU_Name_notFound[r]] <- nameCorrect
-  }
-}
-
-
-
-
-cu_name_pse[grepl("Hugh-Burke",cu_name_pse)] # --> replace " " by "-"
-cu_name_pse[grepl("Bella Coola-Dean Rivers",cu_name_pse)]
-cu_name_pse[grepl("Bella Coola",cu_name_pse)]
-
-
-CU_Name_notFound
-
-
-for(i in 1:length(CU_Name_notFound)){
-  # i <- 1
-  cu_notFound <- CU_Name_notFound[i]
-  spAcroHere <- dataset_5_CC$SpeciesId[dataset_5_CC$CU_Name == cu_notFound][1]
-  CU_name_variations_fun(CUname =cu_notFound,
-                         speciesAcronym = spAcroHere)
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-unique(conservationunits_decoder$cuid)
+# CHANGE: add CUID" --> not in dataset_5_all
+# a. Use conservationunits_decoder: 
+# Replace "Lake sockeye" and River sockeye" by "Sockeye
+unique(conservationunits_decoder$species_name)
+unique(dataset_5_all$Species)
+conservationunits_decoder$species_name[grepl("sockeye",conservationunits_decoder$species_name)] <- "Sockeye"
 
 unique(conservationunits_decoder$cu_name_pse)
-unique(conservationunits_decoder$cu_name_dfo)
-unique(conservationunits_decoder$species_abbr)
+unique(dataset_5_all$CU_Name) # --> potential issues with capital letters, --> to lower case and replace "-" and "_" by " "
+conservationunits_decoder$cu_name_pse_modif <- tolower(conservationunits_decoder$cu_name_pse)
+conservationunits_decoder$cu_name_pse_modif <- gsub("[_|-]"," ",conservationunits_decoder$cu_name_pse_modif)
+conservationunits_decoder$cu_name_dfo_modif <- tolower(conservationunits_decoder$cu_name_dfo)
+conservationunits_decoder$cu_name_dfo_modif <- gsub("[_|-]"," ",conservationunits_decoder$cu_name_dfo_modif)
+dataset_5_all$CU_Name_modif <- tolower(dataset_5_all$CU_Name)
+dataset_5_all$CU_Name_modif <- gsub("[_|-]"," ",dataset_5_all$CU_Name_modif)
+
+unique(conservationunits_decoder$cu_index)
+unique(dataset_5_all$CU) # --> potential issue with "_" and "-" --> remove them + "CK" --> "CN", "SEL" --> "SX_L", "SER" --> "SX_R", "PKE" --> "PKe", "PKO" --> "PKo"
+conservationunits_decoder$cu_index_modif <- conservationunits_decoder$cu_index
+conservationunits_decoder$cu_index_modif <- gsub("CK","CN",conservationunits_decoder$cu_index_modif)
+conservationunits_decoder$cu_index_modif <- gsub("SEL","SX_L",conservationunits_decoder$cu_index_modif)
+conservationunits_decoder$cu_index_modif <- gsub("SER","SX_R",conservationunits_decoder$cu_index_modif)
+conservationunits_decoder$cu_index_modif <- gsub("PKE","PKe",conservationunits_decoder$cu_index_modif)
+conservationunits_decoder$cu_index_modif <- gsub("PKO","PKo",conservationunits_decoder$cu_index_modif)
+conservationunits_decoder$cu_index_modif <- gsub("[_|-]"," ",conservationunits_decoder$cu_index_modif)
+dataset_5_all$CU_modif <- gsub("[_|-]"," ",dataset_5_all$CU)
+
+# unique combanation of species & CUs
+Species_CU_Name <- unique(dataset_5_all[,c("Species","CU_Name","CU","CU_Name_modif","CU_modif")])
+
+# find the 
+Species_CU_Name$cuid <- Species_CU_Name$cu_name_pse <- Species_CU_Name$region <- NA
+Species_CU_Name$cu_index <- NA
+
+colToKeep <- c("region","cuid","cu_name_pse","cu_index")
+for(r in 1:nrow(Species_CU_Name)){
+  # r <- 117
+  sp_cu <- Species_CU_Name[r,]
+  sp <- sp_cu$Species
+  cu_name_modif <- sp_cu$CU_Name_modif
+  cu_modif <- sp_cu$CU_modif
+  
+  out1 <- conservationunits_decoder[conservationunits_decoder$species_name == sp &
+                                     conservationunits_decoder$cu_index_modif == cu_modif,][,colToKeep]
+  out2 <- conservationunits_decoder[conservationunits_decoder$species_name == sp &
+                                     conservationunits_decoder$cu_name_dfo_modif == cu_name_modif,][,colToKeep]
+  out3 <- conservationunits_decoder[conservationunits_decoder$species_name == sp &
+                                     conservationunits_decoder$cu_name_pse_modif == cu_name_modif,][,colToKeep]
+  out <- rbind(out1,out2,out3)
+  out <- out[!is.na(out$cuid),]
+  out <- unique(out)
+  
+  if(nrow(out) == 0){
+    out <- data.frame(region = NA, cuid = NA, cu_name_pse = NA, cu_index = NA, 
+                      CU_Name_xlsx = NA)
+  }else if(nrow(out) > 1){
+    # manual fixes:
+    if(cu_modif %in% c("CO 28","SX L 21 10")){ # cu_name_pse is "Brim-Wahoo" not "Northern Coastal Streams"
+      out <- out1[!is.na(out1$region),]
+    }
+    print(r)
+    print(out)
+  }
+  Species_CU_Name$region[r] <- out$region
+  Species_CU_Name$cuid[r] <- out$cuid
+  Species_CU_Name$cu_name_pse[r] <- out$cu_name_pse
+  Species_CU_Name$cu_index[r] <- out$cu_index
+}
+
+unique(Species_CU_Name$region) # "Central Coast" "Haida Gwaii"   "Skeena"        "Nass"          NA
+sum(!is.na(Species_CU_Name$cuid))/nrow(Species_CU_Name) # 0.96 !!!
+
+Species_CU_Name[is.na(Species_CU_Name$cuid),]
+
+# b. Find the cuid using decoder_centralCoast: CUs names don't necessarily match
+
+# match dataset_5_all$CU with decoder_centralCoast$trtc_cu
+# --> import the CentralCoast_CUs_final_withCUID_decoder
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1701799688987309?thread_ts=1701197234.664189&cid=CJ5RVHVCG
+# - Eric: "the field trtc_cu in this decoder should help you to go from CU to cuid for the central coast".
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/central-coast-status/Data")
+filename <- "CentralCoast_CUs_final_withCUID_decoder.csv"
+decoder_centralCoast <- read.csv(paste(path,filename,sep = "/"))
+
+# make some corrections and modifications
+decoder_centralCoast$species[decoder_centralCoast$species == "Pink (Even)"] <- "Pink (even)"
+decoder_centralCoast$species[decoder_centralCoast$species == "Pink (Odd)"] <- "Pink (odd)"
+decoder_centralCoast$species[grepl("Sockeye",decoder_centralCoast$species)] <- "Sockeye"
+decoder_centralCoast$trtc_cu_modif <- gsub("[_|-]"," ",decoder_centralCoast$trtc_cu)
+decoder_centralCoast$culabel_modif <- tolower(decoder_centralCoast$culabel)
+decoder_centralCoast$culabel_modif <- gsub("[_|-]"," ",decoder_centralCoast$culabel_modif)
+
+Species_CU_Name$cuid_cc <- NA
+for(r in 1:nrow(Species_CU_Name)){
+  # r <- 3
+  sp_cu <- Species_CU_Name[r,]
+  sp <- sp_cu$Species
+  cu_name_modif <- sp_cu$CU_Name_modif
+  cu_modif <- sp_cu$CU_modif
+  
+  out1 <- decoder_centralCoast$cuid[decoder_centralCoast$trtc_cu_modif == cu_modif &
+                                          decoder_centralCoast$species == sp_cu$Species]
+  
+  out2 <- decoder_centralCoast$cuid[decoder_centralCoast$culabel_modif == cu_name_modif &
+                                     decoder_centralCoast$species == sp]
+  
+  out <- unique(c(out1,out2))
+
+  if(length(out) == 0){
+    out <- NA
+  }else if(length(out) > 1){
+    print(r)
+    print(out)
+  }
+  Species_CU_Name$cuid_cc[r] <- out
+}
+
+sum(!is.na(Species_CU_Name$cuid_cc))/nrow(Species_CU_Name) # 0.42
+nrow(Species_CU_Name[!(is.na(Species_CU_Name$cuid) & is.na(Species_CU_Name$cuid_cc)),])/nrow(Species_CU_Name) # 0.97
+
+# check if there are differences:
+Species_CU_Name_noNA <- Species_CU_Name[!is.na(Species_CU_Name$cuid) & !is.na(Species_CU_Name$cuid_cc),]
+Species_CU_Name_noNA[Species_CU_Name_noNA$cuid != Species_CU_Name_noNA$cuid_cc,] # 0, all good
+
+Species_CU_Name[is.na(Species_CU_Name$cuid) & is.na(Species_CU_Name$cuid_cc),]
 
 
-unique(dataset_5_CC$SpeciesId) # "CM"  "CN"  "CO"  "PKe" "PKo" "SX"
-unique(conservationunits_decoder$species_abbr) # "SEL" "SER" "PKO" "PKE" "CK"  "CO"  "CM"  "SH" 
+# c. Use the decoder for Haida Gwaii: HG_conservationunits.csv
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Haida Gwaii PSE/Data & Assessments/haida-gwaii-status/Data")
+filename <- "HG_conservationunits.csv"
+decoder_Haida_Gwaii <- read.csv(paste(path,filename,sep = "/"))
+head(decoder_Haida_Gwaii)
+
+# make some corrections and modifications
+decoder_Haida_Gwaii$species[decoder_Haida_Gwaii$species == "Pink (Even)"] <- "Pink (even)"
+decoder_Haida_Gwaii$species[decoder_Haida_Gwaii$species == "Pink (Odd)"] <- "Pink (odd)"
+decoder_Haida_Gwaii$species[grepl("Sockeye",decoder_Haida_Gwaii$species)] <- "Sockeye"
+decoder_Haida_Gwaii$trtc_cu_modif <- gsub("[_|-]"," ",decoder_Haida_Gwaii$trtc_cu)
+decoder_Haida_Gwaii$culabel_modif <- tolower(decoder_Haida_Gwaii$culabel)
+decoder_Haida_Gwaii$culabel_modif <- gsub("[_|-]"," ",decoder_Haida_Gwaii$culabel_modif) 
+
+Species_CU_Name$cuid_hg <- NA
+for(r in 1:nrow(Species_CU_Name)){
+  # r <- 72
+  sp_cu <- Species_CU_Name[r,]
+  sp <- sp_cu$Species
+  cu_name_modif <- sp_cu$CU_Name_modif
+  cu_modif <- sp_cu$CU_modif
+  
+  out1 <- decoder_Haida_Gwaii$cuid[decoder_Haida_Gwaii$trtc_cu_modif == cu_modif &
+                                      decoder_Haida_Gwaii$species == sp_cu$Species]
+  
+  out2 <- decoder_Haida_Gwaii$cuid[decoder_Haida_Gwaii$culabel_modif == cu_name_modif &
+                                      decoder_Haida_Gwaii$species == sp]
+  
+  out <- unique(c(out1,out2))
+  out <- out[!is.na(out)]
+  
+  if(length(out) == 0){
+    out <- NA
+  }else if(length(out) > 1){
+    print(r)
+    print(out)
+  }
+  Species_CU_Name$cuid_hg[r] <- out
+}
+
+sum(!is.na(Species_CU_Name$cuid_hg))/nrow(Species_CU_Name) # 0.42
+nrow(Species_CU_Name[!(is.na(Species_CU_Name$cuid) &
+                         is.na(Species_CU_Name$cuid_cc) &
+                         is.na(Species_CU_Name$cuid_hg)),])/nrow(Species_CU_Name) # 0.97
+
+# check if there are differences:
+Species_CU_Name_noNA <- Species_CU_Name[!is.na(Species_CU_Name$cuid) & !is.na(Species_CU_Name$cuid_hg),]
+Species_CU_Name_noNA[Species_CU_Name_noNA$cuid != Species_CU_Name_noNA$cuid_hg,] # 0, all good
+
+Species_CU_Name[is.na(Species_CU_Name$cuid) & 
+                  is.na(Species_CU_Name$cuid_cc) &
+                  is.na(Species_CU_Name$cuid_hg),]
+
+# Species           CU_Name            CU     CU_Name_modif      CU_modif 
+# Sockeye         Prudhomme    SX_L-19-49         prudhomme    SX L 19 49   
+# Sockeye         Shawatlan    SX_L-19-54         shawatlan    SX L 19 54   
+# Sockeye Babine-Early-Wild SX_L-21-02-EW babine early wild SX L 21 02 EW   
+# Sockeye   Babine-Mid-Wild SX_L-21-02-MW   babine mid wild SX L 21 02 MW  
+
+pattern <- "prudhomme"
+pattern <- "prud"
+pattern <- "shawatlan"
+pattern <- "babine"
+conservationunits_decoder[grepl(pattern,conservationunits_decoder$cu_name_pse_modif),]
+conservationunits_decoder[grepl(pattern,conservationunits_decoder$cu_name_dfo_modif),]
+decoder_centralCoast[grepl(pattern,decoder_centralCoast$culabel_modif),]
+decoder_Haida_Gwaii[grepl(pattern,decoder_Haida_Gwaii$culabel_modif),]
+
+# --> These are all Lake Sockeye so we move on.
+
+# Collect all the cuids and attribute them to 
+Species_CU_Name$cuid_final <- Species_CU_Name$cuid
+condition_cc <- is.na(Species_CU_Name$cuid) & !is.na(Species_CU_Name$cuid_cc)
+sum(condition_cc) # 1
+condition_hg <- is.na(Species_CU_Name$cuid) & !is.na(Species_CU_Name$cuid_hg)
+sum(condition_hg) # 0
+
+Species_CU_Name$cuid_final[condition_cc] <- Species_CU_Name$cuid_cc[condition_cc]
+
+dataset_5_all$CUID <- NA
+for(r in 1:nrow(Species_CU_Name)){
+  # r <- 1
+  rg <- Species_CU_Name$region[r]
+  sp <- Species_CU_Name$Species[r]
+  cu_name <- Species_CU_Name$CU_Name[r]
+  cu_name_pse <- Species_CU_Name$cu_name_pse[r]
+  cuid <- Species_CU_Name$cuid_final[r]
+  
+  dataset_5_all$CUID[dataset_5_all$Species == sp & dataset_5_all$CU_Name == cu_name] <- cuid
+}
+
+# 
+head(dataset_5_all)
+
+# Add columns KF_alpha lnRS Ricker_resid and R_S
+dataset_5_all$KF_alpha <- dataset_5_all$lnRS <- dataset_5_all$Ricker_resid <- NA
+dataset_5_all$R_S <- dataset_5_all$Recruits/dataset_5_all$Spawners
+
+# Select the necessary columns
+dataset_5_all_cut <- dataset_5_all[,c("CUID","Species","Year","Spawners","Recruits",
+                                      "KF_alpha","lnRS","Ricker_resid","R_S")]
+
+# Export file for Central Coast:
+CUs_CC <- Species_CU_Name$cuid_final[Species_CU_Name$region == "Central Coast"]
+CUs_CC <- CUs_CC[!is.na(CUs_CC)]
+dataset_5_CC <- dataset_5_all_cut[dataset_5_all_cut$CUID %in% CUs_CC,]
+# View(dataset_5_CC)
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/central-coast-status/Output")
+date <- Sys.Date()
+filename <- paste0("dataset_5_",date,".csv")
+# write.csv(dataset_5_CC,paste(path,filename,sep="/"),row.names = F)
 
 
-unique(dataset_5_CC$CU) # "CM_12"         "CM_13"         "CM_15"         "CM_16" 
-
-
-
-
-head(conservationunits_decoder)
-
-c("cuid","cu_name_pse","cu_name_dfo","cu_index")
-
-# WAITING TO HEAR FROM ERIC about these questions:
-# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1701453222964599?thread_ts=1701197234.664189&cid=CJ5RVHVCG
-
-
-#...
-
-# Export file:
-pathOutput <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Central Coast PSE/analysis/central-coast-status")
-filename <- "dataset_5.Dec012023.csv"
-
+# Export file for Haida Gwaii:
+CUs_HG <- Species_CU_Name$cuid_final[Species_CU_Name$region == "Haida Gwaii"]
+CUs_HG <- CUs_HG[!is.na(CUs_HG)]
+dataset_5_HG <- dataset_5_all_cut[dataset_5_all_cut$CUID %in% CUs_HG,]
+# View(dataset_5_HG)
+path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Haida Gwaii PSE/Data & Assessments/haida-gwaii-status/Output")
+date <- Sys.Date()
+filename <- paste0("dataset_5_",date,".csv")
+# write.csv(dataset_5_HG,paste(path,filename,sep="/"),row.names = F)
 
 #
 # Check that the data spawner abundance data matches between cuspawnerabundance and recruitsperspawner -------

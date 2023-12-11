@@ -351,7 +351,9 @@ for(r in 1:nrow(Species_CU_Name)){
                       CU_Name_xlsx = NA)
   }else if(nrow(out) > 1){
     # manual fixes:
-    if(cu_modif %in% c("CO 28","SX L 21 10")){ # cu_name_pse is "Brim-Wahoo" not "Northern Coastal Streams"
+    if(cu_modif %in% c("CO 28","SX L 21 10")){ 
+      # for CO 28: cu_name_pse is "Brim-Wahoo" not "Northern Coastal Streams" --> trust cu_modif (i.e., out1) and not cu_name_modif (i.e., out2)
+      # for SX L 21 10: similar case
       out <- out1[!is.na(out1$region),]
     }
     print(r)

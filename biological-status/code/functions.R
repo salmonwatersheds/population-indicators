@@ -1724,6 +1724,72 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
   }
 }
 
+#' Function to return a dataframe of the CUs that have high exploitation rate or
+#' low production rates, as well as a final call on keeping or removing the CUs 
+#' depending of their biostatus: the one with already a red/poor status are kept
+#' (i.e. Clare's 8th rule).
+#' - biological_status_HSPercent_df: data frame of the biostatus probabilities 
+#' obtained with percentile method. It is return by the function 
+#' biological_status_HSPercent_df() and the argument pattern = "biological_status_SH_percentiles".
+cu_highExploit_lowProd_fun <- function(biological_status_HSPercent_df = NA, 
+                                       region = NA, wd_output = NA, species_all = T){
+  
+  if(is.na(biological_status_HSPercent_df)[1]){
+    pattern <- "biological_status_SH_percentiles"
+    biological_status_HSPercent_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                                    wd_output = wd_output,
+                                                                    region = region,
+                                                                    species_all = species_all)
+  }
+  
+  # List CUs with high exploitation/low productivity & cyclic dominance
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1700673066049189?thread_ts=1700604709.505309&cid=CJ5RVHVCG
+  
+  # To find the corresponding regions from conservationunits_decoder
+  # sapply(X = highExploit_lowProd$CU_name, FUN = function(cu){
+  #   out <- conservationunits_decoder$region[conservationunits_decoder$cu_name_pse == cu]
+  # })
+  
+  # To find the corresponding species from conservationunits_decoder
+  # sapply(X = highExploit_lowProd$CU_name, FUN = function(cu){
+  #   out <- conservationunits_decoder$species_name[conservationunits_decoder$cu_name_pse == cu]
+  # })
+  
+  highExploit_lowProd <- data.frame(
+    region = c(rep("Fraser",7),rep("Vancouver Island & Mainland Inlets",2)),
+    species = c(rep("Coho",5),rep("Chinook",4)),
+    species_abbr = c(rep("CO",5),rep("CK",4)), 
+    CU_name = c("Fraser Canyon","Interior Fraser","Lower Thompson","North Thompson",
+                "South Thompson","Lower Fraser River (Fall 4-1)","Shuswap River (Summer 4-1)",
+                "East Vancouver Island-Cowichan and Koksilah (Fall x-1)",
+                "East Vancouver Island-Goldstream (Fall x-1)"))
+  
+  highExploit_lowProd$toRemove <- T
+  for(i in 1:nrow(highExploit_lowProd)){
+    # i <- 1
+    sp <- highExploit_lowProd$species[i]
+    cu <- highExploit_lowProd$CU_name[i]
+    biological_status_HSPercent_dfHere <- biological_status_HSPercent_df[biological_status_HSPercent_df$CU_pse == cu,]
+    if(nrow(biological_status_HSPercent_dfHere) > 1){
+      print(biological_status_HSPercent_dfHere)
+      biological_status_HSPercent_dfHere <- biological_status_HSPercent_dfHere[biological_status_HSPercent_dfHere$species == sp,]
+    }
+    status <- biological_status_HSPercent_dfHere$status_percent075
+    if(!is.na(status)){
+      if(status == "red"){ #' New rule from Claire:
+        highExploit_lowProd$toRemove[i] <- F
+      }
+    }
+    print(biological_status_HSPercent_dfHere$status_percent075)
+  }
+  return(highExploit_lowProd)
+}
+
+
+
+
+
+
 
 
 

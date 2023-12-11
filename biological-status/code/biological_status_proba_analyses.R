@@ -201,33 +201,10 @@ head(benchmarks_summary_HSPercent_df)
 # List CUs with high exploitation/low productivity & cyclic dominance
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1700673066049189?thread_ts=1700604709.505309&cid=CJ5RVHVCG
 
-highExploit_lowProd <- data.frame(species = c("Coho","Coho","Coho","Coho","Coho",
-                                              "Chinook","Chinook",NA,NA),
-                                  CU_name = c("Fraser Canyon","Interior Fraser",
-                                              "Lower Thompson","North Thompson",
-                                              "South Thompson","Lower Fraser River (Fall 4-1)",
-                                              "Shuswap River (Summer 4-1)",
-                                              "East Vancouver Island-Cowichan and Koksilah (Fall x-1)",
-                                              "East Vancouver Island-Goldstream (Fall x-1)"))
-
-highExploit_lowProd$toRemove <- T
-for(i in 1:nrow(highExploit_lowProd)){
-  # i <- 1
-  sp <- highExploit_lowProd$species[i]
-  cu <- highExploit_lowProd$CU_name[i]
-  biological_status_HSPercent_dfHere <- biological_status_HSPercent_df[biological_status_HSPercent_df$CU_pse == cu,]
-  if(nrow(biological_status_HSPercent_dfHere) > 1){
-    print(biological_status_HSPercent_dfHere)
-    biological_status_HSPercent_dfHere <- biological_status_HSPercent_dfHere[biological_status_HSPercent_dfHere$species == sp,]
-  }
-  status <- biological_status_HSPercent_dfHere$status_percent075
-  if(!is.na(status)){
-    if(status == "red"){ #' New rule from Claire:
-      highExploit_lowProd$toRemove[i] <- F
-    }
-  }
-  print(biological_status_HSPercent_dfHere$status_percent075)
-}
+# Return list of CUs that have high exploitation rate or low production rates,
+# as well as a final call on keeping or removing the CUs depending of their
+# biostatus: the one with already a red/poor status are kept (i.e. Clare's 8th rule).
+highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_HSPercent_df)
 
 # Are all these CUs in --> yes
 highExploit_lowProd$CU_name[! highExploit_lowProd$CU_name %in% biological_status_HSPercent_df$CU_pse]
@@ -463,8 +440,216 @@ biological_status_merge_diff <- biological_status_merge_diff[,colToKeep]
 #           row.names = F)
 
 #
+# 6) Create complete dataset with all the CUs and their biostatus and psf_staus_code -----
+# https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1701464111241899?thread_ts=1701199596.229739&cid=CJG0SHWCW
 
-#
+# Field to include:
+# percentile_red_prob
+# percentile_yellow_prob
+# percentile_green_prob
+# percentile_status values: good, fair, poor, NA
+# sr_status values: good, fair, poor, NA
+# psf_status values: good, fair, poor, extinct, data-deficient, not-assessed
+# psf_status_code values: 1 to 9
+# 1 = good
+# 2 = fair
+# 3 = poor
+# 4 = extinct
+# 5 = not-assessed (cyclic dominance)
+# 6 = not-assessed (low productivity and high exploitation)
+# 7 = data-deficient (insufficient time series length)
+# 8 = data-deficient (no estimates of spawner abundance in the most recent generation)
+# 9 = data-deficient (no spawner estimates available)
+
+# Return list of CUs that have high exploitation rate or low production rates,
+# as well as a final call on keeping or removing the CUs depending of their
+# biostatus: the one with already a red/poor status are kept (i.e. Clare's 8th rule).
+highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_HSPercent_df)
+
+# A. add column psf_status_code to each dataset:
+biological_status_HBSR <- biological_status_HBSR_df
+biological_status_HSPercent <- biological_status_HSPercent_df
+biological_status_HBSR$psf_status_code <- NA
+biological_status_HSPercent$psf_status_code <- NA
+
+# 4 = extinct ?
+
+# 5 = not-assessed (cyclic dominance)
+row_toUpdate <- grepl("(cyclic)",biological_status_HBSR$CU_pse)
+val_toUpdate <- biological_status_HBSR$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,5, sep = ", ")
+biological_status_HBSR$psf_status_code[row_toUpdate] <- val_new
+
+row_toUpdate <- grepl("(cyclic)",biological_status_HSPercent$CU_pse)
+val_toUpdate <- biological_status_HSPercent$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,5, sep = ", ")
+biological_status_HSPercent$psf_status_code[row_toUpdate] <- val_new
+
+# 6 = not-assessed (low productivity and high exploitation) --> Percentile only
+highExploit_lowProd_toRemove <- highExploit_lowProd[highExploit_lowProd$toRemove,]
+for(r in 1:nrow(highExploit_lowProd_toRemove)){
+  # r <- 1
+  rg <- highExploit_lowProd_toRemove$region[r]
+  sp <- highExploit_lowProd_toRemove$species_abbr[r]
+  cu <- highExploit_lowProd_toRemove$CU_name[r]
+  
+  row_toUpdate <- biological_status_HSPercent$region == rg &
+    biological_status_HSPercent$species == sp &
+    biological_status_HSPercent$CU_pse == cu
+  
+  val_toUpdate <- biological_status_HSPercent$psf_status_code[row_toUpdate]
+  val_new <- paste(val_toUpdate,6, sep = ", ")
+  
+  biological_status_HSPercent$psf_status_code[row_toUpdate] <- val_new
+}
+
+# 7 = data-deficient (insufficient time series length) --> Percentile only
+row_toUpdate <- biological_status_HSPercent$dataPointNb < 20
+val_toUpdate <- biological_status_HSPercent$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,7, sep = ", ")
+biological_status_HSPercent$psf_status_code[row_toUpdate] <- val_new
+
+# 8 = data-deficient (no estimates of spawner abundance in the most recent generation)
+row_toUpdate <- biological_status_HBSR$genLength_dataPointNb == 0
+val_toUpdate <- biological_status_HBSR$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,8, sep = ", ")
+biological_status_HBSR$psf_status_code[row_toUpdate] <- val_new
+
+row_toUpdate <- biological_status_HSPercent$genLength_dataPointNb == 0
+val_toUpdate <- biological_status_HSPercent$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,8, sep = ", ")
+biological_status_HSPercent$psf_status_code[row_toUpdate] <- val_new
+
+# 9 = data-deficient (no spawner estimates available)
+row_toUpdate <- biological_status_HBSR$comment == "Only NAs in cuspawnerabundance.csv for this CU" &
+  !is.na(biological_status_HBSR$comment)
+val_toUpdate <- biological_status_HBSR$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,9, sep = ", ")
+biological_status_HBSR$psf_status_code[row_toUpdate] <- val_new
+
+row_toUpdate <- biological_status_HSPercent$comment  == "Only NAs in cuspawnerabundance.csv for this CU" &
+  !is.na(biological_status_HSPercent$comment)
+val_toUpdate <- biological_status_HSPercent$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,9, sep = ", ")
+biological_status_HSPercent$psf_status_code[row_toUpdate] <- val_new
+
+# Remove "NA, "
+biological_status_HBSR$psf_status_code <- gsub("NA, ","",biological_status_HBSR$psf_status_code)
+biological_status_HSPercent$psf_status_code <- gsub("NA, ","",biological_status_HSPercent$psf_status_code)
+
+unique(biological_status_HBSR$psf_status_code)
+unique(biological_status_HSPercent$psf_status_code)
+
+# B. Combine the two datasets:
+
+colCommon <- c("region","species","CU_pse","current_spawner_abundance","psf_status_code")
+              # "year_last","year_first","genLength")
+colHBSR <- c("status_Smsy_red","status_Smsy_amber","status_Smsy_green","status_Smsy")
+colPercent <- c("status_HSPercent_075_red","status_HSPercent_075_amber","status_HSPercent_075_green",
+                "status_percent075")
+
+biological_status_merged <- merge(x = biological_status_HBSR[,c(colCommon,colHBSR)],
+                                  y = biological_status_HSPercent[,c(colCommon,colPercent)],
+                                  by =  c("region","species","CU_pse","current_spawner_abundance"), 
+                                  all = T)
+
+# Check if number of CUs is correct:
+CUs_comm <- biological_status_HBSR$cuid[biological_status_HBSR$cuid %in% 
+                                          biological_status_HSPercent$cuid]
+length(CUs_comm) # 142
+CUs_HBSR_only <- biological_status_HBSR$cuid[!biological_status_HBSR$cuid %in% 
+                                               biological_status_HSPercent$cuid]
+length(CUs_HBSR_only) # 0
+CUs_Percent_only <- biological_status_HSPercent$cuid[!biological_status_HSPercent$cuid %in% 
+                                                       biological_status_HBSR$cuid]
+length(CUs_Percent_only) # 286
+
+# Expected number of rows in biological_status_merged:
+length(CUs_comm) + length(CUs_HBSR_only) + length(CUs_Percent_only) # 428
+nrow(biological_status_merged) # 428 --> ALL GOOD
+
+# Renames columns
+colnames(biological_status_merged) <- gsub("red","red_prob",colnames(biological_status_merged))
+colnames(biological_status_merged) <- gsub("amber","yellow_prob",colnames(biological_status_merged))
+colnames(biological_status_merged) <- gsub("green","green_prob",colnames(biological_status_merged))
+
+colnames(biological_status_merged) <- gsub("status_Smsy_","sr_",colnames(biological_status_merged))
+colnames(biological_status_merged) <- gsub("status_HSPercent_075_","percentile_",colnames(biological_status_merged))
+
+colnames(biological_status_merged) <- gsub("status_Smsy","sr_status",colnames(biological_status_merged))
+colnames(biological_status_merged) <- gsub("status_percent075","percentile_status",colnames(biological_status_merged))
+
+# Create psf_status field and Attribute 1 (good), 2 (fair) or 3 (poor) for 
+biological_status_merged$psf_status <- NA #  values: good, fair, poor, extinct, data-deficient, not-assessed
+biological_status_merged$psf_status_code <- NA # values: 1 to 9
+
+col_prob <- colnames(biological_status_merged)[grepl("_prob",colnames(biological_status_merged))]
+col_sr_prob <- col_prob[grepl("sr_",col_prob)]
+col_percent_prob <- col_prob[grepl("percentile_",col_prob)]
+
+for(r in 1:nrow(biological_status_merged)){
+  # r <- 428
+  bs_here <- biological_status_merged[r,]
+  
+  if(!is.na(bs_here$sr_red_prob) & is.na(bs_here$psf_status_code.x)){ # is.na(bs_here$psf_status_code.x) might not be necessary but does not hurt
+    
+    psf_status_here <- c("poor","fair","good")[bs_here[,col_sr_prob] == max(bs_here[,col_sr_prob])]
+    psf_status_code_here <- c(3:1)[psf_status_here == c("poor","fair","good")]
+
+  }else if(!is.na(bs_here$percentile_red_prob) & is.na(bs_here$psf_status_code.y)){
+    
+    psf_status_here <- c("poor","fair","good")[bs_here[,col_percent_prob] == max(bs_here[,col_percent_prob])]
+    psf_status_code_here <- c(3:1)[psf_status_here == c("poor","fair","good")]
+    
+  }else{
+    
+    code_HBSR <- bs_here$psf_status_code.x
+    code_Percentile <- bs_here$psf_status_code.y
+    code_both <- c(code_HBSR, code_Percentile)
+    code_both <- code_both[!is.na(code_both)]
+    code_both <- sapply(X = code_both, FUN =  strsplit, split = ", ")
+    code_both <- as.numeric(code_both[[1]])
+    code_both <- sort(code_both)
+    code_both <- unique(code_both)
+    
+    psf_status_here <- NULL
+    if(sum(code_both %in% 5:6) > 0){
+      psf_status_here <- c(psf_status_here,"not-assessed")
+    }
+    if(sum(code_both %in% 7:9) > 0){
+      psf_status_here <- c(psf_status_here,"data-deficient")
+    }
+    
+    code_both <- paste(code_both,collapse = ", ")
+    psf_status_code_here <- code_both
+    
+    psf_status_here <- paste(psf_status_here,collapse = ", ")
+    
+    # print(code_both)
+  }
+  
+  biological_status_merged$psf_status[r] <- psf_status_here
+  biological_status_merged$psf_status_code[r] <- psf_status_code_here
+}
+
+# Checks that there is no missing psf_status_code (i.e. no NAs)
+unique(biological_status_HSPercent$psf_status_code)
+unique(biological_status_merged$psf_status_code)
+table(biological_status_merged$psf_status_code)
+unique(biological_status_merged$psf_status)
+table(biological_status_merged$psf_status)
+
+# 
+unique(biological_status_merged[,c("current_spawner_abundance","psf_status_code")][is.na(biological_status_merged$current_spawner_abundance),])
+
+# Drop unecessary columns:
+colToDrop <- c("psf_status_code.x","psf_status_code.y","current_spawner_abundance")
+biological_status_merged <- biological_status_merged[,!colnames(biological_status_merged) %in% colToDrop]
+
+write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+          row.names = F)
+  
+#  
 # Check the difference between normal percentile benchmarks and the simulated ones -----
 nrow(benchmarks_summary_HSPercent_df)
 benchmarks_summary_HSPercent_df_noNA <- benchmarks_summary_HSPercent_df[!is.na(benchmarks_summary_HSPercent_df$m),]

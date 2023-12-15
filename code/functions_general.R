@@ -131,7 +131,9 @@ species_acronym_fun <- function(){
   species_acronym <- data.frame(
     species_name = c("Chinook","Chum","Coho","Sockeye","Lake sockeye","River sockeye","Pink","Pink (even)","Pink (odd)","Steelhead","Cutthroat"),
     species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"),
-    species_acro_details = c("CK","CM","CO","SX","LSX","RSX","PK","PKE","PKO","SH","CT"))
+    species_acro_details = c("CK","CM","CO","SX","LSX","RSX","PK","PKE","PKO","SH","CT"),
+    species_acro2 = c("CK","CM","CO","SE","SE","SE","PK","PK","PK","SH","CT"),
+    species_acro2_details = c("CK","CM","CO","SE","SEL","SER","PK","PKE","PKO","SH","CT"))
     
   return(species_acronym)
 }

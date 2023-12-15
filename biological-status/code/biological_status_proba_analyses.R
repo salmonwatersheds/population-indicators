@@ -308,7 +308,7 @@ nrow(bioStatus_merged_diff) # 57
 countHere <- table(factor(bioStatus_merged_diff$status_Smsy,levels = c("red","amber","green")))
 table_n$diff <- as.numeric(countHere)
 
-table_m <- as.matrix(table_n[,c("n_same","HBSR_only","Percentiles_only","diff")])
+table_m <- as.matrix(table_n[,c("n_same","HBSR_only","HSBench_only","diff")])
 rownames(table_m) <- table_n$bioStatus
 
 coloursStatus <- rev(c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F"))
@@ -472,7 +472,18 @@ biological_status_HSPercent <- biological_status_HSPercent_df
 biological_status_HBSR$psf_status_code <- NA
 biological_status_HSPercent$psf_status_code <- NA
 
-# 4 = extinct ?
+# 4 = extinct
+cu_extinct <- cu_extinct_fun()
+
+row_toUpdate <- biological_status_HBSR$cuid %in% cu_extinct$cuid
+val_toUpdate <- biological_status_HBSR$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,4, sep = ", ")
+biological_status_HBSR$psf_status_code[row_toUpdate] <- val_new
+
+row_toUpdate <- biological_status_HSPercent$cuid %in% cu_extinct$cuid
+val_toUpdate <- biological_status_HSPercent$psf_status_code[row_toUpdate]
+val_new <- paste(val_toUpdate,4, sep = ", ")
+biological_status_HSPercent$psf_status_code[row_toUpdate] <- val_new
 
 # 5 = not-assessed (cyclic dominance)
 row_toUpdate <- grepl("(cyclic)",biological_status_HBSR$CU_pse)
@@ -542,7 +553,7 @@ unique(biological_status_HSPercent$psf_status_code)
 
 # B. Combine the two datasets:
 
-colCommon <- c("region","species","CU_pse","current_spawner_abundance","psf_status_code")
+colCommon <- c("region","species","cuid","CU_pse","current_spawner_abundance","psf_status_code")
               # "year_last","year_first","genLength")
 colHBSR <- c("status_Smsy_red","status_Smsy_amber","status_Smsy_green","status_Smsy")
 colPercent <- c("status_HSPercent_075_red","status_HSPercent_075_amber","status_HSPercent_075_green",
@@ -550,7 +561,7 @@ colPercent <- c("status_HSPercent_075_red","status_HSPercent_075_amber","status_
 
 biological_status_merged <- merge(x = biological_status_HBSR[,c(colCommon,colHBSR)],
                                   y = biological_status_HSPercent[,c(colCommon,colPercent)],
-                                  by =  c("region","species","CU_pse","current_spawner_abundance"), 
+                                  by =  c("region","species","cuid","CU_pse","current_spawner_abundance"), 
                                   all = T)
 
 # Check if number of CUs is correct:
@@ -633,7 +644,6 @@ for(r in 1:nrow(biological_status_merged)){
 }
 
 # Checks that there is no missing psf_status_code (i.e. no NAs)
-unique(biological_status_HSPercent$psf_status_code)
 unique(biological_status_merged$psf_status_code)
 table(biological_status_merged$psf_status_code)
 unique(biological_status_merged$psf_status)
@@ -646,8 +656,8 @@ unique(biological_status_merged[,c("current_spawner_abundance","psf_status_code"
 colToDrop <- c("psf_status_code.x","psf_status_code.y","current_spawner_abundance")
 biological_status_merged <- biological_status_merged[,!colnames(biological_status_merged) %in% colToDrop]
 
-write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-          row.names = F)
+# write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+#           row.names = F)
   
 #  
 # Check the difference between normal percentile benchmarks and the simulated ones -----
@@ -659,6 +669,10 @@ hist(percent_diff)
 
 benchmarks_summary_HSPercent_df_noNA[percent_diff < -50,]
 # do those have cyclic dynamics ?
+
+
+
+
 
 
 

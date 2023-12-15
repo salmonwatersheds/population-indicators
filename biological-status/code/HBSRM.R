@@ -121,6 +121,12 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
+#' Import the prior values for the HBSR model parameters prSmax and prCV that are
+#' used in HBSRM.R (the file is created in checks_fixes.R and contain the values 
+#' of these priors that were originally contained in SRdata.txt files that are 
+#' found in the "HBM and status" subfolders in each region-specific folders.
+priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
+
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
@@ -138,7 +144,7 @@ MinSRpts <- 3
 
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 7
+  # i_rg <- 1
   
   #*** OLD CODE BELOW TO REMOVE EVENTUALLY ***
 
@@ -183,7 +189,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 4
+      # i_sp <- 1
       speciesAcroHere <- unique(species_acro)[i_sp]
       speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
       
@@ -201,6 +207,9 @@ for(i_rg in 1:length(region)){
       # nCUs_old <- length(CUs_old)
       # Yrs_old <- min(d_old$BY):max(d_old$BY)
       # nYrs_old <- length(Yrs_old)
+      
+      # 
+      priors_HBSRmodel
       
       # organize the data into a year x CU for R and S:
       CUs <- unique(recruitsperspawner_rg_sp$cu_name_pse)
@@ -261,8 +270,6 @@ for(i_rg in 1:length(region)){
       })
       
       #' filter CUs with less than MinSRpts data points 
-      #' TODO: looks like this did not work: the_SR_matrices.rds still contains CUs with only NAs, whose names are not in the filtered CUs
-      #' This is dealt with in benchamrks_HBSRM.R but still need to be addressed here.
       CuToRemove <- c()
       for(j in 1:ncol(S)){
         # j <- 1
@@ -288,6 +295,7 @@ for(i_rg in 1:length(region)){
       saveRDS(SR_l,
               file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_SR_matrices.rds"))
       
+      #' TODO the colde below should be included.
       # Set priors on b:
       # Previous method using the values in the _SRdata.txt file
       # prSmax <- d_prior$prSmax
@@ -351,39 +359,39 @@ for(i_rg in 1:length(region)){
       # Definition of the model:
       modelFilename = "Bayes_SR_model.txt"
       cat("
-    model{
-    
-    	# Hyper priors
-    	log_mu_a ~ dnorm(0.5, 1.0E-6) # SP: Note that this parameter was confusing as it was defined as mu_a previously; changed this.
-    	mu_a <- exp(log_mu_a)
-    	tau_a ~ dgamma(0.5, 0.5) 
-    	sd_a <- pow(tau_a, -0.5)
-    	
-    	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
-    	
-    		a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha
-    		
-    		# b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
-    		# Getting very broad estimates of b, try to contstrain by fitting
-    		# S at max recruits (Smsr) instead of b and truncating at 1e10
-    		
-    		Smsr[i] ~ dlnorm(ln_Smsr[i], pow(1, -2)) T(0, 1e10)
-    		b[i] <- 1/Smsr[i]
-    		sd[i] ~ dunif(0.05, 10) 
-    		tau[i] <- pow(sd[i], -2)	
-    	}
-    	
-    	for(i in 1:nCUs){
-    		for(j in 1:nYrs){
-    		
-    		 	# Model prediction for log R/S based on estimated parameters
-    		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i]
-    		 	
-    		 	# Likelihood
-    		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
-    		}
-    	}
-    }", fill = TRUE, file = modelFilename)
+        model{
+        
+        	# Hyper priors
+        	log_mu_a ~ dnorm(0.5, 1.0E-6) # SP: Note that this parameter was confusing as it was defined as mu_a previously; changed this.
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha
+        		
+        		# b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		# Getting very broad estimates of b, try to contstrain by fitting
+        		# S at max recruits (Smsr) instead of b and truncating at 1e10
+        		
+        		Smsr[i] ~ dlnorm(ln_Smsr[i], pow(1, -2)) T(0, 1e10)
+        		b[i] <- 1/Smsr[i]
+        		sd[i] ~ dunif(0.05, 10) 
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 1:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
       
       # Run Model
       print("Running Parallel")

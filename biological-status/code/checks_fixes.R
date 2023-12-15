@@ -972,7 +972,7 @@ path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis
 # write.csv(dataset_102,paste0(path,"/","dataset_102_",date,".csv"),row.names = F)
 
 #
-# Priors for parameter b used in HBSR.R --------
+# Group the priors for parameter prSmax and prCV used in HBSRM.R --------
 #' Priors for Smax and its CV (i.e. prSmax and prCV), which are then used to 
 #' determine mu and tau of parameter b (i.e. prmub and prtaub) used in the 
 #' HBSR model (cf. HBSR.R).
@@ -1227,7 +1227,10 @@ for(r in 1:nrow(CUs_toCheck)){
 
 CUs_toCheck
 
-# Remove the row for cuid in Nass
+# Remove the row for cuid in Nass even if the values for the prior are different
+#' Eric: "yes, stick with the Skeena values."
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1702660907090279?thread_ts=1702603217.471789&cid=CJ5RVHVCG
+
 # region_SRdata region species_abbr cuid                cu_name_pse sameValPriors nDuplicates
 #          Nass Skeena          PKE  219 Nass-Skeena Estuary (even)         FALSE           2
 
@@ -1237,10 +1240,178 @@ table_rg_sp <- table_rg_sp[!(table_rg_sp$cuid == 219 &
                                table_rg_sp$prSmax == CUs_toCheck$prSmax &
                                table_rg_sp$prCV == CUs_toCheck$prCV),]
 
-write.csv(table_rg_sp,paste(wd_data,"/"))
+# write.csv(table_rg_sp,paste0(wd_data,"/priors_HBSRmodel.csv"),row.names = F)
+
+
 
 #
-# -------
+# Follow up check with previous check: are they CUs with SR data by no prior value? -------
 #
+
+#' Import the prior values for the HBSR model parameters prSmax and prCV that are
+#' used in HBSRM.R (the file is created in checks_fixes.R and contain the values 
+#' of these priors that were originally contained in SRdata.txt files that are 
+#' found in the "HBM and status" subfolders in each region-specific folders.
+priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
+
+CUs_toCheck <- NULL
+for(i_rg in 1:length(region)){
+  
+  # i_rg <- 5
+  
+  recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
+  
+  species <- unique(recruitsperspawner_rg$species_name)
+  
+  species <- species[species != "Steelhead"]
+  
+  species_acro <- sapply(X = species,FUN = function(sp){
+    species_acronym_df$species_acro[species_acronym_df$species_name == sp]
+  })
+  
+  regionName <- region[i_rg]
+  if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+    regionName <- "VIMI"
+  }
+  
+  priors_HBSRmodel_rg <- priors_HBSRmodel[priors_HBSRmodel$region == region[i_rg],]
+
+  if(sum(!is.na(recruitsperspawner_rg$spawners)) == 0 | sum(!is.na(recruitsperspawner_rg$recruits)) == 0){
+    
+    print(paste0("*** There is no data in recruitsperspawner.csv for salmon in ",region[i_rg]," ***"))
+    
+  }else{
+    
+    for(i_sp in 1:length(unique(species_acro))){
+      
+      # i_sp <- 4
+      
+      speciesAcroHere <- unique(species_acro)[i_sp]
+      speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
+      
+      recruitsperspawner_rg_sp <- recruitsperspawner_rg[recruitsperspawner_rg$species_name %in% speciesHere,]
+      
+      print(paste0("*** Plot for: ",region[i_rg]," - ",speciesAcroHere," ***"))
+      
+      # organize the data into a year x CU for R and S:
+      CUs <- unique(recruitsperspawner_rg_sp$cu_name_pse)
+      CUs_cuid <- sapply(X = CUs,FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
+      # unique(recruitsperspawner_rg_sp[,c("cu_name_pse","cuid")])
+      nCUs <- length(CUs)
+      Yrs <- min(recruitsperspawner_rg_sp$year):max(recruitsperspawner_rg_sp$year)
+      nYrs <- length(Yrs)
+      
+      S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
+      for(j in 1:nCUs){
+        # j <- 1
+        dj <- subset(recruitsperspawner_rg_sp,cu_name_pse == CUs[j])
+        S[as.character(dj$year),j] <- dj$spawners # dj$Esc
+        R[as.character(dj$year),j] <- dj$recruits # dj$Rec
+      }
+      
+      # remove the row with NAs in S but not R and vice versa of a same CU 
+      SR_l <- cuSR_removeNA_fun(R = R, S = S)
+      R <- SR_l$R
+      S <- SR_l$S
+      
+      # replace 0s by 1 to avoid the lm(log(R/S)~ S) to crash
+      R <- apply(X = R,MARGIN = 2,FUN = function(c){
+        # c <- R[,3]
+        out <- c
+        out[which(out == 0)] <- 1
+        return(out)
+      })
+      S <- apply(X = S,MARGIN = 2,FUN = function(c){
+        # c <- R[,3]
+        out <- c
+        out[which(out == 0)] <- 1
+        return(out)
+      })
+      
+      #' filter CUs with less than MinSRpts data points --> SKIP TO HAVE THE INFO ABOUT THOSE
+      # CuToRemove <- c()
+      # for(j in 1:ncol(S)){
+      #   # j <- 1
+      #   CUHere <- colnames(S)[j]
+      #   if(sum(!is.na(S[,CUHere])) < MinSRpts | sum(!is.na(R[,CUHere])) < MinSRpts){
+      #     CuToRemove <- c(CuToRemove,CUHere)
+      #   }
+      # }
+      # S <- S[,!colnames(S) %in% CuToRemove, drop = F]
+      # R <- R[,!colnames(R) %in% CuToRemove, drop = F]
+      # CUs <- CUs[!CUs %in% CuToRemove]
+      # CUs_cuid <- sapply(X = CUs,FUN = function(cu){
+      #   unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])
+      # })
+      # nCUs <- length(CUs)
+      # 
+      # # nameFile <- paste0(gsub(" ","_",region[i_rg]),"_",
+      # #                    gsub(" ","_",species[i_sp]),"_",
+      # #                    species_acro[i_sp],"_SR_matrices.rds")
+      # SR_l$R <- R
+      # SR_l$S <- S
+      
+      #
+      species_abbr <- species_acronym_df$species_acro2_details[species_acronym_df$species_acro == species_acro[i_sp]]
+      priors_HBSRmodel_rg_sp <- priors_HBSRmodel_rg[priors_HBSRmodel_rg$species_abbr %in% species_abbr,]
+      
+      CUs_withoutPrior <- CUs[! CUs %in% priors_HBSRmodel_rg_sp$cu_name_pse]
+      CUs_withoutRS <- priors_HBSRmodel_rg_sp$cu_name_pse[!priors_HBSRmodel_rg_sp$cu_name_pse %in% CUs]
+      
+      colnames(recruitsperspawner_rg_sp)[colnames(recruitsperspawner_rg_sp) == "species_name"] <- "species"
+      
+      colInCommon <- c("region","species","cuid","cu_name_pse")
+      SR_noPrior <- recruitsperspawner_rg_sp[recruitsperspawner_rg_sp$cu_name_pse %in% CUs_withoutPrior,colInCommon]
+      if(nrow(SR_noPrior) > 0){
+        SR_noPrior <- unique(SR_noPrior)
+        SR_noPrior$nb_datapoints_RS <- sapply(X = 1:ncol(R[,CUs_withoutPrior,drop = F]), 
+                                              FUN = function(c){
+                                                out <- min(sum(!is.na(R[,c,drop = F])),
+                                                           sum(!is.na(S[,c,drop = F])))
+                                                })
+        SR_noPrior$prSmax <- NA
+        SR_noPrior$prCV <- NA
+        SR_noPrior$SRdata <- T
+        SR_noPrior$priordata <- F
+        CUs_toCheck <- rbind(CUs_toCheck,SR_noPrior)
+      }
+      
+      prior_noSR <- priors_HBSRmodel_rg_sp[priors_HBSRmodel_rg_sp$cu_name_pse %in% CUs_withoutRS,c(colInCommon,"prSmax","prCV")]
+      if(nrow(prior_noSR) > 0){
+        prior_noSR$nb_datapoints_RS <- NA
+        prior_noSR$SRdata <- F
+        prior_noSR$priordata <- T
+        CUs_toCheck <- rbind(CUs_toCheck,prior_noSR)
+      }
+    } # species loop
+  }  # if there is data for this region
+} # region loop
+
+CUs_toCheck
+
+# CUs with no SR data:
+CUs_toCheck[CUs_toCheck$priordata,]
+#' - For lake-type sockeye: it is expected because we may have estimates of lake 
+#' productivity to inform those priors even though there’s not SR data. For these
+#' cases, we should consider applying habitat-based benchmarks, which we will dig
+#'into more over the next 6 months.
+#' - For the other ones: there is SR data in the SRdata.txt. Why is that data not 
+#' in the database/recruitsperspawner.
+
+# CUs with no prior estimates:
+CUs_toCheck[CUs_toCheck$SRdata,]
+#' - For CUs with cyclic dynamics: we won’t run the HBSM model or assess status 
+#' (for now).
+#' - For the other CUs: We should definitely come up with prior values following 
+#' Korman and English 2023 (specific approach in pink below). Note that they start
+#' with uninformative (CV = 10), and then only use CV = 1 for those CUs that had
+#' convergence issues or huge CIs on the b parameter.
+
+# 
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1702671161183209?thread_ts=1702603217.471789&cid=CJ5RVHVCG
+
+
+
+
 
 

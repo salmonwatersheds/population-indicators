@@ -1,0 +1,160 @@
+"region","species","species_abbr","cu_name_pse","cuid","prSmax","prCV"
+"Central Coast","Chum","CM","Smith Inlet",500,54116,10
+"Central Coast","Chum","CM","Rivers Inlet",501,37559,10
+"Central Coast","Chum","CM","Spiller-Fitz-Hugh-Burke",503,258995,10
+"Central Coast","Chum","CM","Bella Coola-Dean Rivers",504,198080,10
+"Central Coast","Chum","CM","Hecate Lowlands",506,118106,10
+"Central Coast","Chum","CM","Mussel-Kynoch",507,112000,10
+"Central Coast","Chum","CM","Douglas-Gardner",508,237785,10
+"Central Coast","Chinook","CK","Rivers Inlet",510,1900,10
+"Central Coast","Chinook","CK","Wannock",511,6715,10
+"Central Coast","Chinook","CK","Bella Coola-Bentinck",512,20450,1
+"Central Coast","Chinook","CK","Dean River",513,2234,10
+"Central Coast","Chinook","CK","North & Central Coast-Late",514,1658,1
+"Central Coast","Chinook","CK","North & Central Coast-Early",515,880,10
+"Central Coast","Coho","CO","Smith Inlet",516,9884,10
+"Central Coast","Coho","CO","Rivers Inlet",517,58237,10
+"Central Coast","Coho","CO","Bella Coola-Dean Rivers",518,41153,10
+"Central Coast","Coho","CO","Mussel-Kynoch",519,6983,10
+"Central Coast","Coho","CO","Hecate Strait Mainland",520,167727,10
+"Central Coast","Coho","CO","Brim-Wahoo",521,5809,10
+"Central Coast","Coho","CO","Douglas Channel-Kitimat Arm",522,83234,10
+"Central Coast","Coho","CO","Northern Coastal Streams",523,117903,10
+"Central Coast","Pink (even)","PKE","Hecate Lowlands (even)",608,870187,10
+"Central Coast","Pink (even)","PKE","Hecate Strait-Fjords (even)",609,3727465,1
+"Central Coast","Pink (odd)","PKO","Homathko-Klinaklini-Smith-Rivers-Bella Coola-Dean (odd)",610,1421766,10
+"Central Coast","Pink (odd)","PKO","Hecate Strait-Lowlands (odd)",611,718534,10
+"Central Coast","Pink (odd)","PKO","Hecate Strait-Fjords (odd)",612,1568959,10
+"Central Coast","Lake sockeye","SEL","Long",524,94691,1
+"Central Coast","Lake sockeye","SEL","Owikeno",525,533437,10
+"Central Coast","Lake sockeye","SEL","Backland",529,1383,1
+"Central Coast","Lake sockeye","SEL","Canoona",532,3681,10
+"Central Coast","Lake sockeye","SEL","Evelyn",534,1815,10
+"Central Coast","Lake sockeye","SEL","Kainet Creek",535,2070,10
+"Central Coast","Lake sockeye","SEL","Kitlope",538,35612,10
+"Central Coast","Lake sockeye","SEL","Bloomfield",541,1462,10
+"Central Coast","Lake sockeye","SEL","Curtis Inlet",550,10695,10
+"Central Coast","Lake sockeye","SEL","Devon",553,7226,10
+"Central Coast","Lake sockeye","SEL","Freeda",559,771,1
+"Central Coast","Lake sockeye","SEL","Hartley Bay",560,1338,10
+"Central Coast","Lake sockeye","SEL","Kadjusdis River",563,2850,1
+"Central Coast","Lake sockeye","SEL","Keecha",565,4997,1
+"Central Coast","Lake sockeye","SEL","Koeye",572,4772,1
+"Central Coast","Lake sockeye","SEL","Kooryet",573,5300,10
+"Central Coast","Lake sockeye","SEL","Kwakwa Creek",575,3897,10
+"Central Coast","Lake sockeye","SEL","Lowe/Simpson/Weir",578,12381,10
+"Central Coast","Lake sockeye","SEL","Mary Cove Creek",579,2312,1
+"Central Coast","Lake sockeye","SEL","Namu",584,3579,10
+"Central Coast","Lake sockeye","SEL","Port John",585,965,1
+"Central Coast","Lake sockeye","SEL","Roderick",588,956,10
+"Central Coast","Lake sockeye","SEL","Tankeeah River",597,4469,1
+"Central Coast","Lake sockeye","SEL","Tsimtack/Moore/Roger",599,4810,10
+"Central Coast","Lake sockeye","SEL","Yeo",607,1136,1
+"Central Coast","River sockeye","SER","Northern Coastal Fjords (river-type)",614,71942,10
+"Central Coast","Lake sockeye","SEL","Mikado",582,4989,10
+"Columbia",NA,NA,NA,NA,NA,NA
+"Fraser","Coho","CO","Fraser Canyon",705,5179,1
+"Fraser","Coho","CO","Interior Fraser",749,4530,1
+"Fraser","Coho","CO","Lower Thompson",707,7053,1
+"Fraser","Coho","CO","North Thompson",709,15084,1
+"Fraser","Coho","CO","South Thompson",708,9268,1
+"Fraser","Pink (odd)","PKO","Fraser River (odd)",710,6537424,1
+"Fraser","Lake sockeye","SEL","Anderson-Seton-Early Summer",719,10593.82,5
+"Fraser","Lake sockeye","SEL","Bowron-Early Summer",735,7510.338,5
+"Fraser","Lake sockeye","SEL","Chilko-Summer",721,394353.088,5
+"Fraser","Lake sockeye","SEL","Francois-Fraser-Summer",725,101419.235,5
+"Fraser","Lake sockeye","SEL","Harrison-Upstream Migrating-Late",714,40344.019,5
+"Fraser","River sockeye","SER","Harrison River (river-type)",745,59048.176,5
+"Fraser","Lake sockeye","SEL","Kamloops-Early Summer",740,8043.574,5
+"Fraser","Lake sockeye","SEL","Lillooet-Harrison-Late",716,83365.706,5
+"Fraser","Lake sockeye","SEL","Nadina-Francois-Early Summer",727,7345.067,1
+"Fraser","Lake sockeye","SEL","North Barriere-Early Summer",763,6179.059,5
+"Fraser","Lake sockeye","SEL","Pitt-Early Summer",715,27079.221,5
+"Fraser","Lake sockeye","SEL","Seton-Late (de novo)",729,6538.908,5
+"Fraser","Lake sockeye","SEL","Harrison-Downstream Migrating-Late",713,31014,5
+"Fraser","Lake sockeye","SEL","Nahatlatch-Early Summer",718,16446,5
+"Haida Gwaii","Chum","CM","East Haida Gwaii",801,192334,10
+"Haida Gwaii","Chum","CM","North Haida Gwaii",802,56531,10
+"Haida Gwaii","Chum","CM","West Haida Gwaii",803,104799,10
+"Haida Gwaii","Chum","CM","Skidegate",804,104437,10
+"Haida Gwaii","Coho","CO","East Haida Gwaii",807,84402,1
+"Haida Gwaii","Coho","CO","West Haida Gwaii",808,36434,1
+"Haida Gwaii","Coho","CO","Haida Gwaii-Graham Island Lowlands",809,139376,1
+"Haida Gwaii","Pink (even)","PKE","North Haida Gwaii (even)",810,997881,1
+"Haida Gwaii","Pink (even)","PKE","East Haida Gwaii (even)",811,791351,1
+"Haida Gwaii","Pink (even)","PKE","West Haida Gwaii (even)",812,285099,1
+"Haida Gwaii","Pink (odd)","PKO","East Haida Gwaii (odd)",813,68508,1
+"Haida Gwaii","Lake sockeye","SEL","Awun",820,6196,10
+"Haida Gwaii","Lake sockeye","SEL","Marian/Eden",823,12452,10
+"Haida Gwaii","Lake sockeye","SEL","Mathers",824,3778,1
+"Haida Gwaii","Lake sockeye","SEL","Mercer",825,6918,10
+"Haida Gwaii","Lake sockeye","SEL","Skidegate",826,23442,10
+"Haida Gwaii","Lake sockeye","SEL","Yakoun",827,16186,10
+"Nass","Chum","CM","Portland Canal-Observatory",406,41371,10
+"Nass","Chum","CM","Portland Inlet",404,24909,10
+"Nass","Chinook","CK","Portland Sound-Observatory Inlet-Lower Nass",401,1911,10
+"Nass","Chinook","CK","Upper Nass",402,18565,10
+"Nass","Coho","CO","Lower Nass",408,67714,10
+"Nass","Coho","CO","Portland Sound-Observatory Inlet-Portland Canal",410,45470,10
+"Nass","Coho","CO","Upper Nass",409,11007,10
+"Nass","Pink (odd)","PKO","Nass-Portland-Observatory (odd)",414,611506,1
+"Nass","Lake sockeye","SEL","Damdochax",421,3391,1
+"Nass","Lake sockeye","SEL","Fred Wright",422,7120,1
+"Nass","Lake sockeye","SEL","Meziadin",424,185185,1
+"Skeena","Chum","CM","Skeena Estuary",220,1926,1
+"Skeena","Chum","CM","Lower Skeena",211,19283,1
+"Skeena","Chinook","CK","Ecstall",205,2430,1
+"Skeena","Chinook","CK","Kalum-Early",206,1268,10
+"Skeena","Chinook","CK","Kalum-Late",207,14359,10
+"Skeena","Chinook","CK","Lower Skeena",210,1487,10
+"Skeena","Chinook","CK","Middle Skeena-Large Lakes",222,29554,10
+"Skeena","Chinook","CK","Middle Skeena-Mainstem Tributaries",217,9699,10
+"Skeena","Chinook","CK","Upper Bulkley River",221,1379,10
+"Skeena","Coho","CO","Lower Skeena",202,155157,10
+"Skeena","Coho","CO","Middle Skeena",215,107481,10
+"Skeena","Coho","CO","Upper Skeena",231,10114,10
+"Skeena","Pink (even)","PKE","Nass-Skeena Estuary (even)",219,1527925,10
+"Skeena","Pink (even)","PKE","Middle-Upper Skeena (even)",218,451894,10
+"Skeena","Pink (odd)","PKO","Nass-Skeena Estuary (odd)",223,223029,1
+"Skeena","Pink (odd)","PKO","Lower Skeena River (odd)",209,1454518,10
+"Skeena","Pink (odd)","PKO","Middle-Upper Skeena (odd)",213,1086982,10
+"Skeena","Lake sockeye","SEL","Alastair",171,23437,0.3
+"Skeena","Lake sockeye","SEL","Asitika",190,422,0.3
+"Skeena","Lake sockeye","SEL","Azuklotz",191,5933,0.3
+"Skeena","Lake sockeye","SEL","Babine (enhanced)",203,5e+05,1
+"Skeena","Lake sockeye","SEL","Babine/Onerka",180,5e+05,1
+"Skeena","Lake sockeye","SEL","Bear",192,40532,0.3
+"Skeena","Lake sockeye","SEL","Damshilgwit",193,2000,0.3
+"Skeena","Lake sockeye","SEL","Johnston",175,4125,0.3
+"Skeena","Lake sockeye","SEL","Kitsumkalum",176,20531,0.3
+"Skeena","Lake sockeye","SEL","Gitanyow (Kitwanga/Kitwancool)",183,36984,0.3
+"Skeena","Lake sockeye","SEL","Lakelse",177,35916,0.3
+"Skeena","Lake sockeye","SEL","Mcdonell/Dennis/Aldrich",178,4072,0.3
+"Skeena","Lake sockeye","SEL","Morice/Atna",185,191362,0.3
+"Skeena","Lake sockeye","SEL","Motase",197,1764,0.3
+"Skeena","River sockeye","SER","Skeena River-High Interior (river-type)",216,71744,0.3
+"Skeena","Lake sockeye","SEL","Stephens",187,7069,0.3
+"Skeena","Lake sockeye","SEL","Swan/Club",188,21432,0.3
+"Skeena","Lake sockeye","SEL","Nilkitkwa",186,227332,1
+"Skeena","Lake sockeye","SEL","Tahlo/Morrison",189,22724,1
+"Transboundary",NA,NA,NA,NA,NA,NA
+"Vancouver Island & Mainland Inlets","Chum","CM","Northwest Vancouver Island",977,54415.08,1
+"Vancouver Island & Mainland Inlets","Chum","CM","Southwest & West Vancouver Island",978,319761.95,1
+"Vancouver Island & Mainland Inlets","Pink (even)","PKE","Georgia Strait (even)",917,237548.39,10
+"Vancouver Island & Mainland Inlets","Pink (even)","PKE","Southern Fjords (even)",920,1410235.35,10
+"Vancouver Island & Mainland Inlets","Pink (odd)","PKO","East Howe Sound-Burrard Inlet (odd)",921,125926.81,10
+"Vancouver Island & Mainland Inlets","Pink (odd)","PKO","Georgia Strait (odd)",922,473386.1,10
+"Vancouver Island & Mainland Inlets","Pink (odd)","PKO","East Vancouver Island-Johnstone Strait (odd)",923,99819.16,10
+"Vancouver Island & Mainland Inlets","Pink (odd)","PKO","Nahwitti (odd)",924,25570.9,10
+"Vancouver Island & Mainland Inlets","Pink (odd)","PKO","Southern Fjords (odd)",926,461242.61,10
+"Vancouver Island & Mainland Inlets","Lake sockeye","SEL","Great Central",952,183277.4,1
+"Vancouver Island & Mainland Inlets","Lake sockeye","SEL","Sproat",969,143337.5,1
+"Vancouver Island & Mainland Inlets","Lake sockeye","SEL","Sakinaw",933,16000,1
+"Yukon","Chinook","CK","Big Salmon",1201,18000,1
+"Yukon","Chinook","CK","Middle Yukon",1204,30000,1
+"Yukon","Chinook","CK","Pelly",1203,13000,1
+"Yukon","Chinook","CK","Stewart",1205,10000,1
+"Yukon","Chinook","CK","White",1206,10000,1
+"Yukon","Chinook","CK","Northern Yukon",1207,15000,1
+"Yukon","Chinook","CK","Upper Yukon",1211,12000,1
+"Yukon","Chinook","CK","Teslin",1212,12000,1

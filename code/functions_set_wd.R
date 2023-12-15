@@ -120,7 +120,7 @@ set_working_directories_fun <- function(subDir = NA, Export_locally = T){
 wd_data_regions_fun <- function(wd_root = ""){
   
   wd_data_regions <- data.frame(
-    Central_coast = paste0(wd_root,"/1_Active/Central Coast PSE/analysis/central-coast-status/HBM and status"),
+    Central_Coast = paste0(wd_root,"/1_Active/Central Coast PSE/analysis/central-coast-status/HBM and status"),
     Columbia = paste0(wd_root,"/1_Active/Columbia/data & analysis/analysis/columbia-status"), # BSC: ? no HBM and status folder... to check at some point
     Fraser = paste0(wd_root,"/1_Active/Fraser_VIMI/analysis/fraser-status/HBM and status"),
     # Fraser = paste0(wd_root,"/Fraser_VIMI/analysis/fraser-status/HBM and status"),
@@ -129,9 +129,18 @@ wd_data_regions_fun <- function(wd_root = ""){
     # Nass = paste0(wd_root,"/Nass/assessments/2_population/nass-status/HBM and status"),
     Skeena = paste0(wd_root,"/1_Active/Skeena Updates/skeena-status/HBM and status"),
     # Skeena = paste0(wd_root,"/Skeena Updates/skeena-status/HBM and status"),
+    Transboundary = paste0(wd_root,"/1_Active/Transboundary/Data & Assessments/transboundary-status/HBM and status"),
+    VIMI = paste0(wd_root,"/1_Active/Fraser_VIMI/analysis/vimi-status/HBM and status"), # same as Faser
     Yukon = paste0(wd_root,"/1_Active/Yukon/Data & Assessments/yukon-status/HBM-and-status"))
   
   return(wd_data_regions)
 }
+
+
+
+
+
+
+
 
 

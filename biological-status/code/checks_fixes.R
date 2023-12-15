@@ -856,7 +856,6 @@ nrow(dupli_remain_df) # 0
 #' - update dataset 101 file for Columbia that includes the percentile confidence
 #' intervals for cuid 1300 Osoyoos lake sockeye?
 #' - fields 25%_spw_lower, 25%_spw_upper, 75%_spw_lower, 75%_spw_upper are empty in database
-#' 
 
 #'* Import the most recent dataset_101 *
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
@@ -932,7 +931,7 @@ dataset_101 <- dataset_101[,colnames(dataset_101) != "location"]
 # write CSV with date:
 date <- Sys.Date()
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
-write.csv(dataset_101,paste0(path,"/","dataset_101_",date,".csv"),row.names = F)
+# write.csv(dataset_101,paste0(path,"/","dataset_101_",date,".csv"),row.names = F)
 
 
 #'* Import the most recent dataset_102 *
@@ -957,7 +956,7 @@ colnames(dataset_102)[colnames(dataset_102) %in% col_hist] <- gsub("hist","perce
 # CHANGE: fill the dataset
 dataset_102$curr_spw[dataset_102$location == 1300] <- round(biological_status_percentiles_1300$current_spawner_abundance)
 dataset_102$curr_spw_start_year[dataset_102$location == 1300] <- biological_status_percentiles_1300$year_first
-dataset_102$curr_spw_end_year[dataset_102$location == 1300] <- biological_status_percentiles_1300$year_last
+dataset_102$curr_spw_end_year[dataset_102$location == 1300] <- 2021 # biological_status_percentiles_1300$year_last
 dataset_102$X25._spw[dataset_102$location == 1300] <- benchmarks_summary_percentiles_1300$m[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.25"]
 dataset_102$X75._spw[dataset_102$location == 1300] <- benchmarks_summary_percentiles_1300$m[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.5"]
 
@@ -968,9 +967,277 @@ dataset_102$`75%_spw_lower` <- c(benchmarks_summary_percentiles_1300[benchmarks_
 dataset_102$`75%_spw_upper` <- c(benchmarks_summary_percentiles_1300[benchmarks_summary_percentiles_1300$benchmark == "benchmark_0.5","CI975"],NA)
 
 date <- Sys.Date()
+date <- "2023-12-07"
 path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
 # write.csv(dataset_102,paste0(path,"/","dataset_102_",date,".csv"),row.names = F)
 
+#
+# Priors for parameter b used in HBSR.R --------
+#' Priors for Smax and its CV (i.e. prSmax and prCV), which are then used to 
+#' determine mu and tau of parameter b (i.e. prmub and prtaub) used in the 
+#' HBSR model (cf. HBSR.R).
+#' The choice for these prior vlues is explained in (Korman and English 2013):
+#' https://salmonwatersheds.ca/document/lib_318/
+#' (cf. p. 13).
+#' These prior values are present at the top of the SDdata.txt files present in 
+#' the different region-specific folders. The goal is to get the data in these 
+#' files and put them all together in a single CSV file that stays in GitHub.
+
+table_rg_sp <- CUs_toCheck <- NULL
+for(i_rg in 1:length(region)){ # 
+  # i_rg <- 8
+  
+  regionHere <- region[i_rg]
+  if(regionHere == "Vancouver Island & Mainland Inlets"){
+    regionHere <- "VIMI"
+  }
+  regionHere <- gsub(" ","_",regionHere)
+  
+  # set the path of the input data sets for that specific region
+  wd_data_input <- paste0(wd_data_regions[,regionHere])
+  
+  # Returns a list with the species and the corresponding path of the _SRdata files
+  # (the most up to date)
+  fndata <- SRdata_path_species_fun(wd = wd_data_input,
+                                    species = species,
+                                    species_all = species_all)
+  
+  species <- fndata$species  # species is updated is was NULL or certain species do not have a file
+  fndata <- fndata$SRdata
+  
+  if(length(species) == 0){ # in case there is no 
+    
+    table_sp <- data.frame(region = region[i_rg], species = NA, species_abbr = NA,
+                           cu_name_pse = NA,cuid = NA, prSmax = NA, prCV = NA)
+    
+  }else{
+    
+    table_sp <- NULL
+    for(i_sp in 1:length(species)){
+      # i_sp <- 1
+      
+      # import the number of CUs
+      CUs_nb <- scan(file = fndata[i_sp], nlines = 1, skip = 1)
+      
+      # Import the prSmax and prCV for each CU
+      tableHere <- read.table(file = fndata[i_sp], header = T, skip = 2, nrows = CUs_nb)
+
+      # Convert species acronym to match conservationunits_decoder$species_abbr
+      if(species[i_sp] == "SX"){
+        species_var <- c("SEL","SER")
+      }else if(species[i_sp] == "PK"){
+        species_var <- c("PKO","PKE")
+      }else if(species[i_sp] == "CN"){
+        species_var <- "CK"
+      }else{
+        species_var <- species[i_sp]
+      }
+      
+      # check the name of the CUs
+      tableHere$cu_name_pse <- tableHere$cuid <- tableHere$region <- tableHere$species <- NA
+      for(i_cu in 1:nrow(tableHere)){
+        # i_cu <- 1
+        
+        if(suppressWarnings(!is.na(as.numeric(tableHere$CU[i_cu])[1]))){ # if nameVariations is a cuid and not the cu name
+          
+          cu_cuid <- as.numeric(tableHere$CU[i_cu])
+          conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
+                                                                            conservationunits_decoder$cuid == cu_cuid,]
+        }else{
+          
+          CU_here <- gsub("_"," ",tableHere$CU[i_cu])
+          
+          if(species[i_sp] == "PK"){
+            # Import the fish counts for R and S per year for each CU (just in case we have to find the cu_name_pse for a PK)
+            d <- read.table(file = fndata[i_sp], header = T, skip = 3 + CUs_nb, 
+                            fill = TRUE, stringsAsFactors = FALSE)
+            d$BY <- as.numeric(d$BY) # brood year
+            d <- d[d$CU == tableHere$CU[i_cu],]
+            spawnerAbundance <- d$Esc
+            names(spawnerAbundance) <- d$BY
+            nameVariations <- CU_name_variations_fun(CUname = CU_here, 
+                                                     spawnerAbundance = spawnerAbundance,
+                                                     speciesAcronym = species[i_sp])
+            nameVariations <- nameVariations[grepl("even|odd",nameVariations)]
+            
+          }else{
+            nameVariations <- CU_name_variations_fun(CUname = CU_here, 
+                                                     speciesAcronym = species[i_sp])
+          }
+          
+          nameVariations <- unique(nameVariations)
+          
+          conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
+                                                                            conservationunits_decoder$species_abbr %in% species_var &
+                                                                            conservationunits_decoder$cu_name_pse %in% nameVariations,]
+          
+        }
+        
+        if(nrow(conservationunits_decoder_rg_sp_cu) != 1){ # cu-specific fixes
+          
+          if(nameVariations[1] == "Nass-Skeena Estuary (even)" | 
+             nameVariations[1] == "Skeena Estuary" |
+             nameVariations[1] == "Lower Skeena" |
+             nameVariations[1] == "Middle Skeena" |
+             nameVariations[1] == "Portland Canal Observatory CM" |
+             nameVariations[1] == "Portland Inlet CM" |
+             nameVariations[1] == "Smith Inlet" |
+             nameVariations[1] == "Rivers Inlet" |
+             nameVariations[1] == "Spiller-Fitz-Hugh-Burke" |
+             nameVariations[1] == "Bella Colla-Dean Rivers" |
+             nameVariations[1] == "Hecate Lowlands" |
+             nameVariations[1] == "Mussel-Kynock" |
+             nameVariations[1] == "Douglas-Gardner"){
+            
+            # these CUs are in the wrong region. Add them in the correct region 
+            # and eventually remove the duplicate row if it was already in present
+            # in Skeena --> but check that the priors are the same!
+            
+            # For "Nass-Skeena Estuary (even)" PK: The region is not Nass but Skeena (cuid = 219)
+            # For "Skeena Estuary" CM: The region is not VIMI but Skeena (cuid = 220)
+            # For "Lower Skeena" CM: The region is not VIMI but Skeena (cuid = 221)
+            # For "Middle Skeena" CM: The region is not VIMI but Skeena (cuid = 214)
+            # For "Portland Canal Observatory CM" CM: The region is not VIMI but Nass (cuid = 406)
+            # For "Portland Inlet CM" CM: The region is not VIMI but Nass (cuid = 404)
+            # For "Smith Inlet" CM: The region is not VIMI but Central Coast (cuid = 500)
+            # For "Rivers Inlet" CM: The region is not VIMI but Central Coast (cuid = 501)
+            # For "Spiller-Fitz-Hugh-Burke" CM: The region is not VIMI but Central Coast (cuid = 503)
+            # For "Bella Colla-Dean Rivers" CM: The region is not VIMI but Central Coast (cuid = 504)
+            # For "Hecate Lowlands" CM: The region is not VIMI but Central Coast (cuid = 506)
+            # For "Mussel-Kynoch" CM: The region is not VIMI but Central Coast (cuid = 507)
+            # For "Douglas-Gardner" CM: The region is not VIMI but Central Coast (cuid = 508)
+            
+            conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$species_abbr %in% species_var & 
+                                                                              conservationunits_decoder$cu_name_pse %in% nameVariations,]
+            
+            CUs_toCheck_new <-  conservationunits_decoder_rg_sp_cu[,c("region","species_abbr","cuid","cu_name_pse")]
+            CUs_toCheck_new$region_SRdata <- region[i_rg]
+            CUs_toCheck_new <- CUs_toCheck_new[,c("region_SRdata","region","species_abbr","cuid","cu_name_pse")]
+            CUs_toCheck_new$prSmax <- tableHere$prSmax[i_cu]
+            CUs_toCheck_new$prCV <- tableHere$prCV[i_cu]
+            CUs_toCheck <- rbind(CUs_toCheck,CUs_toCheck_new)
+            
+          }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1 & length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) == 1){
+            # case of pooled CUs --> retain row with pooledcuid == cuid
+            conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[conservationunits_decoder_rg_sp_cu$cuid == conservationunits_decoder_rg_sp_cu$pooledcuid,]
+            
+          }else if(regionHere == "VIMI" & nrow(conservationunits_decoder_rg_sp_cu) == 0){
+            
+            #' CUs in VIMI were pooled with the ones from Fraser in the SRdata.txt files.
+            #' But it seems that all the CUs in these SRdata.text files are from 
+            #' Fraser. Here is just a check that if the CU is not found in 
+            #' conservationunits_decoder for the VIMI that is because it is present 
+            #' in Fraser.
+            
+            print("In VIMI with no rows !!!")
+            
+            if(suppressWarnings(!is.na(as.numeric(tableHere$CU[i_cu])[1]))){ # if nameVariations is a cuid and not the cu name
+              
+              cu_cuid <- as.numeric(tableHere$CU[i_cu])
+              conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$region == "Fraser" &
+                                                                                conservationunits_decoder$cuid == cu_cuid,]
+              
+            }else{
+              conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$region == "Fraser" &
+                                                                                conservationunits_decoder$species_abbr %in% species_var &
+                                                                                conservationunits_decoder$cu_name_pse %in% nameVariations,]
+            }
+
+            if(nrow(conservationunits_decoder_rg_sp_cu) != 1){
+              print(paste("VIMI issue: i_rg:",i_rg,", i_sp:",i_sp,", i_cu:",i_cu))
+              print(conservationunits_decoder_rg_sp_cu)
+            }
+            
+            conservationunits_decoder_rg_sp_cu$cu_name_pse <- NA
+            conservationunits_decoder_rg_sp_cu$cuid <- NA
+            conservationunits_decoder_rg_sp_cu$region <- "Vancouver Island & Mainland Inlets"
+            conservationunits_decoder_rg_sp_cu$species_name <- NA
+            
+            tableHere$prSmax <- NA
+            tableHere$prCV <- NA
+            
+          }else{
+            print(paste("i_rg:",i_rg,", i_sp:",i_sp,", i_cu:",i_cu))
+            print(conservationunits_decoder_rg_sp_cu)
+          }
+        }
+        
+        name_pse <- conservationunits_decoder_rg_sp_cu$cu_name_pse
+        cu_cuid <- conservationunits_decoder_rg_sp_cu$cuid
+        region_here <- conservationunits_decoder_rg_sp_cu$region
+        species_here <- conservationunits_decoder_rg_sp_cu$species_name
+        species_abbr_here <- conservationunits_decoder_rg_sp_cu$species_abbr
+        
+        tableHere$cu_name_pse[i_cu] <- name_pse
+        tableHere$cuid[i_cu] <- cu_cuid
+        tableHere$species[i_cu] <- species_here
+        tableHere$species_abbr[i_cu] <- species_abbr_here
+        tableHere$region[i_cu] <- region_here
+        
+        # print("****")
+        # print(name_pse)
+        # print(species_here)
+        # print(region_here)
+      }
+      
+      if(is.null(table_sp)){
+        table_sp <- tableHere[,c("region","species","species_abbr","cu_name_pse","cuid","prSmax","prCV")]
+      }else{
+        table_sp <- rbind(table_sp,tableHere[,c("region","species","species_abbr","cu_name_pse","cuid","prSmax","prCV")])
+      }
+    }
+  }
+  
+  if(is.null(table_rg_sp)){
+    table_rg_sp <- table_sp
+  }else{
+    table_rg_sp <- rbind(table_rg_sp,table_sp)
+  }
+}
+
+# region with no data:
+table_rg_sp[is.na(table_rg_sp$cu_name_pse),]
+table_rg_sp[is.na(table_rg_sp$prSmax),]
+
+# Check if the CUs in CUs_toCheck were already present in there correct region
+# if that's the case do they have the same prior values
+CUs_toCheck$nDuplicates <- CUs_toCheck$sameValPriors <- NA
+for(r in 1:nrow(CUs_toCheck)){
+  # r <- 1
+  table_rg_sp_cut <- table_rg_sp[table_rg_sp$region == CUs_toCheck$region[r] &
+                                   table_rg_sp$species_abbr == CUs_toCheck$species_abbr[r] &
+                                   table_rg_sp$cu_name_pse == CUs_toCheck$cu_name_pse[r] &
+                                   table_rg_sp$cuid == CUs_toCheck$cuid[r],]
+  
+  CUs_toCheck$nDuplicates[r] <- nrow(table_rg_sp_cut)
+  
+  if(nrow(table_rg_sp_cut) > 1){
+    print("***")
+    print(CUs_toCheck[r,])
+    print(table_rg_sp_cut)
+    
+    if(table_rg_sp_cut$prSmax[1] != table_rg_sp_cut$prSmax[2] |
+       table_rg_sp_cut$prCV[1] != table_rg_sp_cut$prCV[2]){
+      CUs_toCheck$sameValPriors[r] <- F
+    }else{
+      CUs_toCheck$sameValPriors[r] <- T
+    }
+  }
+}
+
+CUs_toCheck
+
+# Remove the row for cuid in Nass
+# region_SRdata region species_abbr cuid                cu_name_pse sameValPriors nDuplicates
+#          Nass Skeena          PKE  219 Nass-Skeena Estuary (even)         FALSE           2
+
+# 
+table_rg_sp <- table_rg_sp[!(table_rg_sp$cuid == 219 &
+                               table_rg_sp$region == "Skeena" &
+                               table_rg_sp$prSmax == CUs_toCheck$prSmax &
+                               table_rg_sp$prCV == CUs_toCheck$prCV),]
+
+write.csv(table_rg_sp,paste(wd_data,"/"))
 
 #
 # -------

@@ -680,6 +680,9 @@ Sgen.optim <- function (Sgen.hat, theta, Smsy) {
 #' path_file <- fndata[i]  # the path of the _SRdata.text file
 #' MinSRpts: the minimum number of year (= data points) required 
 #' wd_data: the biological-status/Data folder 
+# path_file <- fndata[i_sp]
+# wd_data <- NA
+# MinSRpts <- 1
 SRdata_fun <- function(path_file, wd_data, MinSRpts = 3){
   
   # BSC: I replaced "stock" with "CU" in the code?
@@ -752,7 +755,7 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
   files_list <- list.files(wd)
   
   # In the case we did not specify the species, find those that have data:
-  if(species_all){                           
+  if(species_all){                       
     files_s <- files_list[grepl(pattern = "_SRdata",files_list)]
     # get the species present:
     species <- unique(sub("_SRdata.*", "", files_s))
@@ -760,7 +763,7 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
   
   # Return the corresponding files, selecting the most recent ones eventually:
   SRdata <- sapply(X = species, FUN = function(s){
-    # s <- species[3]
+    # s <- species[1]
     files_s <- files_list[grepl(pattern = paste0(s,"_SRdata"),files_list)]
     
     # if multiple files, select the one with the most recent date modified:
@@ -793,10 +796,11 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
 #' 
 # CUname <- cu_notFound
 # speciesAcronym <- spAcroHere
+# CUname = nameNotFound[i_cu]
+# speciesAcronym = species[i_sp]
 CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym = NA){
   
   species_acronym_df <- species_acronym_fun()
-  
   
   # quick fixes for now
   #' TODO fix that in the data base? Or anywhere else?
@@ -847,8 +851,9 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
     CUname <- c(CUname,"Upper Yukon")
   }else if(CUname == "Yukon River-Teslin headwaters"){
     CUname <- c(CUname,"Teslin")
+  }else if(CUname == "Southwest West Vancouver Island"){
+    CUname <- c(CUname,"Southwest & West Vancouver Island")
   }
-
 
   if(grepl(pattern = "[E|e]ven",x = CUname[1])){
     CUname <- c(CUname,gsub(pattern = "[E|e]ven",replacement = "(even)",x = CUname[1]))
@@ -1755,15 +1760,22 @@ cu_highExploit_lowProd_fun <- function(biological_status_HSPercent_df = NA,
   #   out <- conservationunits_decoder$species_name[conservationunits_decoder$cu_name_pse == cu]
   # })
   
+  # To find the corresponding cuid from conservationunits_decoder
+  # sapply(X = highExploit_lowProd$CU_name, FUN = function(cu){
+  #   out <- conservationunits_decoder$cuid[conservationunits_decoder$cu_name_pse == cu]
+  # })
+  
   highExploit_lowProd <- data.frame(
     region = c(rep("Fraser",7),rep("Vancouver Island & Mainland Inlets",2)),
     species = c(rep("Coho",5),rep("Chinook",4)),
     species_abbr = c(rep("CO",5),rep("CK",4)), 
+    cuid = c(705,749,707,709,708,303,315,322,321),
     CU_name = c("Fraser Canyon","Interior Fraser","Lower Thompson","North Thompson",
                 "South Thompson","Lower Fraser River (Fall 4-1)","Shuswap River (Summer 4-1)",
                 "East Vancouver Island-Cowichan and Koksilah (Fall x-1)",
                 "East Vancouver Island-Goldstream (Fall x-1)"))
   
+  highExploit_lowProd$biostatus_percentile <- NA
   highExploit_lowProd$toRemove <- T
   for(i in 1:nrow(highExploit_lowProd)){
     # i <- 1
@@ -1775,17 +1787,48 @@ cu_highExploit_lowProd_fun <- function(biological_status_HSPercent_df = NA,
       biological_status_HSPercent_dfHere <- biological_status_HSPercent_dfHere[biological_status_HSPercent_dfHere$species == sp,]
     }
     status <- biological_status_HSPercent_dfHere$status_percent075
+    highExploit_lowProd$biostatus_percentile[i] <- status
     if(!is.na(status)){
       if(status == "red"){ #' New rule from Claire:
         highExploit_lowProd$toRemove[i] <- F
       }
     }
-    print(biological_status_HSPercent_dfHere$status_percent075)
+    # print(biological_status_HSPercent_dfHere$status_percent075)
   }
   return(highExploit_lowProd)
 }
 
-
+#' Function to return the a dataframe of the extinct CUs.
+# See Population Analysis running notes Google Doc from Dec 12 2023 for list 
+# given by Eric.
+# https://docs.google.com/document/d/1gNmJxA4Us90W8DBf-QS6KfkjnOE71FMZUhFSPo7posg/edit?usp=sharing
+cu_extinct_fun <- function(){
+  
+  # To find the corresponding regions from conservationunits_decoder
+  # sapply(X = cuid, FUN = function(cu){
+  #   out <- conservationunits_decoder$region[conservationunits_decoder$cuid == cu]
+  # })
+  
+  # To find the corresponding species from conservationunits_decoder
+  # sapply(X = cuid, FUN = function(cu){
+  #   out <- conservationunits_decoder$species_name[conservationunits_decoder$cuid == cu]
+  # })
+  
+  # To find the corresponding cuid from conservationunits_decoder
+  # sapply(X = cuid, FUN = function(cu){
+  #   out <- conservationunits_decoder$cu_name_pse[conservationunits_decoder$cuid == cu]
+  # })
+  
+  cu_extinct <- data.frame(
+    region = c(rep("Fraser",8),rep("Vancouver Island & Mainland Inlets",1)),
+    species = c(rep("Lake sockeye",8),rep(NA,1)),
+    species_abbr = c(rep("SEL",8),rep(NA,1)), 
+    cuid = c(760,756,757,753,758,761,763,759,936),
+    CU_name = c("Adams-Early Summer","Alouette-Early Summer","Coquitlam-Early Summer",
+                "Fraser-Early Summer","Kawkawa-Late","Momich-Early Summer",
+                "North Barriere-Early Summer","Seton-Summer",NA))
+  return(cu_extinct)
+}
 
 
 

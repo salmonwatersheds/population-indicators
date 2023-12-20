@@ -356,7 +356,7 @@ HPD <- function(x, xmax = NA, na.rm = TRUE,n = 5000){
 #'- S and R:  year x CU matrices of fish counts for spawners and recruiters 
 #'- LNRS: log(R/S)     BSC: could be created inside the function with R and S to limit the number of parameters to pass in
 #'- StNames: the same of the CUs
-linRegRicker_fun <- function(S, R, plot_figures = T){
+linRegRicker_fun <- function(S, R, plot_figures = F, verbose = F){
   
   CUs <- colnames(S)
   nCUs <- ncol(S)
@@ -435,14 +435,16 @@ linRegRicker_fun <- function(S, R, plot_figures = T){
     Smax <- round(b1 / a[i], digits = 0)
     Uopt <- round(0.5 * a[i] - 0.07 * a[i]^2, digits = 2)
     
-    print(paste0("*** ",CUs[i]," ***"))
-    print(do.call(what = cbind,args = list(a = a[i], b = b[i], sigma = sigma[i])))
-    print(c("Prod=",Prod))
-    print(c("Smsy=",Smsy))
-    print(c("Smax=",Smax))
-    print(c("Uopt=",Uopt))
-    print("")
-    
+    if(verbose){
+      print(paste0("*** ",CUs[i]," ***"))
+      print(do.call(what = cbind,args = list(a = a[i], b = b[i], sigma = sigma[i])))
+      print(c("Prod=",Prod))
+      print(c("Smsy=",Smsy))
+      print(c("Smax=",Smax))
+      print(c("Uopt=",Uopt))
+      print("")
+    }
+
     # Plot basic SR curves and data
     # plot(S[,i], LNRS[1:Nyrs[i],i],bty='l',xlab="Spawners",xlim=c(0,max(S)),ylim=c(0,max(LNRS)),ylab="Ln(R/S)",main=CUs[i])
     # abline(reg,lty=1,lwd=2)

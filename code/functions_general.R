@@ -288,5 +288,30 @@ datasetsNames_database_fun <- function(){
   return(out_df)
 }
 
-
+#' Function to delete all the files with a given pattern.
+# wd <- wd_output
+# patterns <- c("benchmarks_summary","CUs_names")
+deleteFiles_fun <- function(wd,patterns){
+  
+  Q <- readline(paste0("Are you sure you want to delete the datafiles having this pattern: '",patterns,"'?\nPress 'Y' for YES or 'N' for NO: "))
+  
+  if(Q == "Y"){
+    
+    files <- list.files(path = wd)
+    toKeep <- sapply(X = patterns, 
+                     FUN = function(p){
+                       out <- files[grepl(p,files)]
+                       return(out)
+                     }
+    )
+    # convert the matrix to a vector
+    toKeep <- c(toKeep)
+    
+    # delete the files:
+    print(paste0("The following files were deleted from ",wd))
+    print(toKeep)
+    
+    file.remove(paste(wd,toKeep,sep = "/"))
+  }
+}
 

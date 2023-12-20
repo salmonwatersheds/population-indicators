@@ -658,8 +658,14 @@ biological_status_merged <- biological_status_merged[,!colnames(biological_statu
 
 # write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
 #           row.names = F)
-  
-#  
+
+biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+                                     header = T)
+
+# check if there psf code of cyclic communities:
+biological_status_merged[grepl("cyclic",biological_status_merged$CU_pse),]
+
+#
 # Check the difference between normal percentile benchmarks and the simulated ones -----
 nrow(benchmarks_summary_HSPercent_df)
 benchmarks_summary_HSPercent_df_noNA <- benchmarks_summary_HSPercent_df[!is.na(benchmarks_summary_HSPercent_df$m),]

@@ -1392,7 +1392,7 @@ CUs_toCheck
 # CUs with no SR data:
 CUs_toCheck[CUs_toCheck$priordata,]
 #' - For lake-type sockeye: it is expected because we may have estimates of lake 
-#' productivity to inform those priors even though there’s not SR data. For these
+#' productivity to inform those priors even though there’s not SR data. For these 
 #' cases, we should consider applying habitat-based benchmarks, which we will dig
 #'into more over the next 6 months.
 #' - For the other ones: there is SR data in the SRdata.txt. Why is that data not 
@@ -1409,6 +1409,48 @@ CUs_toCheck[CUs_toCheck$SRdata,]
 
 # 
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1702671161183209?thread_ts=1702603217.471789&cid=CJ5RVHVCG
+
+priors_HBSRmodel[grepl("sockeye",priors_HBSRmodel$species),]
+
+#
+# Delete files ------
+
+patterns <- c("_posteriors_priorShift.rds",
+              "benchmarks_summary.csv",
+              "CUs_names.csv",
+              "_SR_matrices.rds")
+deleteFiles_fun(wd = wd_output,patterns)
+
+#
+# Check the convergence diagnsitic files for the HBSRM -----
+
+pattern <- "HBSRM_convDiagnostic"
+convDiag <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                          wd_output = wd_output,
+                                          region = region,
+                                          species_all = T)
+
+View(convDiag)
+
+convDiag_cut <- convDiag[!convDiag$parameter %in% c("deviance","mu_a","sd_a"),]
+# convDiag_cut <- convDiag[!convDiag$parameter %in% c("deviance"),]
+toCheck <- convDiag_cut[convDiag_cut$Point.est. > 1.1,]
+
+convDiag[convDiag$Point.est. > 1.1,]
+
+# look at the convergence plot 
+priorFile <- paste0(gsub(" ","_",toCheck$region[1]),"_SX","_HBSRM_posteriors_priorShift.rds")
+postDistPrior <- readRDS(paste(wd_output,priorFile,sep = "/"))
+
+plot(postDistPrior)
+
+
+TODO: for those that do not converge: 
+- if prCV = 10 --> 1
+- if prCV = 1 --> report that and eventually say that we cannot define benchmarks,
+or at least compare the benchmarks with the percentile one.
+
+
 
 
 

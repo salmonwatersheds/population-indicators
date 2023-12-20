@@ -89,7 +89,7 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Central_coast)
 
-region <- regions_df$Central_coast
+region <- regions_df$Columbia
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -102,7 +102,7 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
-species <- species_acronym_df$species_name[species_acronym_df$species_acro == "CM"]
+species <- species_acronym_df$species_name[species_acronym_df$species_acro == "SX"]
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
@@ -171,18 +171,21 @@ for(i_rg in 1:length(region)){
     species <- unique(cuspawnerabundance_rg$species_name)
   }else{
     # return the full name of the species
-    species <- sapply(X = species, FUN = function(x){
-      output <- species_acronym_df$species_name[species_acronym_df$species_acro == x]
-      return(output)
-    })
+    # species <- sapply(X = species, FUN = function(x){
+    #   output <- species_acronym_df$species_name[species_acronym_df$species_acro == x]
+    #   return(output)
+    # })
   }
   
+  #' TODO: simplify this messy work around for species and species_acro
   # remove Steelhead
   species <- species[species != "Steelhead"]
 
   species_acro <- sapply(X = species,FUN = function(sp){
     species_acronym_df$species_acro[species_acronym_df$species_name == sp]
   })
+  
+  species_acro <- unique(species_acro)
   
   if(sum(!is.na(cuspawnerabundance_rg$estimated_count)) == 0){
     
@@ -280,7 +283,7 @@ for(i_rg in 1:length(region)){
           
           benchSummary_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
                                         species = rep(speciesAcroHere,length(benchmarks)),
-                                        cuid = cuids[i_cu],
+                                        cuid = rep(cuids[i_cu],length(benchmarks)),
                                         CU = rep(CUs[i_cu],length(benchmarks)),
                                         benchmark = paste0("benchmark_",benchmarks), # c('lower','upper'),
                                         method = rep('HS_percentiles',length(benchmarks)))

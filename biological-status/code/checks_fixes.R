@@ -980,12 +980,15 @@ path <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis
 #' https://salmonwatersheds.ca/document/lib_318/
 #' (cf. p. 13).
 #' These prior values are present at the top of the SDdata.txt files present in 
-#' the different region-specific folders. The goal is to get the data in these 
-#' files and put them all together in a single CSV file that stays in GitHub.
+#' the different region-specific folders. 
+#' Goal 1: get the prior data in these files and put them all together in a single
+#' CSV file that stays in GitHub.
+#' Goal 2: indicate how many SR data points are present there is SR in these .txt 
+#' files.
 
 table_rg_sp <- CUs_toCheck <- NULL
 for(i_rg in 1:length(region)){ # 
-  # i_rg <- 8
+  # i_rg <- 1
   
   regionHere <- region[i_rg]
   if(regionHere == "Vancouver Island & Mainland Inlets"){
@@ -1008,7 +1011,9 @@ for(i_rg in 1:length(region)){ #
   if(length(species) == 0){ # in case there is no 
     
     table_sp <- data.frame(region = region[i_rg], species = NA, species_abbr = NA,
-                           cu_name_pse = NA,cuid = NA, prSmax = NA, prCV = NA)
+                           cuid = NA, cu_name_pse = NA, CU = NA, 
+                           prSmax = NA, prCV = NA, 
+                           S_n = NA, R_n = NA)
     
   }else{
     
@@ -1020,8 +1025,34 @@ for(i_rg in 1:length(region)){ #
       CUs_nb <- scan(file = fndata[i_sp], nlines = 1, skip = 1)
       
       # Import the prSmax and prCV for each CU
-      tableHere <- read.table(file = fndata[i_sp], header = T, skip = 2, nrows = CUs_nb)
-
+      table_priors <- read.table(file = fndata[i_sp], header = T, skip = 2, 
+                              nrows = CUs_nb)
+      
+      # Import the SR data
+      table_SR <- read.table(file = fndata[i_sp], header = T, skip = 3 + CUs_nb, 
+                             fill = TRUE)
+      
+      # add information about the number of data points for S and R
+      n_RS <- sapply(X = unique(table_SR$CU),FUN = function(cu){
+        # cu <- unique(table_SR$CU)[1]
+        tb <- table_SR[table_SR$CU == cu,]
+        out <- data.frame(CU =  as.character(cu),
+                          S_n = sum(!is.na(tb$Esc)),
+                          R_n = sum(!is.na(tb$Rec)))
+        return(out)
+      })
+      n_RS <- t(n_RS)
+      n_RS <- apply(X = n_RS, MARGIN = 2, unlist)
+      if(!is.null(dim(n_RS))){
+        n_RS <- as.data.frame(n_RS)
+        rownames(n_RS) <- NULL
+      }else{
+        n_RS <- as.data.frame(t(n_RS))
+      }
+     
+      # n_RS$CU <- rownames(n_RS)
+      table_priors <- merge(x = table_priors, y = n_RS,by = "CU",all = T)
+      
       # Convert species acronym to match conservationunits_decoder$species_abbr
       if(species[i_sp] == "SX"){
         species_var <- c("SEL","SER")
@@ -1034,25 +1065,25 @@ for(i_rg in 1:length(region)){ #
       }
       
       # check the name of the CUs
-      tableHere$cu_name_pse <- tableHere$cuid <- tableHere$region <- tableHere$species <- NA
-      for(i_cu in 1:nrow(tableHere)){
+      table_priors$cu_name_pse <- table_priors$cuid <- table_priors$region <- table_priors$species <- NA
+      for(i_cu in 1:nrow(table_priors)){
         # i_cu <- 1
         
-        if(suppressWarnings(!is.na(as.numeric(tableHere$CU[i_cu])[1]))){ # if nameVariations is a cuid and not the cu name
+        if(suppressWarnings(!is.na(as.numeric(table_priors$CU[i_cu])[1]))){ # if nameVariations is a cuid and not the cu name
           
-          cu_cuid <- as.numeric(tableHere$CU[i_cu])
+          cu_cuid <- as.numeric(table_priors$CU[i_cu])
           conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
                                                                             conservationunits_decoder$cuid == cu_cuid,]
         }else{
           
-          CU_here <- gsub("_"," ",tableHere$CU[i_cu])
+          CU_here <- gsub("_"," ",table_priors$CU[i_cu])
           
           if(species[i_sp] == "PK"){
             # Import the fish counts for R and S per year for each CU (just in case we have to find the cu_name_pse for a PK)
             d <- read.table(file = fndata[i_sp], header = T, skip = 3 + CUs_nb, 
                             fill = TRUE, stringsAsFactors = FALSE)
             d$BY <- as.numeric(d$BY) # brood year
-            d <- d[d$CU == tableHere$CU[i_cu],]
+            d <- d[d$CU == table_priors$CU[i_cu],]
             spawnerAbundance <- d$Esc
             names(spawnerAbundance) <- d$BY
             nameVariations <- CU_name_variations_fun(CUname = CU_here, 
@@ -1113,8 +1144,8 @@ for(i_rg in 1:length(region)){ #
             CUs_toCheck_new <-  conservationunits_decoder_rg_sp_cu[,c("region","species_abbr","cuid","cu_name_pse")]
             CUs_toCheck_new$region_SRdata <- region[i_rg]
             CUs_toCheck_new <- CUs_toCheck_new[,c("region_SRdata","region","species_abbr","cuid","cu_name_pse")]
-            CUs_toCheck_new$prSmax <- tableHere$prSmax[i_cu]
-            CUs_toCheck_new$prCV <- tableHere$prCV[i_cu]
+            CUs_toCheck_new$prSmax <- table_priors$prSmax[i_cu]
+            CUs_toCheck_new$prCV <- table_priors$prCV[i_cu]
             CUs_toCheck <- rbind(CUs_toCheck,CUs_toCheck_new)
             
           }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1 & length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) == 1){
@@ -1131,9 +1162,9 @@ for(i_rg in 1:length(region)){ #
             
             print("In VIMI with no rows !!!")
             
-            if(suppressWarnings(!is.na(as.numeric(tableHere$CU[i_cu])[1]))){ # if nameVariations is a cuid and not the cu name
+            if(suppressWarnings(!is.na(as.numeric(table_priors$CU[i_cu])[1]))){ # if nameVariations is a cuid and not the cu name
               
-              cu_cuid <- as.numeric(tableHere$CU[i_cu])
+              cu_cuid <- as.numeric(table_priors$CU[i_cu])
               conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[conservationunits_decoder$region == "Fraser" &
                                                                                 conservationunits_decoder$cuid == cu_cuid,]
               
@@ -1153,8 +1184,8 @@ for(i_rg in 1:length(region)){ #
             conservationunits_decoder_rg_sp_cu$region <- "Vancouver Island & Mainland Inlets"
             conservationunits_decoder_rg_sp_cu$species_name <- NA
             
-            tableHere$prSmax <- NA
-            tableHere$prCV <- NA
+            table_priors$prSmax <- NA
+            table_priors$prCV <- NA
             
           }else{
             print(paste("i_rg:",i_rg,", i_sp:",i_sp,", i_cu:",i_cu))
@@ -1168,11 +1199,11 @@ for(i_rg in 1:length(region)){ #
         species_here <- conservationunits_decoder_rg_sp_cu$species_name
         species_abbr_here <- conservationunits_decoder_rg_sp_cu$species_abbr
         
-        tableHere$cu_name_pse[i_cu] <- name_pse
-        tableHere$cuid[i_cu] <- cu_cuid
-        tableHere$species[i_cu] <- species_here
-        tableHere$species_abbr[i_cu] <- species_abbr_here
-        tableHere$region[i_cu] <- region_here
+        table_priors$cu_name_pse[i_cu] <- name_pse
+        table_priors$cuid[i_cu] <- cu_cuid
+        table_priors$species[i_cu] <- species_here
+        table_priors$species_abbr[i_cu] <- species_abbr_here
+        table_priors$region[i_cu] <- region_here
         
         # print("****")
         # print(name_pse)
@@ -1180,10 +1211,14 @@ for(i_rg in 1:length(region)){ #
         # print(region_here)
       }
       
+      colNames <- c("region","species","species_abbr",
+                    "cuid","cu_name_pse","CU",
+                    "prSmax","prCV","S_n","R_n")
+      
       if(is.null(table_sp)){
-        table_sp <- tableHere[,c("region","species","species_abbr","cu_name_pse","cuid","prSmax","prCV")]
+        table_sp <- table_priors[,colNames]
       }else{
-        table_sp <- rbind(table_sp,tableHere[,c("region","species","species_abbr","cu_name_pse","cuid","prSmax","prCV")])
+        table_sp <- rbind(table_sp,table_priors[,colNames])
       }
     }
   }
@@ -1195,11 +1230,19 @@ for(i_rg in 1:length(region)){ #
   }
 }
 
-# region with no data:
+# CUs with no prior data: --> 
 table_rg_sp[is.na(table_rg_sp$cu_name_pse),]
 table_rg_sp[is.na(table_rg_sp$prSmax),]
 
-# Check if the CUs in CUs_toCheck were already present in there correct region
+# CUs with prior data by no SR data: --> none
+table_rg_sp[!is.na(table_rg_sp$prSmax) & is.na(table_rg_sp$S_n),]
+table_rg_sp[!is.na(table_rg_sp$prSmax) & is.na(table_rg_sp$R_n),]
+
+# CUs with SR data but no prior data: --> none
+table_rg_sp[is.na(table_rg_sp$prSmax) & !is.na(table_rg_sp$S_n),]
+table_rg_sp[is.na(table_rg_sp$prSmax) & !is.na(table_rg_sp$R_n),]
+
+# Check if the CUs in CUs_toCheck were already present in their correct region
 # if that's the case do they have the same prior values
 CUs_toCheck$nDuplicates <- CUs_toCheck$sameValPriors <- NA
 for(r in 1:nrow(CUs_toCheck)){
@@ -1240,16 +1283,17 @@ table_rg_sp <- table_rg_sp[!(table_rg_sp$cuid == 219 &
                                table_rg_sp$prSmax == CUs_toCheck$prSmax &
                                table_rg_sp$prCV == CUs_toCheck$prCV),]
 
+table_rg_sp$CU <- as.character(table_rg_sp$CU)
+class(table_rg_sp$S_n)
+
 # write.csv(table_rg_sp,paste0(wd_data,"/priors_HBSRmodel.csv"),row.names = F)
 
-
-
 #
-# Follow up check with previous check: are they CUs with SR data by no prior value? -------
+# Follow up check with previous check: are they CUs with SR data in recruitsperspawner without prior value? -------
 #
 
 #' Import the prior values for the HBSR model parameters prSmax and prCV that are
-#' used in HBSRM.R (the file is created in checks_fixes.R and contain the values 
+#' used in HBSRM.R (the file is created in checks_fixes.R and contains the values 
 #' of these priors that were originally contained in SRdata.txt files that are 
 #' found in the "HBM and status" subfolders in each region-specific folders.
 priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
@@ -1257,7 +1301,7 @@ priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
 CUs_toCheck <- NULL
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 5
+  # i_rg <- 1
   
   recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
   
@@ -1284,7 +1328,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 4
+      # i_sp <- 1
       
       speciesAcroHere <- unique(species_acro)[i_sp]
       speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
@@ -1362,6 +1406,8 @@ for(i_rg in 1:length(region)){
       
       colInCommon <- c("region","species","cuid","cu_name_pse")
       SR_noPrior <- recruitsperspawner_rg_sp[recruitsperspawner_rg_sp$cu_name_pse %in% CUs_withoutPrior,colInCommon]
+      
+      # CUs with SR data in the database (recruitsperspawner) but no priors in text files
       if(nrow(SR_noPrior) > 0){
         SR_noPrior <- unique(SR_noPrior)
         SR_noPrior$nb_datapoints_RS <- sapply(X = 1:ncol(R[,CUs_withoutPrior,drop = F]), 
@@ -1373,15 +1419,33 @@ for(i_rg in 1:length(region)){
         SR_noPrior$prCV <- NA
         SR_noPrior$SRdata <- T
         SR_noPrior$priordata <- F
+        SR_noPrior$SRdata_txt <- F
         CUs_toCheck <- rbind(CUs_toCheck,SR_noPrior)
       }
       
+      # CUs with no SR data in the database (recruitsperspawner) but with priors in text files
       prior_noSR <- priors_HBSRmodel_rg_sp[priors_HBSRmodel_rg_sp$cu_name_pse %in% CUs_withoutRS,c(colInCommon,"prSmax","prCV")]
       if(nrow(prior_noSR) > 0){
         prior_noSR$nb_datapoints_RS <- NA
         prior_noSR$SRdata <- F
         prior_noSR$priordata <- T
+        prior_noSR$SRdata_txt <- NA
         CUs_toCheck <- rbind(CUs_toCheck,prior_noSR)
+      }
+      
+      # is there SR data in text files for the CUs in prior_noSR
+      if(nrow(prior_noSR) > 0){
+        
+        prior_noSR_bis <- priors_HBSRmodel_rg_sp[priors_HBSRmodel_rg_sp$cu_name_pse %in% CUs_withoutRS,c(colInCommon,"S_n","R_n")]
+        
+        for(i in 1: nrow(prior_noSR_bis)){
+          # i <- 1
+          cuidHere <- prior_noSR_bis$cuid[i]
+          out <- prior_noSR_bis[i,c("S_n","R_n")]
+          out <- out != 0
+          out <- all(out)
+          CUs_toCheck$SRdata_txt[CUs_toCheck$cuid == cuidHere] <- out
+        }
       }
     } # species loop
   }  # if there is data for this region
@@ -1422,7 +1486,7 @@ patterns <- c("_posteriors_priorShift.rds",
 deleteFiles_fun(wd = wd_output,patterns)
 
 #
-# Check the convergence diagnsitic files for the HBSRM -----
+# Check the convergence diagnostic files for the HBSRM -----
 
 pattern <- "HBSRM_convDiagnostic"
 convDiag <- rbind_biologicalStatusCSV_fun(pattern = pattern,
@@ -1441,7 +1505,7 @@ convDiag[convDiag$Point.est. > 1.1,]
 # look at the convergence plot 
 priorFile <- paste0(gsub(" ","_",toCheck$region[1]),"_SX","_HBSRM_posteriors_priorShift.rds")
 postDistPrior <- readRDS(paste(wd_output,priorFile,sep = "/"))
-
+class(postDistPrior)
 plot(postDistPrior)
 
 
@@ -1449,6 +1513,7 @@ TODO: for those that do not converge:
 - if prCV = 10 --> 1
 - if prCV = 1 --> report that and eventually say that we cannot define benchmarks,
 or at least compare the benchmarks with the percentile one.
+
 
 
 

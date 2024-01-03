@@ -147,9 +147,9 @@ FBYr <- -99
 MinSRpts <- 3 
 
 # Set the HBSR number of simulations, burning runs and chains:
-n.iter <- 100000  # --> 10000 only QUESTION
-n.burnin <- 5000  # 
-n.chains <- 6
+n.iter <- 10000 # 100000  # --> 10000 only QUESTION
+n.burnin <- 3000 # 5000  # 
+n.chains <- 6     # 
 
 #----------------------------------------------------------------------------#
 # Read in Stock-Recruit Data, run the HBSR model and output parameter estimates
@@ -267,7 +267,7 @@ for(i_rg in 1:length(region)){
       # SR_l <- list(S,R)
       # names(SR_l) <- c("S","R")
       
-      # remove the row with NAs in S but not R and vice versa of a same CU 
+      # remove the row with NAs in S but not R and vice versa of a same CU
       SR_l <- cuSR_removeNA_fun(R = R, S = S)
       R <- SR_l$R
       S <- SR_l$S
@@ -381,8 +381,9 @@ for(i_rg in 1:length(region)){
       prSmax <- CUs_priors$prSmax
       prCV <- CUs_priors$prCV
       prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
-      prtaub <- 1/prCV^2				# convert from cv to tau
-
+      # prtaub <- 1/prCV^2				# convert from cv to tau --> BSC: should be prtaub <- prmub^2/prCV^2 ???
+      prtaub <- prmub^2/prCV^2
+      
       saveRDS(SR_l,
               file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_SR_matrices.rds"))
       
@@ -446,16 +447,14 @@ for(i_rg in 1:length(region)){
         
         	# Hyper priors
         	log_mu_a ~ dnorm(0.5, 1.0E-6) # SP: Note that this parameter was confusing as it was defined as mu_a previously; changed this.
-        	
-        	# log_mu_a ~ dnorm(0.5, 1.0E-1) FOR HG PK see if fix convergence 
-        	
         	mu_a <- exp(log_mu_a)
         	tau_a ~ dgamma(0.5, 0.5) 
-        	sd_a <- pow(tau_a, -0.5)
+        	sd_a <- pow(tau_a, -0.5) # = sigma_a = sqrt(1/tau_a)
         	
         	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
         	
-        		a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha
+        		# a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
+        		a[i] ~ dlnorm(mu_a, tau_a)
         		
         		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
         		
@@ -464,7 +463,8 @@ for(i_rg in 1:length(region)){
         		# Smsr[i] ~ dlnorm(ln_Smsr[i], pow(1, -2)) T(0, 1e10)
         		# b[i] <- 1/Smsr[i]
         		
-        		sd[i] ~ dunif(0.05, 10) 
+        		# BSC: sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
         		tau[i] <- pow(sd[i], -2)	
         	}
         	
@@ -517,8 +517,14 @@ for(i_rg in 1:length(region)){
       #           file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"HBSR_CUs_names.csv"), 
       #           row.names = F)
       
-      ##### INFERENCE ##### BSC: is that useful?
-      mypost <- as.matrix(post, chain = F)
+      ##### INFERENCE ???#####
+      
+      # Gelman and Rubin's convergence diagnostic
+      # remove the "deviance" column because it is not a model parameter
+      for(l in 1:length(post)){
+        # l <- 1
+        post[[l]] <- post[[l]][,colnames(post[[l]]) != "deviance"] 
+      }
       convDiagnostic <- as.data.frame(gelman.diag(post, multivariate = F)$psrf)
       convDiagnostic$parameter <- rownames(convDiagnostic)
       convDiagnostic$cu_name_pse <- NA
@@ -534,7 +540,7 @@ for(i_rg in 1:length(region)){
         nbHere <- sub(".*\\[", "", nbHere) # remove everything before "[" including "["
         nbHere <- sub("\\].*", "", nbHere) #
         
-        if(!nbHere %in% c("deviance","mu_a",'sd_a')){
+        if(!nbHere %in% c("mu_a",'sd_a')){
           if(length(CUs) == 1){  # there is not number associated with the parameter, e.g. "a" and not "a[1]"
             nbHere <- 1
           }else{
@@ -581,9 +587,12 @@ for(i_rg in 1:length(region)){
                 file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_convDiagnostic.csv"),
                 row.names = F)
       
-      model.probs <- round(cbind(est = colMeans(mypost),
-                                 sd = apply(mypost,2,sd),
-                                 ci = t(apply(mypost,2,quantile,c(.025,.975)))),
+      
+      post_m <- as.matrix(post, chain = F)
+      post_m <- post_m[,colnames(post_m) != "deviance"] 
+      model.probs <- round(cbind(est = colMeans(post_m),
+                                 sd = apply(post_m,2,sd),
+                                 ci = t(apply(post_m,2,quantile,c(.025,.975)))),
                            digits = 8)
       model.probs
     } # species loop
@@ -591,25 +600,3 @@ for(i_rg in 1:length(region)){
 } # region loop
 
 
-# Warning messages:
-#   1: In as.numeric(nbHere) : NAs introduced by coercion
-# 2: In convDiagnostic$species_name[r] <- sp_nameHere :
-#   number of items to replace is not a multiple of replacement length
-# 3: In as.numeric(nbHere) : NAs introduced by coercion
-# 4: In convDiagnostic$species_name[r] <- sp_nameHere :
-#   number of items to replace is not a multiple of replacement length
-# 5: In as.numeric(nbHere) : NAs introduced by coercion
-# 6: In convDiagnostic$species_name[r] <- sp_nameHere :
-#   number of items to replace is not a multiple of replacement length
-# 7: In CUs_priors$species[r] <- speciesHere :
-#   number of items to replace is not a multiple of replacement length
-# 8: In CUs_priors$cuid[r] <- cuidHere :
-#   number of items to replace is not a multiple of replacement length
-# 9: In CUs_priors$species[r] <- speciesHere :
-#   number of items to replace is not a multiple of replacement length
-# 10: In CUs_priors$cuid[r] <- cuidHere :
-#   number of items to replace is not a multiple of replacement length
-# 11: In CUs_priors$species[r] <- speciesHere :
-#   number of items to replace is not a multiple of replacement length
-# 12: In CUs_priors$cuid[r] <- cuidHere :
-#   number of items to replace is not a multiple of replacement length

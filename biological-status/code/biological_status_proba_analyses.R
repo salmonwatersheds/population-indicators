@@ -375,11 +375,13 @@ biological_status_HBSR_cut_noNA <- biological_status_HBSR_cut[!is.na(biological_
 biological_status_percent_cut_noNA <- biological_status_percent_cut[!is.na(biological_status_percent_cut$status_percent075),]
 
 biological_status_HBSR_diff <- biological_status_HBSR_cut_noNA[biological_status_HBSR_cut_noNA$status_Smsy != biological_status_HBSR_cut_noNA$status_Smsy80,]
-nrow(biological_status_HBSR_diff) # 10
+nrow(biological_status_HBSR_diff) # 13
 biological_status_percent_diff <- biological_status_percent_cut_noNA[biological_status_percent_cut_noNA$status_percent075 != biological_status_percent_cut_noNA$status_percent05,]
-nrow(biological_status_percent_diff) # 28
+nrow(biological_status_percent_diff) # 29
 
-# Remove the CUs in biological_status_percent_diff that are in biological_status_HBSR_diff
+#' Remove the CUs in biological_status_percent_diff that are in biological_status_HBSR_diff
+#' because HBSRM biostatus has priority
+
 toRemove <- sapply(X = 1:nrow(biological_status_percent_diff),FUN = function(r){
   # r <- 1
   rg <- biological_status_percent_diff$region[r]
@@ -399,33 +401,43 @@ toRemove <- sapply(X = 1:nrow(biological_status_percent_diff),FUN = function(r){
   }
   return(out)
 })
-sum(toRemove) # 2
+sum(toRemove) # 1
 
 biological_status_percent_diff <- biological_status_percent_diff[!toRemove,]
-nrow(biological_status_percent_diff) # 26
+nrow(biological_status_percent_diff) # 28
 
 # Merge biological_status_HBSR_diff and biological_status_percent_diff
 biological_status_HBSR_diff$benchmark_type <- "HBSR"
 biological_status_percent_diff$benchmark_type <- "percentiles"
-biological_status_HBSR_diff$biostatus <- biological_status_HBSR_diff$status_Smsy
-biological_status_percent_diff$biostatus <- biological_status_percent_diff$status_percent075
+biological_status_HBSR_diff$biostatus_new <- biological_status_HBSR_diff$status_Smsy
+biological_status_percent_diff$biostatus_new <- biological_status_percent_diff$status_percent075
+biological_status_HBSR_diff$biostatus_old <- biological_status_HBSR_diff$status_Smsy80
+biological_status_percent_diff$biostatus_old <- biological_status_percent_diff$status_percent05
 
-colInCommon <- c("region","species","cuid","CU_pse","biostatus","benchmark_type")
+colInCommon <- c("region","species","cuid","CU_pse","biostatus_new","biostatus_old","benchmark_type")
 
 biological_status_merge_diff <- merge(x = biological_status_HBSR_diff[,colInCommon],
                                       y = biological_status_percent_diff[,colInCommon],
                                       by = c("region","species","cuid","CU_pse"),
                                       all = T)
 
-nrow(biological_status_merge_diff) # 36 : correct
+nrow(biological_status_merge_diff) # 41
 
-biological_status_merge_diff$biostatus <- sapply(X = 1:nrow(biological_status_merge_diff),
+biological_status_merge_diff$biostatus_new <- sapply(X = 1:nrow(biological_status_merge_diff),
                                                  FUN = function(r){
                                                    # r <- 1
-                                                   out <- biological_status_merge_diff[r,c("biostatus.x","biostatus.y")]
+                                                   out <- biological_status_merge_diff[r,c("biostatus_new.x","biostatus_new.y")]
                                                    out <- out[!is.na(out)]
                                                    return(out)
 })
+biological_status_merge_diff$biostatus_old <- sapply(X = 1:nrow(biological_status_merge_diff),
+                                                     FUN = function(r){
+                                                       # r <- 1
+                                                       out <- biological_status_merge_diff[r,c("biostatus_old.x","biostatus_old.y")]
+                                                       out <- out[!is.na(out)]
+                                                       return(out)
+                                                     })
+
 biological_status_merge_diff$benchmark_type <- sapply(X = 1:nrow(biological_status_merge_diff),
                                                  FUN = function(r){
                                                    # r <- 1
@@ -434,7 +446,9 @@ biological_status_merge_diff$benchmark_type <- sapply(X = 1:nrow(biological_stat
                                                    return(out)
                                                  })
 
-colToRemove <- c("biostatus.x","biostatus.y","benchmark_type.x","benchmark_type.y")
+colToRemove <- c("biostatus_new.x","biostatus_new.y",
+                 "biostatus_old.x","biostatus_old.y",
+                 "benchmark_type.x","benchmark_type.y")
 colToKeep <- colnames(biological_status_merge_diff)[! colnames(biological_status_merge_diff) %in% colToRemove]
 biological_status_merge_diff <- biological_status_merge_diff[,colToKeep]
 
@@ -500,7 +514,7 @@ val_toUpdate <- biological_status_percent$psf_status_code[row_toUpdate]
 val_new <- paste(val_toUpdate,5, sep = ", ")
 biological_status_percent$psf_status_code[row_toUpdate] <- val_new
 
-# 6 = not-assessed (low productivity and high exploitation) --> Percentile only
+# 6 = not-assessed (low productivity or high exploitation) --> Percentile only
 highExploit_lowProd_toRemove <- highExploit_lowProd[highExploit_lowProd$toRemove,]
 for(r in 1:nrow(highExploit_lowProd_toRemove)){
   # r <- 1
@@ -557,6 +571,12 @@ unique(biological_status_percent$psf_status_code)
 
 # B. Combine the two datasets:
 
+# rename certain columns in biological_status_percent (might not be relevant anymore
+# because the code in benchamrks_Percentiles.R has been updated).
+colsToUpdate <- colnames(biological_status_percent)[grepl("status_HSPercent",colnames(biological_status_percent))]
+colsUpdated <- gsub("HSPercent","percent",colsToUpdate)
+colnames(biological_status_percent)[colnames(biological_status_percent) %in% colsToUpdate] <- colsUpdated
+
 colCommon <- c("region","species","cuid","CU_pse","current_spawner_abundance","psf_status_code")
               # "year_last","year_first","genLength")
 colHBSR <- c("status_Smsy_red","status_Smsy_amber","status_Smsy_green","status_Smsy")
@@ -571,13 +591,13 @@ biological_status_merged <- merge(x = biological_status_HBSR[,c(colCommon,colHBS
 # Check if number of CUs is correct:
 CUs_comm <- biological_status_HBSR$cuid[biological_status_HBSR$cuid %in% 
                                           biological_status_percent$cuid]
-length(CUs_comm) # 142
+length(CUs_comm) # 136
 CUs_HBSR_only <- biological_status_HBSR$cuid[!biological_status_HBSR$cuid %in% 
                                                biological_status_percent$cuid]
 length(CUs_HBSR_only) # 0
 CUs_Percent_only <- biological_status_percent$cuid[!biological_status_percent$cuid %in% 
                                                        biological_status_HBSR$cuid]
-length(CUs_Percent_only) # 286
+length(CUs_Percent_only) # 292
 
 # Expected number of rows in biological_status_merged:
 length(CUs_comm) + length(CUs_HBSR_only) + length(CUs_Percent_only) # 428
@@ -653,7 +673,7 @@ table(biological_status_merged$psf_status_code)
 unique(biological_status_merged$psf_status)
 table(biological_status_merged$psf_status)
 
-# 
+# check that CUs with current spzwner abundance info have the number 8
 unique(biological_status_merged[,c("current_spawner_abundance","psf_status_code")][is.na(biological_status_merged$current_spawner_abundance),])
 
 # Drop unecessary columns:
@@ -666,7 +686,7 @@ biological_status_merged <- biological_status_merged[,!colnames(biological_statu
 biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
                                      header = T)
 
-# check if there psf code of cyclic communities:
+# check if the psf code of cyclic communities: should be 5
 biological_status_merged[grepl("cyclic",biological_status_merged$CU_pse),]
 
 #

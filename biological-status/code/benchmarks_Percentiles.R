@@ -395,8 +395,8 @@ for(i_rg in 1:length(region)){
           # status over all the simulations
           if(currentSpawnerData_available & currentSpawnerData_availableRecentEnough){
             
-            status_HSPercent_075 <- c()
-            status_HSPercent_05 <- c()
+            status_percent_075 <- c()
+            status_percent_05 <- c()
             
             for(j in 1:nrow(modelCI$benchmarkBoot)){
               # j <- 1
@@ -407,43 +407,43 @@ for(i_rg in 1:length(region)){
               if(!is.na(LB) & !is.na(UB_05) & !is.na(UB_075)){
                 
                 if(spawnerAbundance_lastGen_m <= LB){
-                  status_HSPercent_075 <- c(status_HSPercent_075,'red')
-                  status_HSPercent_05 <- c(status_HSPercent_05,'red')
+                  status_percent_075 <- c(status_percent_075,'red')
+                  status_percent_05 <- c(status_percent_05,'red')
                   
                 }else if(spawnerAbundance_lastGen_m <= UB_05){
-                  status_HSPercent_075 <- c(status_HSPercent_075,'amber')
-                  status_HSPercent_05 <- c(status_HSPercent_05,'amber')
+                  status_percent_075 <- c(status_percent_075,'amber')
+                  status_percent_05 <- c(status_percent_05,'amber')
                   
                 }else if(spawnerAbundance_lastGen_m <= UB_075){
-                  status_HSPercent_075 <- c(status_HSPercent_075,'amber')
-                  status_HSPercent_05 <- c(status_HSPercent_05,'green')
+                  status_percent_075 <- c(status_percent_075,'amber')
+                  status_percent_05 <- c(status_percent_05,'green')
                   
                 }else{
-                  status_HSPercent_075 <- c(status_HSPercent_075,'green')
-                  status_HSPercent_05 <- c(status_HSPercent_05,'green')
+                  status_percent_075 <- c(status_percent_075,'green')
+                  status_percent_05 <- c(status_percent_05,'green')
                 }
               }else{
-                status_HSPercent_075 <- c(status_HSPercent_075,NA)
-                status_HSPercent_05 <- c(status_HSPercent_05,NA)
+                status_percent_075 <- c(status_percent_075,NA)
+                status_percent_05 <- c(status_percent_05,NA)
               }
             }
             
-            status_HSPercent_05 <- status_HSPercent_05[!is.na(status_HSPercent_05)]
-            status_HSPercent_075 <- status_HSPercent_075[!is.na(status_HSPercent_075)]
+            status_percent_05 <- status_percent_05[!is.na(status_percent_05)]
+            status_percent_075 <- status_percent_075[!is.na(status_percent_075)]
             
-            status_HSPercent_prob_05 <- round(table(factor(status_HSPercent_05,
-                                                           levels = c("red","amber","green")))/length(status_HSPercent_05)*100,4)
-            status_HSPercent_prob_075 <- round(table(factor(status_HSPercent_075,
-                                                           levels = c("red","amber","green")))/length(status_HSPercent_075)*100,4)
+            status_percent_prob_05 <- round(table(factor(status_percent_05,
+                                                           levels = c("red","amber","green")))/length(status_percent_05)*100,4)
+            status_percent_prob_075 <- round(table(factor(status_percent_075,
+                                                           levels = c("red","amber","green")))/length(status_percent_075)*100,4)
             
             comment <- ""
             
           }else{
             
-            status_HSPercent_prob_05 <- rep(NA,3)
-            status_HSPercent_prob_075 <- rep(NA,3)
-            names(status_HSPercent_prob_05) <- c("red","amber","green")
-            names(status_HSPercent_prob_075) <- c("red","amber","green")
+            status_percent_prob_05 <- rep(NA,3)
+            status_percent_prob_075 <- rep(NA,3)
+            names(status_percent_prob_05) <- c("red","amber","green")
+            names(status_percent_prob_075) <- c("red","amber","green")
             
             if(!currentSpawnerData_available){
               comment <- "Only NAs in cuspawnerabundance.csv for this CU"
@@ -465,12 +465,12 @@ for(i_rg in 1:length(region)){
           biologicalStatus_df$genLength_available <- CU_genLength_available
           biologicalStatus_df$dataPointNb <- sum(!is.na(spawnerAbundance))
           biologicalStatus_df$genLength_dataPointNb <- spawnerAbundance_lastGen_dataPointNb
-          biologicalStatus_df$status_HSPercent_05_red <- status_HSPercent_prob_05["red"]
-          biologicalStatus_df$status_HSPercent_05_amber <- status_HSPercent_prob_05["amber"]
-          biologicalStatus_df$status_HSPercent_05_green <- status_HSPercent_prob_05["green"]
-          biologicalStatus_df$status_HSPercent_075_red <- status_HSPercent_prob_075["red"]
-          biologicalStatus_df$status_HSPercent_075_amber <- status_HSPercent_prob_075["amber"]
-          biologicalStatus_df$status_HSPercent_075_green <- status_HSPercent_prob_075["green"]
+          biologicalStatus_df$status_percent_05_red <- status_percent_prob_05["red"]
+          biologicalStatus_df$status_percent_05_amber <- status_percent_prob_05["amber"]
+          biologicalStatus_df$status_percent_05_green <- status_percent_prob_05["green"]
+          biologicalStatus_df$status_percent_075_red <- status_percent_prob_075["red"]
+          biologicalStatus_df$status_percent_075_amber <- status_percent_prob_075["amber"]
+          biologicalStatus_df$status_percent_075_green <- status_percent_prob_075["green"]
           biologicalStatus_df$comment <- comment
           
           if(is.null(biologicalStatus_region_species_df)){

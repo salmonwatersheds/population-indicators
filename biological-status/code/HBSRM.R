@@ -151,13 +151,16 @@ n.iter <- 10000 # 100000  # --> 10000 only QUESTION
 n.burnin <- 3000 # 5000  # 
 n.chains <- 6     # 
 
+# options(warn=1)  # print warnings as they occur
+options(warn=2)  # treat warnings as errors
+
 #----------------------------------------------------------------------------#
 # Read in Stock-Recruit Data, run the HBSR model and output parameter estimates
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 4
+  # i_rg <- 3
   
   #*** OLD CODE BELOW TO REMOVE EVENTUALLY ***
 
@@ -202,7 +205,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 4
+      # i_sp <- 1
       
       speciesAcroHere <- unique(species_acro)[i_sp]
       speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
@@ -323,12 +326,28 @@ for(i_rg in 1:length(region)){
         cuidHere <- conservationunits_decoder_rg_sp$cuid[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
         speciesHere <- conservationunits_decoder_rg_sp$species_name[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
         
+        # in case multiple instances are returned (happens with pooled CUs)
+        if(length(cuidHere) > 1){
+
+          cuidPooledHere <- conservationunits_decoder_rg_sp$pooledcuid[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
+          
+          if(length(unique(cuidPooledHere)) == 1){
+            cuidHere <- unique(cuidPooledHere)
+            speciesHere <- unique(speciesHere)
+
+          }else{
+            print(paste0("There are multiple different CUs here: i_rg: ",i_rg," ; i_sp: ",i_sp," ; r: ",r))
+            print(conservationunits_decoder_rg_sp[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r],])
+          }
+        }
+        
         prSmaxHere <- priors_HBSRmodel_rg_sp$prSmax[priors_HBSRmodel_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
         prCVHere <- priors_HBSRmodel_rg_sp$prCV[priors_HBSRmodel_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
 
         if(length(prSmaxHere) == 0){
           prSmaxHere <- prCVHere <- NA
         }
+        
         CUs_priors$prSmax[r] <- prSmaxHere
         CUs_priors$prCV[r] <- prCVHere
         CUs_priors$species[r] <- speciesHere

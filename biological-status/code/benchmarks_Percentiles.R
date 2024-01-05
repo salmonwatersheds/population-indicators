@@ -473,8 +473,6 @@ for(i_rg in 1:length(region)){
           biologicalStatus_df$status_HSPercent_075_green <- status_HSPercent_prob_075["green"]
           biologicalStatus_df$comment <- comment
           
-          spawnerAbundance_lastGen_m
-          
           if(is.null(biologicalStatus_region_species_df)){
             biologicalStatus_region_species_df <- biologicalStatus_df
           }else{
@@ -486,11 +484,11 @@ for(i_rg in 1:length(region)){
         
         print(paste0("*** ",regionName,"_",speciesAcroHere," done ***"))
         write.csv(x = benchSummary_region_species_df, 
-                  file = paste0(wd_output,"/",regionName,"_",speciesAcroHere,"_benchmarks_HS_percentiles_summary.csv"),
+                  file = paste0(wd_output,"/",regionName,"_",speciesAcroHere,"_benchmarks_summary_percentiles.csv"),
                   row.names = F) # keep region[i_rg] and not region_i because of "Central coast" is used to name the other files and not "Central Coast"
         
         write.csv(x = biologicalStatus_region_species_df, 
-                  file = paste0(wd_output,"/",regionName,"_",speciesAcroHere,"_biological_status_SH_percentiles.csv"),
+                  file = paste0(wd_output,"/",regionName,"_",speciesAcroHere,"_biological_status_percentiles.csv"),
                   row.names = F)
         
       } # if there is data for this species

@@ -131,10 +131,12 @@ species_all <- TRUE
 # last year to calculate current spawner abundance
 yearCurrentAbundance <- 2021
 
+options(warn=0)  # warnings are stored until the top level function returns (default)
+
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
+  # i_rg <- 6
   
   region_i <- gsub("_"," ",region[i_rg])
   if(region_i == "Central coast"){
@@ -151,7 +153,7 @@ for(i_rg in 1:length(region)){
     files_list <- list.files(wd_data_input)
     files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
     files_s <- files_s[grepl(pattern = regionName,files_s)]
-    species <- unique(sub("_posteriors_priorShift.*", "", files_s))
+    species <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
     species <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species)
   }
   
@@ -163,7 +165,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(species)){
       
-      # i_sp <- 1
+      # i_sp <- 5
       
       speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro == species[i_sp]]
       
@@ -177,7 +179,7 @@ for(i_rg in 1:length(region)){
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
       # - with bi the CU-level density dependence parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
       # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
-      post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_posteriors_priorShift.rds"))
+      post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_HBSRM_posteriors_priorShift.rds"))
       
       # Import the S and R matrices used for fitting the HBSR model:
       # BSC: the wd here will eventually have to be set to the final repo for the 
@@ -221,17 +223,20 @@ for(i_rg in 1:length(region)){
       #-----------------------------------------------------------------------------#
       
       # The Gelman-Rubin metric : R_hat ; if R_hat < 1.1 all is good
-      r.hat <- gelman.diag(x = post, multivariate = F)
-      if(sum(r.hat[[1]][, 1] > 1.1, na.rm = T) > 0){
-        warning(paste("Some convergence issues for parameters: \n", 
-                      paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(r.hat[[1]][, 1] > 1.1)])))
-        print(r.hat)
-      }
-      if(sum(is.na(r.hat[[1]][, 1])) > 0){  # BSC: I added that for Fraser PK 
-        warning(paste("Some convergence issues for parameters: \n", 
-                      paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(is.na(r.hat[[1]][, 1]))])))
-        print(r.hat)
-      }
+      # r.hat <- gelman.diag(x = post, multivariate = F)
+      # if(sum(r.hat[[1]][, 1] > 1.1, na.rm = T) > 0){
+      #   warning(paste("Some convergence issues for parameters: \n", 
+      #                 paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(r.hat[[1]][, 1] > 1.1)])))
+      #   print(r.hat)
+      # }
+      # if(sum(is.na(r.hat[[1]][, 1])) > 0){  # BSC: I added that for Fraser PK 
+      #   warning(paste("Some convergence issues for parameters: \n", 
+      #                 paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(is.na(r.hat[[1]][, 1]))])))
+      #   print(r.hat)
+      # }
+      
+      #' BSC: This is being checked in checks_fixes.R under section "Check the 
+      #' convergence diagnostic files for the HBSRM".
       
       #-----------------------------------------------------------------------------#
       # Calculate benchmarks
@@ -339,7 +344,7 @@ for(i_rg in 1:length(region)){
       # layout(matrix(data = 1:(nCUs * 2), nrow = nCUs, byrow = T))
       for(i in 1:nCUs){
         
-        # i <- 1
+        # i <- 6
         
         #----------------------
         # biological status probability with the average spawner abundance over the last generation
@@ -534,12 +539,12 @@ for(i_rg in 1:length(region)){
                                           status_Smsy80_green = status_Smsy80_prob["green"],
                                           comment = comment)
         
-        if(is.null(biologicalStatus_region_species_df)){
-          biologicalStatus_region_species_df <- biologicalStatus_df
-        }else{
-          biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
-                                                      biologicalStatus_df)
-        }
+        # if(is.null(biologicalStatus_region_species_df)){
+        #   biologicalStatus_region_species_df <- biologicalStatus_df
+        # }else{
+        #   biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
+        #                                               biologicalStatus_df)
+        # }
         
         #----------------------
         # Plot
@@ -629,7 +634,8 @@ for(i_rg in 1:length(region)){
                      y0 = y, y1 = y, 
                      col = statusCols[c('r', 'g')[k]], 
                      lty = c(2,1)[j], lwd = 2, xpd = NA)
-          }}
+          }
+        }
         
         legend("topright", lty = c(2,1, NA, NA), pch = c(NA, NA, 19, 19), 
                col = c(1, 1, statusCols['r'], statusCols['g']), 
@@ -646,28 +652,50 @@ for(i_rg in 1:length(region)){
         dens <- list(density(SR_bench[i, "Sgen", , ], from = 0, to = maxS/1.5, na.rm = T), # BSC: I had to add na.rm = T
                      density(SR_bench[i, "Smsy", , ], from = 0, to = maxS/1.5, na.rm = T))
         
-        h1 <- hist(x = Sgen, col = paste0(statusCols['r'], 50), border = NA,
-                   breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), main = "", 
-                   freq = FALSE, xlab = "Benchmarks")
-        h2 <- hist(x = Smsy, col = paste0(statusCols['g'], 50), border = NA, 
-                   breaks = seq(0, maxS, maxS/50), add = TRUE, 
-                   freq = FALSE)
-        
-        # Plot density lines and benchmark estimates
-        u <- par('usr')
-        for(k in 1:2){
-          lines(dens[[k]], lwd = 2, col = statusCols[c('r', 'g')[k]])
-          for(j in 1:2){
-            abline(v = benchSummary[[k]][j, 1], col = statusCols[c('r', 'g')[k]], 
-                   lty = c(2,1)[j])
-            # abline(v = benchSummary[[k]][j, 2:3], col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j])
-            
-            y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
-            points(x = benchSummary[[k]][j, 1],y = y, col = statusCols[c('r', 'g')[k]],
-                   pch = 19, xpd = NA)
-            segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
-                     y0 = y, y1 = y, 
-                     col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j], lwd = 2, xpd = NA)
+        # Ih there are Sgen and Smsy values < Smax:
+        if(length(Sgen) > 0 & length(Smsy) > 0){
+          
+          h1 <- hist(x = Sgen, col = paste0(statusCols['r'], 50), border = NA,
+                     breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), main = "", 
+                     freq = FALSE, xlab = "Benchmarks")
+          h2 <- hist(x = Smsy, col = paste0(statusCols['g'], 50), border = NA, 
+                     breaks = seq(0, maxS, maxS/50), add = TRUE, 
+                     freq = FALSE)
+          
+          # Plot density lines and benchmark estimates
+          u <- par('usr')
+          for(k in 1:2){
+            lines(dens[[k]], lwd = 2, col = statusCols[c('r', 'g')[k]])
+            for(j in 1:2){
+              abline(v = benchSummary[[k]][j, 1], col = statusCols[c('r', 'g')[k]], 
+                     lty = c(2,1)[j])
+              # abline(v = benchSummary[[k]][j, 2:3], col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j])
+              
+              y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+              points(x = benchSummary[[k]][j, 1],y = y, col = statusCols[c('r', 'g')[k]],
+                     pch = 19, xpd = NA)
+              segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
+                       y0 = y, y1 = y, 
+                       col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j], lwd = 2, xpd = NA)
+            }
+          }
+        }else{
+          
+          commentHere <- paste0("maxS = ",maxS,
+                                "; min(Sgen) = ",round(min(SR_bench[i, "Sgen",,]),1),
+                                "; min(Smsy) = ",round(min(SR_bench[i, "Smsy",,]),1))
+          
+          plot.new()
+          legend("center",c("ERROR",
+                            paste0("maxS = ",maxS),
+                            paste0("min(Sgen) = ",round(min(SR_bench[i, "Sgen",,]),1)),
+                            paste0("min(Smsy) = ",round(min(SR_bench[i, "Smsy",,]),1))))
+          
+          if(biologicalStatus_df$comment == ""){
+            biologicalStatus_df$comment <- commentHere
+          }else{
+            biologicalStatus_df$comment <- paste(biologicalStatus_df$comment,
+                                                 commentHere, sep = " ; ERROR: ")
           }
         }
         
@@ -679,6 +707,7 @@ for(i_rg in 1:length(region)){
         
         benchSummary_df <- data.frame(region = rep(region[i_rg],4),
                                       species = rep(species[i_sp],4),
+                                      cuid = rep(cuids[i],4),
                                       CU = rep(CUs[i],4),
                                       benchmark = c(rep(names(benchSummary)[1],2),rep(names(benchSummary)[2],2)),
                                       method = rep(rownames(benchSummary[[1]]),2))
@@ -693,16 +722,25 @@ for(i_rg in 1:length(region)){
           benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
                                                   benchSummary_df)
         }
+        
+        # 
+        if(is.null(biologicalStatus_region_species_df)){
+          biologicalStatus_region_species_df <- biologicalStatus_df
+        }else{
+          biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
+                                                      biologicalStatus_df)
+        }
+        
       } # end of for each CU
       
       print(paste0("*** ",region[i_rg],"_",species[i_sp]," done ***"))
       
       write.csv(x = benchSummary_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_benchmarks_summary.csv"),
+                file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_benchmarks_summary_HBSRM.csv"),
                 row.names = F,)
       
       write.csv(x = biologicalStatus_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_biological_status.csv"),
+                file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_biological_status_HBSRM.csv"),
                 row.names = F)
       
       # # Add legend

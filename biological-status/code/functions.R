@@ -20,7 +20,8 @@
 #' function.
 #' @return Returns the numeric value of Sgen1.
 #' 
-#' @examples 
+#' @examples
+
 calcSgen <- function(Sgen.hat, theta, Smsy){
   
   # the function returns:
@@ -124,6 +125,17 @@ figure_compare_benchamrks_fun <- function(BM_data,
     
     # i_r <- 1
     
+    region_i <- gsub("_"," ",regions[i_r])
+    if(region_i == "Central coast"){
+      region_i <- "Central Coast"
+    }
+    
+    if(regions[i_r] == "Vancouver Island & Mainland Inlets"){
+      regionName <- "VIMI"
+    }else{
+      regionName <- regionName <- gsub(" ","_",region[i_rg])
+    }
+    
     species <- unique(subset(x = BM_data, subset = region == regions[i_r])$species)
     
     for(i_s in 1:length(species)){
@@ -133,6 +145,9 @@ figure_compare_benchamrks_fun <- function(BM_data,
       BM_data_sub <- BM_data[BM_data$region == regions[i_r] & BM_data$species == species[i_s],]
       
       CUs <- unique(BM_data_sub$CU)
+      cuids <- sapply(X = CUs, FUN = function(cu){
+        BM_data_sub$cuid[BM_data_sub$CU == cu][1]
+      })
       nCUs <- length(CUs)
       
       side1_large <- size_box_cm / 6   # 1.0
@@ -209,7 +224,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
       height_fig_cm_noHeader <- height_fig_cm -  header * size_box_cm/5
       
       if(print_fig){
-        pathFile <- paste0(wd_figures,"/",regions[i_r],"_",species[i_s],
+        pathFile <- paste0(wd_figures,"/",regionName,"_",species[i_s],
                            "_benchmarks_comparisons",addTonameFile,".jpeg")
         
         jpeg(file = pathFile, 
@@ -244,7 +259,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
         if(nameRegion_show | nameSpecies_show){
           sep <- " - "
         }
-        header_text <- c(gsub("_"," ",region[i_r]),species[i_s])
+        header_text <- c(gsub("_"," ",region_i),species[i_s])
         header_text <- paste0(header_text[c(nameRegion_show,nameSpecies_show)],collapse = sep)
         
         par(mar = rep(0,4))
@@ -269,7 +284,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
         for(m in methods){
           # m <- "medQuan" # m <- "HPD" # m <- "HS_percentiles"
           if(m == "HS_percentiles"){
-            CItype <- c("lower","upper")
+            CItype <- c("benchmark_0.25","benchmark_0.75")
           }else{
             CItype <- c("Sgen","Smsy")
           }
@@ -322,6 +337,14 @@ figure_compare_benchamrks_fun <- function(BM_data,
         segments(x0 = x, x1 = x_UCI, y0 = y, y1 = y, 
                  col = c(benchCols["r"],benchCols["g"]), lwd = 2)
         mtext(CUs[i_cu],side = 3, line = .4)
+        legend("topright",paste0("CUID: ",cuids[i_cu]),bty = 'n')
+        
+        # add the current spawner abundance
+        csa <- BM_data_sub_cu$current_spawner_abundance[1]
+        if(!is.na(csa)){
+          segments(x0 = csa, x1 = csa, y0 = 0, y1 = 4, lty = 2)
+        }
+        
         if(xlab_show[i_cu]){
           mtext("Number of spawners",side = 1, line = 2.5, cex = .9)
         }

@@ -49,15 +49,12 @@ source("Code/functions.R")
 # Load packages
 library(tidyverse)
 
-# option to export the figures
-print_fig <- F
-
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
 wd_data_regions <- wd_data_regions_fun(wd_root = wd_X_Drive1_PROJECTS)
 
 # Import species names and acronyms
-species_acronym <- species_acronym_fun()
+species_acronym_df <- species_acronym_fun()
 
 # Import region names
 regions_df <- regions_fun()
@@ -90,7 +87,6 @@ region <- c(
 
 # all the regions
 region <- as.character(regions_df[1,])
-region <- region[region != "Columbia"]
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
@@ -112,15 +108,24 @@ for(i_rg in 1:length(region)){
   
   # i_rg <- 1
   
-  region_i <- region[i_rg]
+  region_i <- gsub("_"," ",region[i_rg])
+  if(region_i == "Central coast"){
+    region_i <- "Central Coast"
+  }
+  
+  if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+    regionName <- "VIMI"
+  }else{
+    regionName <- regionName <- gsub(" ","_",region[i_rg])
+  }
   
   # select the benchmark files related to the region
   files_list <- list.files(wd_output)
   files_list <- files_list[grepl(pattern = "[B|b]enchmarks",x = files_list)]
-  files_list <- files_list[grepl(pattern = region_i,x = files_list)]
+  files_list <- files_list[grepl(pattern = regionName,x = files_list)]
   
   # returns the species available
-  species_avail <- gsub(paste0(region_i,"_"),"",files_list)
+  species_avail <- gsub(paste0(regionName,"_"),"",files_list)
   species_avail <- unique(substr(species_avail, start = 1, stop = 2))
   
   if(!species_all){
@@ -151,12 +156,31 @@ for(i_rg in 1:length(region)){
         if(sum("benchmarks" %in% colnames(output)) == 0){
           output$benchmarks <- NA
         }
-        return(output)
+        colSelect <- c("region","species","cuid","CU","benchmark","method","m","CI025","CI975")
+        return(output[,colSelect])
       })
-      
+      # colnames(benchmarks_df[[1]])[colnames(benchmarks_df[[1]]) %in% colnames(benchmarks_df[[2]])]
       benchmarks_df <- do.call(what = rbind,benchmarks_df)
       benchmarks_df$CU <- gsub("_"," ",benchmarks_df$CU)
       
+      # find for each CUs the corresponding current spawner abundance
+      files_bioStatus <- list.files(wd_output)
+      files_bioStatus <- files_bioStatus[grepl(pattern = "biological_status",x = files_bioStatus)]
+      files_bioStatus <- files_bioStatus[grepl(pattern = regionName,x = files_bioStatus)]
+      files_bioStatus <- files_bioStatus[grepl(species_i,files_bioStatus)]
+      current_S_cuid <- lapply(X = files_bioStatus, FUN = function(x){
+        # x <- files_bioStatus[1]
+        output <- read.csv(paste0(wd_output,"/",x),header = T)
+        if(sum("benchmarks" %in% colnames(output)) == 0){
+          output$benchmarks <- NA
+        }
+        colSelect <- c("cuid","current_spawner_abundance")
+        return(output[,colSelect])
+      })
+      current_S_cuid <- do.call(rbind,current_S_cuid)
+      current_S_cuid <- unique(current_S_cuid)
+      benchmarks_df <- merge(x = benchmarks_df, y = current_S_cuid, by = 'cuid')
+
       # 
       CUs <- unique(benchmarks_df$CU)
       
@@ -166,7 +190,7 @@ for(i_rg in 1:length(region)){
         figure_compare_benchamrks_fun(BM_data = benchmarks_df, 
                                       nameRegion_show = T, 
                                       nameSpecies_show = T, 
-                                      print_fig = F,
+                                      print_fig = print_fig,
                                       size_box_cm = 7,
                                       wd_figures = wd_figures,
                                       coeff_width_adj = .53)
@@ -175,7 +199,6 @@ for(i_rg in 1:length(region)){
         
         length(CUs) %% nbplots_max
         nb_loops <- length(CUs) %/% nbplots_max + 1
-        
         
         for(i_loops in 1:nb_loops){
           start <- 1 + (i_loops - 1) * nbplots_max

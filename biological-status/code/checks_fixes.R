@@ -1483,11 +1483,15 @@ patterns <- c("_posteriors_priorShift.rds",
               "benchmarks_summary.csv",
               "CUs_names.csv",
               "_SR_matrices.rds")
+
+patterns <- c("_benchmarks_summary.csv",
+              "_biological_status.csv")
+
 deleteFiles_fun(wd = wd_output,patterns)
 
 #
 # Check the convergence diagnostic files for the HBSRM -----
-
+# Gelman and Rubin's convergence diagnostic
 pattern <- "HBSRM_convDiagnostic"
 convDiag <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                           wd_output = wd_output,
@@ -1499,14 +1503,15 @@ View(convDiag)
 convDiag_cut <- convDiag[!convDiag$parameter %in% c("deviance","mu_a","sd_a"),]
 # convDiag_cut <- convDiag[!convDiag$parameter %in% c("deviance"),]
 toCheck <- convDiag_cut[convDiag_cut$Point.est. > 1.1,]
+toCheck <- convDiag[convDiag$Point.est. > 1.1,]
 
-convDiag[convDiag$Point.est. > 1.1,]
+convDiag[convDiag$Point.est. > 1.1,c("region","species_acro","parameter","Point.est.","Upper.C.I.")]
 
 # look at the convergence plot 
 priorFile <- paste0(gsub(" ","_",toCheck$region[1]),"_SX","_HBSRM_posteriors_priorShift.rds")
 postDistPrior <- readRDS(paste(wd_output,priorFile,sep = "/"))
 class(postDistPrior)
-plot(postDistPrior)
+plot(postDistPrior[,"mu_a"])
 
 
 TODO: for those that do not converge: 

@@ -71,12 +71,17 @@ calcSgen <- function(Sgen.hat, theta, Smsy){
 #' @examples
 #' #
 
-calcSmsy <- function(a, b) {
+calcSmsy <- function(a, b){
   
-  require(lamW) # for the Lambert-W Function
-  
-  Smsy = (1 - lamW::lambertW0(exp(1 - a))) / b
-  
+  if(a < 0){
+    # there is no such thing as “sustainable yield” if your population has negative growth.
+    Smsy <- 0
+    
+  }else{
+    
+    require(lamW) # for the Lambert-W Function
+    Smsy <- (1 - lamW::lambertW0(exp(1 - a))) / b
+  }
   return(as.numeric(Smsy))
 }
 
@@ -669,7 +674,8 @@ regions_fun <- function(){
 #' 
 #' @param Sgen.hat A proposed numeric value for Sgen
 #' @param theta A numeric vector containing the estimated parameters a, b, and
-#' sigma from the Ricker function fit to data
+#' sigma (of the loglikelihood function of the HBSRM) from the Ricker function fit
+#' to data.
 #' @param Smsy The calculated value of Smsy based on theta, from the calcSmsy
 #' function.
 #' @return Returns the negative log likelihood of the residuals.
@@ -688,7 +694,11 @@ Sgen.optim <- function (Sgen.hat, theta, Smsy) {
   
   a <- theta[1]
   b <- theta[2]
-  sig <- exp(theta[3])  # sigma_bi
+  sig <- exp(theta[3])  # sd of likelihood of HBSRM
+  # BSC: here theta[3] is used to account for how noisy this iteration for this
+  # CU was in the HBSRM. Putting the exp() is arbitrary but aims at forgiving in
+  # the likelihood estimation (?).
+  # 
   
   # Compute projected recruits based on Sgen.hat
   Smsy.hat <- Sgen.hat * exp(a - b * Sgen.hat) 

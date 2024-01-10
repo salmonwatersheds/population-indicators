@@ -48,6 +48,7 @@ wd_data_input <- wd_output
 source("Code/functions.R")
 
 # Load packages
+library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
 
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
@@ -1511,6 +1512,7 @@ convDiag[convDiag$Point.est. > 1.1,c("region","species_acro","parameter","Point.
 priorFile <- paste0(gsub(" ","_",toCheck$region[1]),"_SX","_HBSRM_posteriors_priorShift.rds")
 postDistPrior <- readRDS(paste(wd_output,priorFile,sep = "/"))
 class(postDistPrior)
+plot(postDistPrior)
 plot(postDistPrior[,"mu_a"])
 
 

@@ -52,7 +52,7 @@ wd_data_input <- wd_output
 source("Code/functions.R")
 
 # Load packages
-library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.  ??? needed ?
+library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # Paths to the repositories containing the run reconstruction datasets for each 
@@ -454,10 +454,16 @@ for(i_rg in 1:length(region)){
         S = S,         # data on observed spawners - matrix nYrs x nCU 
         # ln_Smsr = log(1/inipars$b),
         prmub = prmub, # prior on mu for b
-        prtaub = prtaub #prior on tau for b
+        prtaub = prtaub # prior on tau for b
       ) # cov - not sure what this is
       
-      jags.parms <- c("a", "b", "sd", "mu_a", "sd_a")
+      jags.parms <- c("a", "b", 
+                      "sd",     # the sd for the loglikelihood function
+                      "mu_a", "sd_a")
+      
+      # what is sd?  --> the sd for the likelihood --> not in the tech report
+      # why sd_bi are not estimated?
+      # why taking the exp(sd) in Sgen.optim()?
       
       # Definition of the model:
       modelFilename = "Bayes_SR_model.txt"
@@ -473,7 +479,7 @@ for(i_rg in 1:length(region)){
         	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
         	
         		# a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
-        		a[i] ~ dlnorm(mu_a, tau_a)
+        		a[i] ~ dlnorm(mu_a, tau_a) # TOCHANGE: CONFUSION WITH ALPHA = exp(a) --> a[i] ~ dnorm(mu_a, tau_a) ???
         		
         		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
         		

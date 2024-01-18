@@ -9,6 +9,8 @@
 #' 
 #' Files produced: 
 #' - 
+#' 
+
 #'******************************************************************************
 
 # NOTE (to remove eventually): original script is:
@@ -67,6 +69,7 @@ library(ggplot2)
 library(readxl)
 library(reshape2)
 library(stringr)
+library(viridis)
 
 #
 # Functions ------
@@ -75,21 +78,10 @@ source("code/functions.R")
 #
 # Import datasets -----
 
-#' ** Import reference file for formatting output **
-#'This file is only used to rename the columns of the final dataframe at the end 
-#' (i.e., NuSEDS_escapement_data_collated_date.csv).
-# Origin in Dropbox: /X Drive/1_PROJECTS/Fraser_VIMI/analysis/Compilation/Reference
-template_df <- read.delim(paste(wd_references_dropbox,"NCC_Streams_13March2016_KKE.txt",sep="/"),
-                     header=TRUE, na.string="")
-
-# Set up column names for empty destination dataframe
-names <- c(names(template_df)[1:45], c(1926:2021))
-# View(template_df)
+#' Import the dataframe of the NuSEDS datasets of interest:
+NuSEDS_datasets_names <- NuSEDS_datasets_names_fun()
 
 #' ** Import the NuSEDS data (all_areas_nuseds) **
-
-#' Imort the dataframe of the NuSEDS datasets of interest:
-NuSEDS_datasets_names <- NuSEDS_datasets_names_fun()
 
 # Import the all_areas_nuseds data:
 all_areas_nuseds <- datasets_NuSEDS_fun(name_dataSet = NuSEDS_datasets_names$all_areas_nuseds, 
@@ -99,174 +91,27 @@ all_areas_nuseds <- datasets_NuSEDS_fun(name_dataSet = NuSEDS_datasets_names$all
 colnames(all_areas_nuseds)
 # View(all_areas_nuseds)
 
-# cf. references/useds_report_definitions.xlsx for the definitions of terms:
-unique(all_areas_nuseds$POPULATION)    # Default naming originates from previous databases =  stream name + subdistrict + species + run type. This is the most important piece of data that all the other SEN data fields refers to.
-unique(all_areas_nuseds$POP_ID)        # population ID
-unique(all_areas_nuseds$GFE_ID)        # stream ID
-unique(all_areas_nuseds$WATERBODY)     # name of the waterbody or portion of a waterbody that bounds the population as shown on any given SEN.
-unique(all_areas_nuseds$WATERBODY_ID)  # 
-unique(all_areas_nuseds$ACT_ID)        # primary key for SEN
-
-# TODO: implement comparison with previous version. Below is a temporary solution.
-# all_areas_nuseds_old <- read.csv(paste(wd_data_dropbox,"All Areas NuSEDS.csv",sep="/"),
-#                        header=TRUE, stringsAsFactors=FALSE)
-# 
-# compareColNamesDF_fun(all_areas_nuseds,all_areas_nuseds_old)
-
 #' ** Import the NuSEDS list of CUs (conservation_unit_system_sites): **
-# ???: what's the goal?
 # DFO provided files matching streams and Nuseds to full CU index 
 conservation_unit_system_sites <- datasets_NuSEDS_fun(name_dataSet = NuSEDS_datasets_names$conservation_unit_system_sites, 
                                                       from_NuSEDS_website = F, 
                                                       wd = wd_data_dropbox)
 
-colnames(conservation_unit_system_sites)
-unique(conservation_unit_system_sites$SPECIES_QUALIFIED)
-# View(conservation_unit_system_sites)
+#' ** Import the definition of the different fields of these two datasets **
+fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
+fields_def$all_areas_nuseds$AREA
+fields_def$cu_system_sites$`Waterbody Name`
 
-# cf. references/conservation_unit_report_definitions.csv for definitions:
-unique(conservation_unit_system_sites$CU_NAME)        # The assigned name of the Conservation Unit. Note that this name does not identify the species.
-unique(conservation_unit_system_sites$CU_ACRO)        # the CUs' acronyms
-unique(conservation_unit_system_sites$CU_INDEX)       # = "species code" + "Conservation Unit Index" (?) NOTE from Cathy: old code that should not be trusted 
-unique(conservation_unit_system_sites$CU_TYPE)        # 
-unique(conservation_unit_system_sites$SYSTEM_SITE)    # 
-unique(conservation_unit_system_sites$WATERSHED_CDE)  # 45 digit hierarchical provincial code unique to the waterbody and its watershed  
-unique(conservation_unit_system_sites$FULL_CU_IN)     #' The full index of the CU including the species qualifier (SPECIES_QUALIFIED), e.g. CK-01 *** to compare with the PSF "CU_INDEX" or "cu_index" ***
-unique(conservation_unit_system_sites$POP_ID)         # A unique numeric code identifying the population
-range(conservation_unit_system_sites$POP_ID)          # so different from the number in cuid or CU_FULL_IN
-unique(conservation_unit_system_sites$GFE_ID)         # Numeric code identifying the waterbody. From NUSEDS with some additions and modifications. Same as Stream_Id
-unique(conservation_unit_system_sites$FWA_WATERSHED_CDE) 
-unique(conservation_unit_system_sites$SPECIES_QUALIFIED)   # This is an Conservation Unit acronym used to describe the species of salmon for which the escapement estimate is for, eg:  CK - Chinook Salmon CM - Chum Salmon CO - Coho Salmon PKE - Even Year Pink Salmon PKO - Odd Year Pink Salmon SEL - Lake Type Sockeye Salmon SER - River or Ocean Type Sockeye Salmon  
-
-# TODO: implement comparison with previous version. Below is a provisory solution.
-# conservation_unit_system_sites_old <- read.csv(paste(wd_data_dropbox,"conservation_unit_system_sitesJul2023.csv",sep="/"),
-#                          header=TRUE, stringsAsFactors=FALSE)
-# names(conservation_unit_system_sites_old)[1] <- "ID"
-# unique(conservation_unit_system_sites_old$ID)  # QUESTION: there are only NAs ???
-# 
-# compareColNamesDF_fun(conservation_unit_system_sites,conservation_unit_system_sites_old)
-
-#' TODO: check if the new version works despite missing certain columns. If it 
-#' does not work, figure out what column(s) is needed and then ask how it was 
-#' obtained.
-
-# If we decide to keep the older version, do:
-# conservation_unit_system_sites <- conservation_unit_system_sites_old
-# names(conservation_unit_system_sites)[1] <- "ID"
-# unique(conservation_unit_system_sites_old[,1])
-
-colnames(all_areas_nuseds)[colnames(all_areas_nuseds) %in% colnames(conservation_unit_system_sites)]
-# "WATERSHED_CDE" "POP_ID"        "GFE_ID"
 
 #' ** Import PSF list of CUs **
-
 #' Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
-# ???: what's the goal?
 
 conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
                                                    fromDatabase = F,
                                                    update_file_csv = F,
                                                    wd = wd_pop_indic_data_input_dropbox)
-
-unique(conservationunits_decoder$cu_index)   # Katy: carried through from earlier versions of CUs. I would not rely on the values in the CU_INDEX field to match to FULL_CU_IN in 
-unique(conservationunits_decoder$cuid)       # The PSF unique identifier
-unique(conservationunits_decoder$cu_name_pse)    # 
-unique(conservationunits_decoder$cu_name_dfo)   
-unique(conservationunits_decoder$region)     # SCVI = ???
-unique(conservationunits_decoder$cu_type)    # same as the DFO conservation_unit_system_sites$CU_TYPE   
-
-conservationunits_decoder[conservationunits_decoder$cuid == 936,] # CU that disappeared from older dataset (see google doc) --> TODO: check with Eric and Katy to make sure
-
-#' ** Import WHAT IS IT ??? TO FINISH AT HOME CHECK IF THIS IS THE STREAM DATA FROM DATABASE**
-# ???: where is it coming from? --> streamspawnersurveys_output to check 
-# ???: what's the goal?
-# List of CUs for the VIMI Fraser???
-# Katy: "this file contains stream IDs in the Skeena. why it's tagged with vimi I do not know."
-# vimi.sites <- read.delim(paste(wd_data_dropbox,"ssp.streams_20230719.txt",sep = "/"),
-#                          header=TRUE, stringsAsFactors=FALSE)
-# colnames(vimi.sites)[colnames(vimi.sites) == "streamname"] <- "SYSTEM_SITE"
-# head(vimi.sites)
-# 
-# streamspawnersurveys_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
-#                                                      fromDatabase = F,
-#                                                      update_file_csv = F,
-#                                                      wd = wd_pop_indic_data_input_dropbox)
-# head(streamspawnersurveys_output)
-
-
-# CHECKS -------
-#
-#'* CHECK 1 ??? QUESTION: is that a QA/QC here below? *
-
-# BSC: return all the rows in vimi.sites without a match in conservation_unit_system_sites
-# QUESTIONS: what is that for? Just a check up? What do we do with these CUs?
-# da <- anti_join(vimi.sites, conservation_unit_system_sites, by = "SYSTEM_SITE")
-# da
-
-#'* CHECK 2 ??? * 
-#' Compare NuSEDS CUs (i.e. conservation_unit_system_sites) with PSF list of CUs 
-#' (i.e., conservationunits_decoder) - make sure that the CUs we are keeping are
-#' the right ones. There are some discrepancies where CUs listed as "current" in
-#' PSF list have been binned in NuSEDS list.
-#' QUESTION: what to do in this case?
-
-
-# Filter site info for CUs in south coast regions.
-
-# colToKeep <- colnames(conservation_unit_system_sites)[c(13,18,20)] # bad practice
-colToKeep <- c("CU_NAME","CU_TYPE","FULL_CU_IN")
-
-# Which CUs in the NuSEDS "CU_Sites" file are labeled "Bin"?
-conservation_unit_system_sites_bin <- unique(conservation_unit_system_sites[conservation_unit_system_sites$CU_TYPE == "Bin",colToKeep])
-conservation_unit_system_sites_bin <- unique(conservation_unit_system_sites[grepl("[B|b]in",conservation_unit_system_sites$CU_TYPE),colToKeep])
-conservation_unit_system_sites_bin
-
-# Which are labeled "Extirpated"?
-conservation_unit_system_sites_extir <- unique(conservation_unit_system_sites[conservation_unit_system_sites$CU_TYPE == "Extirpated",colToKeep])
-conservation_unit_system_sites_extir <- unique(conservation_unit_system_sites[grepl("[E|e]xtirpated",conservation_unit_system_sites$CU_TYPE),colToKeep])
-conservation_unit_system_sites_extir
-
-# For the populations which are Binned in NuSEDs, we have DIFFERENT CU indices from the PSF list #
-# Which of these CU indices are present in the NuSEDS CU list? #
-CU_Bin_Ind <- c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025") # QUESTION: are those CU indices from PSF?
-conservationunits_decoder[conservationunits_decoder$CU_TYPE == "Bin",]  # BSC: these are different, I'm so confused...
-conservationunits_decoder[conservationunits_decoder$CU_INDEX %in% conservation_unit_system_sites_bin$FULL_CU_IN,]  # QUESTION: I don't know how to match these two datasets...
-conservationunits_decoder2[conservationunits_decoder2$CU_INDEX %in% conservation_unit_system_sites_bin$FULL_CU_IN,c("Region","CU_INDEX","cu_name_dfo","cu_name_pse","pooledcuid","CUID")]
-
-conservationunits_decoder2[conservationunits_decoder2$CU_INDEX %in% conservation_unit_system_sites_extir$FULL_CU_IN,c("Region","CU_INDEX","cu_name_dfo","cu_name_pse","pooledcuid","CUID")]
-
-unique(conservationunits_decoder$CUID)
-unique(conservation_unit_system_sites_bin$CU_NAME) # transform to  lower case and remove "<<BIN>>" ?
-
-conservationunits_decoder[conservationunits_decoder$CU_INDEX %in% CU_Bin_Ind,] # QUESTION: one is misisng + plus I thought CU_INDEX was not reliable
-
-unique(conservationunits_decoder$CU_INDEX)
-unique(conservationunits_decoder2$cu_index)
-unique(conservation_unit_system_sites_bin$FULL_CU_IN)
-unique(conservation_unit_system_sites$FULL_CU_IN)
-
-unique(conservation_unit_system_sites$FULL_CU_IN)
-unique(conservation_unit_system_sites_old$FULL_CU_IN)
-
-unique(conservation_unit_system_sites_old$POP_ID_IN_NUSEDS)
-
-conservation_unit_system_sites_bin
-
-#unique(conservation_unit_system_sites[conservation_unit_system_sites$FULL_CU_IN %in% c("SEL-06-910", "SEL-06-911", "SEL-10-913","SEL-13-008", "SER-101", "SEL-13-025"), c(13,18,20)])
-unique(conservation_unit_system_sites[conservation_unit_system_sites$FULL_CU_IN %in% CU_Bin_Ind, colToKeep])
-
-# Try looking up binned CU names in NuSEDS list # QUESTION: try to do what? there is not correction being done
-# unique(conservation_unit_system_sites[conservation_unit_system_sites$CU_ACRO %in% c(str_subset(unique(conservation_unit_system_sites$CU_ACRO), "Seton-L")),c(13,18,20)])
-# unique(conservation_unit_system_sites[conservation_unit_system_sites$CU_ACRO %in% c(str_subset(unique(conservation_unit_system_sites$CU_ACRO), "Nadina/Francois-ES")),c(13,18,20)])
-# unique(conservation_unit_system_sites[conservation_unit_system_sites$CU_ACRO %in% c(str_subset(unique(conservation_unit_system_sites$CU_ACRO), "NBarriere-ES")),c(13,18,20)])
-unique(conservation_unit_system_sites[grepl("Seton-L",conservation_unit_system_sites$CU_ACRO),colToKeep])
-unique(conservation_unit_system_sites[grepl("Nadina/Francois-ES",conservation_unit_system_sites$CU_ACRO),colToKeep])
-unique(conservation_unit_system_sites[grepl("NBarriere-ES",conservation_unit_system_sites$CU_ACRO),colToKeep])
-
-#
-# CHECKS END ------
 
 # Remove rows for Atlantic, Steelhead, and Kokanee #
 sp_salmon_detail <- c("Chum", "Chinook", "Coho", "Pink even","Pink odd","Sockeye lake","Sockeye river")
@@ -287,120 +132,118 @@ conservation_unit_system_sites <- filter(conservation_unit_system_sites,
 # unique(all_areas_nuseds$SPECIES)
 # unique(conservation_unit_system_sites$SPECIES_QUALIFIED)
 
-# Part A: Organize stream/CU data from CU System Sites spreadsheet (???) ----
-# Code adapted from LGL script: "UpdateNCCStreams.fn.R" (see "nccdbv2-master" folder)
+# Add or edit certain fields in all_areas_nuseds & conservation_unit_system_sites -----
 
-# - Step 1: Add NCCDB SpeciesId based on SPECIES_QUALIFIED - #
-# spp.code <- conservation_unit_system_sites$SPECIES_QUALIFIED # CU acronym used to describe the species of salmon for which the escapement estimate is for, eg:  CK - Chinook Salmon CM - Chum Salmon CO - Coho Salmon PKE - Even Year Pink Salmon PKO - Odd Year Pink Salmon SEL - Lake Type Sockeye Salmon SER - River or Ocean Type Sockeye Salmon  
-# spp.code <- as.character(spp.code)
-# spp.code.qual <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER") # needed? --> use sp_salmon_acro instead
+# rename the year column
+colnames(all_areas_nuseds)[colnames(all_areas_nuseds) == "ANALYSIS_YR"] <- "Year"
 
-# Check to ensure NuSEDS SPECIES_QUALIFIED codes have not changed
-#check <- all(spp.code %in% spp.code.qual)
-check <- all(conservation_unit_system_sites$SPECIES_QUALIFIED %in% sp_salmon_names_acro_df$acronym)
-if(!check){ 
-  stop("conservation_unit_system_sites$SPECIES_QUALIFIED codes have changed.")
-  out <- conservation_unit_system_sites$SPECIES_QUALIFIED[! conservation_unit_system_sites$SPECIES_QUALIFIED %in% sp_salmon_names_acro_df$acronym]
-  print(out)
+# add the field SPECIES to conservation_unit_system_sites
+conservation_unit_system_sites$SPECIES <- NA
+species <- c("Coho","Chinook","Pink","Pink","Chum","Sockeye","Sockeye")
+sp_acronym_q <- c("CO","CK","PKE","PKO","CM","SEL","SER")
+for(spq in sp_acronym_q){
+  # spq <- sp_acronym_q[1]
+  condition <- conservation_unit_system_sites$SPECIES_QUALIFIED == spq
+  sp_Here <- unique(species[spq == sp_acronym_q])
+  conservation_unit_system_sites$SPECIES[condition] <- sp_Here
 }
+unique(conservation_unit_system_sites$SPECIES)
 
-# convert SPECIES_QUALIFIED to SpeciesId, i.e. the acronyms used in NCC Salmon Database (NCCSDB) Designation
-conservation_unit_system_sites$SpeciesId <- NA
-for(a in unique(conservation_unit_system_sites$SPECIES_QUALIFIED)){
-  # a <- unique(conservation_unit_system_sites$SPECIES_QUALIFIED)[1]
-  a_ncc <- sp_salmon_names_acro_df$acronym_ncc[sp_salmon_names_acro_df$acronym == a]
-  conservation_unit_system_sites$SpeciesId[conservation_unit_system_sites$SPECIES_QUALIFIED == a] <- a_ncc
+#' Create the field "species_acronym_ncc" (previously "speciesId")
+#' i.e., CN, SX instead of CK and SER or SEL in the SPECIES_QUALIFIED.
+#' There is no information about the spawning habitat in all_areas_nuseds, 
+#' contrary to in conservation_unit_system_sites. We consequently have to create
+#' the field species_acronym_ncc in both dataset to be able to merge them after.
+#' (Note that there is information
+#' about the rearing locations the fieldsWATERBODY, GAZETTED_NAME, LOCAL_NAME_1,
+#' LOCAL_NAME_2, POPULATION).
+all_areas_nuseds$species_acronym_ncc <- conservation_unit_system_sites$species_acronym_ncc <- NA
+species <- c("Coho","Chinook","Pink","Chum","Sockeye")
+species_acronym_ncc <- c("CO","CN","PK","CM","SX")
+for(sp in species){
+  # sp <- species[3]
+  sp_acroHere <- species_acronym_ncc[sp == species]
+  condition <- all_areas_nuseds$SPECIES == sp
+  all_areas_nuseds$species_acronym_ncc[condition] <- sp_acroHere
+  condition <- conservation_unit_system_sites$SPECIES == sp
+  conservation_unit_system_sites$species_acronym_ncc[condition] <- sp_acroHere
+  
+  # For Pink, add E and O for Even and Odd, respectively
+  if(sp == "Pink"){
+    all_areas_nuseds$species_acronym_ncc[all_areas_nuseds$SPECIES == sp & 
+                                           all_areas_nuseds$Year %% 2 == 0] <- "PKE"
+    all_areas_nuseds$species_acronym_ncc[all_areas_nuseds$SPECIES == sp & 
+                                           all_areas_nuseds$Year %% 2 != 0] <- "PKO"
+    
+    condition <- conservation_unit_system_sites$SPECIES_QUALIFIED == "PKE"
+    conservation_unit_system_sites$species_acronym_ncc[condition] <- "PKE"
+    
+    condition <- conservation_unit_system_sites$SPECIES_QUALIFIED == "PKO"
+    conservation_unit_system_sites$species_acronym_ncc[condition] <- "PKO"
+  }
 }
+unique(all_areas_nuseds$species_acronym_ncc)
+unique(conservation_unit_system_sites$species_acronym_ncc)
 
-# check to ensure all species code conversions worked.
-if(any(is.na(conservation_unit_system_sites$SpeciesId))){
-  warning("Missing SPECIES_QUALIFIED conversion")
-}
+#' Add the field IndexId = species_acronym_ncc + POP_ID
+all_areas_nuseds$IndexId <- paste(all_areas_nuseds$species_acronym_ncc,
+                                  all_areas_nuseds$POP_ID,sep="_")
 
-# spp.lookup <-  c("CN", "CM", "CO", "PKE", "PKO",  "SX",  "SX")  # SpeciesId ; NCC Salmon Database (NCCSDB) Designation 
-# names(spp.lookup) <- spp.code.qual
-# 
-# # Convert codes
-# result <- spp.lookup[as.character(spp.code)]
-# spp.lookup[spp.code]
-# 
-# # check to ensure all species code conversions worked.
-# if(any(is.na(result))) {
-#   warning("Missing SPECIES_QUALIFIED conversion")
-# }
+conservation_unit_system_sites$IndexId <- paste(conservation_unit_system_sites$species_acronym_ncc,
+                                                conservation_unit_system_sites$POP_ID,sep="_")
 
-# head(result)
-# unique(result)
-# conservation_unit_system_sites$SpeciesId <- result  # TODO: change name to speciesID_NCCDB for instance --> NO cause I think the name is used in PSE (?) + skip the creation of the object results
+#
+# Determine "returns" (i.e. number fish) in all_areas_nuseds -----
+#' "Return" will be the column that contains the final fish count. Priority of the
+#' fields to population Returns:
+#'1) NATURAL_ADULT_SPAWNERS, if not available:
+#'2) sum of 
+#'  - NATURAL_SPAWNERS_TOTAL
+#'  - ADULT_BROODSTOCK_REMOVALS (or TOTAL_BROODSTOCK_REMOVALS if not available)
+#'  - OTHER_REMOVALS
+#'3) TOTAL_RETURN_TO_RIVER
 
-# Ensure we have a 1:1 mapping of SPECIES_QUALIFIED to SpeciesId (i.e. sp_salmon_acro with sp_salmon_acro_ncc)
-if(!all(table(unique(conservation_unit_system_sites[c("SPECIES_QUALIFIED", "SpeciesId")])$SPECIES_QUALIFIED) == 1)){
-  stop("Error converting SPECIES_QUALIFIED")
-}
-
-# - Step 2: Calculate stream escapement - #
-# - Code adapted from LGL script: "CalculateStreamEscapement.fn.R" - #
-# TODO: explain the method
-
-# Compute escapement #
-
-# Settings #
-legacy = FALSE    # ???
-zeros = FALSE     # NuSEDS ADULT_PRESENCE == 'NONE OBSERVED' used as zero counts for escapement.
-ncc.only = FALSE  # ???"
-meta.data = TRUE  # ???
-na.rm = FALSE     # if True, escapement does not contains rows with NAs for Returns
-
-# Step 1: Use UNSPECIFIED_RETURNS (??? we use NATURAL_ADULT_SPAWNERS here) 
-escapement <- data.frame(
-  Id =  all_areas_nuseds$ACT_ID,                             # This is the primary key for the SEN (from references/nuseds_report_definitions.csv)
-  PopId = all_areas_nuseds$POP_ID,                           # A unique numeric code identifying the population
-  Year =  all_areas_nuseds$ANALYSIS_YR,
-  all_areas_nuseds[c("AREA", "SPECIES", "ADULT_PRESENCE")],
-  stringsAsFactors = FALSE
-)
-
-# Return if we have a value for every stream
-escapement$Returns <- all_areas_nuseds$NATURAL_ADULT_SPAWNERS         # All salmon that have reached maturity, excluding jacks (jacks are salmon that have matured at an early age).
-escapement$Source <- "NATURAL_ADULT_SPAWNERS"                        # this field will change below depending on data availability and origin
+# Add "Return" which will contain the final number of fish
+all_areas_nuseds$Returns <- all_areas_nuseds$NATURAL_ADULT_SPAWNERS         # All salmon that have reached maturity, excluding jacks (jacks are salmon that have matured at an early age).
+all_areas_nuseds$Source <- "NATURAL_ADULT_SPAWNERS"                        # this field will change below depending on data availability and origin
 NATURAL_ADULT_SPAWNERS_any <- !is.na(all_areas_nuseds$NATURAL_ADULT_SPAWNERS)
-escapement$Source[!NATURAL_ADULT_SPAWNERS_any] <- NA
+all_areas_nuseds$Source[!NATURAL_ADULT_SPAWNERS_any] <- NA
 
-#' Step 2: define the sum of:
+#' Define the sum of:
 #' - "Spawner" = NATURAL_SPAWNERS_TOTAL +
 #' - "Broodstock" = ADULT_BROODSTOCK_REMOVALS (or TOTAL_BROODSTOCK_REMOVALS if not available) + 
 #' - "Removals" = OTHER_REMOVALS
 
 # Spawners:
-escapement$Spawners <- all_areas_nuseds$NATURAL_SPAWNERS_TOTAL
-spawners_any <- !is.na(escapement$Spawners)
-escapement$SpawnersSource[!NATURAL_ADULT_SPAWNERS_any & spawners_any] <- "NATURAL_SPAWNERS_TOTAL"
+all_areas_nuseds$Spawners <- all_areas_nuseds$NATURAL_SPAWNERS_TOTAL
+spawners_any <- !is.na(all_areas_nuseds$Spawners)
+all_areas_nuseds$SpawnersSource[!NATURAL_ADULT_SPAWNERS_any & spawners_any] <- "NATURAL_SPAWNERS_TOTAL"
 
 # Broodstock:
-escapement$Broodstock <- all_areas_nuseds$ADULT_BROODSTOCK_REMOVALS
+all_areas_nuseds$Broodstock <- all_areas_nuseds$ADULT_BROODSTOCK_REMOVALS
 ADULT_BROODSTOCK_REMOVALS_any <- !is.na(all_areas_nuseds$ADULT_BROODSTOCK_REMOVALS)
 TOTAL_BROODSTOCK_REMOVALS_any <- !is.na(all_areas_nuseds$TOTAL_BROODSTOCK_REMOVALS)
 toReplace <- !ADULT_BROODSTOCK_REMOVALS_any & TOTAL_BROODSTOCK_REMOVALS_any
-escapement$Broodstock[toReplace] <- all_areas_nuseds$TOTAL_BROODSTOCK_REMOVALS[toReplace]
-escapement$BroodstockSource[!NATURAL_ADULT_SPAWNERS_any & ADULT_BROODSTOCK_REMOVALS_any] <- 'ADULT_BROODSTOCK_REMOVALS'
-escapement$BroodstockSource[toReplace] <- 'TOTAL_BROODSTOCK_REMOVALS'
+all_areas_nuseds$Broodstock[toReplace] <- all_areas_nuseds$TOTAL_BROODSTOCK_REMOVALS[toReplace]
+all_areas_nuseds$BroodstockSource[!NATURAL_ADULT_SPAWNERS_any & ADULT_BROODSTOCK_REMOVALS_any] <- 'ADULT_BROODSTOCK_REMOVALS'
+all_areas_nuseds$BroodstockSource[toReplace] <- 'TOTAL_BROODSTOCK_REMOVALS'
 
 # Removals:
-escapement$Removals <- all_areas_nuseds$OTHER_REMOVALS
+all_areas_nuseds$Removals <- all_areas_nuseds$OTHER_REMOVALS
 OTHER_REMOVALS_any <- !is.na(all_areas_nuseds$OTHER_REMOVALS)
-escapement$RemovalsSource[!NATURAL_ADULT_SPAWNERS_any & OTHER_REMOVALS_any] <- "OTHER_REMOVALS"
+all_areas_nuseds$RemovalsSource[!NATURAL_ADULT_SPAWNERS_any & OTHER_REMOVALS_any] <- "OTHER_REMOVALS"
 
 # Calculate Returns when !NATURAL_ADULT_SPAWNERS_any as the sum of what other 
 # sources of data is available:
-escapement$Returns[!NATURAL_ADULT_SPAWNERS_any] <- apply(
-  X = escapement[!NATURAL_ADULT_SPAWNERS_any, c("Spawners","Broodstock","Removals")],
+all_areas_nuseds$Returns[!NATURAL_ADULT_SPAWNERS_any] <- apply(
+  X = all_areas_nuseds[!NATURAL_ADULT_SPAWNERS_any, c("Spawners","Broodstock","Removals")],
   MARGIN = 1, 
   FUN = sum, 
   na.rm = TRUE
 )
 
-escapement$Source[!NATURAL_ADULT_SPAWNERS_any] <- apply(
-  X = escapement[!NATURAL_ADULT_SPAWNERS_any,c("SpawnersSource","BroodstockSource","RemovalsSource")], 
+all_areas_nuseds$Source[!NATURAL_ADULT_SPAWNERS_any] <- apply(
+  X = all_areas_nuseds[!NATURAL_ADULT_SPAWNERS_any,c("SpawnersSource","BroodstockSource","RemovalsSource")], 
   MARGIN = 1, 
   FUN = function(x){
     paste(na.omit(x),collapse=" + ")}
@@ -408,62 +251,317 @@ escapement$Source[!NATURAL_ADULT_SPAWNERS_any] <- apply(
 
 # Set as NA rather than zero if no info in any column (the na.rm = T above produced)
 # 0s when only NAs were available).
-check4 <- apply(
-  X = escapement[!NATURAL_ADULT_SPAWNERS_any, c("Spawners","Broodstock", "Removals")],
+allNAs <- apply(
+  X = all_areas_nuseds[!NATURAL_ADULT_SPAWNERS_any, c("Spawners","Broodstock","Removals")],
   MARGIN = 1, 
   FUN = function(x){all(is.na(x))}
 ) 
-escapement$Returns[!NATURAL_ADULT_SPAWNERS_any][check4] <- NA
+all_areas_nuseds$Returns[!NATURAL_ADULT_SPAWNERS_any][allNAs] <- NA
 
-# Check final source: TOTAL_RETURN_TO_RIVER
-
-# 7) if we still don't have a value, use either [Tot_adult_ret_river] or [Total_return_to_river]
-returns_any <- !is.na(escapement$Returns)
+# Use TOTAL_RETURN_TO_RIVER if we still don't have a value
+returns_any <- !is.na(all_areas_nuseds$Returns)
 TOTAL_RETURN_TO_RIVER_any <- !is.na(all_areas_nuseds$TOTAL_RETURN_TO_RIVER)
-escapement$Returns[!returns_any & TOTAL_RETURN_TO_RIVER_any] <- all_areas_nuseds$TOTAL_RETURN_TO_RIVER[!returns_any & TOTAL_RETURN_TO_RIVER_any]
-escapement$Source[!returns_any & TOTAL_RETURN_TO_RIVER_any] <- "TOTAL_RETURN_TO_RIVER"
+all_areas_nuseds$Returns[!returns_any & TOTAL_RETURN_TO_RIVER_any] <- all_areas_nuseds$TOTAL_RETURN_TO_RIVER[!returns_any & TOTAL_RETURN_TO_RIVER_any]
+all_areas_nuseds$Source[!returns_any & TOTAL_RETURN_TO_RIVER_any] <- "TOTAL_RETURN_TO_RIVER"
 
-#escapement[!is.na(escapement$Spawners) & !is.na(escapement$Broodstock),]
+#
+# CHECKS on all_areas_nuseds and conservation_unit_system_sites ---------
 
-# OPTIONAL: MAX_ESTIMATE when all else fails  ??? QUESTION: to remove then? Do we even need MAX_ESTIMATE?
-# Finally, when none of the other methods are available #
-#if (!legacy) {
-#no.return <- is.na(escapement[["Returns"]])
-#escapement[["Returns"]][no.return] <- all_areas_nuseds[[toupper("max_estimate")]][no.return]
-# escapement[["Source"]][no.return] <- toupper("max_estimate")
-#} 
+#' ** CHECK: association between POPULATION and IndexId in all_areas_nuseds **
+#' It should be a ONE TO ONE relationship, except for Pink were a same 
+#' POPULATION can be assocation to two Pink one, one Even, one Odd.
+IndexId_POPULATION <- unique(all_areas_nuseds[,c("IndexId","POPULATION")])
+sum(duplicated(IndexId_POPULATION$IndexId))    # 0
+sum(duplicated(IndexId_POPULATION$POPULATION)) # 1764
+duplicated_Pop <- IndexId_POPULATION$POPULATION[duplicated(IndexId_POPULATION$POPULATION)]
+#' Many of these correspond to Pink Odd vs. Even population, which is normal. 
 
+#' Check if for the Pink, it is systematically a one Even and one Odd, flag if not.
+duplicated_Pop_Pink <- duplicated_Pop[grepl("[P|p]ink",duplicated_Pop)]
+for(pop in duplicated_Pop_Pink){
+  dataHere <- IndexId_POPULATION_Pink[IndexId_POPULATION_Pink$POPULATION == pop,]
+  
+  PKO <- any(sapply(X = 1:nrow(dataHere),
+                    FUN = function(r){grepl("PKO",dataHere[r,]$IndexId)}))
+  PKE <- any(sapply(X = 1:nrow(dataHere),
+                    FUN = function(r){grepl("PKE",dataHere[r,]$IndexId)}))
+  
+  if(!(PKO & PKE)){
+    print(dataHere)
+  }
+}
+# All good.
 
-#' Define variables to include in MAX_ESTIMATE. MAX_ESTIMATE is the maximum estimate
-#' of all these fields.
-var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", 
-                         "NATURAL_JACK_SPAWNERS", 
-                         "NATURAL_SPAWNERS_TOTAL", 
-                         "ADULT_BROODSTOCK_REMOVALS", 
-                         "JACK_BROODSTOCK_REMOVALS", 
-                         "TOTAL_BROODSTOCK_REMOVALS", 
-                         "OTHER_REMOVALS", 
-                         "TOTAL_RETURN_TO_RIVER")
+#' Check if there are non-pink populations:
+duplicated_Pop <- duplicated_Pop[!grepl("[P|p]ink",duplicated_Pop)]
+IndexId_POP_dupli <- IndexId_POPULATION[IndexId_POPULATION$POPULATION %in% duplicated_Pop,]
+IndexId_POP_dupli <- IndexId_POP_dupli[order(IndexId_POP_dupli$POPULATION),]
+IndexId_POP_dupli
 
-# Calculate MAX_ESTIMATE
-# (dat is the NuSEDS data)
-escapement$MAX_ESTIMATE <- apply(all_areas_nuseds[,var_in_MAX_ESTIMATE], 1, 
-                                 max, na.rm = TRUE)
-
-# Replace infinite values by NA
-escapement[sapply(escapement, is.infinite)] <- NA
-
-# Zero Counts -------------------------------------------------------------
-
-if(zeros){
-  # browser()
-  message("NuSEDS ADULT_PRESENCE == 'NONE OBSERVED' used as zero counts for escapement.")
-  no.adult <- !returns_any & all_areas_nuseds$ADULT_PRESENCE == 'NONE OBSERVED'
-  escapement$Returns[no.adult] <- 0
-  escapement$Source[no.adult] <- 'NONE OBSERVED'
+#' For each POPULATION, plot the population dynamics of the different IndexId.
+#' In each case, retain the population that has the longest time series and 
+#' remove the other one (we can see that there is barely any data for them).
+IndexIdToRremove <- c()
+layout(matrix(1:length(unique(IndexId_POP_dupli$POPULATION)),ncol = 2))
+par(mar = c(4.5,4.5,.5,.5))
+for(pop in unique(IndexId_POP_dupli$POPULATION)){
+  # pop <- unique(IndexId_POP_dupli$POPULATION)[1]
+  nusedsHere <- all_areas_nuseds[all_areas_nuseds$POPULATION == pop,]
+  IndexIdHere <- unique(nusedsHere$IndexId)
+  yr_min <- min(nusedsHere$Year)
+  yr_max <- max(nusedsHere$Year)
+  yrs <- yr_min:yr_max
+  pop_max <- max(nusedsHere$Returns, na.rm = T)
+  
+  plot(NA, xlim = c(yr_min,yr_max), ylim = c(0,pop_max), 
+       ylab = "Returns", xlab = "Years", main = "")
+  series <- list()
+  count <- 1
+  for(iid in IndexIdHere){
+    s_yr <- nusedsHere[nusedsHere$IndexId == iid, c("Year","Returns")]
+    if(length(yrs[!yrs %in% s_yr$Year]) > 0){
+      s_yr_add <- data.frame(Year = yrs[!yrs %in% s_yr$Year],
+                             Returns = NA)
+      s_yr <- rbind(s_yr,s_yr_add)
+    }
+    s_yr <- s_yr[order(s_yr$Year),]
+    series[[count]] <- s_yr
+    count <- count + 1
+  }
+  cols <- viridis(n = length(IndexIdHere))
+  for(i in 1:length(series)){
+    lines(x = yrs, y = series[[i]]$Returns, lty = 1, lwd = 3, col = cols[i])
+  }
+  legend("topright",IndexIdHere, col = cols, bty = "n", lwd = 3)
+  legend("topleft",pop, bty = "n")
+  
+  # select the population to remove as a function of the length of the data
+  dataPtsNb <- sapply(X = series, function(s){sum(!is.na(s$Returns))})
+  toKeep <- dataPtsNb == max(dataPtsNb)
+  IndexIdToRremove <- c(IndexIdToRremove,
+                        IndexIdHere[!toKeep])
 }
 
-# browser()
+# Add CM_40836 because the data is insufficient
+IndexIdToRremove <- c(IndexIdToRremove,"CM_40836")
+
+# Remove them from all_areas_nuseds
+all_areas_nuseds <- all_areas_nuseds[! all_areas_nuseds$IndexId %in% IndexIdToRremove,]
+
+# Check if these populations are in conservation_unit_system_sites and remove them too
+conservation_unit_system_sites$IndexId[conservation_unit_system_sites$IndexId %in%
+                                         IndexIdToRremove]
+
+conservation_unit_system_sites <- conservation_unit_system_sites[! conservation_unit_system_sites %in%
+                                                                   IndexIdToRremove,]
+
+#'** CHECK: association between GFE_ID and IndexId in both datasets **
+#' It should be a ONE TO MANY relationship.
+#' - For all_areas_nuseds: 
+#'    - 1) check that for each IndexId there is an unique GFE_ID, if not, trouble
+#'    shot.
+#'    - 2) check that there is not duplicated multiple data points for a same year,
+#'    if that's the case, trouble shoot.
+#' - 
+
+IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
+sum(duplicated(IndexId_GFE_ID$IndexId)) # 79 --> not normal
+sum(duplicated(IndexId_GFE_ID$GFE_ID)) # 9043 --> normal
+
+
+duplicated_pop_nused <- c()
+count <- 0
+for(iid_i in 1:length(unique(all_areas_nuseds$IndexId))){
+  # iid_i <- 74
+  iid <- unique(all_areas_nuseds$IndexId)[iid_i]
+  # print(count <- count + 1)
+  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
+
+  # 1) check if there is a unique GFE_ID
+  gfe_id <- unique(all_areas_nuseds_cut$GFE_ID)
+  if(length(gfe_id) > 1){
+    print(paste0("Multiple GFE_ID at iid_i = ",iid_i))
+    
+    
+  }
+  
+  # 2) check that there is not duplicated multiple data points for a same year
+  yr <- all_areas_nuseds_cut$Year
+  yr_duplicated <- yr[duplicated(yr)]
+  if(length(yr_duplicated) > 0){
+    duplicated_pop_nused <- c(duplicated_pop_nused,iid)
+    print(paste("Population duplicated in all_areas_nuseds:",iid))
+  }
+} 
+duplicated_pop_nused
+
+duplicated_pop_nused_df <- NULL
+for(iid in duplicated_pop_nused){
+  # iid <- duplicated_pop_nused[3]
+  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
+  colSelect <- c("IndexId","WATERBODY","GFE_ID")
+  data_unique <- unique(all_areas_nuseds_cut[,colSelect])
+  
+  # case where is is duplicated dates but one unique location:
+  if(nrow(data_unique) == 1){
+    
+    yr_duplicated <- all_areas_nuseds_cut$Year[duplicated(all_areas_nuseds_cut$Year)]
+    
+    print("Only location but duplicated dates:")
+    print(all_areas_nuseds_cut[all_areas_nuseds_cut$Year %in% yr_duplicated,])
+    
+    data_unique$year_start <- min(all_areas_nuseds_cut$Year)
+    data_unique$year_end <- max(all_areas_nuseds_cut$Year)
+    
+  }else{ # case where there are multiple locations for a single IndexId
+    
+    year_range_m <- sapply(X = data_unique$GFE_ID, FUN = function(gfe){
+      # gfe <- data_unique$GFE_ID[1]
+      dataHere <- all_areas_nuseds_cut[all_areas_nuseds_cut$GFE_ID == gfe,]
+      years <- dataHere$Year
+      yr_range <- range(years,na.rm = T)
+      if(sum(duplicated(years)) > 0){
+        print(paste("Duplicated years for pop:",iid,", GFE_ID:",gfe))
+      }
+      return(yr_range)
+    })
+    data_unique$year_start <- year_range_m[1,]
+    data_unique$year_end <- year_range_m[2,]
+  }
+  
+  if(is.null(duplicated_pop_nused_df)){
+    duplicated_pop_nused_df <- data_unique
+  }else{
+    duplicated_pop_nused_df <- rbind(duplicated_pop_nused_df,data_unique)
+  }
+  
+  #print(unique(all_areas_nuseds_cut[condition,colSelect]))
+}
+
+
+duplicated_pop_sites <- c()
+for(iid in unique(conservation_unit_system_sites$IndexId)){
+  # iid <- unique(conservation_unit_system_sites$IndexId)[1]
+  # print(count <- count + 1)
+  cons_unit_syst_sites_cut <- conservation_unit_system_sites[conservation_unit_system_sites$IndexId == iid,]
+  if(nrow(cons_unit_syst_sites_cut) > 1){
+    duplicated_pop_sites <- c(duplicated_pop_sites,iid)
+    print(paste("Population duplicated in conservation_unit_system_sites:",iid))
+  }
+}
+duplicated_pop_sites
+# "CN_7479"
+# "SX_45525"
+for(iid in duplicated_pop_sites){
+  colSelect <- c("IndexId","SYSTEM_SITE","GFE_ID","SPECIES_QUALIFIED","CU_NAME",
+                 "Y_LAT","X_LONGT","CU_LAT","CU_LONGT","CU_TYPE","CU_INDEX")
+  condition <- conservation_unit_system_sites$IndexId == iid
+  print(conservation_unit_system_sites[condition,colSelect])
+}
+conservation_unit_system_sites
+all_areas_nuseds$GFE_ID
+all_areas_nuseds$s
+
+#' Look if these populations are present in all_areas_nuseds and, if that's the case,
+#' compare the location using WATERBODY.
+for(iid in duplicated_pop_sites){
+  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
+  if(nrow(all_areas_nuseds_cut) > 0){
+    WATERBODY_here <- unique(all_areas_nuseds_cut$)
+  }
+  
+}
+
+
+# about SYSTEM_SITE, 
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705361308291699?thread_ts=1705344122.088409&cid=CJ5RVHVCG
+
+
+# Check 
+
+
+
+sum(is.na(all_areas_nuseds$WATERBODY))
+
+# looks like all_areas_nuseds$WATERBODY == conservation_unit_system_sites$SYSTEM_SITE
+sites_SYSTEM_SITE <- unique(conservation_unit_system_sites$SYSTEM_SITE)
+nused_WATERBODY <- unique(all_areas_nuseds$WATERBODY)
+sum(nused_WATERBODY %in% sites_SYSTEM_SITE) / length(nused_WATERBODY)
+sum(sites_SYSTEM_SITE %in% nused_WATERBODY) / length(sites_SYSTEM_SITE)
+
+# For those site/waterbody that don't match, is it because of populations are not
+# present in either dataset?
+SYSTEM_SITE_notIn_WATERBODY <- sites_SYSTEM_SITE[! sites_SYSTEM_SITE %in% nused_WATERBODY]
+WATERBODY_notIn_SYSTEM_SITE <- nused_WATERBODY[! nused_WATERBODY %in% sites_SYSTEM_SITE]
+sort(SYSTEM_SITE_notIn_WATERBODY)
+sort(WATERBODY_notIn_SYSTEM_SITE)
+
+SYSTEM_SITE_notIn_WATERBODY_IndexId <- sapply(X = SYSTEM_SITE_notIn_WATERBODY, 
+                                              FUN = function(ss){
+                                                dataset <- conservation_unit_system_sites[conservation_unit_system_sites$SYSTEM_SITE == ss,]
+                                                out <- unique(dataset$IndexId)
+                                              })
+
+WATERBODY_notIn_SYSTEM_SITE_IndexId <- sapply(X = WATERBODY_notIn_SYSTEM_SITE, 
+                                              FUN = function(wb){
+                                                dataset <- escapement[all_areas_nuseds$WATERBODY == wb,] # rows match in escapement and all_areas_nuseds 
+                                                out <- unique(dataset$IndexId)
+                                              })
+
+#' Look for each of the populations associated with these miss-matched site
+#' if (1) the it is present in the other dataset and if that's the case (2) find 
+#' the name of the siwze to see if there is an typo error or not.
+
+unlist(SYSTEM_SITE_notIn_WATERBODY_IndexId)
+
+sites_missmatches <- data.frame(IndexId = )
+
+for(pops_i in 1:length(SYSTEM_SITE_notIn_WATERBODY_IndexId)){
+  #' pops_i <- 1
+  pops <- SYSTEM_SITE_notIn_WATERBODY_IndexId[[pops_i]]
+  syst_site_here <- names(SYSTEM_SITE_notIn_WATERBODY_IndexId)[pops_i]
+  for(pop in pops){
+    # pop <- pops[1]
+    sapply(X = , FUN = function(){
+      
+    })
+    
+    
+    
+  }
+  
+  print(pops)
+  
+}
+
+
+
+
+conservation_unit_system_sites$SPECIES
+
+Check NuSEDS All Areas to see what the unique POP_ID is for the SYSTEM_SITE and Species combo. Seems likely that this is an error in the conservation_unit_system_sites.
+
+
+
+# Check which population match or not between the two datasets:
+IndexId_nused <- unique(escapement$IndexId)
+length(IndexId_nused) # 11474
+IndexId_sites <- unique(conservation_unit_system_sites$IndexId)
+length(IndexId_sites) # 7143
+
+
+
+
+
+View(all_areas_nuseds[escapement$SPECIES_QUALIFIED == "SE",])
+
+conservation_unit_system_sites$SPECIES_QUALIFIED
+conservation_unit_system_sites$POP_ID
+conservation_unit_system_sites$SPECIES_QUALIFIED
+
+
+escapement$IndexId <- paste(escapement$sp, PopId, sep="_")
+StatArea <- Convert2StatArea(AREA)                      # AREA is the subdistrict; # QUESTION: why doing this?
 
 # Add NCC Salmon Database Fields: SpeciesName and SpeciesId---------------------
 # @TODO - could use general ConvertSpeciesCode 
@@ -549,6 +647,32 @@ escapement[escapement$IndexId == "CO_46240",]$StatArea <- "29"
 escapement[escapement$IndexId == "PKO_51094",]$StatArea <- "12"  # BSC: there is one ""
 escapement[escapement$IndexId == "SX_45495",]$StatArea <- "120"  # BSC: already "120"
 
+escapement_wide <- dcast(melt(escapement[,c("IndexId","Year","Returns")], 
+                              id.vars = c("IndexId", "Year")),  # wide to long format
+                         IndexId + variable ~ Year,
+                         value.var = "value",
+                         fun.aggregate=sum, # Come back to this, currently won't let me widen data without aggregation function
+                         fill = 0.12345) # Filler to make sure can distinguish true zeros
+
+duplicates <- which(escapement_wide[,3:ncol(escapement_wide)][1] > 1) # BSC: ?!
+escapement_wide$IndexId[duplicated(escapement_wide$IndexId)] # BSC
+# zz <- zz[,-2] # remove column variable, bad practice
+escapement_wide <- escapement_wide[,colnames(escapement_wide) != "variable"]
+
+# Putting together extra info for final data frame #
+names(escapement_wide)
+names(stream.list)
+names(sa.cu.lk) # BSC: not used
+
+# Merging dataframes - THIS IS WHEN TO REMOVE BINNED CUs #
+escapement_streams <- merge(stream.list, 
+                            escapement_wide, 
+                            by = "IndexId")
+
+
+
+
+
 # BSC: calculate different statistics per group of unique combination of the .variables
 # IndexId is = to paste(SpeciesId, PopId, sep="_")
 # SpeciesId is = to sp_salmon_names_acro_df$acronym_ncc = the NCC Salmon Database (NCCSDB) Designation
@@ -604,7 +728,6 @@ escapement <- escapement[!toRemove,]
 toRemove <- esc.summary$IndexId == "CN_47367" & esc.summary$StatArea == "29I"
 esc.summary <- esc.summary[!toRemove,]
 
-
 # append available meta data
 # BSC: that does not work...
 stream.list <- within(
@@ -635,11 +758,30 @@ PopId_SpeciesId <- stream.list[rowDupli,c("PopId","SpeciesId")]
 for(i in 1:length(rowDupli)){
   out <- stream.list[stream.list$PopId == PopId_SpeciesId$PopId[i] & 
                        stream.list$SpeciesId == PopId_SpeciesId$SpeciesId[i],]
-  colNo <- c("FWA_WATERSHED_CDE","WATERSHED_CDE","EFFECTIVE_DT","CMNTS")
+  colNo <- c("FWA_WATERSHED_CDE","WATERSHED_CDE","EFFECTIVE_DT","CMNTS","PopId","SpeciesId",
+             "nrecs","nnumest","nins","npres","pinsrec","ppres_ins","pest_pres",
+             "Escapement.avg","Escapement.sd","Escapement.se","Year.start","Year.end",
+             "CU_TYPE","CU_INDEX","FULL_CU_IN","SBJ_ID","IS_INDICATOR","SITE_ID",
+             "CU","Surveyed","NoEscapement","Active","SPECIES_QUALIFIED",
+             "FAZ_ACRO","MAZ_ACRO","JAZ_ACRO","CU_NAME","CU_ACRO")
   colYes <- colnames(stream.list)[! colnames(stream.list) %in% colNo]
   print(out[,colYes])
   print("***")
 }
+
+conservation_unit_system_sites[conservation_unit_system_sites$POP_ID == 7479,]$SYSTEM_SITE
+
+all_areas_nuseds
+c("SPECIES","POP_ID")
+
+conservation_unit_system_sites$SpeciesId
+
+#' SP: Check NuSEDS All Areas to see what the unique POP_ID is for the SYSTEM_SITE
+#' and Species combo. Seems likely that this is an error in the conservation_unit_system_sites.
+
+conservation_unit_system_sites[conservation_unit_system_sites$POP_ID == 45525,]$SYSTEM_SITE
+
+
 
 #' BSC: it look like for these populations (except CN_47367 above), these are 
 #' duplicates because they have the same counts but location differ slightly.
@@ -752,27 +894,7 @@ sa.cu.lk$StatArea[1]
 #             fun.aggregate=sum, # Come back to this, currently won't let me widen data without aggregation function
 #             fill = 0.12345) # Filler to make sure can distinguish true zeros
 
-escapement_wide <- dcast(melt(escapement[,c("IndexId","Year","Returns")], 
-                              id.vars = c("IndexId", "Year")),  # wide to long format
-                         IndexId + variable ~ Year,
-                         value.var = "value",
-                         fun.aggregate=sum, # Come back to this, currently won't let me widen data without aggregation function
-                         fill = 0.12345) # Filler to make sure can distinguish true zeros
 
-duplicates <- which(escapement_wide[,3:ncol(escapement_wide)][1] > 1) # BSC: ?!
-escapement_wide$IndexId[duplicated(escapement_wide$IndexId)] # BSC
-# zz <- zz[,-2] # remove column variable, bad practice
-escapement_wide <- escapement_wide[,colnames(escapement_wide) != "variable"]
-
-# Putting together extra info for final data frame #
-names(escapement_wide)
-names(stream.list)
-names(sa.cu.lk) # BSC: not used
-
-# Merging dataframes - THIS IS WHEN TO REMOVE BINNED CUs #
-escapement_streams <- merge(stream.list, 
-                            escapement_wide, 
-                            by = "IndexId")
 # data <- merge(stream.list, escapement_wide, by = "IndexId")
 
 # Updating "SpeciesId" for sockeye populations with river/lake specification #
@@ -839,6 +961,12 @@ c("ISENH","OL_GRP_NM")[! c("ISENH","OL_GRP_NM") %in% colnames(all_areas_nuseds)]
 c("ISENH","OL_GRP_NM")[! c("ISENH","OL_GRP_NM") %in% colnames(conservation_unit_system_sites)]
 c("ISENH","OL_GRP_NM")[! c("ISENH","OL_GRP_NM") %in% colnames(template_df)]
 
+colnames(all_areas_nuseds)[grepl(pattern = "ENH",colnames(all_areas_nuseds))]
+colnames(all_areas_nuseds)[grepl(pattern = "enh",colnames(all_areas_nuseds))]
+colnames(conservation_unit_system_sites)[grepl(pattern = "ENH",colnames(conservation_unit_system_sites))]
+colnames(conservation_unit_system_sites)[grepl(pattern = "enh",colnames(conservation_unit_system_sites))]
+
+
 # re-order columns
 # escapement_streams <- cbind(escapement_streams, escapement_streams[,56:157])
 escapement_streams <- cbind(escapement_streams[,fields], escapement_streams[,col_dates])
@@ -862,7 +990,7 @@ extras <- data.frame(ID = rep(NA, length),
                      WildCode = rep(NA, length),
                      WildRigor = rep(NA, length),
                      PopId = rep(NA, length),
-                     SpeciesId2 = rep(NA, length))
+                     SpeciesId2 = rep(NA, length))  # BSC: ?! there is no SpeciesId2 field in template_df
 
 # Put it all together #                     
 escapement_streams <- cbind(escapement_streams, extras)
@@ -902,7 +1030,7 @@ colnames(final)[colnames(final) %in% c("PopId")] <- "POP_ID"
 
 # ???
 unique(final$SpeciesId)
-unique(template_df$SPP) 
+unique(template_df$SPP)
 unique(final$SpeciesId2)
 unique(template_df$SpeciesId)
 
@@ -937,7 +1065,7 @@ colnames(final)[colnames(final) %in% c("PopId.1")] <- "PopId"
 
 
 # Write to file #
-setwd(dir.out)
+# setwd(dir.out)
 
 #hardcode fixes to nuseds
 
@@ -994,14 +1122,16 @@ final$CU_findex[final$POP_ID==3128] <- "CM-16"
 final$CU_findex[final$POP_ID==51778] <- "CM-16"
 
 
-
-
 d1<- filter(final, POP_ID=='3119')
 
 d1<- filter(all_areas_nuseds, WATERBODY=='AIRPORT SIDE CHANNEL')
 
-
-write.csv(final, "NuSEDS_escapement_data_collated_20230818.csv", row.names=FALSE)
+date <- Sys.time()
+date <- substr(x = date,start = 1, stop = 10)
+date <- gsub("-","",date)
+# write.csv(final, "NuSEDS_escapement_data_collated_20230818.csv", row.names=FALSE)
+write.csv(final,paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
+                       row.names = FALSE)
 
 # Notes:
 # Remove CU's which are "BIN" at this stage? 

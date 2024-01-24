@@ -39,7 +39,7 @@ rsconnect/
 .DS_Store
 
 # The input files that we do not push to github for now
-data_input/
+data-input/
 
 #biological-status/data/
 biological-status/figures/
@@ -53,4 +53,5 @@ spawner-surveys/data/
 spawner-surveys/references/
 spawner-surveys/output/
 
+spawner-abundance/output/
 

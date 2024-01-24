@@ -193,7 +193,7 @@ conservation_unit_system_sites$IndexId <- paste(conservation_unit_system_sites$s
                                                 conservation_unit_system_sites$POP_ID,sep="_")
 
 #
-# Determine "returns" (i.e. number fish) in all_areas_nuseds -----
+# Determine "Returns" (i.e. number fish) in all_areas_nuseds -----
 #' "Return" will be the column that contains the final fish count. Priority of the
 #' fields to population Returns:
 #'1) NATURAL_ADULT_SPAWNERS, if not available:
@@ -261,15 +261,499 @@ all_areas_nuseds$Returns[!NATURAL_ADULT_SPAWNERS_any][allNAs] <- NA
 # Use TOTAL_RETURN_TO_RIVER if we still don't have a value
 returns_any <- !is.na(all_areas_nuseds$Returns)
 TOTAL_RETURN_TO_RIVER_any <- !is.na(all_areas_nuseds$TOTAL_RETURN_TO_RIVER)
-all_areas_nuseds$Returns[!returns_any & TOTAL_RETURN_TO_RIVER_any] <- all_areas_nuseds$TOTAL_RETURN_TO_RIVER[!returns_any & TOTAL_RETURN_TO_RIVER_any]
-all_areas_nuseds$Source[!returns_any & TOTAL_RETURN_TO_RIVER_any] <- "TOTAL_RETURN_TO_RIVER"
+toReplace <- !returns_any & TOTAL_RETURN_TO_RIVER_any
+all_areas_nuseds$Returns[toReplace] <- all_areas_nuseds$TOTAL_RETURN_TO_RIVER[toReplace]
+all_areas_nuseds$Source[toReplace] <- "TOTAL_RETURN_TO_RIVER"
+
+#
+# Determine "MAX_ESTIMATE" in all_areas_nuseds -----
+
+#' MAX_ESTIMATE is the maximum estimate of all these fields:
+var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", 
+                         "NATURAL_JACK_SPAWNERS", 
+                         "NATURAL_SPAWNERS_TOTAL", 
+                         "ADULT_BROODSTOCK_REMOVALS", 
+                         "JACK_BROODSTOCK_REMOVALS",     # QUESTION: why considered here and not above?
+                         "TOTAL_BROODSTOCK_REMOVALS", 
+                         "OTHER_REMOVALS", 
+                         "TOTAL_RETURN_TO_RIVER")
+
+all_areas_nuseds$MAX_ESTIMATE <- apply(all_areas_nuseds[,var_in_MAX_ESTIMATE], 1,
+                                       max, na.rm = TRUE)
+
+all_areas_nuseds$MAX_ESTIMATE[is.infinite(all_areas_nuseds$MAX_ESTIMATE)] <- NA
+
+View(all_areas_nuseds[is.na(all_areas_nuseds$Returns) & !is.na(all_areas_nuseds$JACK_BROODSTOCK_REMOVALS),])
+
+# plot(all_areas_nuseds$Returns ~ all_areas_nuseds$MAX_ESTIMATE)
+# abline(a = 0, b = 1)
 
 #
 # CHECKS on all_areas_nuseds and conservation_unit_system_sites ---------
 
-#' ** CHECK: association between POPULATION and IndexId in all_areas_nuseds **
+#' ** CHECK: duplicated IndexId in conservation_unit_system_sites **
+#' There should not be any.
+condition <- duplicated(conservation_unit_system_sites$IndexId)
+duplicated_pop_sites <- conservation_unit_system_sites$IndexId[condition]
+duplicated_pop_sites
+# "CN_7479"
+# "SX_45525"
+
+# check the fields
+for(iid in duplicated_pop_sites){
+  colSelect <- c("IndexId","SYSTEM_SITE","GFE_ID","SPECIES_QUALIFIED","CU_NAME",
+                 "Y_LAT","X_LONGT","CU_LAT","CU_LONGT","CU_TYPE","CU_INDEX")
+  condition <- conservation_unit_system_sites$IndexId == iid
+  print(conservation_unit_system_sites[condition,colSelect])
+}
+# It is a different GFE_ID
+
+# Check which GFE_ID correspond to each IndexId in all_areas_nuseds:
+condition <- conservation_unit_system_sites$IndexId %in% duplicated_pop_sites
+data_cuSite <- conservation_unit_system_sites[condition,c("IndexId","GFE_ID")]
+colnames(data_cuSite)[colnames(data_cuSite) == "GFE_ID"] <- "GFE_ID_cuSite"
+
+condition <- all_areas_nuseds$IndexId %in% duplicated_pop_sites
+data_nuseds <- unique(all_areas_nuseds[condition,c("IndexId","GFE_ID")])
+colnames(data_nuseds)[colnames(data_nuseds) == "GFE_ID"] <- "GFE_ID_nuseds"
+
+merge <- merge(x = data_cuSite, y = data_nuseds, by = "IndexId")
+for(r in 1:nrow(merge)){
+  # r <- 1
+  if(merge$GFE_ID_cuSite[r] != merge$GFE_ID_nuseds[r]){
+    val_GFE_ID_cuSite <- merge$GFE_ID_cuSite[r]
+    if(sum(val_GFE_ID_cuSite == merge$GFE_ID_cuSite, na.rm = T) > 1){
+      merge$GFE_ID_cuSite[r] <- NA
+    }else{
+      merge$GFE_ID_nuseds[r] <- NA
+    }
+  }
+}
+dupli <- merge$GFE_ID_nuseds[duplicated(merge$GFE_ID_nuseds)]
+merge <- merge[!(merge$GFE_ID_nuseds %in% dupli & is.na(merge$GFE_ID_cuSite)),]
+merge
+
+#' There is no association: IndexId = CN_7479 with GFE_ID = 133 in all_areas_nuseds
+#' --> remove it from conservation_unit_system_sites:
+toRemove <- merge[!is.na(merge$GFE_ID_cuSite) & is.na(merge$GFE_ID_nuseds),]
+conditionNot <- !(conservation_unit_system_sites$IndexId == toRemove$IndexId &
+                    conservation_unit_system_sites$GFE_ID == toRemove$GFE_ID_cuSite)
+conservation_unit_system_sites <- conservation_unit_system_sites[conditionNot,]
+nrow(conservation_unit_system_sites) # 7144
+
+# look at the dynamics for the other one:
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexId = unique(merge$IndexId)[2],
+                        all_areas_nuseds = all_areas_nuseds)
+
+#
+#'** CHECK: association between GFE_ID and IndexId in all_areas_nuseds **
+#' It should be a ONE TO MANY relationship.
+#' - For all_areas_nuseds: 
+#'    - 1) check that for each IndexId there is an unique GFE_ID, if not, trouble
+#'    shot.
+#'    - 2) check that there is not duplicated multiple data points for a same year,
+#'    if that's the case, trouble shoot.
+#' - 
+
+IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
+sum(duplicated(IndexId_GFE_ID$IndexId)) # 79 --> not normal
+sum(duplicated(IndexId_GFE_ID$GFE_ID)) # 9049 --> normal
+IndexId_toCheck <- unique(IndexId_GFE_ID$IndexId[duplicated(IndexId_GFE_ID$IndexId)])
+length(IndexId_toCheck) # 46
+
+IndexId_GFE_ID_dupli <- NULL
+layout(matrix(1))
+par(mar = c(4.5,4.5,.5,.5))
+for(iid_i in 1:length(IndexId_toCheck)){
+  # iid_i <- 6
+  iid <- IndexId_toCheck[iid_i]
+  
+  # print(count <- count + 1)
+  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
+  
+  #' find the % of points overlapping with the other time series in 
+  #' all_areas_nuseds_cut (see application in for loop below)
+  all_areas_nuseds_cut_noNA <- all_areas_nuseds_cut[!is.na(all_areas_nuseds_cut$Returns),] # common NAs are not considered as duplicates
+  row_dupli <- duplicated(all_areas_nuseds_cut_noNA[,c("Returns","Year")])
+  dupli <- all_areas_nuseds_cut_noNA[row_dupli,c("Returns","Year"),drop = F]
+
+  # 1) check if there is a unique GFE_ID or not
+  gfe_id <- unique(all_areas_nuseds_cut$GFE_ID)
+  
+  #' There there are more than one, look at the data. Possible cases:
+  #' - there are multiple time series --> check in all_areas_nuseds to see if 
+  #' there is field that can help solving the issue. 
+  #' - Only of few data points have been attributed the wrong 
+  
+  output <- data.frame(IndexId = iid,
+                       GFE_ID = gfe_id,
+                       nb_dataPt = NA,
+                       nb_dataPt_overlap = NA,           # percentage of data points overlapping with others
+                       nb_dataPt_overlapPercent = NA,
+                       action = NA, 
+                       iid_i = iid_i,
+                       WATERBODY = NA,
+                       SYSTEM_SITE = NA,
+                       method = NA,
+                       comment = NA)
+  
+  yrs <- (min(all_areas_nuseds_cut$Year, na.rm = T)-10):max(all_areas_nuseds_cut$Year)
+
+  # method
+  output$method <- sapply(X = gfe_id, FUN = function(gfeid){
+    # gfeid <- gfe_id[2]
+    condition <- all_areas_nuseds_cut$GFE_ID == gfeid
+    out <- unique(all_areas_nuseds_cut$ENUMERATION_METHODS[condition])
+    out <- paste(out, collapse = " ; ")
+    return(out)
+  })
+  
+  # WATERBODY
+  output$WATERBODY <- sapply(X = gfe_id, FUN = function(gfeid){
+    # gfeid <- gfe_id[1]
+    condition <- all_areas_nuseds_cut$GFE_ID == gfeid
+    out <- unique(all_areas_nuseds_cut$WATERBODY[condition])
+    if(length(out) > 1){
+      print(paste("Multiple values for WATERBODY at iid_i = ",iid_i))
+    }
+    return(out)
+  })
+  
+  # SYSTEM_SITE (in conservation_unit_system_sites)
+  output$SYSTEM_SITE <- sapply(X = gfe_id, FUN = function(gfeid){
+    # gfeid <- gfe_id[1]
+    condition <- conservation_unit_system_sites$GFE_ID == gfeid & 
+      conservation_unit_system_sites$IndexId == iid
+    out <- unique(conservation_unit_system_sites$SYSTEM_SITE[condition])
+    if(length(out) > 1){
+      print(paste("Multiple values for SYSTEM_SITE at iid_i = ",iid_i))
+    }else if(length(out) == 0){
+      out <- NA
+    }
+    return(out)
+  })
+  
+  # comment 1: there is no Returns data at all
+  comments_l <- list()
+  c_i <- 1
+  comments_l[[c_i]] <- rep("",length(gfe_id))
+  names(comments_l)[c_i] <- "Data_any"
+  
+  # comment 2: either the IndexId is not present in conservation_unit_system_sites, 
+  # or it is but it is associated with another(s) GFE_ID
+  c_i <- c_i + 1
+  comments_l[[c_i]] <- rep("",length(gfe_id))
+  if(all(is.na(output$SYSTEM_SITE))){
+    condition <- conservation_unit_system_sites$IndexId == iid
+    gfeId_cuss <- conservation_unit_system_sites$GFE_ID[condition]
+    if(length(gfeId_cuss) == 0){
+      comments_l[[c_i]] <- rep("IndexId not present in conservation_unit_system_sites",
+                               length(gfe_id))
+    }else{
+      comments_l[[c_i]] <- rep(paste("Different GFE_ID in conservation_unit_system_sites:",gfeId_cuss),
+                               length(gfe_id))
+    }
+  }
+  names(comments_l)[c_i] <- "SYSTEM_SITE"
+  
+  # Case 1: there are only NAs for returns
+  if(sum(!is.na(all_areas_nuseds_cut$Returns)) == 0){
+    
+    # output$comment <- "only NAs for field Returns"
+    comments_l$Data_any <- rep("No data for this population",length(gfe_id))
+    
+    output$nb_dataPt <- 0
+    output$action <- "remove"
+    
+  }else{
+    
+    plot_IndexId_GFE_ID_fun(IndexIds = iid, all_areas_nuseds = all_areas_nuseds)
+    legend("topright",paste("iid_i =",iid_i),bty = "n")
+    
+    for(gfeid in gfe_id){
+      # gfeid <- gfe_id[1]
+
+      dataHere <- all_areas_nuseds_cut[all_areas_nuseds_cut$GFE_ID == gfeid,]
+      dataHere <- dataHere[order(dataHere$Year),c("Returns","WATERBODY","Year")]
+
+      nb_dataPt <-  sum(!is.na(dataHere$Returns))
+      output$nb_dataPt[output$GFE_ID == gfeid] <- nb_dataPt
+      
+      # if there is not Returns data:
+      if(sum(!is.na(dataHere$Returns)) == 0){
+        output$action[output$GFE_ID == gfeid] <- "remove"
+        output$comment[output$GFE_ID == gfeid] <- "only NAs for field Returns"
+        
+      # if there is Returns data:
+      }else{
+        # output$action[output$GFE_ID == gfeid] <- T
+        
+        # check if there are duplicated years in this time series
+        if(sum(duplicated(dataHere$Year)) > 0){
+          print("There are duplicated year here:")
+          yr_dupli <- dataHere$Year[duplicated(dataHere$Year)]
+          print(dataHere[dataHere$Year %in% yr_dupli,])
+        }
+        
+        # check if there are duplicated Returns - Year with the other time series
+        # in all_areas_nuseds_cut:
+        if(nrow(dupli) > 0){
+          
+          # are there data points in dupli
+          merge <- merge(x = dataHere[,c("Returns","Year")],
+                         y = dupli)
+          nb_dupli <- nrow(merge)
+          
+          if(nb_dupli > 0){
+            output$nb_dataPt_overlap[output$GFE_ID == gfeid] <- nb_dupli
+            percent <- round(nb_dupli / nb_dataPt * 100,2)
+            output$nb_dataPt_overlapPercent[output$GFE_ID == gfeid] <- percent
+          }
+ 
+        }else{
+          output$nb_dataPt_overlap[output$GFE_ID == gfeid] <- 0
+        }
+      }
+    } # end of for(gfeid in gfe_id)
+  } # end of else if(there is no data)
+  
+  output$comment <- sapply(X = 1:nrow(output), FUN = function(r){
+    # r <- 2
+    commentsHere <- sapply(X = comments_l, FUN = function(c){
+      return(c[r])
+    })
+    commentsHere <- commentsHere[commentsHere != ""]
+    if(length(commentsHere) == 1){
+      out <- commentsHere
+    }else if(length(commentsHere) > 1){
+      out <- paste(commentsHere, collapse = " ; ")
+    }else{
+      out <- ""
+    }
+    return(out)
+  })
+  
+  if(is.null(rep(IndexId_GFE_ID_dupli,2))){
+    IndexId_GFE_ID_dupli <- output
+  }else{
+    IndexId_GFE_ID_dupli <- rbind(IndexId_GFE_ID_dupli,output)
+  }
+}
+
+View(IndexId_GFE_ID_dupli)
+
+# write.csv(IndexId_GFE_ID_dupli,paste0(wd_output,"/IndexId_GFE_ID_missmatched.csv"),
+#           row.names = F)
+
+iid_i <- 45
+IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$iid_i == iid_i,]
+plot_IndexId_GFE_ID_fun(IndexIds = IndexId_GFE_ID_dupli$IndexId[IndexId_GFE_ID_dupli$iid_i == iid_i][1],
+                        all_areas_nuseds = all_areas_nuseds)
+legend("topright",paste("iid_i =",iid_i),bty = "n")
+
+#' Case 1: there is no data in duplicated IndexId-GFE_ID associations:
+#' 38, 42, 44
+#' no data points for all series: 40
+#' TODO: remove them and update list of IndexId
+
+#' Case 2: all/most the data points overlap bb
+#' 28, 30, 36
+#' TODO: remove them and update list of IndexId --> SUM or merge (if cannot sum)
+
+#' Case 3: there is only one SYSTEM_SITE matching the WATERBODIES 
+#' 1, 2, 4, 8, 11, 13, 14, 16, 17, 20, 21, 23, 24, 25, 27, 31, 32, 
+#' with only one or two data points for certain series: 7, 9, 12, 15, 22, 37, 39, 41
+#' with clear continuity: 3, 5, 10, 18, 26, 35
+#' to show: 5, 23
+#' TODO: remove or merge and only keep the GFE_ID present in 
+
+#' Case 4: WATERBODY and SYSTEM_SITE match
+#' 6
+#' TODO: delete or combine the data? --> SUM?
+
+#' Case 5: the population is not present in conservation_unit_system_sites
+#' 19, 29, 46
+#' 46 also has no data at all
+#' TODO: remove? --> YES, spillover from a CU?...
+IndexId_GFE_ID_dupli[grepl("IndexId not present in conservation_unit_system_sites",
+                           IndexId_GFE_ID_dupli$comment),]
+
+#' Case 6: WATERBODY != SYSTEM_SITE match 
+#' 43, 45
+#' 43 --> remove
+#' 
+
+#' Case 7: IndexId is present in conservation_unit_system_sites but under a 
+#' different GFE_ID
+#' NA
+IndexId_GFE_ID_dupli[grepl("ifferent GFE_ID in conservation_unit_system_sites",
+                           IndexId_GFE_ID_dupli$comment),]
+
+
+#' See if I can figure out how to spot IndexIds typos: a same population was given
+#' the wrong IndexId, which would explain why certain IndexIds have multiple 
+#' GFE_ID:
+
+iid_i <- 1
+data <- IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$iid_i == iid_i,]
+data
+Xlim <- c(1945,2022)
+Ylim <- c(0,600000)
+nplots <- nrow(data) + 1
+layout(matrix(1:nplots,ncol = 1), heights = c(rep(1,nrow(data)),1.3))
+par(mar = c(.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(GFE_IDs = data$GFE_ID[data$iid_i == iid_i],
+                        species_acro = "SX",
+                        all_areas_nuseds = all_areas_nuseds, 
+                        xaxt = 'n', xlab = "", Xlim = Xlim, Ylim = Ylim)
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = data$IndexId[data$iid_i == iid_i][1],
+                        all_areas_nuseds = all_areas_nuseds, Xlim = Xlim, Ylim = Ylim)
+legend("topright",paste("iid_i =",iid_i),bty = "n")
+
+#' Comments:
+#' - top panel: looks like it could be the 1st part of the series for SX_3302
+#' - duplicate time series for SX_3302 --> one of them if wrong
+
+iid_i <- 5
+data <- IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$iid_i == iid_i,]
+data
+Xlim <- c(1970,2022)
+Ylim <- c(0,2000)
+nplots <- nrow(data) + 1
+layout(matrix(1:nplots,ncol = 1), heights = c(rep(1,nrow(data)),1.3))
+par(mar = c(.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(GFE_IDs = data$GFE_ID[data$iid_i == iid_i],
+                        species_acro = "CO",
+                        all_areas_nuseds = all_areas_nuseds, 
+                        xaxt = 'n', xlab = "", Xlim = Xlim, Ylim = Ylim)
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = data$IndexId[data$iid_i == iid_i][1],
+                        all_areas_nuseds = all_areas_nuseds, Xlim = Xlim, Ylim = Ylim)
+legend("topright",paste("iid_i =",iid_i),bty = "n")
+
+iid_i <- 6
+data <- IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$iid_i == iid_i,]
+data
+Xlim <- c(1940,2022)
+Ylim <- c(0,200000)
+nplots <- nrow(data) + 1
+layout(matrix(1:nplots,ncol = 1), heights = c(rep(1,nrow(data)),1.3))
+par(mar = c(.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(GFE_IDs = data$GFE_ID[data$iid_i == iid_i],
+                        species_acro = "SX",
+                        all_areas_nuseds = all_areas_nuseds, 
+                        xaxt = 'n', xlab = "", Xlim = Xlim, Ylim = Ylim)
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = data$IndexId[data$iid_i == iid_i][1],
+                        all_areas_nuseds = all_areas_nuseds, Xlim = Xlim, Ylim = Ylim)
+legend("topright",paste("iid_i =",iid_i),bty = "n")
+
+
+
+
+
+
+
+
+
+
+
+
+#' Check if the IndexId, GFE_ID and the combination between the two is 
+#' present in conservation_unit_system_sites:
+IndexId_GFE_ID_dupli$IndexId_in_cuss <- F
+IndexId_GFE_ID_dupli$GFE_ID_in_cuss <- F
+IndexId_GFE_ID_dupli$IndexId_GFE_ID_in_cuss <- F
+
+condition <- IndexId_GFE_ID_dupli$IndexId %in% conservation_unit_system_sites$IndexId
+IndexId_GFE_ID_dupli$IndexId_in_cuss[condition] <- T
+
+condition <- IndexId_GFE_ID_dupli$GFE_ID %in% conservation_unit_system_sites$GFE_ID
+IndexId_GFE_ID_dupli$GFE_ID_in_cuss[condition] <- T
+
+condition <- sapply(X = 1:nrow(IndexId_GFE_ID_dupli), FUN = function(r){
+                     # r <- 1
+                     merge <- merge(x = IndexId_GFE_ID_dupli[r,c("IndexId","GFE_ID")],
+                                    y = conservation_unit_system_sites[,c("IndexId","GFE_ID")])
+                     out <- nrow(merge) == 1
+                   })
+IndexId_GFE_ID_dupli$GFE_ID_in_cuss[condition] <- T
+
+
+View(IndexId_GFE_ID_dupli)
+
+hist(all_areas_nuseds$GFE_ID)
+hist(IndexId_GFE_ID_dupli$GFE_ID)
+
+iid_i <- 7
+iid <- unique(IndexId_GFE_ID_dupli$IndexId[IndexId_GFE_ID_dupli$iid_i == iid_i])
+gfeid <- IndexId_GFE_ID_dupli$GFE_ID[IndexId_GFE_ID_dupli$iid_i == iid_i]
+dataCheck <- lapply(X = gfeid, FUN = function(gfeid){
+  out <- all_areas_nuseds[all_areas_nuseds$IndexId == iid & 
+                            all_areas_nuseds$GFE_ID == gfeid,]
+  return(out)
+})
+dataCheck <- do.call(rbind,dataCheck)
+View(dataCheck)
+
+
+d1 <- all_areas_nuseds[]
+
+fields_def$all_areas_nuseds$GFE_ID
+
+duplicated_pop_nused
+
+duplicated_pop_nused_df <- NULL
+for(iid in duplicated_pop_nused){
+  # iid <- duplicated_pop_nused[3]
+  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
+  colSelect <- c("IndexId","WATERBODY","GFE_ID")
+  data_unique <- unique(all_areas_nuseds_cut[,colSelect])
+  
+  # case where is is duplicated dates but one unique location:
+  if(nrow(data_unique) == 1){
+    
+    yr_duplicated <- all_areas_nuseds_cut$Year[duplicated(all_areas_nuseds_cut$Year)]
+    
+    print("Only location but duplicated dates:")
+    print(all_areas_nuseds_cut[all_areas_nuseds_cut$Year %in% yr_duplicated,])
+    
+    data_unique$year_start <- min(all_areas_nuseds_cut$Year)
+    data_unique$year_end <- max(all_areas_nuseds_cut$Year)
+    
+  }else{ # case where there are multiple locations for a single IndexId
+    
+    year_range_m <- sapply(X = data_unique$GFE_ID, FUN = function(gfe){
+      # gfe <- data_unique$GFE_ID[1]
+      dataHere <- all_areas_nuseds_cut[all_areas_nuseds_cut$GFE_ID == gfe,]
+      years <- dataHere$Year
+      yr_range <- range(years,na.rm = T)
+      if(sum(duplicated(years)) > 0){
+        print(paste("Duplicated years for pop:",iid,", GFE_ID:",gfe))
+      }
+      return(yr_range)
+    })
+    data_unique$year_start <- year_range_m[1,]
+    data_unique$year_end <- year_range_m[2,]
+  }
+  
+  if(is.null(duplicated_pop_nused_df)){
+    duplicated_pop_nused_df <- data_unique
+  }else{
+    duplicated_pop_nused_df <- rbind(duplicated_pop_nused_df,data_unique)
+  }
+  
+  # print(unique(all_areas_nuseds_cut[condition,colSelect]))
+}
+
+#
+#' ** CHECK: NOT USED association between POPULATION and IndexId in all_areas_nuseds **
+#' NOT NEEDED PER SE BECAUSE POPULATION is not to be used as it is not a reliable
+#' field.
 #' It should be a ONE TO ONE relationship, except for Pink were a same 
-#' POPULATION can be assocation to two Pink one, one Even, one Odd.
+#' POPULATION can be assocated to two Pink one, one Even, one Odd.
 IndexId_POPULATION <- unique(all_areas_nuseds[,c("IndexId","POPULATION")])
 sum(duplicated(IndexId_POPULATION$IndexId))    # 0
 sum(duplicated(IndexId_POPULATION$POPULATION)) # 1764
@@ -277,6 +761,7 @@ duplicated_Pop <- IndexId_POPULATION$POPULATION[duplicated(IndexId_POPULATION$PO
 #' Many of these correspond to Pink Odd vs. Even population, which is normal. 
 
 #' Check if for the Pink, it is systematically a one Even and one Odd, flag if not.
+IndexId_POPULATION_Pink <- IndexId_POPULATION[grepl("[P|p]ink",IndexId_POPULATION$POPULATION),]
 duplicated_Pop_Pink <- duplicated_Pop[grepl("[P|p]ink",duplicated_Pop)]
 for(pop in duplicated_Pop_Pink){
   dataHere <- IndexId_POPULATION_Pink[IndexId_POPULATION_Pink$POPULATION == pop,]
@@ -342,139 +827,10 @@ for(pop in unique(IndexId_POP_dupli$POPULATION)){
                         IndexIdHere[!toKeep])
 }
 
-# Add CM_40836 because the data is insufficient
+# Add CM_40836 because the data is insufficient --> DO NOT DO IT
 IndexIdToRremove <- c(IndexIdToRremove,"CM_40836")
 
-# Remove them from all_areas_nuseds
-all_areas_nuseds <- all_areas_nuseds[! all_areas_nuseds$IndexId %in% IndexIdToRremove,]
 
-# Check if these populations are in conservation_unit_system_sites and remove them too
-conservation_unit_system_sites$IndexId[conservation_unit_system_sites$IndexId %in%
-                                         IndexIdToRremove]
-
-conservation_unit_system_sites <- conservation_unit_system_sites[! conservation_unit_system_sites %in%
-                                                                   IndexIdToRremove,]
-
-#'** CHECK: association between GFE_ID and IndexId in both datasets **
-#' It should be a ONE TO MANY relationship.
-#' - For all_areas_nuseds: 
-#'    - 1) check that for each IndexId there is an unique GFE_ID, if not, trouble
-#'    shot.
-#'    - 2) check that there is not duplicated multiple data points for a same year,
-#'    if that's the case, trouble shoot.
-#' - 
-
-IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
-sum(duplicated(IndexId_GFE_ID$IndexId)) # 79 --> not normal
-sum(duplicated(IndexId_GFE_ID$GFE_ID)) # 9043 --> normal
-
-
-duplicated_pop_nused <- c()
-count <- 0
-for(iid_i in 1:length(unique(all_areas_nuseds$IndexId))){
-  # iid_i <- 74
-  iid <- unique(all_areas_nuseds$IndexId)[iid_i]
-  # print(count <- count + 1)
-  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
-
-  # 1) check if there is a unique GFE_ID
-  gfe_id <- unique(all_areas_nuseds_cut$GFE_ID)
-  if(length(gfe_id) > 1){
-    print(paste0("Multiple GFE_ID at iid_i = ",iid_i))
-    
-    
-  }
-  
-  # 2) check that there is not duplicated multiple data points for a same year
-  yr <- all_areas_nuseds_cut$Year
-  yr_duplicated <- yr[duplicated(yr)]
-  if(length(yr_duplicated) > 0){
-    duplicated_pop_nused <- c(duplicated_pop_nused,iid)
-    print(paste("Population duplicated in all_areas_nuseds:",iid))
-  }
-} 
-duplicated_pop_nused
-
-duplicated_pop_nused_df <- NULL
-for(iid in duplicated_pop_nused){
-  # iid <- duplicated_pop_nused[3]
-  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
-  colSelect <- c("IndexId","WATERBODY","GFE_ID")
-  data_unique <- unique(all_areas_nuseds_cut[,colSelect])
-  
-  # case where is is duplicated dates but one unique location:
-  if(nrow(data_unique) == 1){
-    
-    yr_duplicated <- all_areas_nuseds_cut$Year[duplicated(all_areas_nuseds_cut$Year)]
-    
-    print("Only location but duplicated dates:")
-    print(all_areas_nuseds_cut[all_areas_nuseds_cut$Year %in% yr_duplicated,])
-    
-    data_unique$year_start <- min(all_areas_nuseds_cut$Year)
-    data_unique$year_end <- max(all_areas_nuseds_cut$Year)
-    
-  }else{ # case where there are multiple locations for a single IndexId
-    
-    year_range_m <- sapply(X = data_unique$GFE_ID, FUN = function(gfe){
-      # gfe <- data_unique$GFE_ID[1]
-      dataHere <- all_areas_nuseds_cut[all_areas_nuseds_cut$GFE_ID == gfe,]
-      years <- dataHere$Year
-      yr_range <- range(years,na.rm = T)
-      if(sum(duplicated(years)) > 0){
-        print(paste("Duplicated years for pop:",iid,", GFE_ID:",gfe))
-      }
-      return(yr_range)
-    })
-    data_unique$year_start <- year_range_m[1,]
-    data_unique$year_end <- year_range_m[2,]
-  }
-  
-  if(is.null(duplicated_pop_nused_df)){
-    duplicated_pop_nused_df <- data_unique
-  }else{
-    duplicated_pop_nused_df <- rbind(duplicated_pop_nused_df,data_unique)
-  }
-  
-  #print(unique(all_areas_nuseds_cut[condition,colSelect]))
-}
-
-
-duplicated_pop_sites <- c()
-for(iid in unique(conservation_unit_system_sites$IndexId)){
-  # iid <- unique(conservation_unit_system_sites$IndexId)[1]
-  # print(count <- count + 1)
-  cons_unit_syst_sites_cut <- conservation_unit_system_sites[conservation_unit_system_sites$IndexId == iid,]
-  if(nrow(cons_unit_syst_sites_cut) > 1){
-    duplicated_pop_sites <- c(duplicated_pop_sites,iid)
-    print(paste("Population duplicated in conservation_unit_system_sites:",iid))
-  }
-}
-duplicated_pop_sites
-# "CN_7479"
-# "SX_45525"
-for(iid in duplicated_pop_sites){
-  colSelect <- c("IndexId","SYSTEM_SITE","GFE_ID","SPECIES_QUALIFIED","CU_NAME",
-                 "Y_LAT","X_LONGT","CU_LAT","CU_LONGT","CU_TYPE","CU_INDEX")
-  condition <- conservation_unit_system_sites$IndexId == iid
-  print(conservation_unit_system_sites[condition,colSelect])
-}
-conservation_unit_system_sites
-all_areas_nuseds$GFE_ID
-all_areas_nuseds$s
-
-#' Look if these populations are present in all_areas_nuseds and, if that's the case,
-#' compare the location using WATERBODY.
-for(iid in duplicated_pop_sites){
-  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
-  if(nrow(all_areas_nuseds_cut) > 0){
-    WATERBODY_here <- unique(all_areas_nuseds_cut$)
-  }
-  
-}
-
-
-# about SYSTEM_SITE, 
-# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705361308291699?thread_ts=1705344122.088409&cid=CJ5RVHVCG
 
 
 # Check 

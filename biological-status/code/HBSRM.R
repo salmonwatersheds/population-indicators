@@ -45,8 +45,7 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
-# The datasets to input were outputted by other scripts 
-wd_data_input <- wd_output
+# wd_output <- gsub("/output","/output_NORMAL_DIST",wd_output)
 
 # Import functions for this specific project
 source("Code/functions.R")
@@ -478,8 +477,9 @@ for(i_rg in 1:length(region)){
         	
         	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
         	
-        		# a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
-        		a[i] ~ dlnorm(mu_a, tau_a) # TOCHANGE: CONFUSION WITH ALPHA = exp(a) --> a[i] ~ dnorm(mu_a, tau_a) ???
+        		a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
+        		# a[i] ~ dlnorm(mu_a, tau_a) # TOCHANGE: CONFUSION WITH ALPHA = exp(a) --> a[i] ~ dnorm(mu_a, tau_a) ???
+        		# a[i] ~ dnorm(mu_a, tau_a)
         		
         		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
         		

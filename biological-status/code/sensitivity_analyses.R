@@ -59,6 +59,25 @@ species_acronym_df <- species_acronym_fun()
 # Import region names
 regions_df <- regions_fun()
 
+#' Import the cuspawnerabundance.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' To calculating current spawner abundance for biostatus assessment
+fromDatabase <- F
+update_file_csv <- F
+
+cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+
+#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species and benchmark %
 #------------------------------------------------------------------------------#
@@ -93,8 +112,8 @@ species_all <- T
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
-
-#' Sensitivity concerning the HS percentile benchmark approach ------
+#
+# Sensitivity concerning the HS percentile benchmark approach ------
 #' 20 years is agreed minimum number of years required to calculate benchmarks.
 #' But does a lower number affect the variability of the benchmarks?
 
@@ -274,53 +293,176 @@ for(j in nb_dataPt){
 
 
 #
-# OLDER STUFF ------
-#
-benchSummary_nBoot_ll <- list()
-for(i in 1:length(nb_dataPt)){
-  # i <- 1
-  
-  nb_dataPt_here <- nb_dataPt[i]
-  nb_cu_dataPt_df_here <- nb_cu_dataPt_df[nb_cu_dataPt_df$nb_dataPt == nb_dataPt_here,]
-  
-  region <- nb_cu_dataPt_df_here$region[1]
-  species <- nb_cu_dataPt_df_here$species_name[1]
-  CU <- nb_cu_dataPt_df_here$cu_name_pse[1]
-  
-  benchSummary_nBoot_l <- sensitivity_nBoot_HSPercentBM_fun(region = region,
-                                                            species = species,
-                                                            CU = CU,
-                                                            cuspawnerabundance = cuspawnerabundance,
-                                                            nBoot_v = nBoot_v,
-                                                            cores_nb = cores_nb)
-  benchSummary_nBoot_ll[[i]] <- benchSummary_nBoot_l
-  names(benchSummary_nBoot_ll)[i] <- nb_dataPt_here
-}
+# a ~ N(mu_a, tau_a) vs. a ~ LN(log(mu_a), tau_a) ------
+#' Comparison of HBSR model parameter, benchmarks and biostatus between the two
+#' options to model the distribution of 'a' (the growth of the population at small 
+#' values for S --> a ~ log(R/S)). There was a debate to know which distribution
+#' to use. 
+#' Results for each model version:
+#' - a ~ LN(log(mu_a), tau_a) : /output
+#' - a ~ N(mu_a, tau_a) : /output_NORMAL_DIST
 
-layout(matrix(1:length(nb_dataPt),ncol = 2,byrow = T))
-for(i in 1:length(nb_dataPt)){
-  # i <- 1
-  
-  # if(i == length(nb_dataPt)){
-  #   side1 <- 4.5
-  #   xaxt <- "s"
-  # }else{
-  #   side1 <- 0.5
-  #   xaxt <- "n"
-  # }
-  xaxt <- "s"
-  side1 <- 4.5
-  par(mar = c(side1,4.5,3,.5))
-  sensitivity_nBoot_HSPercentBM_figure_fun(benchSummary_nBoot_ll[[i]],xaxt = xaxt)
-  mtext(text = paste0(benchSummary_nBoot_ll[[i]][[1]]$region[1]," - ",
-                      benchSummary_nBoot_ll[[i]][[1]]$species[1]," - ",
-                      benchSummary_nBoot_ll[[i]][[1]]$CU[1],
-                      " (n = ",benchSummary_nBoot_ll[[i]][[1]]$dataPointNb[1],")"),
-        side = 3, line = .8, cex = 1.2)
-}
+#' 1) Collect the posterio distribution of the model parameters generated in 
+#' HBSRM.R:
 
-#'* Answer: it is hard to see, we need to replicate that a few time to see how *
-#'* the medium benchamrks and their CIs vary.*
+wd_outputs <- c(wd_output, 
+                gsub("/output","/output_NORMAL_DIST",wd_output))
+postDist_l <- list(NULL,NULL)
+names(postDist_l) <- c("output","output_NORMAL_DIST")
+
+for(wdo in wd_outputs){
+  # wdo <- wd_outputs[1]
+  wd_data_input <- wdo
+  
+  for(i_rg in 1:length(region)){
+    
+    # i_rg <- 1
+    
+    region_i <- gsub("_"," ",region[i_rg])
+    if(region_i == "Central coast"){
+      region_i <- "Central Coast"
+    }
+    
+    if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+      regionName <- "VIMI"
+    }else{
+      regionName <- regionName <- gsub(" ","_",region[i_rg])
+    }
+    
+    if(species_all){
+      files_list <- list.files(wd_data_input)
+      files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
+      files_s <- files_s[grepl(pattern = regionName,files_s)]
+      species <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
+      species <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species)
+    }
+    
+    if(length(species) == 0){
+      
+      print(paste0("*** There is no data in region ",region[i_rg]," ***"))
+      
+    }else{
+      
+      for(i_sp in 1:length(species)){
+        
+        # i_sp <- 1
+        
+        speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro == species[i_sp]]
+        
+        cuspawnerabundance_rg_sp <- cuspawnerabundance[cuspawnerabundance$region == region_i &
+                                                         cuspawnerabundance$species_name %in% speciesHere,]
+        
+        conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == region_i &
+                                                                       conservationunits_decoder$species_name%in% speciesHere,]
+        
+        # Import the HBSRM outputs, i.e., the posterior distributions of:
+        post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_HBSRM_posteriors_priorShift.rds"))
+        
+        # Import the S and R matrices used for fitting the HBSR model:
+        SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_SR_matrices.rds"))
+        
+        # Find the nb of CUs
+        CUs <- colnames(SRm$R)
+        nCUs <-length(CUs)
+        
+        # find the corresponding cuid 
+        cuids <- sapply(X = CUs, function(cu){
+          # cu <- CUs[6]
+          regionHere <- region_i
+          conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == regionHere &
+                                                                       conservationunits_decoder$species_name %in% speciesHere & 
+                                                                       conservationunits_decoder$cu_name_pse == cu,]
+          
+          # we could probably simply use pooledcuid
+          if(nrow(conservationunits_decoder_cut) == 1){
+            out <- conservationunits_decoder_cut$cuid
+          }else{
+            out <- unique(conservationunits_decoder_cut$pooledcuid)
+          }
+          
+          if(length(out) == 0){
+            print(paste("There is no cuid for:",region[i_rg],"-",speciesHere,"-",cu))
+          }
+          return(out)
+        })
+        
+        nchains <- length(post) # 6 chains
+        # parameter names
+        pnames <- colnames(post[[1]])
+        
+        # 
+        post_df <- do.call(rbind,post)
+        post_df <- post_df[,colnames(post_df) != "deviance"]
+        
+        output <- data.frame(region = region_i,
+                             species = speciesHere[1],
+                             species_acro = species[i_sp],
+                             cu_name_pse = CUs,
+                             cuid = cuids)
+        
+        rownames(output) <- NULL
+        for(p in c("a","b","mu_a","sd_a","sd")){
+          # p <- "mu_a" p <- "a" p <- "b"
+          if(p %in% c("mu_a","sd_a")){
+            var_m <- median(post_df[,p], na.rm = T)
+            var_CI <- quantile(x = post_df[,p], probs = c(.025,.975),na.rm = T)
+            para_df <- data.frame(cu_name_pse = CUs,
+                                  m = var_m, 
+                                  CI025 = var_CI[1],
+                                  CI975 = var_CI[2])
+            colnames(para_df)[2:ncol(para_df)] <- paste0(p,"_",colnames(para_df)[2:ncol(para_df)])
+            
+          }else{ # need to return CU-specific values
+            para_df <- lapply(X = CUs,FUN = function(cu){
+              # cu <- CUs[1]
+              if(length(CUs) == 1){
+                var_name <- p
+              }else{
+                count <- which(cu == CUs)
+                var_name <- paste0(p,"[",count,"]")
+              }
+              var_m <- median(post_df[,var_name], na.rm = T)
+              var_CI <- quantile(x = post_df[,var_name], probs = c(.025,.975),na.rm = T)
+              out <- data.frame(cu_name_pse = cu,
+                                m = var_m, 
+                                CI025 = var_CI[1],
+                                CI975 = var_CI[2])
+              colnames(out)[2:ncol(out)] <- paste0(p,"_",colnames(out)[2:ncol(out)])
+              rownames(out) <- NULL
+              return(out)
+            })
+            para_df <- do.call(rbind,para_df)
+          }
+          row.names(para_df) <- NULL
+          output <- merge(x = output, y = para_df, by = "cu_name_pse")
+        }
+        output <- output[,c("region","species","species_acro","cuid","cu_name_pse",
+                            colnames(output)[6:ncol(output)])]
+        
+        if(is.null(postDist_l[[which(wdo == wd_outputs)]])){
+          postDist_l[[which(wdo == wd_outputs)]] <- output
+        }else{
+          postDist_l[[which(wdo == wd_outputs)]] <- rbind(postDist_l[[which(wdo == wd_outputs)]],
+                                                          output)
+        }
+
+      } # end of for each species
+    }
+  } # end of for each region
+} # end of for each wd_outputs
+
+# ignore the warnings
+postDist_l$output
+
+
+
+
+
+
+
+
+
+
 
 
 

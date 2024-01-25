@@ -48,6 +48,8 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
+# wd_output <- gsub("/output","/output_NORMAL_DIST",wd_output)
+
 # The datasets to input were outputted by other scripts 
 wd_data_input <- wd_output
 
@@ -159,7 +161,7 @@ for(i_rg in 1:length(region)){
   
   if(length(species) == 0){
     
-    print(paste0("*** There is no data in for salmon in ",region[i_rg]," ***"))
+    print(paste0("*** There is no data in region ",region[i_rg]," ***"))
     
   }else{
     
@@ -321,6 +323,8 @@ for(i_rg in 1:length(region)){
       # SRm$R <- SRm$R[,colnames(SRm$R) %in% CUs, drop = F]
       # SRm$S <- SRm$S[,colnames(SRm$S) %in% CUs, drop = F]
       
+      # BSC: this is not relevant any more because CUs without MinSRpts and without
+      # prior estimates are filtered out
       SRm$R <- SRm$R[,CUs, drop = F]
       SRm$S <- SRm$S[,CUs, drop = F]
       

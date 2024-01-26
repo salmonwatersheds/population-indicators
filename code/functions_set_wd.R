@@ -82,7 +82,7 @@ set_working_directories_fun <- function(subDir = NA, Export_locally = T){
     
     # The dropbox path to the /population-indicators/biological-status folder:
     wd_population_indicator_dropbox <- "1_Active/Population Methods and Analysis/population-indicators"
-    wd_population_indicator_data_input_dropbox <- paste(wd_population_indicator_dropbox,"data_input",sep = "/")
+    wd_population_indicator_data_input_dropbox <- paste(wd_population_indicator_dropbox,"data-input",sep = "/")
     wd_project_dropbox <- paste(wd_population_indicator_dropbox,subDir,sep = "/")
     
     wd_figures <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/figures")

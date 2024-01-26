@@ -73,15 +73,23 @@ calcSgen <- function(Sgen.hat, theta, Smsy){
 
 calcSmsy <- function(a, b){
   
-  if(a < 0){
-    # there is no such thing as “sustainable yield” if your population has negative growth.
-    Smsy <- 0
-    
-  }else{
-    
-    require(lamW) # for the Lambert-W Function
-    Smsy <- (1 - lamW::lambertW0(exp(1 - a))) / b
-  }
+  require(lamW) # for the Lambert-W Function
+  
+  Smsy <- rep(NA,length(a))
+  Smsy[a < 0] <- 0
+  
+  condition <- a >= 0
+  Smsy[condition] <- (1 - lamW::lambertW0(exp(1 - a[condition]))) / b[condition]
+  
+  # previous edit suggested from Steph but that does not work with vectors
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1704908044745989?thread_ts=1704843807.322429&cid=CJ5RVHVCG
+  # if(a < 0){
+  #   # there is no such thing as “sustainable yield” if your population has negative growth.
+  #   Smsy <- 0
+  # }else{
+  #   require(lamW) # for the Lambert-W Function
+  #   Smsy <- (1 - lamW::lambertW0(exp(1 - a))) / b
+  # }
   return(as.numeric(Smsy))
 }
 

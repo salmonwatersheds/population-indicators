@@ -114,6 +114,7 @@ character_lowerHigerCase_fun <- function(characterVec){
 # methods = NA
 # size_box_cm = 6
 # nameRegion_show = nameSpecies_show = T
+# coeff_width_adj <- .1
 figure_compare_benchamrks_fun <- function(BM_data,
                                           nameRegion_show = T,
                                           nameSpecies_show = T,
@@ -246,7 +247,7 @@ figure_compare_benchamrks_fun <- function(BM_data,
              units = "cm", res = 300)
       }
       
-      width_onePlot_cm <- width_fig_cm / ncol 
+      width_onePlot_cm <- width_fig_cm / ncol
       height_onePlot_cm <- height_fig_cm_noHeader / nrow
       
       widths <- 1

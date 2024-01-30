@@ -455,10 +455,67 @@ for(wdo in wd_outputs){
 
 # ignore the warnings
 
-postDist_l$output
+condition <- postDist_l$output_NORMAL_DIST$region == "Vancouver Island & Mainland Inlets" &
+  postDist_l$output_NORMAL_DIST$species_acro == "SX"
+postDist_l$output_NORMAL_DIST$mu_a_m[condition]
+postDist_l$output_NORMAL_DIST$mu_a_CI025[condition]
+
+condition <- postDist_l$output_NORMAL_DIST$region == "Haida Gwaii" &
+  postDist_l$output_NORMAL_DIST$species_acro == "PK"
+postDist_l$output$mu_a_m[condition]
+postDist_l$output$mu_a_CI025[condition]
+
+
+
+
+# import the biostatus HBSRM datasets:
+
+biostatus_LN <- rbind_biologicalStatusCSV_fun(pattern = "biological_status_HBSRM",
+                                              wd_output = wd_output, region = region)
+
+biostatus_N <- rbind_biologicalStatusCSV_fun(pattern = "biological_status_HBSRM",
+                                             wd_output = gsub("/output","/output_NORMAL_DIST",wd_output),
+                                             region = region)
+
+colKeep <- c("region","species","cuid","CU_pse","current_spawner_abundance")
+colBiostatus <- colnames(biostatus_LN)[grepl("status_Smsy_",colnames(biostatus_LN))]
+
+biostatus_LN$biostatus_LN <- sapply(1:nrow(biostatus_LN),FUN = function(r){
+  # r <- 1
+  out <- c("red","amber","green")[biostatus_LN[r,colBiostatus] == max(biostatus_LN[r,colBiostatus])]
+  if(all(is.na(out))){
+    out <- NA
+  }
+  return(out)
+})
+
+biostatus_N$biostatus_N <- sapply(1:nrow(biostatus_N),FUN = function(r){
+  # r <- 1
+  out <- c("red","amber","green")[biostatus_N[r,colBiostatus] == max(biostatus_N[r,colBiostatus])]
+  if(all(is.na(out))){
+    out <- NA
+  }
+  return(out)
+})
+
+View(biostatus_LN[,c(colKeep,colBiostatus,"biostatus_LN")])
+nrow(biostatus_LN)
+nrow(biostatus_N)
+
+# merge the two
+
+biostatus <- merge(x = biostatus_LN[,c(colKeep,"biostatus_LN")],
+                   y = biostatus_N[,c(colKeep,"biostatus_N")],
+                   by = colKeep, all = T)
+
+nrow(biostatus)
+View(biostatus)
+biostatus[biostatus$biostatus_LN != biostatus$biostatus_N,]
+
 
 sensitivity_RickerParam_LN_fun(postDist_l = postDist_l)
 
+#' 
 sensitivity_RickerParam_LN_fun <- function(postDist_l){
   
   dataN <- postDist_l$output_NORMAL_DIST
@@ -540,15 +597,13 @@ sensitivity_RickerParam_LN_fun <- function(postDist_l){
           segments(x0 = 0, x1 = 0, y0 = 0, y1 = length(cuids) + 1, lwd = 2, col = "red")
         }
         
+        col_N <- rep("black",length(cuids))
+        col_LN <- rep("black",length(cuids))
         if(p %in% c("a","b")){
           # median of the parameter for each CU and model version
-          
-          col_N <- rep("black",length(cuids))
-          col_LN <- rep("black",length(cuids))
-          
           if(p == 'a'){
-            col_N[N_m < 0 | N_CI025 < 0] <- "red"
-            col_LN[LN_m < 0 | LN_CI025 < 0] <- "red"
+            col_N[N_m <= 0 | N_CI025 <= 0] <- "red"
+            col_LN[LN_m <= 0 | LN_CI025 <= 0] <- "red"
           }
           points(x = N_m, y = 1:length(cuids) + offset, pch = 16, cex = 2, col = col_N)
           points(x = LN_m, y = 1:length(cuids) - offset, pch = 16, cex = 2, col = col_LN)
@@ -559,8 +614,8 @@ sensitivity_RickerParam_LN_fun <- function(postDist_l){
         }else{
           # median of the parameter for each model version
           if(p == 'mu_a'){
-            col_N[N_m < 0 | N_CI025 < 0] <- "red"
-            col_LN[LN_m < 0 | LN_CI025 < 0] <- "red"
+            col_N[N_m <= 0 | N_CI025 <= 0] <- "red"
+            col_LN[LN_m <= 0 | LN_CI025 <= 0] <- "red"
           }
           points(x = N_m[1], y = ymid + offset, pch = 16, cex = 2, col = col_N)
           points(x = LN_m[1], y = ymid - offset, pch = 16, cex = 2, col = col_LN)

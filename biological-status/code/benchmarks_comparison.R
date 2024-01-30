@@ -64,7 +64,7 @@ regions_df <- regions_fun()
 # Selection of region(s) and species and benchmark %
 #------------------------------------------------------------------------------#
 
-print_fig <- T  # to export the figures
+print_fig <- F  # to export the figures
 
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
@@ -106,7 +106,7 @@ nbplots_max <- 6^2 # could change to 5 or 4 if that's too many figures
 
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
+  # i_rg <- 8
   
   region_i <- gsub("_"," ",region[i_rg])
   if(region_i == "Central coast"){
@@ -146,7 +146,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(species)){
       
-      # i_sp <- 1
+      # i_sp <- 4
       species_i <- species[i_sp]
       
       # import the files as dataframe and combine then by row

@@ -52,6 +52,7 @@ hatchery-release/output/
 spawner-surveys/data/
 spawner-surveys/references/
 spawner-surveys/output/
+spawner-surveys/code/ignore 
 
 spawner-abundance/output/
 

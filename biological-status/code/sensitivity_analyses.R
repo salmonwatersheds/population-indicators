@@ -466,8 +466,6 @@ postDist_l$output$mu_a_m[condition]
 postDist_l$output$mu_a_CI025[condition]
 
 
-
-
 # import the biostatus HBSRM datasets:
 
 biostatus_LN <- rbind_biologicalStatusCSV_fun(pattern = "biological_status_HBSRM",
@@ -506,17 +504,51 @@ nrow(biostatus_N)
 
 biostatus <- merge(x = biostatus_LN[,c(colKeep,"biostatus_LN")],
                    y = biostatus_N[,c(colKeep,"biostatus_N")],
-                   by = colKeep, all = T)
+                   by = colKeep, 
+                   all = T)
 
 nrow(biostatus)
 View(biostatus)
 biostatus[biostatus$biostatus_LN != biostatus$biostatus_N,]
 
+Biostatus_all <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+                                                  header = T)
+View(Biostatus_all[Biostatus_all$cuid == 177,])
+
+# Import the benchmark values associated with the HBSRM
+pattern <- "benchmarks_summary_HBSRM"
+benchmarks_summary_HBSRM_LN <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                             wd_output = wd_output,
+                                                             region = region,
+                                                             species_all = F)
+
+benchmarks_summary_HBSRM_LN[benchmarks_summary_HBSRM_LN$cuid == 177,]$m # 6885.233  6893.033 12956.543 13070.912
+
+benchmarks_summary_HBSRM_N <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                             wd_output = gsub("/output","/output_NORMAL_DIST",wd_output),
+                                                             region = region,
+                                                             species_all = F)
+
+benchmarks_summary_HBSRM_N[benchmarks_summary_HBSRM_N$cuid == 177,]$m # 6887.869  6913.174 13156.581 13337.935
+
+
+# Import biostatus obtained with HBSR Sgen - Smsy:
+pattern <- "biological_status_HBSRM"
+biological_status_HBSR_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                           wd_output = wd_output,
+                                                           region = region,
+                                                           species_all = species_all)
+
+biological_status_HBSR_df[biological_status_HBSR_df$cuid == 177,]$current_spawner_abundance # 13059.02
+
 
 sensitivity_RickerParam_LN_fun(postDist_l = postDist_l)
+sensitivity_RickerParam_LN_fun(postDist_l = postDist_l, biostatus = biostatus)
 
 #' 
-sensitivity_RickerParam_LN_fun <- function(postDist_l){
+sensitivity_RickerParam_LN_fun <- function(postDist_l,biostatus = NA){
+  
+  benchCols <- c(green = "#8EB687", amber = "#DFD98D", red = "#9A3F3F")
   
   dataN <- postDist_l$output_NORMAL_DIST
   dataLN <- postDist_l$output
@@ -524,7 +556,7 @@ sensitivity_RickerParam_LN_fun <- function(postDist_l){
   parameters <- c("mu_a","sd_a","a","b")
   
   for(rg in unique(postDist_l$output$region)){
-    # rg <-  unique(postDist_l$output$region)[1]
+    # rg <-  unique(postDist_l$output$region)[6]
     condition <- dataN$region == rg
     dataNrg <- dataN[condition,]
     dataLNrg <- dataLN[condition,]
@@ -542,10 +574,18 @@ sensitivity_RickerParam_LN_fun <- function(postDist_l){
       ylim <- c(.5,length(cuids) + .5)
       ymid <- ylim[1] + (ylim[2] - ylim[1])/2
       
-      layout(matrix(c(rep(1,length(parameters)),2:(length(parameters) + 1)),
-                    nrow = 2, byrow = T), 
-             widths = c(1.25,rep(1,length(parameters) - 2),1.05), 
-             heights = c(.08,1))
+      if(all(is.na(biostatus))){ # do not show biostatus
+        layout(matrix(c(rep(1,length(parameters)),2:(length(parameters) + 1)),
+                      nrow = 2, byrow = T), 
+               widths = c(1.25,rep(1,length(parameters) - 2),1.05), 
+               heights = c(.08,1))
+      }else{
+        layout(matrix(c(rep(1,length(parameters)+1),2:(length(parameters) + 2)),
+                      nrow = 2, byrow = T), 
+               widths = c(1.25,rep(1,length(parameters) - 2),1.05,.5), 
+               heights = c(.08,1))
+      }
+      
       par(mar = rep(0,4))
       plot(NA, ylim = c(0,1), xlim = c(0,1), xaxt = 'n', yaxt = 'n', bty = 'n',
            xlab = '', ylab = '')
@@ -624,9 +664,38 @@ sensitivity_RickerParam_LN_fun <- function(postDist_l){
           segments(x0 = LN_CI025[1], x1 = LN_CI975[1], lwd = 2, col = col_LN,
                    y0 = ymid - offset, y1 = ymid - offset)
         }
+      } # end of for each parameter
+      
+      if(!all(is.na(biostatus))){
+
+        biostatus_here <- biostatus[biostatus$cuid %in% cuids,]
+
+        col_LN <- sapply(X = cuids, FUN = function(cuid){
+          bioS <- biostatus_here$biostatus_LN[biostatus_here$cuid == cuid]
+          out <- benchCols[bioS]
+          return(out)
+        })
+        col_N <- sapply(X = cuids, FUN = function(cuid){
+          bioS <- biostatus_here$biostatus_N[biostatus_here$cuid == cuid]
+          out <- benchCols[bioS]
+          return(out)
+        })
+        
+        par(mar = c(4.5,0,0.5,0.5))
+        plot(NA,xlim = c(0,1), ylim = ylim, xaxt = 'n', yaxt = 'n', 
+             ylab = "", xlab = "Bio-status", bty = 'n')
+        for(i in 1:length(cuids)){
+          # i <- 1
+          y_coord <- c(i,i, i + offset * 3, i + offset * 3)
+          polygon(x = c(0,1,1,0), y = y_coord, col = col_N[i])
+          y_coord <- c(i, i, i - offset * 3, i - offset * 3)
+          polygon(x = c(0,1,1,0), y = y_coord, col = col_LN[i])
+        }
+        # text(labels = cuids, x = rep(.5,length(cuids)) , y = 1:length(cuids))
       }
-    }
-  }
+      
+    } # end of for each species
+  } # end of for each region
 }
 
 

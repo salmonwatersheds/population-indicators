@@ -1668,7 +1668,8 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
                                           group_var = c("region","species")){
   
   
-  head(biological_status_df)
+  # head(biological_status_df)
+  
   # identify the dataset:
   colBench <- colnames(biological_status_df)[grepl("status_",colnames(biological_status_df))]
   
@@ -1676,9 +1677,9 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
     status1 <- colBench[grepl("Smsy_",colBench)]
     status2 <- colBench[grepl("Smsy80_",colBench)]
     figName <- "_Smsy_Smsy80_"
-  }else if(grepl("HSPercent",colBench)[1]){
-    status1 <- colBench[grepl("HSPercent_075",colBench)]
-    status2 <- colBench[grepl("HSPercent_05",colBench)]
+  }else if(grepl("[P|p]ercent",colBench)[1]){
+    status1 <- colBench[grepl("[P|p]ercent_075",colBench)]
+    status2 <- colBench[grepl("[P|p]ercent_05",colBench)]
     figName <- "Percentiles_75_50_"
   }
   
@@ -1776,16 +1777,19 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
 #' Function to return a dataframe of the CUs that have high exploitation rate or
 #' low production rates, as well as a final call on keeping or removing the CUs 
 #' depending of their biostatus: the one with already a red/poor status are kept
-#' (i.e. Clare's 8th rule).
+#' (i.e. Clare's 8th rule). The function requires the biological_status_SH_percentiles
+#' dataset because the 8th rules is applied to CUs evaluated with the percentile
+#' method (and because all the CUs evaluated with the HBSRM method are in this 
+#' dataset as well).
 #' - biological_status_HSPercent_df: data frame of the biostatus probabilities 
-#' obtained with percentile method. It is return by the function 
+#' obtained with percentile method. It is returned by the function 
 #' biological_status_HSPercent_df() and the argument pattern = "biological_status_SH_percentiles".
-cu_highExploit_lowProd_fun <- function(biological_status_HSPercent_df = NA, 
+cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA, 
                                        region = NA, wd_output = NA, species_all = T){
   
-  if(is.na(biological_status_HSPercent_df)[1]){
+  if(is.na(biological_status_percentile)[1]){
     pattern <- "biological_status_SH_percentiles"
-    biological_status_HSPercent_df <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+    biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                                     wd_output = wd_output,
                                                                     region = region,
                                                                     species_all = species_all)
@@ -1825,19 +1829,19 @@ cu_highExploit_lowProd_fun <- function(biological_status_HSPercent_df = NA,
     # i <- 1
     sp <- highExploit_lowProd$species[i]
     cu <- highExploit_lowProd$CU_name[i]
-    biological_status_HSPercent_dfHere <- biological_status_HSPercent_df[biological_status_HSPercent_df$CU_pse == cu,]
-    if(nrow(biological_status_HSPercent_dfHere) > 1){
-      print(biological_status_HSPercent_dfHere)
-      biological_status_HSPercent_dfHere <- biological_status_HSPercent_dfHere[biological_status_HSPercent_dfHere$species == sp,]
+    biological_status_percentileHere <- biological_status_percentile[biological_status_percentile$CU_pse == cu,]
+    if(nrow(biological_status_percentileHere) > 1){
+      print(biological_status_percentileHere)
+      biological_status_percentileHere <- biological_status_percentileHere[biological_status_percentileHere$species == sp,]
     }
-    status <- biological_status_HSPercent_dfHere$status_percent075
+    status <- biological_status_percentileHere$status_percent075
     highExploit_lowProd$biostatus_percentile[i] <- status
     if(!is.na(status)){
       if(status == "red"){ #' New rule from Claire:
         highExploit_lowProd$toRemove[i] <- F
       }
     }
-    # print(biological_status_HSPercent_dfHere$status_percent075)
+    # print(biological_status_percentileHere$status_percent075)
   }
   return(highExploit_lowProd)
 }

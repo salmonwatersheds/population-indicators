@@ -118,6 +118,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
+
 #
 # Fixes spawners for the Yukon Dataset_5 ------
 #
@@ -1523,6 +1524,329 @@ or at least compare the benchmarks with the percentile one.
 
 
 
+
+
+
+
+
+
+
+# Check the difference of biostatus between PSE and my updates  ------
+
+# Biostatus from PSE:
+
+#'* Import the setr_appendix4.csv from population-indicators/data_input *
+setr_appendix4 <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[5],
+                                        fromDatabase = fromDatabase,
+                                        update_file_csv = update_file_csv,
+                                        wd = wd_pop_indic_data_input_dropbox)
+head(setr_appendix4)
+
+setr_appendix4 <- setr_appendix4[setr_appendix4$species_name != "Steelhead",]
+
+setr_appendix4$species <- apply(X = setr_appendix4, 1, function(r){
+  sp <- r["species_name"]
+  if(sp == "Chinook"){
+    out <- "CK"
+  }else if(sp == "Chum"){
+    out <- "CM"
+  }else if(sp == "Coho"){
+    out <- "CO"
+  }else if(sp %in% c("Lake sockeye","River sockeye")){
+    out <- "SX"
+  }else if(sp %in% c("Pink (even)","Pink (odd)")){
+    out <- "PK"
+  }
+  return(out)
+})
+
+setr_appendix4$sr_status_PSE <- setr_appendix4$sr_status
+setr_appendix4$percentile_status_PSE <- setr_appendix4$percentile_status
+
+colToKeep_PSE <- c("region","species","cuid","cu_name_pse","curr_spw",
+                   "curr_spw_start_year","curr_spw_end_year","years_of_data",
+                   "sr_red_prob","sr_yellow_prob","sr_green_prob",
+                   "X25._spw","X75._spw","sgen","smsy80",
+                   "sr_status_PSE","percentile_status_PSE")
+
+biostatus_PSE <- setr_appendix4[,colToKeep_PSE]
+nrow(biostatus_PSE) # 429
+any(is.na(biostatus_PSE$cuid))
+any(duplicated(biostatus_PSE$cuid))
+
+# Replace X75._spw by X50._spw because it is in fact the 0.5 percentile
+colnames(biostatus_PSE)[colnames(biostatus_PSE) == "X75._spw"] <- "X50._spw"
+
+
+#'* Import biostatus obtained with HBSR Sgen - Smsy: *
+pattern <- "biological_status_HBSRM"
+biological_status_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                         wd_output = wd_output,
+                                                         region = region,
+                                                         species_all = species_all)
+
+# Add column biostatus for threshold 80% Smsy
+colProb <- colnames(biological_status_HBSRM)[grepl("Smsy80_",colnames(biological_status_HBSRM))]
+biological_status_HBSRM$status_Smsy80 <- sapply(X = 1:nrow(biological_status_HBSRM), 
+                                                FUN = function(r){
+                                                  # r <- 1
+                                                  slice <- biological_status_HBSRM[r,colProb]
+                                                  out <- c("poor","fair","good")[slice == max(slice)][1]
+                                                  return(out)
+                                                })
+
+#'* Import the benchmark values associated with the HBSRM *
+pattern <- "benchmarks_summary_HBSRM"
+benchmarks_summary_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                          wd_output = wd_output,
+                                                          region = region,
+                                                          species_all = F)
+
+head(benchmarks_summary_HBSRM)
+nrow(unique(benchmarks_summary_HBSRM[,c("region","species","CU")])) # 136
+
+# add the benchmark values
+biological_status_HBSRM$Sgen_med <- biological_status_HBSRM$Sgen_hpd <- NA
+biological_status_HBSRM$Smsy80_med <- biological_status_HBSRM$Smsy80_hpd <- NA
+for(r in 1:nrow(biological_status_HBSRM)){
+  # r <- 1
+  cond_cuid <- benchmarks_summary_HBSRM$cuid == biological_status_HBSRM$cuid[r]
+  cond_bench <- benchmarks_summary_HBSRM$benchmark == "Sgen"
+  cond_meth <- benchmarks_summary_HBSRM$method == "medQuan"
+  biological_status_HBSRM$Sgen_med[r] <- benchmarks_summary_HBSRM$m[cond_cuid & cond_bench & cond_meth]
+  cond_meth <- benchmarks_summary_HBSRM$method == "HPD"
+  biological_status_HBSRM$Sgen_hpd[r] <- benchmarks_summary_HBSRM$m[cond_cuid & cond_bench & cond_meth]
+  cond_bench <- benchmarks_summary_HBSRM$benchmark == "Smsy"
+  biological_status_HBSRM$Smsy80_hpd[r] <- benchmarks_summary_HBSRM$m[cond_cuid & cond_bench & cond_meth] * .8
+  cond_meth <- benchmarks_summary_HBSRM$method == "medQuan"
+  biological_status_HBSRM$Smsy80_med[r] <- benchmarks_summary_HBSRM$m[cond_cuid & cond_bench & cond_meth] * .8
+}
+
+#'* Import the biological status obtained with HS percentile method: *
+pattern <- "biological_status_percentiles"
+biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                              wd_output = wd_output,
+                                                              region = region,
+                                                              species_all = species_all)
+
+colProb <- colnames(biological_status_percentile)[grepl("_05_",colnames(biological_status_percentile))]
+biological_status_percentile$status_percent05 <- sapply(X = 1:nrow(biological_status_percentile), 
+                                                        FUN = function(r){
+                                                          # r <- 1
+                                                          slice <- biological_status_percentile[r,colProb]
+                                                          out <- c("poor","fair","good")[slice == max(slice)][1]
+                                                          return(out)
+                                                        })
+
+#'* Import the percentile benchmark values *
+pattern <- "benchmarks_summary_percentiles"
+benchmarks_summary_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                               wd_output = wd_output,
+                                                               region = region,
+                                                               species_all = F)
+
+head(benchmarks_summary_percentile)
+
+# add the benchmark values
+biological_status_percentile
+
+biological_status_percentile$benchPercent_25 <- NA
+biological_status_percentile$benchPercent_50 <- NA
+for(r in 1:nrow(biological_status_percentile)){
+  # r <- 1
+  cond_cuid <- benchmarks_summary_percentile$cuid == biological_status_percentile$cuid[r]
+  cond_bench <- benchmarks_summary_percentile$benchmark == "benchmark_0.25"
+  biological_status_percentile$benchPercent_25[r] <- benchmarks_summary_percentile$m[cond_cuid &
+                                                                                       cond_bench]
+  cond_bench <- benchmarks_summary_percentile$benchmark == "benchmark_0.5"
+  biological_status_percentile$benchPercent_50[r] <- benchmarks_summary_percentile$m[cond_cuid &
+                                                                                       cond_bench]
+}
+
+#'* merge the two datasets into biostatus_Bruno *
+colCommon <- c("region","species","cuid","CU_pse","current_spawner_abundance",
+               "year_last","genLength")
+colHBSRM <- c("status_Smsy80","Sgen_hpd","Sgen_med","Smsy80_hpd","Smsy80_med")
+colPercentile <- c("dataPointNb","status_percent05","benchPercent_25","benchPercent_50")
+
+biostatus_Bruno <- merge(x = biological_status_HBSRM[,c(colCommon,colHBSRM)],
+                         y = biological_status_percentile[c(colCommon,colPercentile)],
+                         by = colCommon,
+                         all = T)
+View(biostatus_Bruno)
+nrow(biostatus_Bruno) # 428
+nrow(biological_status_percentile) # 428
+
+
+#'* merge biostatus_PSE and biostatus_Bruno *
+colnames(biostatus_Bruno)
+colnames(biostatus_PSE)
+colnames(biostatus_Bruno)[colnames(biostatus_Bruno) == "CU_pse"] <- "cu_name_pse"
+colCommon <- c("region","species","cuid","cu_name_pse")
+
+biostatus_merge <- merge(x = biostatus_Bruno,
+                         y = biostatus_PSE,
+                         by = colCommon, 
+                         all = T)
+               
+nrow(biostatus_merge) # 430
+
+# There is a CU with different name: --> no data so we can jsut remove it for now.
+any(duplicated(biostatus_merge$cuid))
+cuid_dupli <- biostatus_merge$cuid[duplicated(biostatus_merge$cuid)]
+biostatus_merge[biostatus_merge$cuid == cuid_dupli,]
+biostatus_merge <- biostatus_merge[biostatus_merge$cuid != cuid_dupli,]
+
+# There is one CU only in PSE: to remove because no data
+cuidHere <- biostatus_PSE$cuid[! biostatus_PSE$cuid %in% biostatus_Bruno$cuid]
+biostatus_PSE[biostatus_PSE$cuid == cuidHere,]
+biostatus_merge[biostatus_merge$cuid == cuidHere,]
+biostatus_merge <- biostatus_merge[biostatus_merge$cuid != cuid_dupli,]
+
+# CUs in Bruno's list not in PSE: none
+cuidHere <- biostatus_Bruno$cuid[! biostatus_Bruno$cuid %in% biostatus_PSE$cuid]
+biostatus_Bruno[biostatus_Bruno$cuid == cuidHere,]
+
+               
+#' * CUs with both HBSRM benchmarks *
+condition_HBSRM <- !is.na(biostatus_merge$sr_status_PSE) & !is.na(biostatus_merge$status_Smsy80) 
+biostatus_merge_HBSRM <- biostatus_merge[condition_HBSRM,]
+nrow(biostatus_merge_HBSRM) # 106
+
+# Among those', those that differ and those that don't
+condition <- biostatus_merge_HBSRM$sr_status_PSE == biostatus_merge_HBSRM$status_Smsy80
+sum(condition)  # 81
+sum(!condition) # 25
+biostatus_merge_HBSRM[!condition,]
+
+biostatus_merge$method <- NA
+biostatus_merge$method[condition_HBSRM] <- "HBSRM"
+biostatus_merge$compare_biostatus <- NA
+condition <- biostatus_merge$sr_status_PSE == biostatus_merge$status_Smsy80
+biostatus_merge$compare_biostatus[condition_HBSRM & condition] <- "same"
+biostatus_merge$compare_biostatus[condition_HBSRM & !condition] <- "different"
+
+#' * CUs with both Percentile benchmarks (and no HBSRM benchmarks) *
+condition_percent <- !is.na(biostatus_merge$percentile_status_PSE) & 
+  !is.na(biostatus_merge$status_percent05) 
+biostatus_merge_precent <- biostatus_merge[!condition_HBSRM & condition_percent,]
+nrow(biostatus_merge_precent) # 21
+biostatus_merge_precent
+
+# Among those', those that differ and those that don't
+condition <- biostatus_merge_precent$percentile_status_PSE == biostatus_merge_precent$status_percent05
+sum(condition) # 18
+sum(!condition) # 3
+
+biostatus_merge$method[condition_percent & !condition_HBSRM] <- "percentile"
+condition <- biostatus_merge$percentile_status_PSE == biostatus_merge$status_percent05
+biostatus_merge$compare_biostatus[condition_percent & ! condition_HBSRM & condition] <- "same"
+biostatus_merge$compare_biostatus[condition_percent & !condition] <- "different"
+
+
+layout(matrix(1:8,nrow = 4, byrow = T))
+par(mar = c(4,4,3,.5))
+#
+cond <- biostatus_merge$method == "HBSRM" & !is.na(biostatus_merge$method)
+data <- biostatus_merge[cond,]
+x <- log10(data$Smsy80_hpd)
+y <- log10(data$smsy80)
+col <- sapply(X = data$compare_biostatus, function(d){
+  c("green","red")[d == c("same","different")]
+})
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "80% Smsy PSE (log10)", xlab = "80% Smsy HPD Bruno (log10)",
+     main = "80% Smsy: PSE vs. HPD Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+x <- log10(data$Smsy80_med)
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "80% Smsy PSE (log10)", xlab = "80% Smsy median Bruno (log10)",
+     main = "80% Smsy: PSE vs. median Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+x <- log10(data$Sgen_hpd)
+y <- log10(data$sgen)
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "Sgen PSE (log10)", xlab = "Sgen HPD Bruno (log10)",
+     main = "Sgen: PSE vs. HPD Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+x <- log10(data$Sgen_med)
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "Sgen PSE (log10)", xlab = "Sgen median Bruno (log10)",
+     main = "Sgen: PSE vs. median Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+cond <- biostatus_merge$method == "percentile" & !is.na(biostatus_merge$method)
+data <- biostatus_merge[cond,]
+x <- log10(data$benchPercent_50)
+y <- log10(data$X50._spw)
+col <- sapply(X = data$compare_biostatus, function(d){
+  c("green","red")[d == c("same","different")]
+})
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "0.50 percentile PSE (log10)", xlab = "0.50 percentile Bruno (log10)",
+     main = "0.50 percentile: PSE vs. Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+x <- log10(data$benchPercent_25)
+y <- log10(data$X25._spw)
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "0.25 percentile PSE (log10)", xlab = "0.25 percentile Bruno (log10)",
+     main = "0.25 percentile: PSE vs. Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+cond <- !is.na(biostatus_merge$method)
+data <- biostatus_merge[cond,]
+x <- log10(data$current_spawner_abundance)
+y <- log10(data$curr_spw)
+col <- sapply(X = data$compare_biostatus, function(d){
+  c("green","red")[d == c("same","different")]
+})
+plot(x = x, y = y, las = 1, col = col, pch = 1, lwd = 2, cex = 2,
+     ylab = "Current spawner abundance PSE (log10)", xlab = "Current spawner abundance Bruno (log10)",
+     main = "Current spawner abundance: PSE vs. Bruno")
+abline(a = 0, b = 1, lwd = 2)
+#
+x <- data$year_last
+y <- data$curr_spw_end_year
+pch <- sapply(X = data$method, function(d){
+  c(1,2)[d == c("HBSRM","percentile")]
+})
+plot(x = jitter(x), y = jitter(y), las = 1, col = col, pch = pch, lwd = 2, cex = 2,
+     ylab = "Last year current spawner abundance PSE", xlab = "Last year current spawner abundance Bruno",
+     main = "Last year current spawner abundance: PSE vs. Bruno")
+abline(a = 0, b = 1, lwd = 2)
+legend("bottomright",c("HBSRM","percentile"),pch = 1:2, bty = 'n')
+#
+
+
+biostatus_merge$curr_spw_end_year
+biostatus_merge$curr_spw_start_year
+
+cond <- data$curr_spw_end_year < 2015
+data[cond,]
+
+cuspawnerabundance[cuspawnerabundance$cuid == 401,]
+
+
+
+# Check last year for current spawner abundance in source dataset: 
+cond <- !is.na(biostatus_merge$method) &
+  biostatus_merge$year_last != biostatus_merge$curr_spw_end_year
+data <- biostatus_merge[cond,]
+nrow(data)
+cuid_here <- data$cuid
+cuspawnerabundance
+
+data <- data[,c(colCommon,"year_last","curr_spw_end_year")]
+
+data$year_last_cusa <- sapply(X = data$cuid, FUN = function(cuid){
+  d <- cuspawnerabundance[cuspawnerabundance$cuid == cuid,]
+  d <- d[!is.na(d$estimated_count),]
+  return(max(d$year))
+})
 
 
 

@@ -1879,7 +1879,103 @@ cu_extinct_fun <- function(){
 }
 
 
-
+#' Function to return the current spawner abundance of CUs and several associated 
+#' information about it (e.g. start and end yer of available data, number of data
+#' points available, etc.). When yearCurrentAbundance = NA, the current spawner 
+#' abundance is calculated considering the end year with data as the upper range,
+#' otherwise, this upper range is set yearCurrentAbundance and years with NA
+#' are addedif necessary.
+current_spawner_abundance_fun <- function(cuids,cuspawnerabundance,
+                                          yearCurrentAbundance = NA,
+                                          CU_genLength){
+  
+  out_final <- NULL
+  
+  for(cuid in cuids){
+    # cuid <- cuids[1]
+    
+    # subset cuspawnerabundance_rg_sp
+    cusa <- cuspawnerabundance[cuspawnerabundance$cuid == cuid,]
+    
+    # get the count
+    spawnerAbundance <- cusa$estimated_count
+    spawnerAbundance[spawnerAbundance <= 0] <- NA
+    names(spawnerAbundance) <- cusa$year
+    
+    # Are there any spawner abundance data?
+    if(all(is.na(spawnerAbundance))){
+      
+      currentSpawnerData_available <- F
+      yrInitial <- NA
+      yrFinal <- NA
+      #' Eric: if estimated is not available, we can't apply spawner-recruit 
+      #' benchmarks.
+    }else{
+      currentSpawnerData_available <- T
+      yrFinal <- tail(as.numeric(names(spawnerAbundance[!is.na(spawnerAbundance)])),1)
+    }
+    
+    #' Determine current spawner abundance. 
+    if(is.na(yearCurrentAbundance)){
+      # if there is data, remove the most recent year without data iteratively,
+      # otherwise do nothing
+      
+      if(any(!is.na(spawnerAbundance))){
+        while(is.na(tail(spawnerAbundance,1))){
+          spawnerAbundance <- spawnerAbundance[-length(spawnerAbundance)]
+        }
+      }
+      
+    }else{
+      #' add number of years to spawnerAbundance until yearCurrentAbundance if needed
+      yearsHere <- as.numeric(names(spawnerAbundance))
+      yearLast <- max(yearsHere)
+      while(yearLast < yearCurrentAbundance){
+        yearLast <- yearLast + 1
+        datapointHere <- NA
+        names(datapointHere) <- yearLast
+        spawnerAbundance <- c(spawnerAbundance,datapointHere)
+      }
+    }
+    
+    # calculate current spawner abundance = the geometric mean over the last generation
+    spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength)
+    spawnerAbundance_lastGen_m <- mean_geom_fun(x = spawnerAbundance_lastGen)
+    spawnerAbundance_lastGen_dataPointNb <- sum(!is.na(spawnerAbundance_lastGen))
+    
+    #' Is there is only NAs in spawnerAbundance_lastGen (should not happen
+    #' if yearCurrentAbundance is NA).
+    if(all(is.na(spawnerAbundance_lastGen))){
+      currentSpawnerData_availableRecentEnough <- F
+      # the 1st year with data for the calculation of the current spawner abundance
+      yrInitial <- NA
+    }else{
+      currentSpawnerData_availableRecentEnough <- T
+      # the 1st year with data for the calculation of the current spawner abundance
+      yrInitial <- as.numeric(names(spawnerAbundance_lastGen[!is.na(spawnerAbundance_lastGen)]))[1]
+    }
+    
+    out <- data.frame(region = unique(cusa$region),
+                      species_name = unique(cusa$species_name),
+                      cu_name_pse = unique(cusa$cu_name_pse),
+                      cuid = unique(cusa$cuid),
+                      curr_spw_abun = spawnerAbundance_lastGen_m,
+                      dataPointNb = spawnerAbundance_lastGen_dataPointNb,
+                      yr_withData_start = yrInitial,
+                      yr_withData_end = yrFinal,
+                      yr_end_imposed = yearCurrentAbundance,
+                      curr_spw_available = currentSpawnerData_available,
+                      curr_spw_availableRecentEnough = currentSpawnerData_availableRecentEnough
+    )
+    
+    if(is.null(out_final)){
+      out_final <- out
+    }else{
+      out_final <- rbind(out_final,out)
+    }
+  }
+  return(out_final)
+}
 
 
 

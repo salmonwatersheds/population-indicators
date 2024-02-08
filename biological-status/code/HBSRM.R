@@ -71,7 +71,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 #' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
 fromDatabase <- F
-update_recruitsperspawner_csv <- F
+update_file_csv <- F
 
 recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
                                             fromDatabase = fromDatabase,
@@ -128,16 +128,16 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
-#' Import the prior values for the HBSR model parameters prSmax and prCV that are
-#' used in HBSRM.R (the file is created in checks_fixes.R and contain the values 
-#' of these priors that were originally contained in SRdata.txt files that are 
-#' found in the "HBM and status" subfolders in each region-specific folders.
-priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
-
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
+
+#' Import the prior values for the HBSR model parameters prSmax and prCV that are
+#' used in HBSRM.R (the file is created in checks_fixes.R and contains the values 
+#' of these priors that were originally contained in SRdata.txt files that are 
+#' found in the "HBM and status" subfolders in each region-specific folders.
+priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
 
 # Set first brood year, "-99" for no constraint
 FBYr <- -99
@@ -151,7 +151,7 @@ n.burnin <- 3000 # 5000  #
 n.chains <- 6     # 
 
 # options(warn=1)  # print warnings as they occur
-options(warn=2)  # treat warnings as errors
+options(warn = 2)  # treat warnings as errors
 
 #----------------------------------------------------------------------------#
 # Read in Stock-Recruit Data, run the HBSR model and output parameter estimates
@@ -477,9 +477,10 @@ for(i_rg in 1:length(region)){
         	
         	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
         	
-        		a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
+        		# a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
         		# a[i] ~ dlnorm(mu_a, tau_a) # TOCHANGE: CONFUSION WITH ALPHA = exp(a) --> a[i] ~ dnorm(mu_a, tau_a) ???
-        		# a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		a[i] ~ dnorm(mu_a, tau_a) # --> FINAL CALL from 30/01/2024.
         		
         		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
         		

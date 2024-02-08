@@ -8,7 +8,12 @@
 #' 
 #' Files produced: 
 #' - Biological_status_HBSR_Percentile_all.csv (biological_status_merged)
-#' - 
+#' - Biological_status_diff_SMsySmsy80_percent05075.csv (biological_status_merge_diff)
+#' - comparison_bioStatusPercentiles_75_50_region.jpeg
+#' - comparison_bioStatusPercentiles_75_50_species.jpeg
+#' - comparison_bioStatus_Smsy_Smsy80_region.jpeg
+#' - comparison_bioStatus_Smsy_Smsy80_species.jpeg
+#' - comparison_bioStatus_HBSR_Percentiles.jpeg
 #' 
 #' Notes:
 #' - 
@@ -661,6 +666,8 @@ biological_status_merge_diff[biological_status_merge_diff$benchmark_type == "HBS
 # write.csv(biological_status_merge_diff,paste0(wd_output,"/Biological_status_diff_SMsySmsy80_percent05075.csv"),
 #           row.names = F)
 
+biological_status_merge_diff <- read.csv(paste0(wd_output,"/Biological_status_diff_SMsySmsy80_percent05075.csv"),
+                                         header = T)
 
 #
 # Check the difference between normal percentile benchmarks and the simulated ones -----

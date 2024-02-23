@@ -239,6 +239,7 @@ retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
 #'- update_file_csv: if TRUE (and fromDatabase is TRUE), the CSV file is updated
 #'- wd: where the CSV files are located.
 # nameDataSet <- datasetsNames_database_fun()$name_DB[1]
+# https://www.dropbox.com/scl/fi/fdkzawgh1s2805gzb009l/accessing-swp-database.pdf?rlkey=2shj9aginlg06jvw29csmxg7t&dl=0
 datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv = F,
                                   wd){
 
@@ -275,16 +276,35 @@ datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv
 #' Function that returns a data frame of the names of the datasets that can be 
 #' pulled from the database and the name of the corresponding CSV files already 
 #' downloaded. 
+#' https://www.dropbox.com/scl/fi/fdkzawgh1s2805gzb009l/accessing-swp-database.pdf?rlkey=2shj9aginlg06jvw29csmxg7t&dl=0
 datasetsNames_database_fun <- function(){
   
-  out_df <- data.frame(name_DB = c("Appdata.vwdl_conservationunits_decoder",
-                                   "Appdata.vwdl_dataset1cu_output",
-                                   "Appdata.vwdl_dataset5_output",
-                                   "Appdata.vwdl_streamspawnersurveys_output"),
-                       name_CSV = c("conservationunits_decoder.csv",
-                                    "cuspawnerabundance.csv",
-                                    "recruitsperspawner.csv",
-                                    "streamspawnersurveys_output"))
+  
+  out_df <- data.frame(
+    name_DB = c(
+      "appdata.vwdl_conservationunits_decoder",
+      "appdata.vwdl_dataset1cu_output",
+      "appdata.vwdl_dataset5_output",
+      "appdata.vwdl_streamspawnersurveys_output",
+      "appdata.vwdl_setr_appendix4",
+      "appdata.vwdl_catchrunsize_output",
+      "appdata.vwdl_conservationunits",
+      "appdata.vwstreamlocationids"
+      ),
+    
+    name_CSV = c(
+      "conservationunits_decoder.csv",
+      "cuspawnerabundance.csv",
+      "recruitsperspawner.csv",
+      "streamspawnersurveys_output.csv",
+      "setr_appendix4.csv",
+      "catchrunsize_output.csv",
+      "conservationunits.csv",
+      "streamlocationids"
+      ))
+  
+  out_df$index <- 1:nrow(out_df)
+  
   return(out_df)
 }
 
@@ -313,5 +333,110 @@ deleteFiles_fun <- function(wd,patterns){
     
     file.remove(paste(wd,toKeep,sep = "/"))
   }
+}
+
+#' Function to remove rows in 'dataframe' base on the combination of values in 
+#' the fields of the other dataframe 'toRemove' (fields must macth between the two
+#' dataframes). The function returns the the dataframe without the corresponding
+#' rows.
+# dataframe <- all_areas_nuseds
+remove_rows_fields_fun <- function(dataframe,toRemove,fields = NA){
+  
+  nrow_all <- nrow(dataframe)
+  if(all(is.na(fields))){
+    fields_here <- colnames(toRemove)
+  }else{
+    fields_here <- fields
+  }
+  
+  condition <- sapply(X = 1:nrow(toRemove), FUN = function(r){
+    
+    cond <- sapply(X = fields_here, function(f){
+      # f <- fields_here[1]
+      cond <- dataframe[,f] == toRemove[r,f]
+      return(cond)
+    })
+    cond <- apply(X = cond, MARGIN = 1, FUN = all)
+    return(cond)
+  })
+  condition <- apply(X = condition, MARGIN = 1, FUN = any)
+  
+  out <- dataframe[!condition,]
+  
+  nrow_cut <- nrow(out)
+  print(paste0("Number of rows removed from dataframe = ",nrow_all - nrow_cut))
+  
+  return(out)
+}
+
+#' 
+remove_rows_fields_parallel_fun <- function(dataframe,toRemove,cores_nb = 1){
+  
+  require(parallel)
+  # Documentation
+  # https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html
+  
+  if(Sys.info()["sysname"] == "Windows"){
+    
+  }else{
+    
+    #' NOT TESTED
+    trackRecord_l <- mclapply(cl = cl, X = IndexIds, fun = function(iid){
+
+      return(trackRecord)
+    })
+  }
+  
+}
+
+#' Function to multiple instances of field_1 exist for a single instance of 
+#' field_2.
+# dataset <- conservation_unit_system_sites
+# fields_1 <- c("IndexId","GFE_ID")
+# fields_2 <- c("CU_NAME","CU_ACRO","CU_LAT","CU_LONGT","CU_TYPE","CU_INDEX",
+#              "MAP_LABEL","FAZ_ACRO","MAZ_ACRO","JAZ_ACRO",
+#              "SPECIES","SPECIES_QUALIFIED","species_acronym_ncc","POP_ID",
+#              "FULL_CU_IN","SBJ_ID")
+association_twoFields_fun <- function(fields_1,fields_2,dataset,silence = F){
+  
+  output <- expand.grid("fields_1" = fields_1, "fields_2" = fields_2)
+  output <- output[order(output$fields_1),]
+  output$association <- NA
+  
+  for(f1 in fields_1){
+    # f1 <- fields_1[1]
+    f1_vals <- unique(dataset[,f1])
+    if(!silence){
+      print(paste0("Check for ",f1,":"))
+    }
+    
+    for(f2 in fields_2){
+      # f2 <- fields_2[1]
+      
+      multipleVals <- sapply(X = f1_vals,FUN = function(f1_val){
+        cond <- dataset[,f1] == f1_val
+        f2_val <- unique(dataset[cond,f2])
+        return(length(f2_val) > 1)
+      })
+      
+      cond <- output$fields_1 == f1 & output$fields_2 == f2
+      
+      if(any(multipleVals)){
+        if(!silence){
+          print(paste0("- ",f2,": There are multiple assocations"))
+        }
+        output$association[cond] <- "multiple"
+      }else{
+        if(!silence){
+          print(paste0("- ",f2,": No multiple assocations"))
+        }
+        output$association[cond] <- "single"
+      }
+    }
+    if(!silence){
+      print("***")
+    }
+  }
+  return(output)
 }
 

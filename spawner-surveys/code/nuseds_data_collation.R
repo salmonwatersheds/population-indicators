@@ -365,7 +365,7 @@ all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = 
                                                              zeros_too = T, 
                                                              cores_nb = cores_nb)
 
-nrow(all_areas_nuseds) # 309648 309619
+nrow(all_areas_nuseds) # 309648
 nrow(all_areas_nuseds)/nrow(all_areas_nuseds_all) # .75
 
 # Record the series that were removed and why:
@@ -373,13 +373,13 @@ IndexId_GFE_ID_all <- unique(all_areas_nuseds_all[,c("IndexId","GFE_ID")])
 nrow(IndexId_GFE_ID_all) # 11553
 
 IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
-nrow(IndexId_GFE_ID) # 7062 7054
+nrow(IndexId_GFE_ID) # 7062
 
 IndexId_GFE_ID_all <- paste(IndexId_GFE_ID_all$IndexId,IndexId_GFE_ID_all$GFE_ID,sep = "&")
 IndexId_GFE_ID <- paste(IndexId_GFE_ID$IndexId,IndexId_GFE_ID$GFE_ID,sep = "&")
 
 IndexId_GFE_ID_removed_c <- IndexId_GFE_ID_all[! IndexId_GFE_ID_all %in% IndexId_GFE_ID]
-length(IndexId_GFE_ID_removed_c) # 4491 4501
+length(IndexId_GFE_ID_removed_c) # 4491
 IndexId_GFE_ID_removed <- data.frame(IndexId = rep(NA,length(IndexId_GFE_ID_removed_c)),
                                      GFE_ID = rep(NA,length(IndexId_GFE_ID_removed_c)))
 
@@ -410,20 +410,22 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #' We should not remove series in CUSS at this stage that have only NAs and/or 0s
 #' in NUSEDS because these series could be alternative series for the series 
 #' in NUSEDS that do not appear in CUSS.
-#' It is only once series in NUSEDS absent in CUSS were found alternative that 
+#' It is only once series in NUSEDS absent in CUSS were found alternative for that 
 #' one should remove series in CUSS that have only NAs and/or 0s in NUSEDS.
 
 
-#' *Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS  *
+#' * 2) Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS  *
 #' Look for each IndexId & GFE_ID in conservation_unit_system_sites:
 #' - 1) check if there are multiple GFE_IDs associated
+#'      if yes: trouble shoot manually;
 #' - 2) else look if there is a time series with the iid & its GFE_ID ('gfeid') in 
-#'      all_areas_nuseds
-#' - 3) if there is not, that could be due to either (i) a typo in the IndexId or
+#'      all_areas_nuseds;
+#'      if yes: all good;
+#' - 3) esle: that could be due to either (i) a typo in the IndexId or
 #'      (ii) a typo in the GFE_ID. The the rest of the code looks for potential
-#'      alternative series with either a different IndexId (but with the same species)
-#'      or a different GFE_ID. Alternative series identified NOT present in 
-#'      conservation_unit_system_sites are kept, the ones present are removed.
+#'      alternative series in NUSEDS with either a different IndexId (but with 
+#'      the same species) or a different GFE_ID. Alternative series identified 
+#'      NOT present in CUSS are kept, the ones present are removed.
 #' The function returns a simple dataframe with the IndexId and GFE_ID concerned
 #' and associated comment and eventual potential alternative series that have to 
 #' be checked manually after.
@@ -439,7 +441,7 @@ trackRecord <- cuss_nuseds_match_parallel_fun(conservation_unit_system_sites = c
                                               all_areas_nuseds = all_areas_nuseds, 
                                               cores_nb = cores_nb)
 head(trackRecord)
-nrow(trackRecord) # 7145
+nrow(trackRecord) # 7145 same as CUSS
 
 unique(trackRecord$comment)
 
@@ -498,30 +500,24 @@ removed_all <- rbind(removed_all,removed)
 
 #' CN_46842 & GFE_ID = 2463 --> CN_46842 & GFE_ID = 285
 #' --> change of GFE_ID:
-cond_focal <- all_areas_nuseds$IndexId == "CN_46842" & all_areas_nuseds$GFE_ID == 2463
-cond_alter <- conservation_unit_system_sites$IndexId == "CN_46842" & 
-  conservation_unit_system_sites$GFE_ID == 285
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CN_46842",
+                                                IndexId_alter = "CN_46842",
+                                                GFE_ID_focal = 2463,
+                                                GFE_ID_alter = 285,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
 
-fields_common <- fields_l$CUSS$GFE_ID[fields_l$CUSS$GFE_ID %in% fields_l$NUSEDS$GFE_ID]
-fields_common <- c(fields_common,"SYSTEM_SITE")
-
-for(f in fields_common){
-  f_focal <- f
-  if(f == "SYSTEM_SITE"){
-    f_focal <- "WATERBODY"
-  }
-  all_areas_nuseds[cond_focal,f_focal] <- unique(conservation_unit_system_sites[cond_alter,f])
-}
 
 #' CN_46841 & GFE_ID = 285 --> CN_46842 & GFE_ID = 285
 #' --> change IndexId
-
-
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId[2] &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID[2]
-all_areas_nuseds[condition,colNuSEDS]
-all_areas_nuseds$IndexId[condition] <- "CN_46842"
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CN_46841",
+                                                IndexId_alter = "CN_46842",
+                                                GFE_ID_focal = 285,
+                                                GFE_ID_alter = 285,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
 
 # ***
 r <- 2
@@ -597,21 +593,21 @@ unique(conservation_unit_system_sites$SYSTEM_SITE[cond])
 # "CHILCOTIN RIVER - LOWER" "CHILCOTIN RIVER"         "CHILCOTIN RIVER"
 
 #' TODO: replace CO_46835 & 2463 by CO_46835 & 285 in all_area_nuseds.
+#' --> change GFE_ID:
+
 removed <- data.frame(IndexId = c("CO_46835"),
                       GFE_ID = 2463)
 removed$dataset <- "all_areas_nuseds"
 removed$comment <- "Alternative series for CO_46835 & GFE_ID = 285"
 removed_all <- rbind(removed_all,removed)
 
-condition <- conservation_unit_system_sites$IndexId == "CO_46835" &
-  conservation_unit_system_sites$GFE_ID == 285
-SYSTEM_SITE <- conservation_unit_system_sites$SYSTEM_SITE[condition] # "CHILCOTIN RIVER
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-all_areas_nuseds$GFE_ID[condition] <- 285
-all_areas_nuseds$WATERBODY[condition] <- SYSTEM_SITE    # CHILCOTIN RIVER - LOWER
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CO_46835",
+                                                IndexId_alter = "CO_46835",
+                                                GFE_ID_focal = 2463,
+                                                GFE_ID_alter = 285,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
 
 # ***
 r <- 4
@@ -642,16 +638,20 @@ conservation_unit_system_sites$CU_NAME[cond]
 # "WIDGEON" "WIDGEON"
 
 #' TODO: replace SX_47954 & 21 by SX_7763 & 21 in all_area_nuseds.
+#' --> change IndexId
 removed <- data.frame(IndexId = c("SX_47954"),
                       GFE_ID = 21)
 removed$dataset <- "all_areas_nuseds"
 removed$comment <- "Alternative series for SX_7763 & GFE_ID = 21"
 removed_all <- rbind(removed_all,removed)
 
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-all_areas_nuseds$IndexId[condition] <- "SX_7763"
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "SX_47954",
+                                                IndexId_alter = "SX_7763",
+                                                GFE_ID_focal = 21,
+                                                GFE_ID_alter = 21,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
 
 #
 #'** 2.2) Manual fix: no alternative series in nuseds **
@@ -699,6 +699,7 @@ cond <- grepl("Not in all_area_nuseds and no alternative series",removed_all$com
 removed_all[cond,]
 # IndexId GFE_ID                        dataset                                           comment
 # SX_2167    150 conservation_unit_system_sites Not in all_area_nuseds and not alternative series
+
 cond <- conservation_unit_system_sites_all$IndexId == "SX_2167"
 conservation_unit_system_sites_all$CU_NAME[cond] # "UPPER FRASER"
 
@@ -720,21 +721,23 @@ gfeids <- trackRecord_cuss_multi_fgeid$GFE_ID[1:2]
 plot_IndexId_GFE_ID_fun(IndexIds = iid, 
                         all_areas_nuseds = all_areas_nuseds_all)
 
-cond <- conservation_unit_system_sites$IndexId == iid & 
-  conservation_unit_system_sites$GFE_ID == gfeids[1]
+cond <- conservation_unit_system_sites$IndexId == "CN_7479" & 
+  conservation_unit_system_sites$GFE_ID == 133
 
 conservation_unit_system_sites <- conservation_unit_system_sites[!cond,]
 nrow(conservation_unit_system_sites) # 6889
 
-removed <- data.frame(IndexId = iid,
-                      GFE_ID = gfeids[1],
+removed <- data.frame(IndexId = "CN_7479",
+                      GFE_ID = 133,
                       dataset = "conservation_unit_system_sites")
 removed$comment <- "Not in all_area_nuseds and no alternative series"
 removed_all <- rbind(removed_all,removed)
 
 
 #' Case with SX_45525:
-#'    TODO: WAIT TO HEAR FROM ERIC AND STEF
+#' - there is no "Nadina channel" in streamlocationids (the red series) and seems
+#' that the abundances were summed in the PSE.
+#' TODO: create a new row in streamlocationids for the red series.
 iid <- unique(trackRecord_cuss_multi_fgeid$IndexId)[2]
 gfeids <- trackRecord_cuss_multi_fgeid$GFE_ID[trackRecord_cuss_multi_fgeid$IndexId == iid]
 plot_IndexId_GFE_ID_fun(IndexIds = iid, 
@@ -763,12 +766,28 @@ sapply(X = c(2444,303),FUN = function(x){
   return(out)
 })
 
+# check coordinates --> there are different
+sapply(X = c(2444,303),FUN = function(x){
+  cond <- conservation_unit_system_sites$IndexId == iid &
+    conservation_unit_system_sites$GFE_ID == x
+  out <- conservation_unit_system_sites[cond,c("Y_LAT","X_LONGT")]
+  return(out)
+})
+
+# check fpop size for the blue (to see if correspond to values in the PSE)
+cond <- all_areas_nuseds$IndexId == "SX_45525" & all_areas_nuseds$GFE_ID == 303
+all_areas_nuseds[cond,c("Year","MAX_ESTIMATE")][order(all_areas_nuseds[cond,c("Year")]),]
+
+toAdd <- data.frame(IndexId = "SX_45525",
+                    GFE_ID = 2444,
+                    dataset = "streamlocationids",
+                    CU_NAME = "NADINA/FRANCOIS-EARLY SUMMER TIMING",
+                    comment = "In both CUSS and NUSEDS but not in the PSE; but series SX_45525 - 303 is.")
+
+toAdd_all <- toAdd
 
 #
 #'* 3) Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS *
-
-#' Now all the series in CUSS are in all_areas_nuseds.
-#' 
 
 series_nuseds <- paste(all_areas_nuseds$IndexId,
                        all_areas_nuseds$GFE_ID,sep = "&")
@@ -780,30 +799,15 @@ series_cuss <- paste(conservation_unit_system_sites$IndexId,
 series_cuss <- unique(series_cuss)
 length(series_cuss) # 6889
 
-# All series in CUSS are in NUSEDS:
+#' Now all the series in CUSS are in all_areas_nuseds.
 series_cuss[! series_cuss %in% series_nuseds]
 
+# Number of series in NUSEDS not in CUSS:
 series_Nuseds_noCuss <- series_nuseds[! series_nuseds %in% series_cuss]
 series_Nuseds_noCuss <- series_Nuseds_noCuss[order(series_Nuseds_noCuss)]
 length(series_Nuseds_noCuss) # 171
 
-#' 2. Remaining ~ 156 POP_IDs that aren’t in cuss. Do any have the GFE_ID + species
-#'    that are in cuss?
-#'  2.1. If YES, find the time series in nuseds and then compare the series: Are there
-#'       any overlapping years among the multiple POP_IDs
-#'    2.1.1. If NO, are all data points complementary?
-#'      2.1.1.1. If YES, then assume they’re the same population and merge, 
-#'               keeping the POP_ID that is in cuss. Probably a data entry 
-#'               error, someone made up an extra CU.
-#'      2.1.1.2. If years are not complementary --> remove duplicates and sum non-duplicates ???   
-#'    2.1.2. If YES, Do the overlapping years have exactly the same MAX_ESTIMATE. 
-#'      2.1.2.1. If YES, use that number but don’t add them together
-#'        2.1.2.2. If NO, do they have different ESTIMATE_METHOD? 
-#'        2.1.2.2.1. If YES, then add them together? And set ESTIMATE_METHOD = “multiple”.
-#'        2.1.2.2.2. If NO, “STOP” to evaluate what to do next.
-#'  2.2. If NO, If no GFE_ID + species match, is there a WATERBODY/SYSTEM_SITE + species match?
-#'  
-
+#' 
 iids <- sapply(X = series_Nuseds_noCuss,FUN = function(s){
   return(strsplit(s,"&")[[1]][1])
 })
@@ -958,7 +962,7 @@ nrow(removed_all) # 4593
 
 #
 #' ** 3.2) Alternative IndexId AND no alternative GFE_ID **
-#' Strategy: the action as a function of the % of data points that are:
+#' Strategy: the action depends on the % of data points that are:
 #' - complementary (i.e. no duplicate no conflict): merge if 100%
 #'    - if tie with multiple alternatives: set aside
 #' - duplicate (i.e. same value for same year): remove if 100%
@@ -1064,7 +1068,7 @@ for(i in 1:nrow(trackRecord_nuseds_iid)){
       main <-"Set aside all alternative series are 100% compatible"
     }
   }else{
-    main <- "Set aside afor now"
+    main <- "Set aside for now"
     set_aside[[count_set_aside]] <- comparison_series
     names(set_aside)[count_set_aside] <- paste("IndexId =",iid_focal,"& GFE_ID =",
                                                gfeid)
@@ -1101,7 +1105,9 @@ unique(all_areas_nuseds[cond,c("STREAM_ARRIVAL_DT_FROM","STREAM_ARRIVAL_DT_TO")]
 unique(all_areas_nuseds[cond,c("PEAK_SPAWN_DT_FROM","PEAK_SPAWN_DT_TO")]) # summer/fall
 unique(all_areas_nuseds[cond,c("END_SPAWN_DT_FROM","END_SPAWN_DT_TO")])   # fall
 
-toRemove <- data.frame(IndexId = iid, GFE_ID = gfeid, dataset = "all_areas_nuseds")
+toRemove <- data.frame(IndexId = iid, 
+                       GFE_ID = gfeid, 
+                       dataset = "all_areas_nuseds")
 toRemove$comment <- paste("Unkown timing, not in conservation_unit_system_sites; potential alternative series:",
                           trackRecord_nuseds_iid$alternative_IndexId[1])
 removed_all <- rbind(removed_all,toRemove)
@@ -1109,7 +1115,7 @@ removed_all <- rbind(removed_all,toRemove)
 cond <- all_areas_nuseds$IndexId == iid & 
   all_areas_nuseds$GFE_ID == gfeid
 all_areas_nuseds <- all_areas_nuseds[!cond,]
-nrow(all_areas_nuseds) # 
+nrow(all_areas_nuseds) # 308232
 
 #' Case with CN_3334 (i = 2): UNKNOWN TIMING
 #' Temporal fields show contradictions.
@@ -1122,7 +1128,9 @@ unique(all_areas_nuseds[cond,c("STREAM_ARRIVAL_DT_FROM","STREAM_ARRIVAL_DT_TO")]
 unique(all_areas_nuseds[cond,c("PEAK_SPAWN_DT_FROM","PEAK_SPAWN_DT_TO")]) # summer/fall
 unique(all_areas_nuseds[cond,c("END_SPAWN_DT_FROM","END_SPAWN_DT_TO")])   # fall
 
-toRemove <- data.frame(IndexId = iid, GFE_ID = gfeid, dataset = "all_areas_nuseds")
+toRemove <- data.frame(IndexId = iid, 
+                       GFE_ID = gfeid,
+                       dataset = "all_areas_nuseds")
 toRemove$comment <- paste("Unkown timing, not in conservation_unit_system_sites; potential alternative series:",
                           trackRecord_nuseds_iid$alternative_IndexId[2])
 removed_all <- rbind(removed_all,toRemove)
@@ -1133,51 +1141,32 @@ all_areas_nuseds <- all_areas_nuseds[!cond,]
 nrow(all_areas_nuseds) # 308196
 
 #' Case with CN_39983 (i = 3):
-#' It is in the PSE
-#' TODO: add to CUSS
+#' It is not in the PSE
+#' TODO: add to CUSS and then streamlocationids
 trackRecord_nuseds_iid[3,]
 iid <- trackRecord_nuseds_iid[3,]$IndexId
 gfeid <- trackRecord_nuseds_iid[3,]$GFE_ID
 
-cond_nuseds <- all_areas_nuseds$IndexId == iid
-unique(all_areas_nuseds$POPULATION[cond_nuseds])
-# "Chemainus River Summer Chinook"
+# add to CUSS
+cuss_new <- CUSS_newRow_fun(IndexId = iid, 
+                            GFE_ID = gfeid,
+                            conservation_unit_system_sites = conservation_unit_system_sites,
+                            all_areas_nuseds = all_areas_nuseds)
 
-#' --> Looking In the PSE, it is the CU East Vancouver Island Georgia Strait (Summer 4-1)
-cu_name <- "East Vancouver Island-Georgia Strait (Summer 4-1)"
-cond <- conservationunits_decoder$cu_name_pse == cu_name
-decoder_here <- conservationunits_decoder[cond,]
+toAdd <- data.frame(IndexId ="CN_39983",
+                    GFE_ID = 1204,
+                    dataset = "conservation_unit_system_sites",
+                    CU_NAME = NA,
+                    comment = "Series not in CUSS and not merged with CN_39983 - 1204 because of different timing")
 
-added_all <- removed_all[1,]
-added_all$IndexId <- iid
-added_all$GFE_ID <- gfeid
-added_all$dataset <- "conservation_unit_system_sites"
-added_all$comment <- paste("It exists in the PSE with CUID =",decoder_here$cuid)
-
-cond_cuss <- conservation_unit_system_sites$GFE_ID == gfeid
-unique(conservation_unit_system_sites$SYSTEM_SITE[cond_cuss])
-
-cuss_add <- conservation_unit_system_sites[NA,][1,]
-cuss_add$IndexId <- iid
-cuss_add$GFE_ID <- gfeid
-cuss_add$SYSTEM_SITE <- unique(conservation_unit_system_sites$SYSTEM_SITE[cond_cuss])
-# cuss_add$MAP_LABEL ?
-cuss_add$SPECIES_QUALIFIED <- "CK"
-cuss_add$species_acronym_ncc <- "CN"
-cuss_add$SPECIES <- "Chinook"
-cuss_add$POP_ID <- as.numeric(strsplit(iid,"_")[[1]][2])
-cuss_add$Y_LAT <- unique(conservation_unit_system_sites$Y_LAT[cond_cuss])
-cuss_add$X_LONGT <- unique(conservation_unit_system_sites$X_LONGT[cond_cuss])
-cuss_add$CU_NAME <- toupper(cu_name)
-cuss_add$WATERSHED_CDE <- unique(conservation_unit_system_sites$WATERSHED_CDE[cond_cuss])
-cuss_add$FWA_WATERSHED_CDE <- unique(conservation_unit_system_sites$FWA_WATERSHED_CDE[cond_cuss])
-cuss_add$CU_TYPE <- decoder_here$cu_type
+toAdd_all <- rbind(toAdd_all,toAdd)
 
 #' Case with CN_7809 (i = 4):
 #' CN_7809 is Summer run type, while CN_48442 is Run 1 --> not contradictory.
 #' But series with CN_7809 is much longer and recent than the CN_48442 one.
 #' Looks like the two series are merged in the PSE (look for CU "Okanagan").
 #' TODO: change series CN_48442 - 442 in CUSS for CN_7809 - 442.
+#' --> change IndexId in CUSS
 i <- 4
 iid <- trackRecord_nuseds_iid$IndexId[i]
 iid_alter <- trackRecord_nuseds_iid$alternative_IndexId[i]
@@ -1192,29 +1181,39 @@ conservationunits_decoder[conservationunits_decoder$cu_name_dfo == "OKANAGAN_1.x
 conservationunits_decoder[conservationunits_decoder$cu_name_pse == "Okanagan River",]
 conservationunits_decoder[grepl("Okanagan",conservationunits_decoder$cu_name_pse),]
 
-toRemove <- data.frame(IndexId = iid_alter, 
-                       GFE_ID = gfeid, 
+toRemove <- data.frame(IndexId = "CN_48442", 
+                       GFE_ID = 442, 
                        dataset = "conservation_unit_system_sites")
-toRemove$comment <- paste("Merged to series IndexId =",iid,"- GFE_ID =",gfeid)
+toRemove$comment <- paste0("Merged to series IndexId = ","CN_7809"," - GFE_ID = ",442,", which was added to CUSS")
 
 removed_all <- rbind(removed_all,toRemove)
 
-# edit conservation_unit_system_sites
-cond <- conservation_unit_system_sites$IndexId == iid_alter &
-  conservation_unit_system_sites$GFE_ID == gfeid
-conservation_unit_system_sites$IndexId[cond] <- iid
-conservation_unit_system_sites$POP_ID[cond]  <- strsplit(x = iid, split = "_")[[1]][2]
-conservation_unit_system_sites$CU_NAME[cond] # stays the same
+#
+toAdd <- data.frame(IndexId ="CN_7809",
+                    GFE_ID = 442,
+                    dataset = "conservation_unit_system_sites",
+                    CU_NAME = conservation_unit_system_sites$CU_NAME[conservation_unit_system_sites$IndexId == "CN_48442"],
+                    comment = "Series not in CUSS and not merged with CN_39983 - 1204 because of different timing")
 
-# merge series in all_areas_nuseds
-cond_toChange <- all_areas_nuseds$IndexId == iid_alter & all_areas_nuseds$GFE_ID == gfeid
-cond_toKeep <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == gfeid
-all_areas_nuseds[cond_toChange,]
-all_areas_nuseds[cond_toKeep,]$POPULATION
-all_areas_nuseds$IndexId[cond_toChange] <- iid
-all_areas_nuseds$POP_ID[cond_toChange] <- strsplit(x = iid, split = "_")[[1]][2]
-all_areas_nuseds$POPULATION[cond_toChange] # not changing it because there are two values, one of them being the same as CN_48442 
-unique(all_areas_nuseds$POPULATION[cond_toKeep])
+toAdd_all <- rbind(toAdd_all,toAdd)
+
+# edit indexId - related fields in conservation_unit_system_sites 
+conservation_unit_system_sites <- fields_edit_NUSEDS_CUSS_fun(edit_CUSS = T, 
+                                                IndexId_focal = "CN_48442",
+                                                IndexId_alter = "CN_7809",
+                                                GFE_ID_focal = 442,
+                                                GFE_ID_alter = 442,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
+
+# merge series in all_areas_nuseds by changing CN_48442 for CN_7809
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CN_48442",
+                                                IndexId_alter = "CN_7809",
+                                                GFE_ID_focal = 442,
+                                                GFE_ID_alter = 442,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
 
 #' Case with CO_7776 (i = 5): 
 #' TODO: removed (already done in for loop) because 100% duplicated
@@ -1505,8 +1504,7 @@ toAdd_all <- rbind(toAdd_all,toAdd)
 i <- 2
 cond_i <- trackRecord_nuseds_gfeid$i == i
 
-fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
-                                      conservation_unit_system_sites = conservation_unit_system_sites)
+
 
 # Merge green to blue: GFE_ID 11486 --> 11485
 cond_focal <- all_areas_nuseds$IndexId == trackRecord_nuseds_gfeid$IndexId[cond_i][1] &

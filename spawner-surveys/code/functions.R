@@ -830,12 +830,14 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
   
   #' *** conservation_unit_system_sites ***
   CUSS_l <- list()
+  
+  # IndexId
   if(runProcess){
     fields_CUSS_asso <- association_twoFields_fun(fields_1 = c("IndexId","GFE_ID"),
                                                   fields_2 = colnames(conservation_unit_system_sites),
                                                   dataset = conservation_unit_system_sites,
                                                   silence = T)
-    # IndexId
+    
     cond_iid <- fields_CUSS_asso$fields_1 == "IndexId" &
       fields_CUSS_asso$association == "single"
     out <- as.character(fields_CUSS_asso$fields_2[cond_iid])
@@ -870,7 +872,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
   }
   CUSS_l[[2]] <- out
   
-  # out
+  # both
   if(runProcess){
     out <- c()
     for(f in  unique(fields_CUSS_asso$fields_2)){
@@ -892,7 +894,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
   }
   CUSS_l[[3]] <- out
   
-  # out
+  # none
   if(runProcess){
     out <- c()
     for(f in  unique(fields_CUSS_asso$fields_2)){
@@ -909,6 +911,41 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
     out <- c('MAP_LABEL')
   }
   CUSS_l[[4]] <- out
+  
+  # CU_NAME & species_acronym_ncc
+  # if(runProcess & newFieldsIncluded){ # species_acronym_ncc is a new field
+  #   
+  #   newVar <- apply(conservation_unit_system_sites[,c("species_acronym_ncc","CU_NAME")],
+  #                   1,paste, collapse = " ")
+  #   
+  #   CUSS_new <- conservation_unit_system_sites
+  #   CUSS_new$species_CU_NAME <- newVar
+  #   
+  #   fields_CUSS_asso <- association_twoFields_fun(fields_1 = c("species_CU_NAME"),
+  #                                                 fields_2 = colnames(CUSS_new),
+  #                                                 dataset = CUSS_new,
+  #                                                 silence = T)
+  #   out <- c()
+  #   for(f in  unique(fields_CUSS_asso$fields_2)){
+  #     cond1 <- fields_CUSS_asso[fields_CUSS_asso$fields_1 == "species_CU_NAME" &
+  #                                 fields_CUSS_asso$fields_2 == f,]$association == "single"
+  #     cond2 <- fields_CUSS_asso[fields_CUSS_asso$fields_1 == "species_CU_NAME" &
+  #                                 fields_CUSS_asso$fields_2 == f,]$association == "single"
+  #     if(all(c(cond1,cond2))){
+  #       out <- c(out,f)
+  #     }
+  #   }
+  #   
+  # }else{
+  #   out <- c('SPECIES_QUALIFIED','CU_NAME','CU_ACRO','CU_LAT','CU_LONGT','CU_TYPE',
+  #            'CU_INDEX','FULL_CU_IN','SBJ_ID','SPECIES')
+  #   
+  #   if(newFieldsIncluded){
+  #     out <- c(out,"species_acronym_ncc")
+  #   }
+  # }
+  # 
+  # CUSS_l[[5]] <- out
   
   #
   names(CUSS_l) <- c('IndexId','GFE_ID','both','none')
@@ -1029,10 +1066,11 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
 #' filled using the GFE_ID - related information that is present in NUSEDS. 
 #' - In case the IndexId is not present in CUSS: not implemented yet (not sure)
 #' if that's possible).
-# IndexId <- "CM_3305"
-# GFE_ID <- 11486
+# IndexId <- "CN_39983"
+# GFE_ID <- 1204
 CUSS_newRow_fun <- function(IndexId,GFE_ID,
-                            conservation_unit_system_sites,all_areas_nuseds){
+                            conservation_unit_system_sites,
+                            all_areas_nuseds){
   
   # make sure the series does not already exist in CUSS
   cond <- conservation_unit_system_sites$IndexId == IndexId & 
@@ -1055,16 +1093,32 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
     
     # Fill with IndexId related fields
     cond_cuss_iid <- conservation_unit_system_sites$IndexId == IndexId
-    if(sum(cond_cuss_iid) > 0){
+    if(sum(cond_cuss_iid) > 0){ # if IndexId is already present in CUSS:
       
       for(f in fields_l$CUSS$IndexId){
         cuss_new[,f] <- unique(conservation_unit_system_sites[,f][cond_cuss_iid])
       }
       
-    }else{
-      # ???
-      print("Case with IndexId not in CUSS")
+    }else{  # if IndexId is not already present in CUSS:
+      # use fields_l$NUSEDS$IndexId
       
+      field_comm <- fields_l$CUSS$IndexId[fields_l$CUSS$IndexId %in% fields_l$NUSEDS$IndexId]
+      field_comm <- field_comm[field_comm != "IndexId"]
+      cond_nuseds_iid <- all_areas_nuseds$IndexId == IndexId
+      
+      for(f in field_comm){
+        cuss_new[,f] <- unique(all_areas_nuseds[,f][cond_nuseds_iid])
+      }
+      
+      # add SPECIES_QUALIFIED
+      cuss_new$SPECIES_QUALIFIED <- cuss_new$species_acronym_ncc
+      if(cuss_new$species_acronym_ncc == "CN"){
+        cuss_new$SPECIES_QUALIFIED <- "CK"
+        
+      }else if(cuss_new$species_acronym_ncc %in% c("SEL","SER")){
+        cuss_new$SPECIES_QUALIFIED <- "SX"
+        
+      }
     }
     
     # Fill with GFE_ID related fields
@@ -1072,11 +1126,11 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
     if(sum(cond_cuss_gfeid) > 0){
       
       for(f in fields_l$CUSS$GFE_ID){
-        cuss_new[,f] <- unique(conservation_unit_system_sites[,f][cond_cuss_iid])
+        cuss_new[,f] <- unique(conservation_unit_system_sites[,f][cond_cuss_gfeid])
       }
       
     }else{
-      # use fields_l$NUSEDS$IndexId
+      # use fields_l$NUSEDS$GFE_ID
       field_comm <- fields_l$CUSS$GFE_ID[fields_l$CUSS$GFE_ID %in% fields_l$NUSEDS$GFE_ID]
       field_comm <- field_comm[field_comm != "GFE_ID"]
       cond_nuseds_gfeid <- all_areas_nuseds$GFE_ID == GFE_ID
@@ -1088,10 +1142,156 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
       cuss_new$SYSTEM_SITE <- unique(all_areas_nuseds$WATERBODY[cond_nuseds_gfeid])
     }
   }
-  
   return(cuss_new)
 }
 
+#' Function to update the fields associated to IndexId or GFE_ID in CUSS or NUSEDS.
+# edit_CUSS = T
+# edit_NUSEDS = F
+# IndexId_focal = "CN_48442"
+# IndexId_alter = "CN_7809"
+# GFE_ID_focal = 442
+# GFE_ID_alter = 442
+fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
+                                        GFE_ID_focal = NA, GFE_ID_alter = NA,
+                                        edit_NUSEDS = F,  edit_CUSS = F, 
+                                        all_areas_nuseds = all_areas_nuseds,
+                                        conservation_unit_system_sites = conservation_unit_system_sites){
+  
+  #' Import list for the fields in NUSEDS and CUSS that are associated to unique
+  #' IndexId and GFE_ID
+  fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
+                                        conservation_unit_system_sites = conservation_unit_system_sites)
+  
+  if(!edit_CUSS & !edit_NUSEDS){
+    print("Please choose a dataset to edit.")
+    
+  }else{
+    
+    # check what has to be updated: Index_ID, GFE_ID or both
+    iid_diff <- IndexId_focal != IndexId_alter
+    gfeid_diff <- GFE_ID_focal != GFE_ID_alter
+    
+    if(iid_diff & gfeid_diff){
+      print("IndexIds and GFE_IDs are the same.")
+      
+    }else{
+      
+      if(iid_diff & !gfeid_diff){       # if IndexId is to change
+        var <- "IndexId"
+        
+      }else if(!iid_diff & gfeid_diff){ # if GFE_ID is to change
+        var <- "GFE_ID"
+        
+      }else if(!iid_diff & !gfeid_diff){
+        var <- c("IndexId","GFE_ID")
+        
+      }
+      
+      # 
+      if(!edit_CUSS & edit_NUSEDS){ # edit NUSEDS
+        
+        datset_name <- "all_areas_nuseds"
+        
+        dataset_focal <- all_areas_nuseds
+        dataset_alter <- all_areas_nuseds
+        
+        # check if the alternative series is in NUSEDS
+        if(length(var) == 2){
+          cond_alter <- dataset_alter$IndexId == IndexId_alter & 
+            dataset_alter&GFE_ID == GFE_ID_alter
+          # to finish eventually but might not be needed
+          print("Write code for when the fields for both IndexId and GFE_ID have to be edited.")
+          
+        }else if(var == "IndexId"){
+          fields <- fields_l$NUSEDS$IndexId
+          cond_alter <- dataset_alter$IndexId == IndexId_alter
+          # if IndexId_alter is not in NUSEDS
+          if(sum(cond_alter) == 0){ 
+            dataset_alter <- conservation_unit_system_sites
+            cond_alter <- dataset_alter$IndexId == IndexId_alter
+            # find the fields in common for IndexId in NUSEDS and CUSS
+            fields <- fields_l$NUSEDS$IndexId[fields_l$NUSEDS$IndexId %in% fields_l$CUSS$IndexId]
+          }
+          
+        }else if(var == "GFE_ID"){
+          fields <- fields_l$NUSEDS$GFE_ID
+          cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
+          # if GFE_ID_alter is not in NUSEDS
+          if(sum(cond_alter) == 0){ 
+            dataset_alter <- conservation_unit_system_sites
+            cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
+            # find the fields in common for GFE_ID in NUSEDS and CUSS
+            fields <- fields_l$NUSEDS$GFE_ID[fields_l$NUSEDS$GFE_ID %in% fields_l$CUSS$GFE_ID]
+            # add SYSTEM_SITE, which is WATERSHED in NUSEDS
+            fields <- c(fields,"SYSTEM_SITE")
+          }
+        }
+        
+        
+      }else if(edit_CUSS & !edit_NUSEDS){ # edit CUSS
+        # print("Write code for when The fields in CUSS have to be edited.")
+        
+        datset_name <- "conservation_unit_system_sites"
+        
+        dataset_focal <- conservation_unit_system_sites
+        dataset_alter <- conservation_unit_system_sites
+        
+        # check if the alternative series is in CUSS
+        if(length(var) == 2){
+          cond_alter <- conservation_unit_system_sites$IndexId == IndexId_alter & 
+            conservation_unit_system_sites&GFE_ID == GFE_ID_alter
+          # to finish eventually but might not be needed
+          print("Write code for when the fields for both IndexId and GFE_ID have to be edited.")
+          
+        }else if(var == "IndexId"){
+          fields <- fields_l$CUSS$IndexId
+          cond_alter <- conservation_unit_system_sites$IndexId == IndexId_alter
+          
+          # if IndexId_alter is not in CUSS
+          if(sum(cond_alter) == 0){ 
+            dataset_alter <- all_areas_nuseds
+            cond_alter <- dataset_alter$IndexId == IndexId_alter
+            # find the fields in common for IndexId in NUSEDS and CUSS
+            fields <- fields_l$CUSS$IndexId[fields_l$CUSS$IndexId %in% fields_l$NUSEDS$IndexId]
+          }
+          
+        }else if(var == "GFE_ID"){
+          fields <- fields_l$CUSS$GFE_ID
+          cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
+          # if GFE_ID_alter is not in CUSS
+          if(sum(cond_alter) == 0){ 
+            dataset_alter <- all_areas_nuseds
+            cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
+            # find the fields in common for GFE_ID in NUSEDS and CUSS
+            fields <- fields_l$CUSS$GFE_ID[fields_l$CUSS$GFE_ID %in% fields_l$NUSEDS$GFE_ID]
+            # add WATERSHED , which is SYSTEM_SITE in CUSS
+            fields <- c(fields,"WATERSHED")
+          }
+        }
+      }
+      
+      # update dataset_focal
+      cond_focal <- dataset_focal$IndexId == IndexId_focal & 
+        dataset_focal$GFE_ID == GFE_ID_focal
+      
+      print(paste(sum(cond_focal),"rows were edited in",datset_name,"at the following fields:",
+                  paste(fields, collapse = ", ")))
+      
+      for(f in fields){
+        f_focal <- f
+        if(f == "SYSTEM_SITE"){  # add SYSTEM_SITE WATERSHED in NUSEDS
+          f_focal <- "WATERBODY"
+        }else if(f == "WATERBODY"){
+          f_focal <- "SYSTEM_SITE"
+        }
+        dataset_focal[cond_focal,f_focal] <- unique(dataset_alter[cond_alter,f])
+      }
+      
+      return(dataset_focal)
+    } 
+  }
+}
 
 
 

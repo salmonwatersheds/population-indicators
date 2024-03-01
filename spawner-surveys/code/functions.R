@@ -1102,9 +1102,11 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
     }else{  # if IndexId is not already present in CUSS:
       # use fields_l$NUSEDS$IndexId
       
+      cond_nuseds_iid <- all_areas_nuseds$IndexId == IndexId
+      
       field_comm <- fields_l$CUSS$IndexId[fields_l$CUSS$IndexId %in% fields_l$NUSEDS$IndexId]
       field_comm <- field_comm[field_comm != "IndexId"]
-      cond_nuseds_iid <- all_areas_nuseds$IndexId == IndexId
+      
       
       for(f in field_comm){
         cuss_new[,f] <- unique(all_areas_nuseds[,f][cond_nuseds_iid])
@@ -1146,12 +1148,12 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
 }
 
 #' Function to update the fields associated to IndexId or GFE_ID in CUSS or NUSEDS.
-# edit_CUSS = T
-# edit_NUSEDS = F
-# IndexId_focal = "CN_48442"
-# IndexId_alter = "CN_7809"
-# GFE_ID_focal = 442
-# GFE_ID_alter = 442
+# edit_CUSS = F
+# edit_NUSEDS = T
+# IndexId_focal = "CO_46835"
+# IndexId_alter = "CO_46835"
+# GFE_ID_focal = 2463
+# GFE_ID_alter = 285
 fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
                                         GFE_ID_focal = NA, GFE_ID_alter = NA,
                                         edit_NUSEDS = F,  edit_CUSS = F, 
@@ -1167,6 +1169,8 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
     print("Please choose a dataset to edit.")
     
   }else{
+    
+    varAlter_presentInSameDataset <- T # for the end in case WATERBODY is used for SYSTEM_SITE and vice versa
     
     # check what has to be updated: Index_ID, GFE_ID or both
     iid_diff <- IndexId_focal != IndexId_alter
@@ -1206,8 +1210,9 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
         }else if(var == "IndexId"){
           fields <- fields_l$NUSEDS$IndexId
           cond_alter <- dataset_alter$IndexId == IndexId_alter
-          # if IndexId_alter is not in NUSEDS
-          if(sum(cond_alter) == 0){ 
+          # if IndexId_alter is not in NUSEDS --> look for Index_Id - related fields in CUSS
+          if(sum(cond_alter) == 0){
+            varAlter_presentInSameDataset <- F
             dataset_alter <- conservation_unit_system_sites
             cond_alter <- dataset_alter$IndexId == IndexId_alter
             # find the fields in common for IndexId in NUSEDS and CUSS
@@ -1217,8 +1222,9 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
         }else if(var == "GFE_ID"){
           fields <- fields_l$NUSEDS$GFE_ID
           cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
-          # if GFE_ID_alter is not in NUSEDS
-          if(sum(cond_alter) == 0){ 
+          # if GFE_ID_alter is not in NUSEDS --> look for GFE_ID - related fields in CUSS
+          if(sum(cond_alter) == 0){
+            varAlter_presentInSameDataset <- F
             dataset_alter <- conservation_unit_system_sites
             cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
             # find the fields in common for GFE_ID in NUSEDS and CUSS
@@ -1248,8 +1254,9 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
           fields <- fields_l$CUSS$IndexId
           cond_alter <- conservation_unit_system_sites$IndexId == IndexId_alter
           
-          # if IndexId_alter is not in CUSS
-          if(sum(cond_alter) == 0){ 
+          # if IndexId_alter is not in CUSS --> look for Index_Id - related fields in NUSEDS
+          if(sum(cond_alter) == 0){
+            varAlter_presentInSameDataset <- F
             dataset_alter <- all_areas_nuseds
             cond_alter <- dataset_alter$IndexId == IndexId_alter
             # find the fields in common for IndexId in NUSEDS and CUSS
@@ -1259,8 +1266,9 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
         }else if(var == "GFE_ID"){
           fields <- fields_l$CUSS$GFE_ID
           cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
-          # if GFE_ID_alter is not in CUSS
-          if(sum(cond_alter) == 0){ 
+          # if GFE_ID_alter is not in CUSS --> look for GFE_ID - related fields in NUSEDS
+          if(sum(cond_alter) == 0){
+            varAlter_presentInSameDataset <- F
             dataset_alter <- all_areas_nuseds
             cond_alter <- dataset_alter$GFE_ID == GFE_ID_alter
             # find the fields in common for GFE_ID in NUSEDS and CUSS
@@ -1280,9 +1288,9 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
       
       for(f in fields){
         f_focal <- f
-        if(f == "SYSTEM_SITE"){  # add SYSTEM_SITE WATERSHED in NUSEDS
+        if(f == "SYSTEM_SITE" & !varAlter_presentInSameDataset){  # add SYSTEM_SITE WATERSHED in NUSEDS
           f_focal <- "WATERBODY"
-        }else if(f == "WATERBODY"){
+        }else if(f == "WATERBODY" & !varAlter_presentInSameDataset){
           f_focal <- "SYSTEM_SITE"
         }
         dataset_focal[cond_focal,f_focal] <- unique(dataset_alter[cond_alter,f])

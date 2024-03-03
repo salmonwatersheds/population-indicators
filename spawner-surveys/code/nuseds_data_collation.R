@@ -137,11 +137,42 @@ all_areas_nuseds <- datasets_NuSEDS_fun(name_dataSet = NuSEDS_datasets_names$all
 colnames(all_areas_nuseds)
 # View(all_areas_nuseds)
 
+
+#' Remove duplicated rows:
+dupli <- all_areas_nuseds %>%
+  dplyr::group_by(SPECIES, POP_ID, GFE_ID, ANALYSIS_YR,
+                  NATURAL_ADULT_SPAWNERS,NATURAL_JACK_SPAWNERS,        
+                  NATURAL_SPAWNERS_TOTAL, ADULT_BROODSTOCK_REMOVALS, 
+                  JACK_BROODSTOCK_REMOVALS, TOTAL_BROODSTOCK_REMOVALS,    
+                  OTHER_REMOVALS, TOTAL_RETURN_TO_RIVER) %>%
+  dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+  dplyr::filter(n > 1L)
+
+dupli
+
+toRemove_r <- which(duplicated(all_areas_nuseds[,c("SPECIES", "POP_ID", "GFE_ID", "ANALYSIS_YR",
+                                     "NATURAL_ADULT_SPAWNERS","NATURAL_JACK_SPAWNERS",        
+                                     "NATURAL_SPAWNERS_TOTAL", "ADULT_BROODSTOCK_REMOVALS", 
+                                     "JACK_BROODSTOCK_REMOVALS", "TOTAL_BROODSTOCK_REMOVALS",    
+                                     "OTHER_REMOVALS", "TOTAL_RETURN_TO_RIVER")]))
+
+all_areas_nuseds <- all_areas_nuseds[-toRemove_r,]
+
+
 #' ** Import the NuSEDS list of CUs (conservation_unit_system_sites): **
 # DFO provided files matching streams and Nuseds to full CU index 
 conservation_unit_system_sites <- datasets_NuSEDS_fun(name_dataSet = NuSEDS_datasets_names$conservation_unit_system_sites, 
                                                       from_NuSEDS_website = F, 
                                                       wd = wd_data_dropbox)
+
+#' check for duplicated rows: --> NONE
+dupli <- conservation_unit_system_sites %>%
+  dplyr::group_by(SPECIES_QUALIFIED,POP_ID,GFE_ID) %>%
+  dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+  dplyr::filter(n > 1L)
+
+dupli
+
 
 #' ** Import the definition of the different fields of these two datasets **
 fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
@@ -251,7 +282,6 @@ all_areas_nuseds$StatArea <- Convert2StatArea(all_areas_nuseds$AREA)
 all_areas_nuseds[all_areas_nuseds$IndexId == "CO_46240",]$StatArea <- "29"    # vs. "29J" "29K"
 all_areas_nuseds[all_areas_nuseds$IndexId == "PKO_51094",]$StatArea <- "12"  # BSC: there is one ""
 all_areas_nuseds[all_areas_nuseds$IndexId == "SX_45495",]$StatArea <- "120"  # BSC: already "120"
-
 
 #'* Determine "Returns" (i.e. number fish) in all_areas_nuseds (NOT USED - TO REMOVED?) *
 #' "Return" will be the column that contains the final fish count. Priority of the
@@ -385,7 +415,6 @@ cores_nb <- 10
 all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
                                                              zeros_too = T, 
                                                              cores_nb = cores_nb)
-
 nrow(all_areas_nuseds) # 309648
 nrow(all_areas_nuseds)/nrow(all_areas_nuseds_all) # .75
 
@@ -1859,7 +1888,8 @@ all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds,
 
 #' Cases with STEON RIVER / PORTAGE CREEK - CO (i = 9)
 #' All are in the Seton River near Lillooets
-#' - top plot: merge blue to red --> change GFE_ID from 2451 to 2476 in NUSEDS
+#' - top plot: DO NOT merge blue to red because there is a conflict in 2013
+#'   --> create a new row in CUSS
 #' - bottom plot: merge blue to red --> change IndexId from CO_44539 to CO_47183 in NUSEDS
 i <- 9
 cond_i <- trackRecord_nuseds_gfeid$i == i
@@ -1868,20 +1898,35 @@ trackRecord_nuseds_gfeid$GFE_ID[cond_i]
 trackRecord_nuseds_gfeid$alternative_GFE_ID[cond_i]
 trackRecord_nuseds_gfeid$alternative_IndexId[cond_i]
 
-#' - top plot: merge blue to red --> change GFE_ID from 2451 to 2476:
-all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
-                                                IndexId_focal = "CO_44539",
-                                                IndexId_alter = "CO_44539",
-                                                GFE_ID_focal = 2451,
-                                                GFE_ID_alter = 2476,
-                                                all_areas_nuseds = all_areas_nuseds,
-                                                conservation_unit_system_sites = conservation_unit_system_sites)
 
-removed <- data.frame(IndexId = c("CO_44539"),
-                      GFE_ID = c(2451))
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "Series not in CUSS, merged to series CO_44539 & GFE_ID = 213"
-removed_all <- rbind(removed_all,removed)
+#' - top plot: create a new row in CUSS for CO_44539 - 2451 (2451 is already in CUSS)
+sum(conservation_unit_system_sites_all$GFE_ID == 2451)
+
+cuss_new <- CUSS_newRow_fun(IndexId = "CO_44539",
+                            GFE_ID = 2451,
+                            conservation_unit_system_sites = conservation_unit_system_sites,
+                            all_areas_nuseds = all_areas_nuseds)
+
+conservation_unit_system_sites <- rbind(conservation_unit_system_sites,
+                                        cuss_new)
+
+toAdd <- data.frame(IndexId ="CO_44539",
+                    GFE_ID = 2451,
+                    dataset = "conservation_unit_system_sites",
+                    CU_NAME = cuss_new$CU_NAME,
+                    comment = "Series not in CUSS and not merged with CO_44539 - 2476 because of one conflictual data point")
+
+toAdd_all <- rbind(toAdd_all,toAdd)
+
+#' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
+#' coordinates in GFE_ID_nuseds_notCuss_df
+gfeid <- 2451
+cond <- conservation_unit_system_sites_all$GFE_ID == gfeid
+if(sum(cond) == 0){
+  cond <- GFE_ID_nuseds_notCuss_df$GFE_ID == gfeid
+  GFE_ID_nuseds_notCuss_df$need_coordinates[cond] <- 'yes'
+}
+
 
 #' - bottom plot: merge blue to red --> change IndexId from CO_44539 to CO_47183 
 #' in NUSEDS
@@ -2158,6 +2203,16 @@ cond <- ! nuseds_CN_46892_2466$MAX_ESTIMATE %in% data$MAX_ESTIMATE.x
 nuseds_CN_46892_2466 <- nuseds_CN_46892_2466[cond,]
 nuseds_CN_46892_2466[,c("Year","MAX_ESTIMATE")]
 
+# remove rows in nuseds_CN_46892_2466 with NAs for MAX_ESTIMATE in years already 
+# present in nuseds_CN_46892_290 (to avoid creating duplicated years)
+data <- merge(nuseds_CN_46892_2466[,colSelect],
+              nuseds_CN_46892_290[,colSelect],
+              by = "Year", all.x = T)
+data <- data[!is.na(data$MAX_ESTIMATE.x),]
+cond <- nuseds_CN_46892_2466$Year %in% data$Year
+nuseds_CN_46892_2466 <- nuseds_CN_46892_2466[cond,]
+nuseds_CN_46892_2466[,c("Year","MAX_ESTIMATE")]
+
 # edit nuseds_CN_46892_2466 with new GFE_ID-related fields
 for(f in fields_l$NUSEDS$GFE_ID){
   nuseds_CN_46892_2466[,f] <- unique(nuseds_CN_46892_290[,f])
@@ -2267,19 +2322,19 @@ for(r in 1:nrow(trackRecord_nuseds_nocuss)){
                                              fields = c("IndexId","GFE_ID"))
 }
 
-nrow(all_areas_nuseds) # 307244
+nrow(all_areas_nuseds) # 307217 307244
 
 
 # Check - normally all series in NUSEDS and in CUSS now:
 series_nuseds <- paste(all_areas_nuseds$IndexId,
                        all_areas_nuseds$GFE_ID,sep = "&")
 series_nuseds <- unique(series_nuseds)
-length(series_nuseds) # 6909
+length(series_nuseds) # 6910
 
 series_cuss <- paste(conservation_unit_system_sites$IndexId,
                      conservation_unit_system_sites$GFE_ID,sep = "&")
 series_cuss <- unique(series_cuss)
-length(series_cuss) # 6908
+length(series_cuss) # 6910
 
 #' Now all the series in CUSS are in all_areas_nuseds.
 series_cuss[! series_cuss %in% series_nuseds]
@@ -2321,10 +2376,11 @@ trackRecord_toExport$POPULATION <- apply(X = trackRecord_toExport, 1,
 # Merge NUSEDS AND CUSS -----
 #
 col_common <- c("IndexId","POP_ID","GFE_ID")
-col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE",
-                "ENUMERATION_METHODS",
-                "ESTIMATE_CLASSIFICATION",
-                "ESTIMATE_METHOD"
+
+col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE"
+                # "ENUMERATION_METHODS",            # these must be kept out because they differ between years
+                # "ESTIMATE_CLASSIFICATION",
+                # "ESTIMATE_METHOD"
                 )
 
 col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
@@ -2336,82 +2392,25 @@ library(tidyr)
 nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>% 
   pivot_wider(names_from = "Year",values_from = "MAX_ESTIMATE",names_sort = T)
 
-nrow(all_areas_nuseds)
+nrow(all_areas_nuseds) # 307217
 nrow(nuseds_long)      # 6909 
-nrow(conservation_unit_system_sites)  # 6909 
+nrow(conservation_unit_system_sites)  # 6909
 
-all_areas_nuseds %>%
-  dplyr::group_by(IndexId, POP_ID, GFE_ID, SPECIES, WATERBODY, AREA, Year) %>%
-  dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
-  dplyr::filter(n > 1L) 
-
-all_areas_nuseds_all %>%
-  dplyr::group_by(IndexId, POP_ID, GFE_ID, Year) %>%
-  dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
-  dplyr::filter(n > 1L) 
-
-cond <- all_areas_nuseds_all$IndexId == "CM_51316" &
-  all_areas_nuseds_all$GFE_ID == 1174 & 
-  all_areas_nuseds_all$Year == 2011
-
-all_areas_nuseds_all[cond,c("IndexId","GFE_ID","Year","MAX_ESTIMATE")]
-
-
-nuseds_final <- base::merge(y = nuseds_cut_long, 
+nuseds_final <- base::merge(y = nuseds_long, 
                             x = conservation_unit_system_sites[,c(col_common,col_cuss)], 
-                          by = col_common, 
-                          all.y = T)
+                            by = col_common, 
+                            all.y = T)
+
 # Updates FULL_CU_IN:
+full_cu_l <- update_for_FULL_CU_IN_l()
 
-
-
-
-update_for_FULL_CU_IN_l <- function(){
-  
-  out <- list()
-  i <- 1
-  # babine/onerka
-  out[[i]] <- c(45452,45462,48064,48069,48074,48094,48099,48599,48674,48684,49354,
-                49379,49384,49389,49394,49399,49404,49419,49424,49434,49439)
-  names(out)[i] <- "SEL-21-02-EW"
-  
-  # nilkitkwa
-  i <- i + 1
-  out[[i]] <- c(49359,49364,49369,49374,49457)
-  names(out)[i] <-  "SEL-21-02-LW"
-  
-  # tahlo/morrison
-  i <- i + 1
-  out[[i]] <- c(49409,49414)
-  names(out)[i] <- "SEL-21-02-MW"
-  
-  final$CU_findex[final$POP_ID==49409] <- "SEL-21-02-MW"
-  final$CU_findex[final$POP_ID==49414] <- "SEL-21-02-MW"
-  
-  
-  #babine enhanced
-  final$CU_findex[final$POP_ID==3237] <- "SEL-21-02-F"
-  final$CU_findex[final$POP_ID==45467] <- "SEL-21-02-F"
-  final$CU_findex[final$POP_ID==45472] <- "SEL-21-02-F"
-  final$CU_findex[final$POP_ID==3238] <- "SEL-21-02-F"
-  final$CU_findex[final$POP_ID==45482] <- "SEL-21-02-F"
-  
-  ### bella coola chum
-  final$CU_findex[final$POP_ID==3119] <- "CM-16"
-  final$CU_findex[final$POP_ID==51771] <- "CM-16"
-  final$CU_findex[final$POP_ID==51772] <- "CM-16"
-  final$CU_findex[final$POP_ID==3143] <- "CM-16"
-  final$CU_findex[final$POP_ID==3122] <- "CM-16"
-  final$CU_findex[final$POP_ID==3125] <- "CM-16"
-  final$CU_findex[final$POP_ID==3138] <- "CM-16"
-  final$CU_findex[final$POP_ID==3128] <- "CM-16"
-  final$CU_findex[final$POP_ID==51778] <- "CM-16"
-  
-  
+for(i in 1:length(full_cu_l)){
+  # i <- 1
+  FULL_CU_IN_here <- names(full_cu_l)[i]
+  pop_ids <- full_cu_l[[i]]
+  cond <- nuseds_final$POP_ID %in% pop_ids
+  nuseds_final$FULL_CU_IN[cond] <- FULL_CU_IN_here
 }
-
-
-
 
 # rename fields
 nuseds_final

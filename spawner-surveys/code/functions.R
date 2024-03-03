@@ -1160,6 +1160,8 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
                                         all_areas_nuseds = all_areas_nuseds,
                                         conservation_unit_system_sites = conservation_unit_system_sites){
   
+  require(dplyr)
+  
   #' Import list for the fields in NUSEDS and CUSS that are associated to unique
   #' IndexId and GFE_ID
   fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
@@ -1234,7 +1236,6 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
           }
         }
         
-        
       }else if(edit_CUSS & !edit_NUSEDS){ # edit CUSS
         # print("Write code for when The fields in CUSS have to be edited.")
         
@@ -1296,9 +1297,57 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
         dataset_focal[cond_focal,f_focal] <- unique(dataset_alter[cond_alter,f])
       }
       
+      # check there are duplicated year for a same indexId & GFE_ID series:
+      if(!edit_CUSS & edit_NUSEDS){ # edit NUSEDS
+        
+        dupli <- dataset_focal %>%
+          dplyr::group_by(IndexId, GFE_ID, Year) %>%
+          dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+          dplyr::filter(n > 1L)
+        
+        if(nrow(dupli) > 0){
+          print("There are duplicated rows in NUSEDS:")
+          print(dupli)
+        }
+      }
+
       return(dataset_focal)
     } 
   }
+}
+
+
+#' Function to returns a list of FULL_CU_IN value to update certain POP_IDs
+update_for_FULL_CU_IN_l <- function(){
+  
+  out <- list()
+  i <- 1
+  # babine/onerka
+  out[[i]] <- c(45452,45462,48064,48069,48074,48094,48099,48599,48674,48684,49354,
+                49379,49384,49389,49394,49399,49404,49419,49424,49434,49439)
+  names(out)[i] <- "SEL-21-02-EW"
+  
+  # nilkitkwa
+  i <- i + 1
+  out[[i]] <- c(49359,49364,49369,49374,49457)
+  names(out)[i] <-  "SEL-21-02-LW"
+  
+  # tahlo/morrison
+  i <- i + 1
+  out[[i]] <- c(49409,49414)
+  names(out)[i] <- "SEL-21-02-MW"
+  
+  #babine enhanced
+  i <- i + 1
+  out[[i]] <-  c(3237,45467,45472,3238,45482)
+  names(out)[i] <- "SEL-21-02-F"
+  
+  ### bella coola chum
+  i <- i + 1
+  out[[i]] <- c(3119,51771,51772,3143,3122,3125,3138,3128,51778)
+  names(out)[i] <- "CM-16"
+  
+  return(out)
 }
 
 

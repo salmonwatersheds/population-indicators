@@ -60,7 +60,8 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
-# Loading packages 
+# Loading packages
+library(tidyr)
 library(plyr)
 library(dplyr)
 library(tibble)
@@ -834,7 +835,7 @@ toAdd <- data.frame(IndexId = "SX_45525",
                     CU_NAME = "NADINA/FRANCOIS-EARLY SUMMER TIMING",
                     comment = "In both CUSS and NUSEDS but not in the PSE; but series SX_45525 - 303 is.")
 
-toAdd_all <- toAdd
+added_all <- toAdd
 
 #
 #'* 3) Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS *
@@ -1212,7 +1213,7 @@ toAdd <- data.frame(IndexId ="CN_39983",
                     CU_NAME = NA,
                     comment = "Series not in CUSS and not merged with CN_39983 - 1204 because of different timing")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1257,7 +1258,7 @@ toAdd <- data.frame(IndexId ="CN_7809",
                     CU_NAME = conservation_unit_system_sites$CU_NAME[conservation_unit_system_sites$IndexId == "CN_48442"],
                     comment = "Series not in CUSS and not merged with CN_39983 - 1204 because of different timing")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 # edit indexId - related fields in conservation_unit_system_sites 
 conservation_unit_system_sites <- fields_edit_NUSEDS_CUSS_fun(edit_CUSS = T, 
@@ -1553,7 +1554,7 @@ toAdd <- data.frame(IndexId = trackRecord_nuseds_gfeid$IndexId[cond_i],
 
 toAdd$CU_NAME <- cuss_new$CU_NAME
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1592,7 +1593,7 @@ toAdd <- data.frame(IndexId = "CN_3306",
 
 toAdd$CU_NAME <- cuss_new$CU_NAME
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1638,7 +1639,7 @@ toAdd <- data.frame(IndexId = "PKO_3304",
 
 toAdd$CU_NAME <- cuss_new$CU_NAME
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 
 #' SX (i = 4)
@@ -1725,7 +1726,7 @@ toAdd <- data.frame(IndexId = "CM_47925",
                     CU_NAME = cuss_new$CU_NAME,
                     comment = "Series not in CUSS, not merged to altenative series IndexId = CM_47925 & GHE_ID = 14 because different location; GFE_ID not in CUSS so coordinates were define by hand")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1759,7 +1760,7 @@ toAdd <- data.frame(IndexId = "CM_47925",
                     CU_NAME = cuss_new$CU_NAME,
                     comment = "Series not in CUSS, not merged to altenative series IndexId = CM_47925 & GHE_ID = 14 because different location; GFE_ID not in CUSS so coordinates were define by hand")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1855,7 +1856,7 @@ toAdd <- data.frame(IndexId ="CO_46170",
                     CU_NAME = cuss_new$CU_NAME,
                     comment = "Series not in CUSS and not merged with CO_46170 - 213 because of different location")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1916,7 +1917,7 @@ toAdd <- data.frame(IndexId ="CO_44539",
                     CU_NAME = cuss_new$CU_NAME,
                     comment = "Series not in CUSS and not merged with CO_44539 - 2476 because of one conflictual data point")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -1972,7 +1973,7 @@ for(gfeid in trackRecord_nuseds_gfeid$GFE_ID[cond_i]){
                       CU_NAME = cuss_new$CU_NAME,
                       comment = "Series not in CUSS and not merged with CO_46582 - 256 because of different location")
   
-  toAdd_all <- rbind(toAdd_all,toAdd)
+  added_all <- rbind(added_all,toAdd)
   
   #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
   #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -2025,7 +2026,7 @@ toAdd <- data.frame(IndexId ="CO_46602",
                     CU_NAME = cuss_new$CU_NAME,
                     comment = "Series not in CUSS and not merged with CO_46632 - 258 because of different location")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -2126,7 +2127,7 @@ toAdd <- data.frame(IndexId ="CO_46795",
                     CU_NAME = cuss_new$CU_NAME,
                     comment = "Series not in CUSS and not merged to CO_46795 & GFE_ID = 281 because of different location")
 
-toAdd_all <- rbind(toAdd_all,toAdd)
+added_all <- rbind(added_all,toAdd)
 
 #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
 #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -2258,7 +2259,7 @@ for(i in 17:22){
                                        trackRecord_nuseds_gfeid$alternative_GFE_ID[cond_i],
                                        " because of different location"))
   
-  toAdd_all <- rbind(toAdd_all,toAdd)
+  added_all <- rbind(added_all,toAdd)
   
   #' check if GFE_ID is not already in CUSS to specify if it needs to be attributed 
   #' coordinates in GFE_ID_nuseds_notCuss_df
@@ -2344,6 +2345,80 @@ series_Nuseds_noCuss <- series_nuseds[! series_nuseds %in% series_cuss]
 series_Nuseds_noCuss <- series_Nuseds_noCuss[order(series_Nuseds_noCuss)]
 length(series_Nuseds_noCuss) # 0
 
+#
+# Merge NUSEDS AND CUSS -----
+#
+col_common <- c("IndexId","POP_ID","GFE_ID")
+
+col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE"
+                # "ENUMERATION_METHODS",            # these must be kept out because they differ between years
+                # "ESTIMATE_CLASSIFICATION",
+                # "ESTIMATE_METHOD"
+                )
+
+col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
+              "FULL_CU_IN","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
+              "CU_LAT","CU_LONGT")
+
+# transform all_areas_nuseds to a wide format
+
+nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>% 
+  pivot_wider(names_from = "Year",values_from = "MAX_ESTIMATE",names_sort = T)
+
+nrow(all_areas_nuseds) # 307217
+nrow(nuseds_long)      # 6909 
+nrow(conservation_unit_system_sites)  # 6909
+
+nuseds_final <- base::merge(y = nuseds_long, 
+                            x = conservation_unit_system_sites[,c(col_common,col_cuss)], 
+                            by = col_common, 
+                            all.y = T)
+
+# Updates FULL_CU_IN manually for several POP_IDs:
+full_cu_l <- update_for_FULL_CU_IN_l()
+
+for(i in 1:length(full_cu_l)){
+  # i <- 1
+  FULL_CU_IN_here <- names(full_cu_l)[i]
+  pop_ids <- full_cu_l[[i]]
+  cond <- nuseds_final$POP_ID %in% pop_ids
+  nuseds_final$FULL_CU_IN[cond] <- FULL_CU_IN_here
+}
+
+
+# Rename fields: SYSTEM_SITE <- SYS_NM
+# Older file for comparison:
+# wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
+# nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
+
+field_toChange <- c("SYSTEM_SITE",
+                    "IS_INDICATOR",
+                    "SPECIES_QUALIFIED",
+                    "Y_LAT","X_LONGT",
+                    "AREA",
+                    "MAZ_ACRO","FAZ_ACRO","JAZ_ACRO",
+                    "CU_NAME")
+
+fields_new <- c("SYS_NM",
+                "IsIndicator",
+                "Species",
+                "yLAT","xLONG",
+                "Area",
+                "maz_acro","faz_acro","jaz_acro",
+                "CU_name")
+
+for(i in 1:length(field_toChange)){
+  names(nuseds_final)[names(nuseds_final) == field_toChange[i]] <- fields_new[i]
+}
+
+# add "X" in from of the year columns:
+cond <- grepl("[1|2]",colnames(nuseds_final))
+col_yrs <-  colnames(nuseds_final)[cond]
+colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
+col_yrs <-  colnames(nuseds_final)[cond]
+#
+# Export CSV files: ------
+
 #' Export the series in NUSEDS with IndexIds and GFE_IDs not in CUSS with 
 #' info on the number of data points and POPULATION
 #' slack: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1709250704372429
@@ -2369,1610 +2444,43 @@ trackRecord_toExport$POPULATION <- apply(X = trackRecord_toExport, 1,
                                            return(unique(all_areas_nuseds_all$POPULATION[cond]))
                                          })
 
-# write.csv(trackRecord_toExport,paste0(wd_output,"/series_inNUSEDS_noInCUSS.csv"), 
-#           row.names = F)
+write.csv(trackRecord_toExport,paste0(wd_output,"/series_inNUSEDS_noInCUSS.csv"),
+          row.names = F)
 
-#
-# Merge NUSEDS AND CUSS -----
-#
-col_common <- c("IndexId","POP_ID","GFE_ID")
 
-col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE"
-                # "ENUMERATION_METHODS",            # these must be kept out because they differ between years
-                # "ESTIMATE_CLASSIFICATION",
-                # "ESTIMATE_METHOD"
-                )
+#' Export the CUs removed and those added:
+write.csv(removed_all,paste0(wd_output,"/series_removed.csv"),row.names = F)
 
-col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
-              "FULL_CU_IN","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
-              "CU_LAT","CU_LONGT")
+write.csv(added_all,paste0(wd_output,"/series_added.csv"),row.names = F)
 
-# transform all_areas_nuseds to a wide format
-library(tidyr)
-nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>% 
-  pivot_wider(names_from = "Year",values_from = "MAX_ESTIMATE",names_sort = T)
+# Export the GFE_IDs added to CUSS that need geospatial coordinates:
+cols <- c("GFE_ID","SYSTEM_SITE","X_LONGT","Y_LAT")
+cond <- is.na(conservation_unit_system_sites$Y_LAT) | conservation_unit_system_sites$GFE_ID == 11486
+GFE_IDs_new_coord_toFind <- unique(conservation_unit_system_sites[cond,cols])
 
-nrow(all_areas_nuseds) # 307217
-nrow(nuseds_long)      # 6909 
-nrow(conservation_unit_system_sites)  # 6909
+write.csv(GFE_IDs_new_coord_toFind,paste0(wd_output,"/GFE_IDs_new_coord_toFind.csv"),
+          row.names = F)
 
-nuseds_final <- base::merge(y = nuseds_long, 
-                            x = conservation_unit_system_sites[,c(col_common,col_cuss)], 
-                            by = col_common, 
-                            all.y = T)
+#' Export NUSEDS:
+write.csv(all_areas_nuseds,paste0(wd_output,"/all_areas_nuseds_cleaned.csv"), 
+          row.names = F)
 
-# Updates FULL_CU_IN:
-full_cu_l <- update_for_FULL_CU_IN_l()
+#' Export CUSS:
+write.csv(conservation_unit_system_sites,paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"), 
+          row.names = F)
 
-for(i in 1:length(full_cu_l)){
-  # i <- 1
-  FULL_CU_IN_here <- names(full_cu_l)[i]
-  pop_ids <- full_cu_l[[i]]
-  cond <- nuseds_final$POP_ID %in% pop_ids
-  nuseds_final$FULL_CU_IN[cond] <- FULL_CU_IN_here
-}
 
-# rename fields
-nuseds_final
-
-
-col_old <- c("Y_LAT","X_LONG",)
-
-
-#
-# 
-
-# 
-
-# Check on INdexIds with mutliple FGE_IDs in NUSEDS NOT USED ANYMORE -----
-
-#'* 3) CHECK: association between GFE_ID and IndexId in all_areas_nuseds *
-#' It should be a ONE TO MANY relationship.
-#' - For all_areas_nuseds: 
-#'    - 1) check that for each IndexId there is an unique GFE_ID, if not, trouble
-#'    shoot.
-#'    - 2) check that there is not duplicated multiple data points for a same year,
-#'    if that's the case, trouble shoot.
-#' - 
-
-IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
-sum(duplicated(IndexId_GFE_ID$IndexId)) # 33 67 69 # was 79 --> not normal
-sum(duplicated(IndexId_GFE_ID$GFE_ID)) # 4628 4708 4749 # was 9049 --> normal
-IndexId_toCheck <- unique(IndexId_GFE_ID$IndexId[duplicated(IndexId_GFE_ID$IndexId)])
-length(IndexId_toCheck) # 21 40 41 # was 46
-
-IndexId_GFE_ID_dupli <- NULL
-layout(matrix(1))
-par(mar = c(4.5,4.5,.5,.5))
-for(iid_i in 1:length(IndexId_toCheck)){
-  # iid_i <- 6
-  iid <- IndexId_toCheck[iid_i]
-  
-  # print(count <- count + 1)
-  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
-  
-  #' find the % of points overlapping with the other time series in 
-  #' all_areas_nuseds_cut (see application in for loop below)
-  all_areas_nuseds_cut_noNA <- all_areas_nuseds_cut[!is.na(all_areas_nuseds_cut$MAX_ESTIMATE),] # common NAs are not considered as duplicates
-  row_dupli <- duplicated(all_areas_nuseds_cut_noNA[,c("MAX_ESTIMATE","Year")])
-  dupli <- all_areas_nuseds_cut_noNA[row_dupli,c("MAX_ESTIMATE","Year"),drop = F]
-  
-  # 1) check if there is a unique GFE_ID or not
-  gfe_id <- unique(all_areas_nuseds_cut$GFE_ID)
-  
-  #' If there are more than one gfe_ID, look at the data. Possible cases:
-  #' - there are multiple time series --> check in all_areas_nuseds to see if 
-  #' there is a field that can help solving the issue. 
-  #' - Only a few data points have been attributed the wrong GFE_ID or IndexId
-  
-  output <- data.frame(IndexId = iid,
-                       GFE_ID = gfe_id,
-                       nb_dataPt = NA,
-                       nb_dataPt_overlap = NA,           # percentage of data points overlapping with others
-                       nb_dataPt_overlapPercent = NA,
-                       action = NA, 
-                       iid_i = iid_i,
-                       WATERBODY = NA,
-                       SYSTEM_SITE = NA,
-                       CU_NAME = NA,
-                       CU_TYPE = NA,
-                       method = NA,
-                       comment = NA)
-  
-  yrs <- (min(all_areas_nuseds_cut$Year, na.rm = T)-10):max(all_areas_nuseds_cut$Year)
-  
-  # method
-  output$method <- sapply(X = gfe_id, FUN = function(gfeid){
-    # gfeid <- gfe_id[2]
-    condition <- all_areas_nuseds_cut$GFE_ID == gfeid
-    out <- unique(all_areas_nuseds_cut$ENUMERATION_METHODS[condition])
-    out <- paste(out, collapse = " ; ")
-    return(out)
-  })
-  
-  # WATERBODY
-  output$WATERBODY <- sapply(X = gfe_id, FUN = function(gfeid){
-    # gfeid <- gfe_id[1]
-    condition <- all_areas_nuseds_cut$GFE_ID == gfeid
-    out <- unique(all_areas_nuseds_cut$WATERBODY[condition])
-    if(length(out) > 1){
-      print(paste("Multiple values for WATERBODY at iid_i = ",iid_i))
-    }
-    return(out)
-  })
-  
-  # SYSTEM_SITE (in conservation_unit_system_sites)
-  output$SYSTEM_SITE <- sapply(X = gfe_id, FUN = function(gfeid){
-    # gfeid <- gfe_id[1]
-    condition <- conservation_unit_system_sites$GFE_ID == gfeid & 
-      conservation_unit_system_sites$IndexId == iid
-    out <- unique(conservation_unit_system_sites$SYSTEM_SITE[condition])
-    if(length(out) > 1){
-      print(paste("Multiple values for SYSTEM_SITE at iid_i = ",iid_i))
-    }else if(length(out) == 0){
-      out <- NA
-    }
-    return(out)
-  })
-  
-  #
-  output$CU_NAME <- sapply(X = gfe_id, FUN = function(gfeid){
-    # gfeid <- gfe_id[1]
-    condition <- conservation_unit_system_sites$GFE_ID == gfeid & 
-      conservation_unit_system_sites$IndexId == iid
-    out <- unique(conservation_unit_system_sites$CU_NAME[condition])
-    if(length(out) > 1){
-      print(paste("Multiple values for CU_NAME at iid_i = ",iid_i))
-    }else if(length(out) == 0){
-      out <- NA
-    }
-    return(out)
-  })
-  
-  output$CU_TYPE <- sapply(X = gfe_id, FUN = function(gfeid){
-    # gfeid <- gfe_id[1]
-    condition <- conservation_unit_system_sites$GFE_ID == gfeid & 
-      conservation_unit_system_sites$IndexId == iid
-    out <- unique(conservation_unit_system_sites$CU_TYPE[condition])
-    return(out)
-  })
-  
-  # comment 1: there is no MAX_ESTIMATE data at all
-  comments_l <- list()
-  c_i <- 1
-  comments_l[[c_i]] <- rep("",length(gfe_id))
-  names(comments_l)[c_i] <- "Data_any"
-  
-  # comment 2: either the IndexId is not present in conservation_unit_system_sites, 
-  # or it is but it is associated with another(s) GFE_ID
-  c_i <- c_i + 1
-  comments_l[[c_i]] <- rep("",length(gfe_id))
-  
-  # if series are not in CUSS:
-  if(all(is.na(output$SYSTEM_SITE))){
-    condition <- conservation_unit_system_sites$IndexId == iid
-    gfeId_cuss <- conservation_unit_system_sites$GFE_ID[condition]
-    
-    # 
-    if(length(gfeId_cuss) == 0){
-      comments_l[[c_i]] <- rep("IndexId not present in conservation_unit_system_sites",
-                               length(gfe_id))
-    }else{
-      comments_l[[c_i]] <- rep(paste("Different GFE_ID in conservation_unit_system_sites:",gfeId_cuss),
-                               length(gfe_id))
-    }
-  }
-  names(comments_l)[c_i] <- "SYSTEM_SITE"
-  
-  # If there are only NAs for MAX_ESTIMATE
-  if(sum(!is.na(all_areas_nuseds_cut$MAX_ESTIMATE)) == 0){
-    
-    # output$comment <- "only NAs for field MAX_ESTIMATE"
-    comments_l$Data_any <- rep("No data for this population",length(gfe_id))
-    
-    output$nb_dataPt <- 0
-    output$action <- "remove"
-    
-  }else{
-    
-    plot_IndexId_GFE_ID_fun(IndexIds = iid, all_areas_nuseds = all_areas_nuseds)
-    legend("topright",paste("iid_i =",iid_i),bty = "n")
-    legend("top",c("SYSTEM_SITE",output$SYSTEM_SITE), bty = 'n')
-    
-    for(gfeid in gfe_id){
-      # gfeid <- gfe_id[1]
-      
-      dataHere <- all_areas_nuseds_cut[all_areas_nuseds_cut$GFE_ID == gfeid,]
-      dataHere <- dataHere[order(dataHere$Year),c("MAX_ESTIMATE","WATERBODY","Year")]
-      
-      nb_dataPt <-  sum(!is.na(dataHere$MAX_ESTIMATE))
-      output$nb_dataPt[output$GFE_ID == gfeid] <- nb_dataPt
-      
-      # if there is not MAX_ESTIMATE data:
-      if(sum(!is.na(dataHere$MAX_ESTIMATE)) == 0){
-        output$action[output$GFE_ID == gfeid] <- "remove"
-        output$comment[output$GFE_ID == gfeid] <- "only NAs for field MAX_ESTIMATE"
-        
-        # if there is MAX_ESTIMATE data:
-      }else{
-        # output$action[output$GFE_ID == gfeid] <- T
-        
-        # check if there are duplicated years in this time series
-        if(sum(duplicated(dataHere$Year)) > 0){
-          print("There are duplicated year here:")
-          yr_dupli <- dataHere$Year[duplicated(dataHere$Year)]
-          print(dataHere[dataHere$Year %in% yr_dupli,])
-        }
-        
-        # check if there are duplicated MAX_ESTIMATE - Year with the other time series
-        # in all_areas_nuseds_cut:
-        if(nrow(dupli) > 0){
-          
-          # are there data points in dupli
-          merge <- merge(x = dataHere[,c("MAX_ESTIMATE","Year")],
-                         y = dupli)
-          nb_dupli <- nrow(merge)
-          
-          if(nb_dupli > 0){
-            output$nb_dataPt_overlap[output$GFE_ID == gfeid] <- nb_dupli
-            percent <- round(nb_dupli / nb_dataPt * 100,2)
-            output$nb_dataPt_overlapPercent[output$GFE_ID == gfeid] <- percent
-          }
-          
-        }else{
-          output$nb_dataPt_overlap[output$GFE_ID == gfeid] <- 0
-        }
-      }
-    } # end of for(gfeid in gfe_id)
-  } # end of else if(there is no data)
-  
-  output$comment <- sapply(X = 1:nrow(output), FUN = function(r){
-    # r <- 2
-    commentsHere <- sapply(X = comments_l, FUN = function(c){
-      return(c[r])
-    })
-    commentsHere <- commentsHere[commentsHere != ""]
-    if(length(commentsHere) == 1){
-      out <- commentsHere
-    }else if(length(commentsHere) > 1){
-      out <- paste(commentsHere, collapse = " ; ")
-    }else{
-      out <- ""
-    }
-    return(out)
-  })
-  
-  if(is.null(rep(IndexId_GFE_ID_dupli,2))){
-    IndexId_GFE_ID_dupli <- output
-  }else{
-    IndexId_GFE_ID_dupli <- rbind(IndexId_GFE_ID_dupli,output)
-  }
-}
-
-# View(IndexId_GFE_ID_dupli)
-head(IndexId_GFE_ID_dupli)
-nrow(IndexId_GFE_ID_dupli) # 107
-
-IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$nb_dataPt_overlap > 0 & !is.na(IndexId_GFE_ID_dupli$nb_dataPt_overlap),]
-
-IndexId_GFE_ID_dupli$iid_i[IndexId_GFE_ID_dupli$IndexId == "SX_45525"]
-
-IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$IndexId == "CM_47925",]
-IndexId_GFE_ID_dupli[grepl("46602",IndexId_GFE_ID_dupli$IndexId),]
-IndexId_GFE_ID_dupli[grepl("46582",IndexId_GFE_ID_dupli$IndexId),]
-
-# write.csv(IndexId_GFE_ID_dupli,paste0(wd_output,"/IndexId_GFE_ID_missmatched.csv"),
-#           row.names = F)
-
-iid_i <- 2
-IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$iid_i == iid_i,]
-plot_IndexId_GFE_ID_fun(IndexIds = IndexId_GFE_ID_dupli$IndexId[IndexId_GFE_ID_dupli$iid_i == iid_i][1],
-                        all_areas_nuseds = all_areas_nuseds)
-legend("topright",paste("iid_i =",iid_i),bty = "n")
-
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 35, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-#'** Case 1: all/most the data points overlap with other time series **
-condition <- IndexId_GFE_ID_dupli$nb_dataPt_overlap > 0 &
-  !is.na(IndexId_GFE_ID_dupli$nb_dataPt_overlap)
-unique(IndexId_GFE_ID_dupli$iid_i[condition])
-#' iid_i: 28, 30, and also 35 (5, 13, 16 are not clear overlaps)
-#' Check the series kept is in CUSS
-
-#' - looking at iid_i 28 (related to 30):
-#'    - 3rd plot: the two blue data points with IndexId = CN_46891 & GFE_ID = 2466 
-#'      overlap with the red time series of IndexId = CN_46892 & GFE_ID = 2466 
-#'      TODO: remove the two data points.
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 28, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-removed <- data.frame(IndexId = c("CN_46891"),
-                      GFE_ID = 2466)
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "The two points are duplicates of series IndexId = CN_46892 & GFE_ID = 2466"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-colNuSEDS <- c("SPECIES","IndexId","GFE_ID","WATERBODY","Year","MAX_ESTIMATE")
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
-                                           toRemove = removed, 
-                                           fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 309643
-
-#' - looking at iid_i 28 (related to 30): continue:
-#'   - bottom plot: the blue series (IndexId = CN_46891 & GFE_ID = 2467) overlaps 
-#'     with the red one (IndexId = CN_46891 & GFE_ID = 290)
-#'     TODO: remove the blue time series
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 28, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-removed <- data.frame(IndexId = c("CN_46891"),
-                      GFE_ID = 2467)
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "the 5 points are duplicates of series IndexId = CN_46891 & GFE_ID = 290"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
-                                           toRemove = removed, 
-                                           fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 309638
-
-#' - looking at iid_i 30 (related to 28): 
-#'    - bottom plot: the blue data points (IndexId = CN_46892 & GFE_ID = 290)  
-#'      overlaps with the red time series (IndexId = CN_46892 & GFE_ID = 2466), 
-#'      except for the 5th point, which overlaps with the red series in the plot 
-#'      above (IndexId = CN_46891 & GFE_ID = 290)
-#'      TODO: 
-#'        - in blue series in the bottom plot: add the 3rd and 4th point to 
-#'          the red series (IndexId = CN_46892 & GFE_ID = 2466), discard the other
-#'          points.
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 30,
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-condition_CN_46892_290 <- all_areas_nuseds$IndexId == "CN_46892" & 
-  all_areas_nuseds$GFE_ID == 290
-condition_CN_46892_2466 <- all_areas_nuseds$IndexId == "CN_46892" & 
-  all_areas_nuseds$GFE_ID == 2466
-condition_CN_46891_290 <- all_areas_nuseds$IndexId == "CN_46891" & 
-  all_areas_nuseds$GFE_ID == 290
-
-# the blue time series in the bottom plot:
-data <- all_areas_nuseds[condition_CN_46892_290,colNuSEDS]
-data$action <- NA
-
-# Remove data points overlapping with the red time series in bottom plot or being NAs
-data$action <- sapply(X = 1:nrow(data), FUN = function(r){
-  # r <- 9
-  yr_here <- data$Year[r]
-  maxEstim_here <- data$MAX_ESTIMATE[r]
-  
-  if(is.na(maxEstim_here)){
-    out <- "remove"
-  }else{
-    # look if value is in red time series bottom plot:
-    notIn_CN_46892_2466 <- all_areas_nuseds[condition_CN_46892_2466,]$Year == yr_here &
-      all_areas_nuseds[condition_CN_46892_2466,]$MAX_ESTIMATE == maxEstim_here &
-      !is.na(all_areas_nuseds[condition_CN_46892_2466,]$MAX_ESTIMATE)
-    
-    notIn_CN_46891_290 <- all_areas_nuseds[condition_CN_46891_290,]$Year == yr_here &
-      all_areas_nuseds[condition_CN_46891_290,]$MAX_ESTIMATE == maxEstim_here &
-      !is.na(all_areas_nuseds[condition_CN_46891_290,]$MAX_ESTIMATE)
-    
-    if(any(notIn_CN_46892_2466)){ # if overlap with red time series in bottom plot
-      out <- "remove"
-    }else if(any(notIn_CN_46891_290)){ # if it overlaps with red time series in 2nd plot
-      out <- "remove"
-    }else{
-      out <- "add"
-    }
-  }
-  return(out)
-})
-
-#' Add the two data points from series IndexId = CN_46892 & GFE_ID = 290 to 
-#' series IndexId = CN_46892 & GFE_ID = 2466
-data_add <- data[data$action == "add",]
-for(r in 1:nrow(data_add)){
-  # r <- 1
-  nuseds_CN_46892_290 <- all_areas_nuseds[condition_CN_46892_290,]
-  condition <- nuseds_CN_46892_290$Year == data_add$Year[r]
-  row_new <- nuseds_CN_46892_290[condition,]
-  row_new$GFE_ID <- 2466
-  row_new$WATERBODY <- unique(all_areas_nuseds$WATERBODY[condition_CN_46892_2466])
-  all_areas_nuseds <- rbind(all_areas_nuseds,row_new)
-}
-
-nrow(all_areas_nuseds) # 
-
-# Now remove the series IndexId = CN_46892 & GFE_ID = 290
-removed <- data.frame(IndexId = c("CN_46892"),
-                      GFE_ID = 290)
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "3 data points are duplicates of series IndexId = CN_46892 & GFE_ID = 2466, two data points were added to the latter, remaining one is duplicate of series IndexId = CN_46891 & GFE_ID = 290"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
-                                           toRemove = removed, 
-                                           fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 309631
-
-#' - looking at iid_i 35: 
-#'    - the point in IndexId = CN_46801 & GFE_ID = 33103 is a duplicate of series
-#'    series IndexId = CN_46801 & GFE_ID = 281
-#'    TODO: remove the point
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 35, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-IndexId_GFE_ID_dupli$iid_i[IndexId_GFE_ID_dupli$IndexId == "CN_46801"]
-
-removed <- data.frame(IndexId = c("CN_46801"),
-                      GFE_ID = 33103)
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "the point is a duplicate of series IndexId = CN_46801 & GFE_ID = 281"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
-                                           toRemove = removed, 
-                                           fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 309630 310523
-
-#'** Case 2: WATERBODY != SYSTEM_SITE match ** 
-#' 39, 40
-#' - for 39: 
-#'    TODO: we simply remove the one blue data point in bottom plot (is is not in
-#'    cuss)
-cond <- IndexId_GFE_ID_dupli$WATERBODY != IndexId_GFE_ID_dupli$SYSTEM_SITE &
-  !is.na(IndexId_GFE_ID_dupli$WATERBODY) & 
-  !is.na(IndexId_GFE_ID_dupli$SYSTEM_SITE)
-IndexId_GFE_ID_dupli[cond,]
-
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 39, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-# check if the series is in cuss --> it is not
-cond <- conservation_unit_system_sites$IndexId == "CM_47907" &
-  conservation_unit_system_sites$GFE_ID == 5
-conservation_unit_system_sites[cond,1:5]
-
-removed <- data.frame(IndexId = c("CM_47907"),
-                      GFE_ID = 5)
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "There is only one data point and the series is not in CUSS ; close to series IndexId = CM_47907 & GFE_ID = 7"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
-                                           toRemove = removed, 
-                                           fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 309629 310522
-
-#' - for 40: the blue data point in the bottom panel (IndexId = SX_45182 & GFE_ID = 1327)
-#'   seems to belong to the red series in middle plot (IndexId = SX_52310 & GFE_ID = 1327)
-#'   Additionally, the series (IndexId = SX_45182 & GFE_ID = 1327) but both 
-#'   (IndexId = SX_45182 & GFE_ID = 7990630) and (IndexId = SX_52310 & GFE_ID = 1327) are. 
-#'   TODO: move the blue dot to series IndexId = SX_45182 & GFE_ID = 7990630 because
-#'   (i) it is the same species and (ii) the series exists in CUSS.
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 40,
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-cond <- conservation_unit_system_sites$IndexId == "SX_45182"
-conservation_unit_system_sites$GFE_ID[cond]
-# --> IndexId = SX_45182 & GFE_ID = 1327 is not in CUSS
-# --> IndexId = SX_45182 & GFE_ID = 7990630 is in CUSS
-
-cond <- conservation_unit_system_sites$GFE_ID == 1327
-conservation_unit_system_sites$IndexId[cond]
-# --> IndexId = SX_52310 & GFE_ID = 1327 is in CUSS
-
-removed <- data.frame(IndexId = c("SX_45182"),
-                      GFE_ID = 1327)
-removed$dataset <- "all_areas_nuseds"
-removed$comment <- "The one data point moved to series IndexId = SX_45182 & GFE_ID = 7990630"
-removed_all <- rbind(removed_all,removed)
-
-condition_SX_45182_1327 <- all_areas_nuseds$IndexId == "SX_45182" &
-  all_areas_nuseds$GFE_ID == 1327
-all_areas_nuseds[condition_SX_45182_1327,]
-
-# Get SYSTEM_SITE for GFE_ID = 7990630
-cond <- conservation_unit_system_sites$IndexId == "SX_45182" & 
-  conservation_unit_system_sites$GFE_ID == 7990630
-SYSTEM_SITE <- conservation_unit_system_sites$SYSTEM_SITE[cond] # "BEDWELL SYSTEM"
-
-# all_areas_nuseds[condition_SX_45182_1327,]$IndexId <- "SX_52310"
-all_areas_nuseds[condition_SX_45182_1327,]$GFE_ID <- 7990630
-all_areas_nuseds[condition_SX_45182_1327,]$WATERBODY <- SYSTEM_SITE
-
-#'** Case 3: there is only one SYSTEM_SITE matching the WATERBODIES ** 
-#' 1, 2, 4, 8, 11, 13, 14, 16, 17, 20, 21, 23, 24, 25, 27, 31, 32, 
-#' with only one or two data points for certain series: 7, 9, 12, 15, 22, 37, 39, 41
-#' with clear continuity: 3, 5, 10, 18, 26, 35
-#' to show: 1, 5, 23
-#' TODO: nothing for now
-cond <- is.na(IndexId_GFE_ID_dupli$SYSTEM_SITE)
-unique(IndexId_GFE_ID_dupli$iid_i[cond])
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 23, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-#'** Case 4: the population is not present in conservation_unit_system_sites **
-#' 19, 29
-#' TODO: remove? --> YES, spillover from a CU?...
-IndexId_GFE_ID_dupli[grepl("IndexId not present in conservation_unit_system_sites",
-                           IndexId_GFE_ID_dupli$comment),]
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 19, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-# OLD fixes not implemented for Case 4 ------
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 37, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-#' Check in the cases where there are only a few data points:
-#' - for 7: this data point is not a duplicate. We could either remove it or add 
-#'   it to the other time series.
-#'   TODO: add it to other series (IndexId = CN_48448 & GFE_ID = 443)
-condition <- IndexId_GFE_ID_dupli$iid_i == 7 & is.na(IndexId_GFE_ID_dupli$SYSTEM_SITE)
-is_MAX_ESTIMATE_duplicate_fun(IndexId = IndexId_GFE_ID_dupli$IndexId[condition], 
-                              GFE_ID = GFE_ID <- IndexId_GFE_ID_dupli$GFE_ID[condition], 
-                              all_areas_nuseds = all_areas_nuseds)
-
-removed <- data.frame(IndexId = c("CN_48448"),
-                       GFE_ID = c("19723"))
-removed$comment <- "the data point was added to series IndexId = CN_48448 & GFE_ID = 443"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds$GFE_ID[condition] <- 443
-
-#' - for 9:
-#'    - in top panel the two blue points (IndexId = CN_50619 & GFE_ID = 824) are
-#'      duplicates of the red time series (IndexId = CN_50618 & GFE_ID = 824).
-#'      The series exist in conservation_unit_system_sites with the same CU describers
-#'      TODO: remove the blue points from both all_areas_nuseds and 
-
-removed <- data.frame(IndexId = c("CN_50619"),
-                       GFE_ID = c("824"))
-removed$comment <- "the two points are (close) duplicates of series IndexId = CN_50618 & GFE_ID = 824"
-removed_all <- rbind(removed_all,removed)
-
-condition1 <- conservation_unit_system_sites$IndexId == "CN_50619" &
-  conservation_unit_system_sites$GFE_ID == removed$GFE_ID
-condition2 <- conservation_unit_system_sites$IndexId == "CN_50618" &
-  conservation_unit_system_sites$GFE_ID == removed$GFE_ID
-rbind(conservation_unit_system_sites[condition1,],
-      conservation_unit_system_sites[condition2,])
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-condition <- all_areas_nuseds$IndexId =="CN_50618" &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID &
-  all_areas_nuseds$Year %in% c(1996,2001)
-all_areas_nuseds[condition,colNuSEDS]
-
-overlap_two_timeSeries_fun(IndexIds = c("CN_50618","CN_50619"),
-                           GFE_IDs = 824, 
-                           all_areas_nuseds = all_areas_nuseds)
-
-all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
-                                           removed = removed)
-nrow(all_areas_nuseds) # 412345
-
-conservation_unit_system_sites <- remove_rows_fields_fun(dataframe = conservation_unit_system_sites, 
-                                                         removed = removed)
-nrow(conservation_unit_system_sites) # 7143
-
-#'    - in the 3rd panel: the red point (IndexId = CN_50618 & GFE_ID = 446068199)
-#'      has the WATERBODY = "Clearwater Creek", and it is CLEARWATER CREEK in series
-#'      second panel (IndexId = CN_50618 & GFE_ID = 446068199)
-#'      TODO: move the one point to the other series
-
-removed <- data.frame(IndexId = c("CN_50618"),
-                       GFE_ID = c("446068199"))
-removed$comment <- "the one point was moved to series IndexId = CN_50618 & GFE_ID = 2618"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds$GFE_ID[condition] <- 2618
-
-#' - for 12:
-#'    - in bottom plot: the blue series (IndexId = CN_3333 & GFE_ID = 1194) does not
-#'      exist in conservation_unit_system_sites, but the red series in top panel
-#'      does
-#'      TODO: place the two blue points in series IndexId = CN_3333 & GFE_ID = 23735
-conservation_unit_system_sites[conservation_unit_system_sites$SYSTEM_SITE == "NANAIMO RIVER",]
-removed <- data.frame(IndexId = c("CN_3333"),
-                       GFE_ID = c("1194"))
-removed$comment <- "the two points were moved to series IndexId = CN_3333 & GFE_ID = 23735"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds$GFE_ID[condition] <- 23735
-
-NOTE WATERBODY MUST BE UPDATED TOO !!!
-
-#' - for 37:
-#'    - in bottom plot: the blue point (IndexId = PKO_51094 & GFE_ID = 489440637)
-#'      seem to be part of the other (red) series (IndexId = PKO_51094 & GFE_ID = 872).
-#'      GFE_ID = 489440637 is not in conservation_unit_system_sites.
-#'      TODO: move the blue point in other time series:
-unique(conservation_unit_system_sites[conservation_unit_system_sites$GFE_ID == 489440637,]$SYSTEM_SITE)
-removed <- data.frame(IndexId = c("PKO_51094"),
-                       GFE_ID = c("489440637"))
-removed$comment <- "the one point was moved to series IndexId = PKO_51094 & GFE_ID = 872"
-removed_all <- rbind(removed_all,removed)
-
-condition <- all_areas_nuseds$IndexId == removed$IndexId &
-  all_areas_nuseds$GFE_ID == removed$GFE_ID
-all_areas_nuseds[condition,colNuSEDS]
-
-all_areas_nuseds$GFE_ID[condition] <- 872
-
-#' - for 39:
-
-BRUNO IS HERE
-
-unique(conservation_unit_system_sites[conservation_unit_system_sites$GFE_ID == 2518,]$SYSTEM_SITE)
-
-
-#' Case 4: WATERBODY and SYSTEM_SITE match
-#' 6
-#' TODO: delete or combine the data? --> SUM?
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = 19, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-condition <- IndexId_GFE_ID_dupli$iid_i == 6
-overlap_two_timeSeries_fun(IndexIds = unique(IndexId_GFE_ID_dupli$IndexId[condition]),
-                           GFE_IDs = unique(IndexId_GFE_ID_dupli$GFE_ID[condition]),
-                           all_areas_nuseds = all_areas_nuseds)
-
-IndexId_GFE_ID_dupli[IndexId_GFE_ID_dupli$IndexId == "SX_45524",]
-
-
-
-
-
-
-
-#' Case 7: IndexId is present in conservation_unit_system_sites but under a 
-#' different GFE_ID
-#' NA
-IndexId_GFE_ID_dupli[grepl("ifferent GFE_ID in conservation_unit_system_sites",
-                           IndexId_GFE_ID_dupli$comment),]
-
-
-
-
-
-#' See if I can figure out how to spot IndexIds typos: a same population was given
-#' the wrong IndexId, which would explain why certain IndexIds have multiple 
-#' GFE_ID:
-
-iid_i <- 6
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = iid_i, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-d <- all_areas_nuseds[all_areas_nuseds$IndexId == "SX_45525",]
-
-conservation_unit_system_sites[conservation_unit_system_sites$IndexId == "SX_45524",]
-
-
-
-#' Comments:
-#' - top panel: looks like it could be the 1st part of the series for SX_3302
-#' - duplicate time series for SX_3302 --> one of them if wrong
-#' SOLUTION?:
-#' - SX_3302 in GFE_ID 3444 is in fact SX_3325?
-#' - SX_3302 in GFE_ID 3416 is in fact SX_3310?
-
-iid_i <- 36
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = iid_i, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-iid_i <- 23
-plot_IndexId_GFE_ID_COMBO_fun(iid_i = iid_i, 
-                              IndexId_GFE_ID_dupli = IndexId_GFE_ID_dupli, 
-                              all_areas_nuseds = all_areas_nuseds)
-
-
-
-
-
-# check WATERBODY - GFE_ID match:
-d <- unique(all_areas_nuseds[,c("AREA","GFE_ID","WATERBODY")])
-GFE_ID_dupli <- d$GFE_ID[duplicated(d$GFE_ID)]
-GFE_ID_dupli
-
-WATERBODY_dupli <- d$WATERBODY[duplicated(d$WATERBODY)]
-WATERBODY_dupli
-
-dd <- d[d$WATERBODY %in% WATERBODY_dupli,]
-dd[order(dd$WATERBODY),]
-
-all_areas_nuseds$AREA
-
-
-fields_def$all_areas_nuseds
-
-
-#' Check if the IndexId, GFE_ID and the combination between the two is 
-#' present in conservation_unit_system_sites:
-IndexId_GFE_ID_dupli$IndexId_in_cuss <- F
-IndexId_GFE_ID_dupli$GFE_ID_in_cuss <- F
-IndexId_GFE_ID_dupli$IndexId_GFE_ID_in_cuss <- F
-
-condition <- IndexId_GFE_ID_dupli$IndexId %in% conservation_unit_system_sites$IndexId
-IndexId_GFE_ID_dupli$IndexId_in_cuss[condition] <- T
-
-condition <- IndexId_GFE_ID_dupli$GFE_ID %in% conservation_unit_system_sites$GFE_ID
-IndexId_GFE_ID_dupli$GFE_ID_in_cuss[condition] <- T
-
-condition <- sapply(X = 1:nrow(IndexId_GFE_ID_dupli), FUN = function(r){
-                     # r <- 1
-                     merge <- merge(x = IndexId_GFE_ID_dupli[r,c("IndexId","GFE_ID")],
-                                    y = conservation_unit_system_sites[,c("IndexId","GFE_ID")])
-                     out <- nrow(merge) == 1
-                   })
-IndexId_GFE_ID_dupli$GFE_ID_in_cuss[condition] <- T
-
-
-View(IndexId_GFE_ID_dupli)
-
-hist(all_areas_nuseds$GFE_ID)
-hist(IndexId_GFE_ID_dupli$GFE_ID)
-
-iid_i <- 7
-iid <- unique(IndexId_GFE_ID_dupli$IndexId[IndexId_GFE_ID_dupli$iid_i == iid_i])
-gfeid <- IndexId_GFE_ID_dupli$GFE_ID[IndexId_GFE_ID_dupli$iid_i == iid_i]
-dataCheck <- lapply(X = gfeid, FUN = function(gfeid){
-  out <- all_areas_nuseds[all_areas_nuseds$IndexId == iid & 
-                            all_areas_nuseds$GFE_ID == gfeid,]
-  return(out)
-})
-dataCheck <- do.call(rbind,dataCheck)
-View(dataCheck)
-
-
-d1 <- all_areas_nuseds[]
-
-fields_def$all_areas_nuseds$GFE_ID
-
-duplicated_pop_nused
-
-duplicated_pop_nused_df <- NULL
-for(iid in duplicated_pop_nused){
-  # iid <- duplicated_pop_nused[3]
-  all_areas_nuseds_cut <- all_areas_nuseds[all_areas_nuseds$IndexId == iid,]
-  colSelect <- c("IndexId","WATERBODY","GFE_ID")
-  data_unique <- unique(all_areas_nuseds_cut[,colSelect])
-  
-  # case where is is duplicated dates but one unique location:
-  if(nrow(data_unique) == 1){
-    
-    yr_duplicated <- all_areas_nuseds_cut$Year[duplicated(all_areas_nuseds_cut$Year)]
-    
-    print("Only location but duplicated dates:")
-    print(all_areas_nuseds_cut[all_areas_nuseds_cut$Year %in% yr_duplicated,])
-    
-    data_unique$year_start <- min(all_areas_nuseds_cut$Year)
-    data_unique$year_end <- max(all_areas_nuseds_cut$Year)
-    
-  }else{ # case where there are multiple locations for a single IndexId
-    
-    year_range_m <- sapply(X = data_unique$GFE_ID, FUN = function(gfe){
-      # gfe <- data_unique$GFE_ID[1]
-      dataHere <- all_areas_nuseds_cut[all_areas_nuseds_cut$GFE_ID == gfe,]
-      years <- dataHere$Year
-      yr_range <- range(years,na.rm = T)
-      if(sum(duplicated(years)) > 0){
-        print(paste("Duplicated years for pop:",iid,", GFE_ID:",gfe))
-      }
-      return(yr_range)
-    })
-    data_unique$year_start <- year_range_m[1,]
-    data_unique$year_end <- year_range_m[2,]
-  }
-  
-  if(is.null(duplicated_pop_nused_df)){
-    duplicated_pop_nused_df <- data_unique
-  }else{
-    duplicated_pop_nused_df <- rbind(duplicated_pop_nused_df,data_unique)
-  }
-  
-  # print(unique(all_areas_nuseds_cut[condition,colSelect]))
-}
-
-#
-#' ** CHECK: NOT USED association between POPULATION and IndexId in all_areas_nuseds **
-#' NOT NEEDED PER SE BECAUSE POPULATION is not to be used as it is not a reliable
-#' field.
-#' It should be a ONE TO ONE relationship, except for Pink were a same 
-#' POPULATION can be assocated to two Pink one, one Even, one Odd.
-IndexId_POPULATION <- unique(all_areas_nuseds[,c("IndexId","POPULATION")])
-sum(duplicated(IndexId_POPULATION$IndexId))    # 0
-sum(duplicated(IndexId_POPULATION$POPULATION)) # 1764
-duplicated_Pop <- IndexId_POPULATION$POPULATION[duplicated(IndexId_POPULATION$POPULATION)]
-#' Many of these correspond to Pink Odd vs. Even population, which is normal. 
-
-#' Check if for the Pink, it is systematically a one Even and one Odd, flag if not.
-IndexId_POPULATION_Pink <- IndexId_POPULATION[grepl("[P|p]ink",IndexId_POPULATION$POPULATION),]
-duplicated_Pop_Pink <- duplicated_Pop[grepl("[P|p]ink",duplicated_Pop)]
-for(pop in duplicated_Pop_Pink){
-  dataHere <- IndexId_POPULATION_Pink[IndexId_POPULATION_Pink$POPULATION == pop,]
-  
-  PKO <- any(sapply(X = 1:nrow(dataHere),
-                    FUN = function(r){grepl("PKO",dataHere[r,]$IndexId)}))
-  PKE <- any(sapply(X = 1:nrow(dataHere),
-                    FUN = function(r){grepl("PKE",dataHere[r,]$IndexId)}))
-  
-  if(!(PKO & PKE)){
-    print(dataHere)
-  }
-}
-# All good.
-
-#' Check if there are non-pink populations:
-duplicated_Pop <- duplicated_Pop[!grepl("[P|p]ink",duplicated_Pop)]
-IndexId_POP_dupli <- IndexId_POPULATION[IndexId_POPULATION$POPULATION %in% duplicated_Pop,]
-IndexId_POP_dupli <- IndexId_POP_dupli[order(IndexId_POP_dupli$POPULATION),]
-IndexId_POP_dupli
-
-#' For each POPULATION, plot the population dynamics of the different IndexId.
-#' In each case, retain the population that has the longest time series and 
-#' remove the other one (we can see that there is barely any data for them).
-IndexIdToRremove <- c()
-layout(matrix(1:length(unique(IndexId_POP_dupli$POPULATION)),ncol = 2))
-par(mar = c(4.5,4.5,.5,.5))
-for(pop in unique(IndexId_POP_dupli$POPULATION)){
-  # pop <- unique(IndexId_POP_dupli$POPULATION)[1]
-  nusedsHere <- all_areas_nuseds[all_areas_nuseds$POPULATION == pop,]
-  IndexIdHere <- unique(nusedsHere$IndexId)
-  yr_min <- min(nusedsHere$Year)
-  yr_max <- max(nusedsHere$Year)
-  yrs <- yr_min:yr_max
-  pop_max <- max(nusedsHere$Returns, na.rm = T)
-  
-  plot(NA, xlim = c(yr_min,yr_max), ylim = c(0,pop_max), 
-       ylab = "Returns", xlab = "Years", main = "")
-  series <- list()
-  count <- 1
-  for(iid in IndexIdHere){
-    s_yr <- nusedsHere[nusedsHere$IndexId == iid, c("Year","Returns")]
-    if(length(yrs[!yrs %in% s_yr$Year]) > 0){
-      s_yr_add <- data.frame(Year = yrs[!yrs %in% s_yr$Year],
-                             Returns = NA)
-      s_yr <- rbind(s_yr,s_yr_add)
-    }
-    s_yr <- s_yr[order(s_yr$Year),]
-    series[[count]] <- s_yr
-    count <- count + 1
-  }
-  cols <- viridis(n = length(IndexIdHere))
-  for(i in 1:length(series)){
-    lines(x = yrs, y = series[[i]]$Returns, lty = 1, lwd = 3, col = cols[i])
-  }
-  legend("topright",IndexIdHere, col = cols, bty = "n", lwd = 3)
-  legend("topleft",pop, bty = "n")
-  
-  # select the population to remove as a function of the length of the data
-  dataPtsNb <- sapply(X = series, function(s){sum(!is.na(s$Returns))})
-  toKeep <- dataPtsNb == max(dataPtsNb)
-  IndexIdToRremove <- c(IndexIdToRremove,
-                        IndexIdHere[!toKeep])
-}
-
-# Add CM_40836 because the data is insufficient --> DO NOT DO IT
-IndexIdToRremove <- c(IndexIdToRremove,"CM_40836")
-
-
-
-
-# Check 
-
-
-
-sum(is.na(all_areas_nuseds$WATERBODY))
-
-# looks like all_areas_nuseds$WATERBODY == conservation_unit_system_sites$SYSTEM_SITE
-sites_SYSTEM_SITE <- unique(conservation_unit_system_sites$SYSTEM_SITE)
-nused_WATERBODY <- unique(all_areas_nuseds$WATERBODY)
-sum(nused_WATERBODY %in% sites_SYSTEM_SITE) / length(nused_WATERBODY)
-sum(sites_SYSTEM_SITE %in% nused_WATERBODY) / length(sites_SYSTEM_SITE)
-
-# For those site/waterbody that don't match, is it because of populations are not
-# present in either dataset?
-SYSTEM_SITE_notIn_WATERBODY <- sites_SYSTEM_SITE[! sites_SYSTEM_SITE %in% nused_WATERBODY]
-WATERBODY_notIn_SYSTEM_SITE <- nused_WATERBODY[! nused_WATERBODY %in% sites_SYSTEM_SITE]
-sort(SYSTEM_SITE_notIn_WATERBODY)
-sort(WATERBODY_notIn_SYSTEM_SITE)
-
-SYSTEM_SITE_notIn_WATERBODY_IndexId <- sapply(X = SYSTEM_SITE_notIn_WATERBODY, 
-                                              FUN = function(ss){
-                                                dataset <- conservation_unit_system_sites[conservation_unit_system_sites$SYSTEM_SITE == ss,]
-                                                out <- unique(dataset$IndexId)
-                                              })
-
-WATERBODY_notIn_SYSTEM_SITE_IndexId <- sapply(X = WATERBODY_notIn_SYSTEM_SITE, 
-                                              FUN = function(wb){
-                                                dataset <- escapement[all_areas_nuseds$WATERBODY == wb,] # rows match in escapement and all_areas_nuseds 
-                                                out <- unique(dataset$IndexId)
-                                              })
-
-#' Look for each of the populations associated with these miss-matched site
-#' if (1) the it is present in the other dataset and if that's the case (2) find 
-#' the name of the siwze to see if there is an typo error or not.
-
-unlist(SYSTEM_SITE_notIn_WATERBODY_IndexId)
-
-sites_missmatches <- data.frame(IndexId = )
-
-for(pops_i in 1:length(SYSTEM_SITE_notIn_WATERBODY_IndexId)){
-  #' pops_i <- 1
-  pops <- SYSTEM_SITE_notIn_WATERBODY_IndexId[[pops_i]]
-  syst_site_here <- names(SYSTEM_SITE_notIn_WATERBODY_IndexId)[pops_i]
-  for(pop in pops){
-    # pop <- pops[1]
-    sapply(X = , FUN = function(){
-      
-    })
-    
-    
-    
-  }
-  
-  print(pops)
-  
-}
-
-
-
-
-conservation_unit_system_sites$SPECIES
-
-Check NuSEDS All Areas to see what the unique POP_ID is for the SYSTEM_SITE and Species combo. Seems likely that this is an error in the conservation_unit_system_sites.
-
-
-
-# Check which population match or not between the two datasets:
-IndexId_nused <- unique(escapement$IndexId)
-length(IndexId_nused) # 11474
-IndexId_sites <- unique(conservation_unit_system_sites$IndexId)
-length(IndexId_sites) # 7143
-
-
-
-
-
-View(all_areas_nuseds[escapement$SPECIES_QUALIFIED == "SE",])
-
-conservation_unit_system_sites$SPECIES_QUALIFIED
-conservation_unit_system_sites$POP_ID
-conservation_unit_system_sites$SPECIES_QUALIFIED
-
-
-escapement$IndexId <- paste(escapement$sp, PopId, sep="_")
-StatArea <- Convert2StatArea(AREA)                      # AREA is the subdistrict; # QUESTION: why doing this?
-
-# Add NCC Salmon Database Fields: SpeciesName and SpeciesId---------------------
-# @TODO - could use general ConvertSpeciesCode 
-
-# Reference table for species codes #
-# spp.tab <- data.frame(
-#   nccsdb   = c( "CM",       "CN",   "CO",     NA, "PKE", "PKO",      "SX",      "SX"),   # NCC Salmon Database (NCCSDB) Designation 
-#   nuseds   = c("Chum", "Chinook", "Coho", "Pink",    NA,    NA, "Sockeye", "Sockeye"),     # NuSEDS
-#   cu_sites = c(  "CM",      "CK",   "CO",     NA,  "PKE", "PKO",    "SEL",     "SER"), # Conservation Unit Sites
-#   stringsAsFactors = FALSE
-# )
-
-sp_salmon_names_acro_df$acronym_ncc # = spp.tab$nccsdb
-sp_salmon_names_acro_df$name # = spp.tab$nuseds
-
-unique(escapement$SPECIES)
-unique(all_areas_nuseds$SPECIES)
-
-# escapement <- merge(x = escapement,
-#                     y = data.frame(SpeciesName = sp_salmon_names_acro_df$name, 
-#                                    SpeciesId = sp_salmon_names_acro_df$acronym_ncc),
-#                     by.x = "SPECIES",
-#                     by.y = "SpeciesName",
-#                     all.x = TRUE)
-# 
-# escapement$SpeciesId[escapement$SPECIES == "Pink" & escapement$Year %% 2 == 0] <- "PKE"  # Even pink years
-# escapement$SpeciesId[escapement$SPECIES == "Pink" & escapement$Year %% 2 != 0] <- "PKO"  # Odd pink years
-# escapement$IndexId <- paste(escapement$SpeciesId, escapement$PopId, sep = "_")
-# escapement$StatArea <- Convert2StatArea(escapement$AREA)
-  
-escapement <- within(
-  data = merge(
-    x = escapement,
-    y = data.frame(SpeciesName = sp_salmon_names_acro_df$name, 
-                   SpeciesId = sp_salmon_names_acro_df$acronym_ncc),
-    by.x ="SPECIES",
-    by.y = "SpeciesName",
-    all.x = TRUE   # LEFT JOIN
-  ),
-  {
-    SpeciesId[SPECIES == "Pink" & Year %% 2 == 0] <- "PKE"  # Even pink years
-    SpeciesId[SPECIES == "Pink" & Year %% 2 != 0] <- "PKO"  # Odd pink years
-    IndexId <- paste(SpeciesId, PopId, sep="_")
-    StatArea <- Convert2StatArea(AREA)                      # AREA is the subdistrict
-  }
-)
-
-head(escapement)
-colnames(escapement)
-unique(escapement$SpeciesId)
-
-# Remove duplicated rows
-nrow(escapement) # 561548
-escapement <- distinct(escapement)
-nrow(escapement) # 411886
-
-#
-# Subset and Sort -------------------------------------------------------
-
-# Define the field for the meta data (???)
-fields <- c("Id", "SpeciesId", "IndexId", "PopId", "Year", "StatArea", "Returns")
-if(meta.data){
-  # BSC: concatenate fields with column names in escapement that are not in fields
-  fields <- c(fields, setdiff(colnames(escapement), fields)) # setdiff(x,y) is the same as: x[! x %in% y]
-}
-
-# Re-order columns
-escapement <- escapement[,fields]
-
-# Sort results, 1st by IndexId, then Year:
-escapement <- escapement[order(escapement$IndexId, escapement$Year), ]
-
-# Return ??? ------------------------------------------------------------------
-if(na.rm){
-  escapement <- subset(escapement, !is.na(Returns))
-}
-
-# Summarize escapement statistics for each stream
-
-# First, make corrections for populations with discrepancies in area assignments #
-# These errors become apparent when merging data frames later on #
-escapement[escapement$IndexId == "CO_46240",]$StatArea <- "29"
-escapement[escapement$IndexId == "PKO_51094",]$StatArea <- "12"  # BSC: there is one ""
-escapement[escapement$IndexId == "SX_45495",]$StatArea <- "120"  # BSC: already "120"
-
-escapement_wide <- dcast(melt(escapement[,c("IndexId","Year","Returns")], 
-                              id.vars = c("IndexId", "Year")),  # wide to long format
-                         IndexId + variable ~ Year,
-                         value.var = "value",
-                         fun.aggregate=sum, # Come back to this, currently won't let me widen data without aggregation function
-                         fill = 0.12345) # Filler to make sure can distinguish true zeros
-
-duplicates <- which(escapement_wide[,3:ncol(escapement_wide)][1] > 1) # BSC: ?!
-escapement_wide$IndexId[duplicated(escapement_wide$IndexId)] # BSC
-# zz <- zz[,-2] # remove column variable, bad practice
-escapement_wide <- escapement_wide[,colnames(escapement_wide) != "variable"]
-
-# Putting together extra info for final data frame #
-names(escapement_wide)
-names(stream.list)
-names(sa.cu.lk) # BSC: not used
-
-# Merging dataframes - THIS IS WHEN TO REMOVE BINNED CUs #
-escapement_streams <- merge(stream.list, 
-                            escapement_wide, 
-                            by = "IndexId")
-
-
-
-
-
-# BSC: calculate different statistics per group of unique combination of the .variables
-# IndexId is = to paste(SpeciesId, PopId, sep="_")
-# SpeciesId is = to sp_salmon_names_acro_df$acronym_ncc = the NCC Salmon Database (NCCSDB) Designation
-# PopId is = to the all_areas_nuseds$POP_ID
-# StatArea is = to Convert2StatArea(AREA), with AREA the subdistrict
-esc.summary <- ddply(.data = escapement,
-                     .variables = c("IndexId", "SpeciesId", "PopId", "StatArea"), 
-                     .fun = summarise,
-                     nrecs  = sum(!is.na(AREA)),   # Total number of NuSEDS records
-                     nnumest  = sum(!is.na(Returns)), # number of observations
-                     nins  = sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")),  # nb of observations "inspected" (?)
-                     npres = sum(ADULT_PRESENCE %in% c("PRESENT")),                   # nb observations with presence
-                     pinsrec = (sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")))/(sum(!is.na(AREA))), # proportion of observation inspected overall
-                     ppres_ins = sum(ADULT_PRESENCE %in% c("PRESENT"))/sum(ADULT_PRESENCE %in% c("NONE OBSERVED", "PRESENT")), # proportion observations presence in the inspected ones
-                     pest_pres = sum(!is.na(Returns))/sum(ADULT_PRESENCE %in% c("PRESENT")), # average returns per observation (?)
-                     Escapement.total = sum(Returns, na.rm=TRUE),
-                     Escapement.avg = mean(Returns, na.rm=TRUE),
-                     Escapement.sd   = sd(Returns, na.rm=TRUE),
-                     Escapement.se   = sd(Returns, na.rm=TRUE) / sqrt(nnumest),
-                     Year.start = min(Year, na.rm=TRUE),
-                     Year.end = max(Year, na.rm=TRUE)
-)
-
-nrow(esc.summary) # 11475
-
-# BSC: check for duplicated rows
-nrow(unique(esc.summary[,c("PopId","SpeciesId")])) # 11474 vs. 11475
-rowDupli <- which(duplicated(esc.summary[,c("PopId","SpeciesId")]))
-PopId_SpeciesId <- esc.summary[rowDupli,c("PopId","SpeciesId")]
-esc.summary[esc.summary$PopId == PopId_SpeciesId$PopId & 
-              esc.summary$SpeciesId == PopId_SpeciesId$SpeciesId,]
-
-all_areas_nuseds$AREA[all_areas_nuseds$SPECIES == "Chinook" & 
-                        all_areas_nuseds$POP_ID == 47367]
-
-
-#' BSC: how can those be the same population?
-#' Any way, it looks like there is no data for StatArea = 110:
-
-all_areas_nuseds[all_areas_nuseds$SPECIES == "Chinook" & 
-                   all_areas_nuseds$POP_ID == 47367 &
-                   all_areas_nuseds$AREA == 110,]
-
-all_areas_nuseds[all_areas_nuseds$SPECIES == "Chinook" & 
-                   all_areas_nuseds$POP_ID == 47367 &
-                   all_areas_nuseds$AREA == "29I",]
-
-escapement[escapement$IndexId == "CN_47367",]
-
-#' BSC: remove data with AREA == "29I" because it contains not data:
-removed <- escapement$IndexId == "CN_47367" & escapement$AREA == "29I"
-escapement <- escapement[!removed,]
-removed <- esc.summary$IndexId == "CN_47367" & esc.summary$StatArea == "29I"
-esc.summary <- esc.summary[!removed,]
-
-# append available meta data
-# BSC: that does not work...
-stream.list <- within(
-  data = merge(
-    x = esc.summary,
-    y = conservation_unit_system_sites,
-    by.x = c("PopId","SpeciesId"),
-    by.y = c("POP_ID","SpeciesId"),
-    all.x = TRUE
-  ),
-  {
-    # List of streams with confirmed escapement, used for calculations
-    Active <- Escapement.total > 0   
-    # List of st
-    NoEscapement <- !is.na(Escapement.total) & Escapement.total == 0
-    Surveyed <- !is.na(Escapement.avg)
-    CU <- paste0(SpeciesId, "_", CU_INDEX)
-    SITE_ID <- NA # ID  # QUESTION: this is conservation_unit_system_sites_old$X.ID. which contains only NAs and is not present in conservation_unit_system_sites ?! What's the point of it?
-  }
-)
-
-nrow(stream.list) # 11477 --> there are two extra rows --> find them
-
-# check for duplicates
-nrow(unique(stream.list[,c("PopId","SpeciesId")])) # 11474 vs. 11477
-rowDupli <- which(duplicated(stream.list[,c("PopId","SpeciesId")]))
-PopId_SpeciesId <- stream.list[rowDupli,c("PopId","SpeciesId")]
-for(i in 1:length(rowDupli)){
-  out <- stream.list[stream.list$PopId == PopId_SpeciesId$PopId[i] & 
-                       stream.list$SpeciesId == PopId_SpeciesId$SpeciesId[i],]
-  colNo <- c("FWA_WATERSHED_CDE","WATERSHED_CDE","EFFECTIVE_DT","CMNTS","PopId","SpeciesId",
-             "nrecs","nnumest","nins","npres","pinsrec","ppres_ins","pest_pres",
-             "Escapement.avg","Escapement.sd","Escapement.se","Year.start","Year.end",
-             "CU_TYPE","CU_INDEX","FULL_CU_IN","SBJ_ID","IS_INDICATOR","SITE_ID",
-             "CU","Surveyed","NoEscapement","Active","SPECIES_QUALIFIED",
-             "FAZ_ACRO","MAZ_ACRO","JAZ_ACRO","CU_NAME","CU_ACRO")
-  colYes <- colnames(stream.list)[! colnames(stream.list) %in% colNo]
-  print(out[,colYes])
-  print("***")
-}
-
-conservation_unit_system_sites[conservation_unit_system_sites$POP_ID == 7479,]$SYSTEM_SITE
-
-all_areas_nuseds
-c("SPECIES","POP_ID")
-
-conservation_unit_system_sites$SpeciesId
-
-#' SP: Check NuSEDS All Areas to see what the unique POP_ID is for the SYSTEM_SITE
-#' and Species combo. Seems likely that this is an error in the conservation_unit_system_sites.
-
-conservation_unit_system_sites[conservation_unit_system_sites$POP_ID == 45525,]$SYSTEM_SITE
-
-
-
-#' BSC: it look like for these populations (except CN_47367 above), these are 
-#' duplicates because they have the same counts but location differ slightly.
-#' - CN_7479: SYSTEM_SITE = BRIDGE RIVER vs. HIUIHILL CREEK
-#' - SX_45525: SYSTEM_SITE = NADINA CHANNEL Artificial vs. NADINA RIVER
-#' - CN_47367: same as above --> UPDATE: it was removed in esc.summary so does not appear here anymore
-
-#' TODO: decide which duplicate row to remove --> see if matters in the end.
-
-#
-# Stream List Filtering and Fixes  ---------------------------------------------
-# Drop streams without CU_INDEX values
-# drop.cuindex <- subset(stream.list, is.na(CU_INDEX))
-# message(nrow(drop.cuindex), " potential NCC streams were dropped from the NCC Salmon database master stream listing because no CU_INDEX value was available.")
-# stream.list <- subset(stream.list, !is.na(CU_INDEX))
-
-# Fix CU_NAME field that may have "<<VREQ[Bin]>>"
-# EA: I think we want to filter out binned CUs?
-# stream.list$CU_NAME <- str_replace(stream.list$CU_NAME, "<<VREQ\\[Bin\\]>>", "")
-
-# browser()
-if(legacy){
-  colnames(stream.list) <- str_replace(colnames(stream.list), "^TYPE$", "CU_TYPE")
-}
-
-# Select particular fields #
-# fields <- c('SpeciesId', "IndexId", "PopId",  "Records", "Surveys", "Active", "SYSTEM_SITE", "StatArea",
-#             "CU", "CU_NAME",  "CU_ACRO", "CU_LATITUDE", "CU_LONGITUDE",
-#             "SPECIES_QUALIFIED", "YLAT", "XLONG", "FAZ_ACRO", "MAZ_ACRO", "JAZ_ACRO",
-#             "SITE_ID",  "GFE_ID", "NUMBER_OF_SITES", "CU_TYPE",
-#             "SBJ_ID", "IS_INDICATOR", "OL_GRP_NM", "OL_GRP_N", "AREA", "ISENH", "COMMENTS", "GFE_ID_IN_NUSEDS", "POP_ID_IN_NUSEDS","CMNT", "EFFECTIVE_DT")
-# 
-# if (!all(check <- fields %in% colnames(stream.list))) {
-#   stop("Final streams listing missing fields:", paste(fields[!check], collapse=", "))
-# } 
-# # View(stream.list[c(fields)])
-# 
-# stream.list <- stream.list[fields]
-
-# CHECK Record Count -----------------------------------------------------
-# Ensure our record count is accurate
-# check <- merge(
-#   x = stream.list[c("IndexId", "nrecs")],
-#   y = as.data.frame(table(escapement$IndexId)), #  IndexId = paste(SpeciesId, PopId, sep="_")
-#   by.x = "IndexId",
-#   by.y = "Var1"       # i.e., IndexId
-# )
-
-#' BSC: same as above but easier to track the origin of the variables.
-#' Also, should this not be done before creating stream.list ???
-check <- merge(
-  x = esc.summary[c("IndexId", "nrecs")],       #  nrecs  = sum(!is.na(AREA)) per unique combination of c("IndexId", "SpeciesId", "PopId", "StatArea")
-  y = as.data.frame(table(escapement$IndexId)), #  IndexId = paste(SpeciesId, PopId, sep="_")
-  by.x = "IndexId",
-  by.y = "Var1"       # i.e., IndexId
-)
-
-if(!all(check$nrecs == check$Freq)){  # BSC:  nrecs  = sum(!is.na(AREA))
-  print(check[check$nrecs != check$Freq,])
-  stop("Record count error")
-} 
-check[check$nrecs != check$Freq,]
-
-# Check for duplications
-piv <- table(stream.list$IndexId)
-piv[piv > 1] # Print which IndexIds have duplicates
-stream.list[duplicated(stream.list$IndexId),c("PopId","SpeciesId","IndexId")]
-
-# remove <- c("CO_46240", "PKO_51094", "SX_45495") # Temporary fix for populations with duplicates (from earlier check)
-# remove2 <- c("SX_43790", "SX_47590", "SX_49234") # Temporary fix for populations with duplicates caught during transposing
-
-# streams <- filter(stream.list, !(IndexId %in% remove))
-# streams <- filter(streams, !(IndexId %in% remove2))
-
-# streams <- stream.list # BSC: no t doing this , creates too many object, makes the script not tractable 
-
-# CHECK: CU indicator ER --------------------------------------------------
-# BSC: indicate all the AREAs for each CU
-sa.cu.lk <- ddply(
-  .data = subset(stream.list, Active = TRUE),
-  .variables =   c("SpeciesId", "CU", "CU_NAME"), 
-  .fun = summarise, 
-  StatArea = paste(sort(unique(StatArea)), collapse=", ")
-)
-
-sa.cu.lk$StatArea[1]
-
-# QUESTION: What are we checking here? is not used after.
-
-# --- Part 2: Formatting output data frame with CU info and escapement info --- #
-
-# z <- filter(escapement, !(IndexId %in% remove))
-# z <- filter(z, !(IndexId %in% remove2))
-
-# z <- escapement      #  BSC: commented out
-
-# id <- unique(z$IndexId) # BSC: commented out until I see what it is used for.
-
-#z[which(z$Returns==0),]$Returns <- "ZERO"
-
-# zz <- z[,-c(1,10:18)]
-# zz <- z[,c(3,5,7)]
-
-# Widen data frame #
-# zz <- dcast(melt(z[,c(3,5,7)], id.vars = c("IndexId", "Year")), # BSC Bad practices
-# zz <- dcast(melt(z[,c("IndexId","Year","Returns")], 
-#                  id.vars = c("IndexId", "Year")),  # wide to long format
-#             IndexId + variable ~ Year,
-#             value.var = "value",
-#             fun.aggregate=sum, # Come back to this, currently won't let me widen data without aggregation function
-#             fill = 0.12345) # Filler to make sure can distinguish true zeros
-
-
-# data <- merge(stream.list, escapement_wide, by = "IndexId")
-
-# Updating "SpeciesId" for sockeye populations with river/lake specification #
-# i.e., "SX" --> "SEL" or "SER"
-escapement_streams$SpeciesId <- as.character(escapement_streams$SpeciesId)
-
-escapement_streams$SpeciesId <- ifelse(!is.na(escapement_streams$SPECIES_QUALIFIED) &
-                                      escapement_streams$SPECIES_QUALIFIED == "SEL", 
-                                    "SEL", escapement_streams$SpeciesId)
-
-escapement_streams$SpeciesId <- ifelse(!is.na(escapement_streams$SPECIES_QUALIFIED) & 
-                                      escapement_streams$SPECIES_QUALIFIED == "SER", 
-                                    "SER", escapement_streams$SpeciesId)
-
-# escapement_streams[escapement_streams$SpeciesId == "SX",][,c("SpeciesId","SPECIES_QUALIFIED")]
-
-# Cleaning up data #
-# escapement_streams$IndexId <- paste(escapement_streams$SpeciesId, escapement_streams$PopId,sep="_") # BSC: already done above for escapement
-
-# remove all non-digit characters in CU_INDEX
-escapement_streams$CU_INDEX <- as.character(gsub("\\D","", escapement_streams$CU_INDEX))
-
-escapement_streams$CU_fname <- paste(escapement_streams$SpeciesId,
-                                     escapement_streams$CU_NAME, sep="::")
-escapement_streams$CU_facro <- paste(escapement_streams$SpeciesId,
-                                     escapement_streams$CU_ACRO, sep="::")
-escapement_streams$CU_findex <- escapement_streams$FULL_CU_IN
-
-# Set all zero escapement values to NA #
-# BSC: bad practices TODO: correct --> it does not work with the new conservation_unit_system_sites because certain columns are missing
-# escapement_streams[,56:157][escapement_streams[,56:157] == 0.12345] <- " "
-# escapement_streams[,56:157][is.na(escapement_streams[,56:157])] <- " "
-
-col_dates <- colnames(escapement_streams)[colnames(escapement_streams) %in% as.character(1500:3000)]
-escapement_streams[,col_dates][escapement_streams[,col_dates] == 0.12345] <- " "
-escapement_streams[,col_dates][is.na(escapement_streams[,col_dates])] <- " "
-
-# Check out CUs that are no longer current # BSC: AND DO WHAT?! these bin, bin1 and bin2 are not used 
-noLongerCurrent <- c("bin","Bin","Deleted","VREQ[Bin]","VREQ[Extirpated]","Extirpated")
-unique(escapement_streams$CU_TYPE)
-bin <- filter(escapement_streams, CU_TYPE %in% noLongerCurrent)
-length(unique(bin$CU_findex))
-
-bin1 <- unique(bin$CU_findex)
-bin2 <- unique(conservation_unit_system_sites$FULL_CU_IN[conservation_unit_system_sites$CU_TYPE %in% noLongerCurrent])
-# bin3 <- unique(bb.cu$CU_findex[bb.cu$CU_type %in% noLongerCurrent]) # BSC: ?!
-# setdiff(bin2, bin3)
-setdiff(bin1, bin2)
-
-# Put together final data frame #
-fields <- c("PopId","SpeciesId","GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT",
-            "FAZ_ACRO","MAZ_ACRO","JAZ_ACRO","CU_fname","CU_facro","CU_findex",
-            "CU_NAME","CU_ACRO","CU_INDEX",
-            # "ISENH",
-            "IS_INDICATOR","nrecs","nins",
-            "npres","nnumest","pinsrec","ppres_ins","pest_pres",
-            # "OL_GRP_NM", # Group of statistical areas (https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/359596.pdf)
-            "StatArea","IndexId","NoEscapement")
-
-# BSC: what are the fields "ISENH" and "OL_GRP_NM"?
-
-fields[! fields %in% colnames(escapement_streams)] # "ISENH"     "OL_GRP_NM"
-c("ISENH","OL_GRP_NM")[! c("ISENH","OL_GRP_NM") %in% colnames(all_areas_nuseds)]
-c("ISENH","OL_GRP_NM")[! c("ISENH","OL_GRP_NM") %in% colnames(conservation_unit_system_sites)]
-c("ISENH","OL_GRP_NM")[! c("ISENH","OL_GRP_NM") %in% colnames(template_df)]
-
-colnames(all_areas_nuseds)[grepl(pattern = "ENH",colnames(all_areas_nuseds))]
-colnames(all_areas_nuseds)[grepl(pattern = "enh",colnames(all_areas_nuseds))]
-colnames(conservation_unit_system_sites)[grepl(pattern = "ENH",colnames(conservation_unit_system_sites))]
-colnames(conservation_unit_system_sites)[grepl(pattern = "enh",colnames(conservation_unit_system_sites))]
-
-
-# re-order columns
-# escapement_streams <- cbind(escapement_streams, escapement_streams[,56:157])
-escapement_streams <- cbind(escapement_streams[,fields], escapement_streams[,col_dates])
-
-# Add extra columns #
-length <- length(escapement_streams$IndexId)
-extras <- data.frame(ID = rep(NA, length),
-                     Indicator = rep(NA, length),
-                     Source = rep("NuSEDS", length),
-                     popMAP = rep(NA, length),
-                     EXPN = rep(NA, length),
-                     Area = escapement_streams$StatArea,
-                     IsInFiltEsc = rep(NA, length),
-                     fr_timing = rep(NA, length),
-                     Fraser_mnemonic = rep(NA, length),
-                     CD_findex.name = rep(NA, length),
-                     Reviewer = rep(NA, length),
-                     QA = rep(NA, length),
-                     Method = rep(NA, length),
-                     Race = rep(NA, length),
-                     WildCode = rep(NA, length),
-                     WildRigor = rep(NA, length),
-                     PopId = rep(NA, length),
-                     SpeciesId2 = rep(NA, length))  # BSC: ?! there is no SpeciesId2 field in template_df
-
-# Put it all together #                     
-escapement_streams <- cbind(escapement_streams, extras)
-
-final.fields <- c("ID","PopId","Indicator","SpeciesId","GFE_ID",
-                  "SYSTEM_SITE","Source","popMAP","EXPN","Y_LAT",
-                  "X_LONGT","FAZ_ACRO","MAZ_ACRO","JAZ_ACRO","CU_fname",
-                  "CU_facro","CU_findex","CU_NAME","CU_ACRO","CU_INDEX",
-                  "Area",
-                  # "ISENH",
-                  "IS_INDICATOR","IsInFiltEsc","nrecs","nins",
-                  "npres","nnumest","pinsrec","ppres_ins","pest_pres","fr_timing",
-                  # "OL_GRP_NM",
-                  "Fraser_mnemonic","CD_findex.name","StatArea","Reviewer",
-                  "QA","Method","Race","WildCode","WildRigor","IndexId","PopId","SpeciesId2",
-                  "NoEscapement")
-
-# All the columns in the right order #
-# final <- ZZ[,final.fields]
-# final <- cbind(final,escapement_streams[,c(29:130)])
-final <- cbind(escapement_streams[,final.fields],escapement_streams[,col_dates])
-final.fields[!final.fields %in% colnames(escapement_streams)] # "ISENH"     "OL_GRP_NM"
-
-# Remove populations with no escapement data at all #
-final <- filter(final, !(NoEscapement))
-final <- final[,colnames(final) != "NoEscapement"]
-# remove ???
-# final <- final[,-46] # BSC: SpeciesId2 ??? --> NoEscapement (?)
-colnames(final)[!colnames(final) %in% colnames(template_df)]
-
-# Rename the columns per reference data frame #
-# colnames(final)[1:45] <- colnames(template_df)[1:45] # BSC: better edit the column names as it is more transparent
-colnames(final[1:45])
-colnames(template_df[1:46])
-
-colnames(final)[colnames(final) %in% c("PopId")] <- "POP_ID"
-
-# ???
-unique(final$SpeciesId)
-unique(template_df$SPP)
-unique(final$SpeciesId2)
-unique(template_df$SpeciesId)
-
-colnames(final)[colnames(final) %in% c("SYSTEM_SITE")] <- "SYS_NM"
-tolower(final$SYSTEM_SITE)[tolower(final$SYSTEM_SITE) %in% tolower(template_df$SYS_NM)]
-tolower(final$SYSTEM_SITE)[!tolower(final$SYSTEM_SITE) %in% tolower(template_df$SYS_NM)]
-
-colnames(final)[colnames(final) %in% c("Source")] <- "source"
-
-colnames(final)[colnames(final) %in% c("Y_LAT")] <- "yLAT"
-colnames(final)[colnames(final) %in% c("X_LONGT")] <- "xLONG"
-
-colnames(final)[colnames(final) %in% c("FAZ_ACRO","MAZ_ACRO","JAZ_ACRO")] <- tolower(colnames(final)[colnames(final) %in% c("FAZ_ACRO","MAZ_ACRO","JAZ_ACRO")])
-
-colnames(final)[colnames(final) %in% c("CU_NAME")] <- "CU_name"
-colnames(final)[colnames(final) %in% c("CU_ACRO")] <- "CU_acro"
-colnames(final)[colnames(final) %in% c("CU_INDEX")] <- "CU_index"
-
-# ???
-unique(template_df$SEP_ENH) # "N" "Y"
-
-colnames(final)[colnames(final) %in% c("IS_INDICATOR")] <- "IsIndicator"
-
-colnames(final)[colnames(final) %in% c("pinsrec")] <- "pins_rec"
-
-colnames(final)[colnames(final) %in% c("IS_INDICATOR")] <- "IsIndicator"
-
-# ???
-unique(template_df$OL_GRP_NM)
-
-colnames(final)[colnames(final) %in% c("PopId.1")] <- "PopId"
-
-
-# Write to file #
-# setwd(dir.out)
-
-#hardcode fixes to nuseds
-
-#babine/onerka
-final$CU_findex[final$POP_ID==49379] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49384] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49354] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==45452] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49389] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49394] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49404] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49419] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49399] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49424] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49434] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==49439] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48599] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48674] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==45462] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48684] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48064] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48069] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48074] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48094] <- "SEL-21-02-EW"
-final$CU_findex[final$POP_ID==48099] <- "SEL-21-02-EW"
-
-#nilkitkwa
-final$CU_findex[final$POP_ID==49369] <- "SEL-21-02-LW"
-final$CU_findex[final$POP_ID==49374] <- "SEL-21-02-LW"
-final$CU_findex[final$POP_ID==49359] <- "SEL-21-02-LW"
-final$CU_findex[final$POP_ID==49364] <- "SEL-21-02-LW"
-final$CU_findex[final$POP_ID==49457] <- "SEL-21-02-LW"
-
-# tahlo/morrison
-final$CU_findex[final$POP_ID==49409] <- "SEL-21-02-MW"
-final$CU_findex[final$POP_ID==49414] <- "SEL-21-02-MW"
-
-#babine enhanced
-final$CU_findex[final$POP_ID==3237] <- "SEL-21-02-F"
-final$CU_findex[final$POP_ID==45467] <- "SEL-21-02-F"
-final$CU_findex[final$POP_ID==45472] <- "SEL-21-02-F"
-final$CU_findex[final$POP_ID==3238] <- "SEL-21-02-F"
-final$CU_findex[final$POP_ID==45482] <- "SEL-21-02-F"
-
-### bella coola chum
-final$CU_findex[final$POP_ID==3119] <- "CM-16"
-final$CU_findex[final$POP_ID==51771] <- "CM-16"
-final$CU_findex[final$POP_ID==51772] <- "CM-16"
-final$CU_findex[final$POP_ID==3143] <- "CM-16"
-final$CU_findex[final$POP_ID==3122] <- "CM-16"
-final$CU_findex[final$POP_ID==3125] <- "CM-16"
-final$CU_findex[final$POP_ID==3138] <- "CM-16"
-final$CU_findex[final$POP_ID==3128] <- "CM-16"
-final$CU_findex[final$POP_ID==51778] <- "CM-16"
-
-
-d1<- filter(final, POP_ID=='3119')
-
-d1<- filter(all_areas_nuseds, WATERBODY=='AIRPORT SIDE CHANNEL')
-
-date <- Sys.time()
-date <- substr(x = date,start = 1, stop = 10)
+# Columns to retain:
+ colToKeep <- c("POP_ID",
+                "GFE_ID",
+                fields_new,
+                col_yrs)
+# Export 
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)
-# write.csv(final, "NuSEDS_escapement_data_collated_20230818.csv", row.names=FALSE)
-write.csv(final,paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
-                       row.names = FALSE)
+ 
+write.csv(nuseds_final[,colToKeep],paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
+          row.names = F)
 
-# Notes:
-# Remove CU's which are "BIN" at this stage? 
-
-
-
-
-
-
-
-
-
-
+# 

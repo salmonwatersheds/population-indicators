@@ -14,6 +14,7 @@
 #' - comparison_bioStatus_Smsy_Smsy80_region.jpeg
 #' - comparison_bioStatus_Smsy_Smsy80_species.jpeg
 #' - comparison_bioStatus_HBSR_Percentiles.jpeg
+#' - data/code_PSF_Status.csv
 #' 
 #' Notes:
 #' - 
@@ -55,12 +56,17 @@ wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
 wd_head <- wds_l$wd_head
 wd_code <- wds_l$wd_code
 wd_data <- wds_l$wd_data
+wd_data_dropbox_dropbox <- wds_l$wd_X_Drive1_PROJECTS
 wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
 wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
+
+wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                         wds_l$wd_project_dropbox,
+                         "data",sep="/")
 
 # The datasets to input were outputted by other scripts 
 wd_data_input <- wd_output
@@ -230,10 +236,26 @@ biological_status_all <- merge(x = biological_status_HBSRM[,!colnames(biological
 # 3 = poor
 # 4 = extinct
 # 5 = not-assessed (cyclic dominance)
-# 6 = not-assessed (low productivity and high exploitation)
+# 6 = not-assessed (low productivity or high exploitation)
 # 7 = data-deficient (insufficient time series length)
 # 8 = data-deficient (no estimates of spawner abundance in the most recent generation)
 # 9 = data-deficient (no spawner estimates available)
+
+# Make this list into a dataframe that can be communiticated
+code_PSF_Status <- data.frame(psf_status_code = 1:9,
+                              psf_status = c("good","fair","poor","extinct",
+                                             "not-assessed","not-assessed",
+                                             "data-deficient"," data-deficient",
+                                             "data-deficient"),
+                              comment = c(rep("",4),
+                                          "cyclic dominance",
+                                          "low productivity or high exploitation",
+                                          "insufficient time series length",
+                                          "no estimates of spawner abundance in the most recent generation",
+                                          "no spawner estimates available"))
+# 
+# write.csv(code_PSF_Status,paste0(wd_data_dropbox,"/code_PSF_Status.csv"),
+#           row.names = F)
 
 # Return list of CUs that have high exploitation rate or low production rates,
 # as well as a final call on keeping or removing the CUs depending of their
@@ -471,6 +493,15 @@ nrow(biological_status_merged[condition_1_2_3 & condition_Percent & !condition_H
 
 biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
                                      header = T)
+
+# check that the CUs with status code 6 (high exploitation rate or production rates)
+# with red status are still availalbe:
+cond <- grepl("6",biological_status_merged$psf_status_code)
+biological_status_merged[cond,]
+
+cond <- biological_status_merged$percentile_status == 'red' & 
+  !is.na(biological_status_merged$percentile_status)
+unique(biological_status_merged$psf_status_code[cond])
 
 #
 # 3) Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------

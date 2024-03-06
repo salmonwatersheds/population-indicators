@@ -1189,11 +1189,15 @@ removed_all <- rbind(removed_all,toRemove)
 cond <- all_areas_nuseds$IndexId == iid & 
   all_areas_nuseds$GFE_ID == trackRecord_nuseds_iid$GFE_ID[trackRecord_nuseds_iid$IndexId == iid]
 all_areas_nuseds <- all_areas_nuseds[!cond,]
-nrow(all_areas_nuseds) # 308196
+nrow(all_areas_nuseds) # 308195
 
 #' Case with CN_39983 (i = 3):
 #' It is not in the PSE
-#' TODO: add to CUSS and then streamlocationids
+#' TODO: add to CUSS. Note that the POP_ID is not in CUSS not in the PSE (or decoder)
+#' There is consequently no CU associated to it.
+#' But it is very close to the Nanaimo river for which there is a Chinook summer 
+#' (i.e. ) for which the Chemainus river is included as a spawning location
+#'  https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1709659637606539
 trackRecord_nuseds_iid[3,]
 iid <- trackRecord_nuseds_iid[3,]$IndexId
 gfeid <- trackRecord_nuseds_iid[3,]$GFE_ID
@@ -1204,6 +1208,34 @@ cuss_new <- CUSS_newRow_fun(IndexId = iid,
                             conservation_unit_system_sites = conservation_unit_system_sites,
                             all_areas_nuseds = all_areas_nuseds)
 
+# CN_39983 is not in CUSS --> so it is not associated with a CU
+cond <- conservation_unit_system_sites_all$IndexId == "CN_39983"
+conservation_unit_system_sites_all$CU_NAME[cond]
+
+# Look in the decoder --> the Summer one is not in there, only the Fall one.
+cond <- grepl("[C|c]hemainus",conservationunits_decoder$cu_name_dfo)
+conservationunits_decoder[cond,]
+
+# attribute the East Vancouver Island-Georgia Strait (Summer 4-1) CU:
+cond <- conservationunits_decoder$cu_name_pse == "East Vancouver Island-Georgia Strait (Summer 4-1)"
+cu_decoder_here <- conservationunits_decoder[cond,]
+
+#' find the CU-related information for East Vancouver Island-Georgia Strait 
+#' (Summer 4-1) in CUSS:
+cond <- conservation_unit_system_sites_all$CU_NAME == toupper(cu_decoder_here$cu_name_dfo) # does not work
+cond <- grepl(toupper("East Vancouver Island-Georgia Strait"),conservation_unit_system_sites_all$CU_NAME) & 
+  conservation_unit_system_sites_all$SPECIES_QUALIFIED == "CK"
+conservation_unit_system_sites_all[cond,]
+
+cu_fields <- c("CU_ACRO","CU_INDEX","CU_LAT","CU_LONGT","CU_NAME","CU_TYPE",
+               "FULL_CU_IN","FAZ_ACRO","MAZ_ACRO","JAZ_ACRO")
+
+cu_fields_info <- unique(conservation_unit_system_sites_all[cond,cu_fields])
+
+for(f in colnames(cu_fields_info)){
+  cuss_new[,f] <- cu_fields_info[,f]
+}
+
 conservation_unit_system_sites <- rbind(conservation_unit_system_sites,
                                         cuss_new)
 
@@ -1211,7 +1243,7 @@ toAdd <- data.frame(IndexId ="CN_39983",
                     GFE_ID = 1204,
                     dataset = "conservation_unit_system_sites",
                     CU_NAME = NA,
-                    comment = "Series not in CUSS and not merged with CN_39983 - 1204 because of different timing")
+                    comment = "Series not in CUSS; POP_ID not in CUSS but attributed to CU_NAME: EAST VANCOUVER ISLAND-GEORGIA STRAIT_SU_0.3")
 
 added_all <- rbind(added_all,toAdd)
 
@@ -1539,8 +1571,8 @@ cuss_new$X_LONGT
 #' Take GIS coordinates from Google map just above the Stamp falls (on the left of 
 #' the Stamp river fish ladder):
 #' Google uses the World Geodetic System WGS84 standard. --> same as in CUSS
-cuss_new$Y_LAT <- 49.332224
-cuss_new$X_LONGT <- -124.919717
+# cuss_new$Y_LAT <- 49.332224
+# cuss_new$X_LONGT <- -124.919717
 
 # add to conservation_unit_system_sites
 conservation_unit_system_sites <- rbind(conservation_unit_system_sites,
@@ -2346,8 +2378,99 @@ series_Nuseds_noCuss <- series_Nuseds_noCuss[order(series_Nuseds_noCuss)]
 length(series_Nuseds_noCuss) # 0
 
 #
-# Merge NUSEDS AND CUSS -----
+# Define geo-spatial coordinates in CUSS where there are missing ----
+#' They are missing because the corresponding series were added to CUSS and their
+#' GFE_IDs were not already present in CUSS.
+
+# Wu Zhipend from DFO email us a file with (some) geospatial info: list 1:
+# emails from 
+gfe_ids_extra1 <- read_excel(path = paste0(wd_data_dropbox,"/DFO_GFE_IDs_list_1.xlsx"),
+                             sheet = 1)
+
+gfe_ids_extra1 <- gfe_ids_extra1[,c("ID","X_LONGT","Y_LAT")]
+
+gfe_ids_extra2 <- read_excel(path = paste0(wd_data_dropbox,"/DFO_GFE_IDs_list_2.xlsx"),
+                             sheet = 1)
+
+gfe_ids_extra2 <- gfe_ids_extra2[,c("GFE_ID_FROM","X_LONGT","Y_LAT")]
+
+gfe_ids_extra <- merge(x = gfe_ids_extra1,
+                       y = gfe_ids_extra2,
+                       by.x = "ID",by.y = "GFE_ID_FROM", 
+                       all = T)
+
+gfe_ids_extra$X_LONGT <- apply(X = gfe_ids_extra, 1, FUN = function(r){
+  out <- r[c("X_LONGT.x","X_LONGT.y")][!is.na(r[c("X_LONGT.x","X_LONGT.y")])]
+  if(length(out) == 0){
+    out <- NA
+  }
+  return(out)
+}) %>% unlist()
+
+gfe_ids_extra$Y_LAT <- apply(X = gfe_ids_extra, 1, FUN = function(r){
+  out <- r[c("Y_LAT.x","Y_LAT.y")][!is.na(r[c("Y_LAT.x","Y_LAT.y")])]
+  if(length(out) == 0){
+    out <- NA
+  }
+  return(out)
+})
+
+gfe_ids_extra <- gfe_ids_extra[,c("ID","X_LONGT","Y_LAT")]
+
+#' For  WATERSHED ABOVE STAMP FALLS:
+#' Take GIS coordinates from Google map just above the Stamp falls (on the left of 
+#' the Stamp river fish ladder):
+#' Google uses the World Geodetic System WGS84 standard. --> same as in CUSS
+GFE_ID <- 11486
+cond <- conservation_unit_system_sites$GFE_ID == GFE_ID
+conservation_unit_system_sites$SYSTEM_SITE[cond]
+cond <- gfe_ids_extra$ID == GFE_ID
+gfe_ids_extra$Y_LAT[cond] <- 49.332224
+gfe_ids_extra$X_LONGT[cond] <- -124.919717
+
+# retrieve the gfeids without geospatial info from conservation_unit_system_sites
+cond <- is.na(conservation_unit_system_sites$Y_LAT)
+gfeids_noCoord <- unique(conservation_unit_system_sites[cond,c("GFE_ID","SYSTEM_SITE")])
+
+m <- merge(x = gfeids_noCoord,
+           y = gfe_ids_extra[c("ID","X_LONGT","Y_LAT")], 
+           by.x = "GFE_ID", by.y = "ID",
+           all.x = T)
+m
+# there is no missing coordinate :-)
+
+for(r in 1:nrow(m)){
+  # r <- 1
+  cond <- conservation_unit_system_sites$GFE_ID == m$GFE_ID[r]
+  conservation_unit_system_sites$Y_LAT[cond] <- m$Y_LAT[r]
+  conservation_unit_system_sites$X_LONGT[cond] <- m$X_LONGT[r]
+}
+
+
+#' Export NUSEDS:
+write.csv(all_areas_nuseds,paste0(wd_output,"/all_areas_nuseds_cleaned.csv"), 
+          row.names = F)
+
+#' Export CUSS:
+write.csv(conservation_unit_system_sites,paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"), 
+          row.names = F)
+
 #
+# Merge NUSEDS AND CUSS and so some edits -----
+#
+
+all_areas_nuseds <- read.csv(paste0(wd_output,"/all_areas_nuseds_cleaned.csv"),
+                             header = T)
+
+conservation_unit_system_sites <- read.csv(paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"),
+                                           header = T)
+
+#' Make a copy of FULL_CU_IN conservation_unit_system_sites that will be updated
+#' below
+conservation_unit_system_sites$FULL_CU_IN_PSF <- conservation_unit_system_sites$FULL_CU_IN # previously "CU_findex"
+
+#'* Merge *
+#'
 col_common <- c("IndexId","POP_ID","GFE_ID")
 
 col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE"
@@ -2357,7 +2480,7 @@ col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE"
                 )
 
 col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
-              "FULL_CU_IN","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
+              "FULL_CU_IN","FULL_CU_IN_PSF","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
               "CU_LAT","CU_LONGT")
 
 # transform all_areas_nuseds to a wide format
@@ -2366,30 +2489,47 @@ nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>%
   pivot_wider(names_from = "Year",values_from = "MAX_ESTIMATE",names_sort = T)
 
 nrow(all_areas_nuseds) # 307217
-nrow(nuseds_long)      # 6909 
-nrow(conservation_unit_system_sites)  # 6909
+nrow(nuseds_long)      # 6910
+nrow(conservation_unit_system_sites)  # 6910
 
 nuseds_final <- base::merge(y = nuseds_long, 
                             x = conservation_unit_system_sites[,c(col_common,col_cuss)], 
                             by = col_common, 
                             all.y = T)
 
-# Updates FULL_CU_IN manually for several POP_IDs:
+#'* edite FULL_CU_IN for several POP_IDs * 
+
+# Corrections in CU assignment for central coast chum from Carrie Holt
+# https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705426563165399?thread_ts=1705344122.088409&cid=CJ5RVHVCG
+
+#' Import the corrections:
 full_cu_l <- update_for_FULL_CU_IN_l()
 
 for(i in 1:length(full_cu_l)){
   # i <- 1
   FULL_CU_IN_here <- names(full_cu_l)[i]
-  pop_ids <- full_cu_l[[i]]
-  cond <- nuseds_final$POP_ID %in% pop_ids
-  nuseds_final$FULL_CU_IN[cond] <- FULL_CU_IN_here
+  print(FULL_CU_IN_here)
+  
+  # 
+  POP_IDs_here <- full_cu_l[[i]]
+  
+  # 
+  cond <- nuseds_final$POP_ID %in% POP_IDs_here
+  nuseds_final$FULL_CU_IN_PSF[cond] <- FULL_CU_IN_here
 }
 
+#'* FIX: South Atnarko Lakes: *
+#' GFE_ID 968 for sockeye should be attributed to South Atnarko Lakes CU 
+#' (cf. Population meeting from 05/03/2024)
+cond <- nuseds_final$GFE_ID == 968 & nuseds_final$SPECIES == "Sockeye"
+nuseds_final$CU_NAME[cond] # "NORTHERN COASTAL FJORDS"
+nuseds_final$CU_NAME[cond] <- toupper("South Atnarko Lakes")
 
-# Rename fields: SYSTEM_SITE <- SYS_NM
+#'* Rename fields *
 # Older file for comparison:
-# wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
-# nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
+wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
+nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
 
 field_toChange <- c("SYSTEM_SITE",
                     "IS_INDICATOR",
@@ -2416,6 +2556,7 @@ cond <- grepl("[1|2]",colnames(nuseds_final))
 col_yrs <-  colnames(nuseds_final)[cond]
 colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
 col_yrs <-  colnames(nuseds_final)[cond]
+
 #
 # Export CSV files: ------
 
@@ -2453,26 +2594,18 @@ write.csv(removed_all,paste0(wd_output,"/series_removed.csv"),row.names = F)
 
 write.csv(added_all,paste0(wd_output,"/series_added.csv"),row.names = F)
 
-# Export the GFE_IDs added to CUSS that need geospatial coordinates:
-cols <- c("GFE_ID","SYSTEM_SITE","X_LONGT","Y_LAT")
-cond <- is.na(conservation_unit_system_sites$Y_LAT) | conservation_unit_system_sites$GFE_ID == 11486
-GFE_IDs_new_coord_toFind <- unique(conservation_unit_system_sites[cond,cols])
+# Export the GFE_IDs added to CUSS that need geospatial coordinates: NOT NEEDED ANYMORE
+# cols <- c("GFE_ID","SYSTEM_SITE","X_LONGT","Y_LAT")
+# cond <- is.na(conservation_unit_system_sites$Y_LAT) | conservation_unit_system_sites$GFE_ID == 11486
+# GFE_IDs_new_coord_toFind <- unique(conservation_unit_system_sites[cond,cols])
+# 
+# write.csv(GFE_IDs_new_coord_toFind,paste0(wd_output,"/GFE_IDs_new_coord_toFind.csv"),
+#           row.names = F)
 
-write.csv(GFE_IDs_new_coord_toFind,paste0(wd_output,"/GFE_IDs_new_coord_toFind.csv"),
-          row.names = F)
-
-#' Export NUSEDS:
-write.csv(all_areas_nuseds,paste0(wd_output,"/all_areas_nuseds_cleaned.csv"), 
-          row.names = F)
-
-#' Export CUSS:
-write.csv(conservation_unit_system_sites,paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"), 
-          row.names = F)
-
-
-# Columns to retain:
+# Columns to retain for nuseds_final
  colToKeep <- c("POP_ID",
                 "GFE_ID",
+                "FULL_CU_IN","FULL_CU_IN_PSF",
                 fields_new,
                 col_yrs)
 # Export 

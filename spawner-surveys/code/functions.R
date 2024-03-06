@@ -1335,7 +1335,7 @@ update_for_FULL_CU_IN_l <- function(){
   # tahlo/morrison
   i <- i + 1
   out[[i]] <- c(49409,49414)
-  names(out)[i] <- "SEL-21-02-MW"
+  names(out)[i] <- "SEL-21-02-MW" # use SEL-21-11 so do not the change
   
   #babine enhanced
   i <- i + 1
@@ -1343,12 +1343,20 @@ update_for_FULL_CU_IN_l <- function(){
   names(out)[i] <- "SEL-21-02-F"
   
   ### bella coola chum
+  # Corrections in CU assignment for central coast chum from Carrie Holt
+  # https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705426563165399?thread_ts=1705344122.088409&cid=CJ5RVHVCG
   i <- i + 1
-  out[[i]] <- c(3119,51771,51772,3143,3122,3125,3138,3128,51778)
+  out[[i]] <- c(3119,51771,
+                # 51772,                        # in contradiction with conserv_unit_system_sites_mv.xlsx
+                3143,3122,3125,3138,3128,51778)
   names(out)[i] <- "CM-16"
+  
+  ### bella coola river-late
+  i <- i + 1
+  out[[i]] <- c(351783)
+  names(out)[i] <- "CM-17"
   
   return(out)
 }
-
-
 

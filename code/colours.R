@@ -18,14 +18,14 @@ SWP_cols <- c(
 
 status_cols <- c(green = "#8EB687", amber = "#DFD98D", red = "#9A3F3F", extinct = "", datadeficient = "#D8D8D8")
 
-# species_cols <- c(
-# 	Chinook = "#000000",
-# 	Chum = "#8C6B80",
-# 	Coho = "#6079B1",
-# 	Pink = "#D086A5",
-# 	Sockeye = "#924848",
-# 	Steelhead = "#68787D"
-# )
+species_cols <- c(
+	Chinook = "#000000",
+	Chum = "#8C6B80",
+	Coho = "#6079B1",
+	Pink = "#D086A5",
+	Sockeye = "#924848",
+	Steelhead = "#68787D"
+)
 
 # PSE 2.0 Species Colours
 species_cols <- c(

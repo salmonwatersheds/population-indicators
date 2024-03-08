@@ -10,6 +10,7 @@
 
 
 library(dplyr)
+library(stringr)
 source("code/functions_general.R")
 
 ###############################################################################
@@ -25,7 +26,10 @@ dat <- read.csv(paste0(Dropbox_directory, "/timing/data/3Life_cycle_timing_by_CU
 
 cu_decoder <- read.csv(paste0(Dropbox_directory, "/data-input/conservationunits_decoder.csv"))
 
-dat$cuid <- conservationunit_decoder$cuid[match(paste(dat$species, dat$culabel), paste(cu_decoder$species_abbr, cu_decoder$cu_name_pse))]
+dat$cuid <- cu_decoder$cuid[match(paste(dat$species, dat$culabel), paste(cu_decoder$species_abbr, cu_decoder$cu_name_pse))]
+
+# Remove any duplicates (for some reason duplicate of TBR SER - check with sam)
+dat <- dat[-which(dat$cuid == 1023)[2], ]
 
 # Are there any CUs that don't have a cuid?
 head(dat[is.na(dat$cuid),]) # Two CUs that aren't in PSE; just remove
@@ -42,10 +46,6 @@ sum(is.na(dat$rt_start)) # all have at least a start
 sum(is.na(dat$rt_end)) # 94 don't have an end
 sum(is.na(dat$rt_dat_qual))
 
-# Has start and end but no peak - assume norma;l:
-dat[,]
-
-
 cases <- list(
   all = as.numeric(which(apply(is.na(dat[, c("rt_start", "rt_peak", "rt_end")]), 1, sum) == 0)), # Has start, peak, and end
   startend = as.numeric(which(apply(is.na(dat[, c("rt_start", "rt_peak", "rt_end")]), 1, sum) == 1 & is.na(dat$rt_peak))), # Has start, end, but NO PEAK -> Assume normal with peak mid-way between start and end
@@ -54,6 +54,9 @@ cases <- list(
   # peak = which(apply(is.na(dat[, c("rt_start", "rt_peak", "rt_end")]), 1, sum) == 2 & !is.na(dat$rt_peak)), # has just peak -> No CUS
   start = as.numeric(which(apply(is.na(dat[, c("rt_start", "rt_peak", "rt_end")]), 1, sum) == 2 & !is.na(dat$rt_start))) # Has just start -> Many CUs, but can we use this?
 )
+
+# Check all cases accounted for
+length(cases[[1]]) + length(cases[[2]]) + length(cases[[3]]) == dim(dat)[1]
 
 # 94 CUs have a start run timing but no peak or end...can we show this? Fill in using average sd for similar cus.
 length( which(apply(is.na(dat[, c("rt_start", "rt_peak", "rt_end")]), 1, sum) == 2 & !is.na(dat$rt_start)))
@@ -75,43 +78,165 @@ for(s in 1:length(speciesCodes)){
     }
   }
 }
+
 ###############################################################################
-# Create empty data frame to store output
+# Calculate daily proportions from start, peak, and end dates
 ###############################################################################
 
 DOY <- c(1:365)
+DOY2 <- c(1:730)
+
 n.cuid <- length(unique(dat$cuid))
 cuid <- unique(dat$cuid)
 
-# generate template for flat file (all combos of cuid and DOY)
-dat.out <- expand.grid(DOY, dat$cuid) %>%
-  dplyr::rename(DOY = "Var1", cuid = "Var2")
-head(dat.out)
-str(dat.out)
+# generate double wide matrix to deal with run timings that span the year
+dat.wide <- array(NA, 
+                  dim = c(n.cuid, length(DOY2)),
+                  dimnames = list(cuid, DOY2)
+)
 
 for(i in 1:n.cuid){
   
   dat.i <- dat[dat$cuid == cuid[i], c("rt_start", "rt_peak", "rt_end")]
   
-  if(sum(is.na(dat.i)) == 0){ # If we have all three data points
+  # Adjust peak and end to ensure they are > start
+  if(!is.na(dat.i$rt_peak) & dat.i$rt_peak < dat.i$rt_start){
+    dat.i$rt_peak <- dat.i$rt_peak + 365
+  }
+  
+  if(!is.na(dat.i$rt_end) & dat.i$rt_end < dat.i$rt_start){
+    dat.i$rt_end <- dat.i$rt_end + 365
+  }
+  
+  # Case 1: All three datapoints
+  if(i %in% cases[[1]]){ 
+    
     # Left hand side
     sd_left <- (dat.i$rt_peak - dat.i$rt_start)/1.96
     left <- dnorm(x = c(1:round(dat.i$rt_peak)), mean = dat.i$rt_peak, sd = sd_left)
     
     # Right hand side
     sd_right <- (dat.i$rt_end - dat.i$rt_peak)/1.96
-    right <- dnorm(x = c(round(dat.i$rt_peak):365), mean = dat.i$rt_peak, sd = sd_right)
+    right <- dnorm(x = c(round(dat.i$rt_peak):730), mean = dat.i$rt_peak, sd = sd_right)
     
     together <- c(left/max(left), (right/max(right))[2:length(right)])
     # plot(c(1:365), together, "l")
   
-  dat.out[dat.out$cuid == i, ] <- together
+    dat.wide[i, ] <- together
   
-  rm(together, sd_left, sd_right, left, right)
+    rm(together, sd_left, sd_right, left, right)
   
-  } else if(sum(is.na(dat.i)) == 1 & !is.na(dat.i$rt_peak)){ # If we have peak and start
-    # Assume equal tails
-    sd <- (dat.i$rt_peak - mean(dat.i[, c(1,3)], na.rm = TRUE))/1.96
+  # Case 2: Has start and end but no peak
+  # Solution: Assume peak is mid-point
+  } else if(i %in% cases[[2]]){ 
     
-  }
+    together0 <- dnorm(
+      x = DOY2, 
+      mean = mean(dat.i$rt_start, dat.i$rt_end), 
+      sd = abs(dat.i$rt_start - dat.i$rt_end)/(2 * 1.96))
+    
+    together <- together0/max(together0)
+    
+    dat.wide[i, ] <- together
+    
+    rm(together0, together)
+    
+  # Case 3: Has just start
+  } else if(i %in% cases[[3]]){ 
+    # Assume sd equal to sd for other CU of the same species in the region
+    species.i <- dat$species[dat$cuid == cuid[i]]
+    if(species.i %in% c("PKE", "PKO")){
+      species.i <- "PK"
+    }
+    sd <- timing.sd$sd[timing.sd$species == species.i & timing.sd$region == dat$region[dat$cuid == cuid[i]]]
+    if(is.na(sd)){
+      if(dat$region[dat$cuid == cuid[i]] == "haida gwaii"){
+        sd <- timing.sd$sd[timing.sd$species == species.i & timing.sd$region == "nass"]
+      } else if(dat$region[dat$cuid == cuid[i]] == "central coast"){
+        sd <- timing.sd$sd[timing.sd$species == species.i & timing.sd$region == "skeena"]
+      } else {
+        stop("sd is NA")
+      }
+    }
+    
+    together0 <- dnorm(
+      x = DOY2, 
+      mean = dat.i$rt_start + 1.96 * sd, 
+      sd = sd)
+    
+    together <- together0/max(together0)
+    
+    dat.wide[i, ] <- together
+    
+    rm(together0, together, sd)
+    
+  } # end case 3
+  
+} # end cuid i
+
+###############################################################################
+# Format for database (long format)
+###############################################################################
+
+dat.out <- expand.grid(DOY, dat$cuid) %>%
+  dplyr::rename(DOY = "Var1", cuid = "Var2")
+head(dat.out)
+str(dat.out)
+dat.out$run_timing_ppn <- NA
+dat.out$run_timing_quality <- NA
+
+for(i in 1:n.cuid){
+  dat.out$run_timing_quality[dat.out$cuid == cuid[i]] <- dat$rt_dat_qual[dat$cuid == cuid[i]]
+  dum <- dat.wide2[which(as.numeric(rownames(dat.wide2)) == cuid[i]), ]
+  dat.out$run_timing_ppn[dat.out$cuid == cuid[i]] <- dum/max(dum)
+  rm(dum)
 }
+
+write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
+
+write.csv(dat[, c("cuid", "rt_dat_qual")], file = paste0(Dropbox_directory, "/timing/output/run-timing-data-quality_", Sys.Date(), ".csv"), row.names = FALSE)
+###############################################################################
+# Plot
+###############################################################################
+
+species_cols <- c(
+  CK = "#93BD9F",
+  CM = "#D2C55A",
+  CO = "#6299B9",
+  PKE = "#D69771",
+  PKO = "#D69771",
+  SEL = "#C75252",
+  SER = "#C75252",
+  SH = "#88709E"
+)
+
+
+for(r in 1:9){
+  n <- length(which(dat$region == regions[r]))
+pdf(file = paste0(Dropbox_directory, "/timing/output/run-timing_", regions[r], ".pdf"), width = 5, height =  n/7.5+1.5, pointsize = 10)
+  plot(range(DOY2), c(1, n + 1), "n", bty = "l", xlab = "Day", ylab = "Run timing by CU", main = str_to_title(regions[r]), yaxt = "n", yaxs = "i", xaxs = "i")
+for(i in 1:n){
+  lines(DOY2, i + dat.wide[which(dat$region == regions[r])[i], ], col = species_cols[dat$species[which(dat$region == regions[r])[i]]], lwd = 2, xpd = NA)
+  text(600, i+0.2, dat$culabel[which(dat$region == regions[r])[i]], col = species_cols[dat$species[which(dat$region == regions[r])[i]]], cex = 0.8)
+}
+  dev.off()
+}
+
+plot(DOY2, i + dat.wide[i, ], col = species_cols[dat$species[i]], "l", lwd = 1.2)
+
+dat.wide2 <- dat.wide[, 1:365] + dat.wide[, 366:730]
+xDate <- as.Date(paste(1999, DOY, sep = "-"), format = "%Y-%j")
+xDate2 <- as.Date(paste(c(rep(1999, 365), 2000), c(DOY, 1), sep = "-"), format = "%Y-%j")
+for(r in 1:9){
+  n <- length(which(dat$region == regions[r]))
+  pdf(file = paste0(Dropbox_directory, "/timing/output/run-timing_", regions[r], ".pdf"), width = 5, height =  n/7.5+1.5, pointsize = 10)
+  par(mar = c(3,2,2,3))
+  plot(range(xDate2), c(1, n + 1), "n", bty = "l", xlab = "Day", ylab = "", main = str_to_title(regions[r]), yaxt = "n", yaxs = "i", xaxs = "i")
+  mtext(side = 2, line = 1, "Run timing by CU")
+  for(i in 1:n){
+    lines(xDate, i + dat.wide2[which(dat$region == regions[r])[i], ], col = species_cols[dat$species[which(dat$region == regions[r])[i]]], lwd = 2, xpd = NA)
+    text(xDate[350], i+0.2, dat$culabel[which(dat$region == regions[r])[i]], col = species_cols[dat$species[which(dat$region == regions[r])[i]]], cex = 0.7, xpd = NA)
+  }
+  dev.off()
+}
+

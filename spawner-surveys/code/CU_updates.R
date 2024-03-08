@@ -64,17 +64,23 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
-# Loading packages
+# Loading packages & functions
 library(tidyr)
 
-#
-date <- "20240306"
-nuseds <- read.csv(paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
-                   header = T)
+source("code/functions.R")
+
+# Import files ------
+
+#'* Import the most recent NuSEDS_escapement_data_collated file *
+nuseds <- import_mostRecent_file_fun(wd = wd_output, 
+                                     pattern = "NuSEDS_escapement_data_collated")
+
 head(nuseds)
+nrow(nuseds) # 307217
 
+#'* Files from PSF database *
 
-#' Import the name of the different datasets in the PSF database and their 
+#'Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
@@ -99,147 +105,221 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 
 head(conservationunits_decoder)
 
-#' step 1: provide a cuid to each row in nuseds using conservationunits_decoder
-#' using CU_name and cu_name_dfo:
+sum(is.na(conservationunits_decoder$cu_index))    # 46
+sum(is.na(conservationunits_decoder$cu_name_pse))
+cond <- is.na(conservationunits_decoder$cu_index)
+conservationunits_decoder[cond,]
 
-unique(nuseds$Species)
-unique(conservationunits_decoder$species_abbr)
+#' Import the streamspawnersurveys_output from population-indicators/data_input or 
+#' download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+streamspawnersurveys_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
 
-conservationunits_decoder$cu_name_dfo
+head(streamspawnersurveys_output)
 
-nuseds$cuid <- apply(X = nuseds, 1, function(r){
-  # r <- nuseds[1,]
-  cu_name_here <- tolower(r["CU_name"])
-  species_here <- r["Species"]
-  cond <- tolower(conservationunits_decoder$cu_name_dfo) == cu_name_here & 
-    conservationunits_decoder$species_abbr == species_here
-  cuids_here <- conservationunits_decoder$cuid[cond]
-  if(length(cuids_here) == 0){
-    cuids_here <- NA
+
+#
+# Edit the NUSEDS dataset for the PSE ----
+
+#'* Edite FULL_CU_IN for several POP_IDs * 
+# Corrections in CU assignment for central coast chum from Carrie Holt
+# https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705426563165399?thread_ts=1705344122.088409&cid=CJ5RVHVCG
+
+nuseds$FULL_CU_IN_PSF <- nuseds$FULL_CU_IN
+
+#' Import the corrections:
+full_cu_l <- update_for_FULL_CU_IN_l()
+
+for(i in 1:length(full_cu_l)){
+  # i <- 1
+  FULL_CU_IN_here <- names(full_cu_l)[i]
+  print(FULL_CU_IN_here)
+  
+  POP_IDs_here <- full_cu_l[[i]]
+  
+  cond <- nuseds$POP_ID %in% POP_IDs_here
+  nuseds$FULL_CU_IN_PSF[cond] <- FULL_CU_IN_here
+}
+
+#'* FIX: South Atnarko Lakes *
+#' GFE_ID 968 for sockeye should be attributed to South Atnarko Lakes CU 
+#' (cf. Population meeting from 05/03/2024)
+cond <- nuseds$GFE_ID == 968 & nuseds$species_abbr %in% c("SEL","SER")
+unique(nuseds$CU_name[cond]) # "NORTHERN COASTAL FJORDS"
+nuseds$CU_name[cond] <- toupper("South Atnarko Lakes")
+#
+
+#'* Edits create stream_survey_quality from ESTIMATE_CLASSIFICATION *
+#' cf. Table 4.5 in section 4.1.3 of the Tech Report
+estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
+estim_class_nuseds
+unique(streamspawnersurveys_output$stream_survey_quality)
+
+nuseds$stream_survey_quality <- NA
+for(ecn in estim_class_nuseds){
+  # ecn <- estim_class_nuseds[1]
+  cond_nuseds <- nuseds$ESTIMATE_CLASSIFICATION == ecn
+  
+  if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
+    out <- "High"
+  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
+    out <- "Medium-High"
+  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
+    out <- "Medium-High"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
+    out <- "Medium"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-4)"){
+    out <- "Medium-Low"
+  }else if(ecn %in% c("RELATIVE ABUNDANCE (TYPE-5)",
+                      "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
+    out <- "Low"
+  }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
+                      "PRESENCE-ABSENCE (TYPE-6)",
+                      "RELATIVE: VARYING MULTI-YEAR METHODS")){
+    out <- "Low"
+  }else if(ecn == "UNKNOWN"){
+    out <- "Unknown"
+  }else if(ecn %in% c("","NO SURVEY THIS YEAR","NO SURVEY")){
+    out <- NA
+  }else{
+    print(ecn)
   }
-  return(cuids_here)
-}) %>% unlist()
+  print(out)
+  nuseds$stream_survey_quality[cond_nuseds] <- out
+}
 
-sum(is.na(nuseds$cuid)) # 3551
+unique(nuseds$stream_survey_method)
 
+#'* rename ESTIMATE_METHOD to stream_survey_method *
+colnames(nuseds)[colnames(nuseds) == "ESTIMATE_METHOD"] <- "stream_survey_method"
 
+#'* rename MAX_ESTIMATE to stream_observed_count *
+colnames(nuseds)[colnames(nuseds) == "MAX_ESTIMATE"] <- "stream_observed_count"
+
+#
+# Find cuid from conservationunits_decoder -----
+
+#'* Provide a cuid to each row in nuseds using conservationunits_decoder *
+#' using:
+#' - 1st: cu_index & FULL_CU_IN_PSF
+#' - 2nd: (if 1st does not work): CU_name and cu_name_dfo or cu_name_dfo_pse
+#' For 2nd case: 
 #' nuseds$CU_name does not correspond exactly to conservationunits_decoder$cu_name_pse 
-#' not to conservationunits_decoder$cu_name_dfo
-#' Characters to replace by ""
-#' - " ", "-"
+#' not to conservationunits_decoder$cu_name_dfo. Need to do some tricks to match
+#' CU names:
+#' - replace "  ", "-", "<<BIN>>" and "<<EXTIRPATED>>" by ""
+#' - to lower case
 
-nuseds$cuid <- NA
+CU_name_species <- unique(nuseds[,c("CU_name","species_abbr","FULL_CU_IN","FULL_CU_IN_PSF","CU_TYPE")])
+nrow(CU_name_species) # 415
 
-CU_name_species <- unique(nuseds[,c("CU_name","Species","CU_TYPE")])
-
-chara <- c(" ","-")
 conservationunits_decoder$cu_name_pse_modif <- tolower(conservationunits_decoder$cu_name_pse)
 conservationunits_decoder$cu_name_dfo_modif <- tolower(conservationunits_decoder$cu_name_dfo)
 CU_name_species$CU_name_modif <- tolower(CU_name_species$CU_name)
-                                         
+
+chara <- c(" ","-","<<BIN>>","<<EXTIRPATED>>")
 for(c in chara){
   conservationunits_decoder$cu_name_pse_modif <- gsub(c,"",conservationunits_decoder$cu_name_pse_modif)
   conservationunits_decoder$cu_name_dfo_modif <- gsub(c,"",conservationunits_decoder$cu_name_dfo_modif)
   CU_name_species$CU_name_modif <- gsub(c,"",CU_name_species$CU_name_modif)
 }
 
-conservationunits_decoder$taken <- F
+nuseds$cuid <- NA
 
 count <- 1
 for(r in 1:nrow(CU_name_species)){
-  # r <- 158
+  # r <- 6
   cu_name_here <- tolower(CU_name_species$CU_name[r])
-  species_here <- CU_name_species$Species[r]         # "CM"  "CK"  "CO"  "PKE" "PKO" "SER" "SEL"
+  species_here <- CU_name_species$species_abbr[r]         # "CM"  "CK"  "CO"  "PKE" "PKO" "SER" "SEL"
   cu_type_here <- CU_name_species$CU_TYPE[r]
-  cu_name_here_modif <- CU_name_species$CU_name_modif[r]
+  #cu_name_here_modif <- CU_name_species$CU_name_modif[r]
+  full_cu_in_here <- CU_name_species$FULL_CU_IN[r]
+  full_cu_in_psf_here <- CU_name_species$FULL_CU_IN_PSF[r]
   
-  cond <- (grepl(cu_name_here_modif,conservationunits_decoder$cu_name_dfo_modif) | 
-             grepl(cu_name_here_modif,conservationunits_decoder$cu_name_pse_modif)) & 
-    conservationunits_decoder$species_abbr == species_here
+  # try match with FULL_CU_IN_PSF
+  cond <- conservationunits_decoder$cu_index == full_cu_in_psf_here &
+    !is.na(conservationunits_decoder$cu_index)
   
-  
-  case with sum(cond) > 1
-  
-  if(sum(cond) == 0){
+  # try with FULL_CU_IN
+  if(sum(cond) == 0){ 
     
-    # apply more tricks
-    if(grepl("river",cu_name_here_modif)){
-      cu_name_here_modif <- gsub("river","",cu_name_here_modif)
+    cond <- conservationunits_decoder$cu_index == full_cu_in_here &
+      !is.na(conservationunits_decoder$cu_index)
+    
+    if(sum(cond) != 0){
+      print(paste0(count,r," - FULL_CU_IN (",full_cu_in_here,") used and not FULL_CU_IN_PSF (",full_cu_in_psf_here,") --> update the decoder?"))
+      count <- count + 1
     }
+  }
+  
+  # try match with CU_name
+  if(sum(cond) == 0){ 
+    
+    cu_name_here_modif <- CU_name_species$CU_name_modif[r]
     
     cond <- (grepl(cu_name_here_modif,conservationunits_decoder$cu_name_dfo_modif) | 
-               grepl(cu_name_here_modif,tolower(conservationunits_decoder$cu_name_pse_modif))) & 
+               grepl(cu_name_here_modif,conservationunits_decoder$cu_name_pse_modif)) & 
       conservationunits_decoder$species_abbr == species_here
     
   }
   
-  if(sum(cond) == 0){ # if still not found after the tricks
-    cuids_here <- NA
-    print(paste(count,r,species_here,cu_name_here,cu_type_here,cu_name_here_modif, sep = " - "))
+  if(sum(cond) == 0){
+    
+    print(paste(count,r,species_here,cu_type_here,full_cu_in_psf_here,cu_name_here,sep = " - "))
     count <- count + 1
     
+  }else if(sum(cond) > 1){ # in case there are multiple rows returned
+    print(r)
+    print(conservationunits_decoder[cond,])
+    
   }else{
-    cuids_here <- unique(conservationunits_decoder$cuid[cond])
-    conservationunits_decoder$taken[cond] <- T
-    
-    if(length(cuids_here) != 1){
-      print(paste("***",r,"***"))
-    }
-    
-    cond <- nuseds$CU_name == CU_name_species$CU_name[r] &
-      nuseds$Species == CU_name_species$Species[r]
-    nuseds$cuid[cond] <- cuids_here
+    cuid_here <- conservationunits_decoder$cuid[cond]
+    cond <- nuseds$FULL_CU_IN_PSF == full_cu_in_psf_here
+    nuseds$cuid[cond] <- cuid_here
   }
 }
 
-unique(nuseds$cu_)
+# Rows for which we could not find cuid: --> all are binned --> remove them
+unique(nuseds[is.na(nuseds$cuid),c("species_abbr","FULL_CU_IN_PSF","CU_TYPE","CU_name")])
+nuseds <- nuseds[!is.na(nuseds$cuid),]
+
+#'* Bring the stream-related fields *
+
+# Check:
+streamlocationids_streamCUID <- unique(streamlocationids[,c("streamid","cuid","sys_nm")])
+streamspawnersurveys_output_streamCUID <- unique(streamspawnersurveys_output[,c("streamid","cuid","region")])
+m <- merge(x = streamlocationids_streamCUID, 
+           y = streamspawnersurveys_output_streamCUID, 
+           by = c("streamid","cuid"),
+           all = T)
+m[is.na(m$sys_nm) | is.na(m$region),]
+
+unique(nuseds$cuid[! nuseds$cuid %in% streamspawnersurveys_output_streamCUID$cuid])
+# 1202  291  292  419  753
+
+unique(nuseds$cuid[! nuseds$cuid %in% streamlocationids$cuid])
+# 1202  291  292  419  753  181
+
+cond <- nuseds$cuid %in% c(1202,291,292,419,753)
+unique(nuseds[cond,c("species_abbr","cuid","FULL_CU_IN_PSF","CU_TYPE","CU_name")])
+
+cond <- conservationunits_decoder$cuid %in% c(1202,291,292,419,753)
+conservationunits_decoder[cond,c("region","species_abbr","cuid","cu_name_pse",
+                                 "cu_index","cu_type")]
 
 
-CU_name_variations_fun(CUname = "spiller-fitz hugh-burke")
+cuids <- c(1202,291,292)
+conservationunits_decoder[conservationunits_decoder$cuid %in% cuids,
+                          c("region","species_abbr","cuid","cu_name_pse",
+                            "cu_index","cu_type")]
+streamlocationids[streamlocationids$cuid %in% cuids,c("streamid","cuid")]
+streamlocationids[streamlocationids$cuid %in% cuids,c("streamid","cuid")]
 
-
-"spiller-fitz hugh-burke"
-
-cond <- grepl('[W|w]hite',nuseds$CU_name)
-nuseds[cond,]
-
-
-
-[1] "2 - 9 - CM - southwest vancouver island - Current - southwestvancouverisland"
-[1] "3 - 46 - CK - fraser-cross-cu supplementation exclusion - Bin - frasercrosscusupplementationexclusion"
-[1] "4 - 48 - CK - north and central coast-early timing - Current - northandcentralcoastearlytiming"
-[1] "5 - 60 - CK - south-miscellaneous - Bin - southmiscellaneous"
-[1] "6 - 64 - CK - north and central coast-late timing - Current - northandcentralcoastlatetiming"
-[1] "7 - 65 - CK - (p)hatchery exclusion-pallant creek - Bin - (p)hatcheryexclusionpallantcreek"
-[1] "8 - 84 - CK - fraser-miscellaneous - Bin - frasermiscellaneous"
-[1] "9 - 103 - CK - southern bc-cross-cu supplementation exclusion - Bin - southernbccrosscusupplementationexclusion"
-[1] "10 - 113 - CK - fraser-harrison fall transplant_fa_0.3 - Bin - fraserharrisonfalltransplant_fa_0.3"
-[1] "11 - 125 - CO - hg-graham island lowlands - Current - hggrahamislandlowlands"
-[1] "12 - 136 - CO - hg-west - Current - hgwest"
-[1] "13 - 137 - CO - hg-east - Current - hgeast"
-
-pattern <- "yukon"
-cond <- grepl(tolower(pattern),tolower(conservationunits_decoder$cu_name_dfo_modif))
-cond <- grepl(tolower(pattern),tolower(conservationunits_decoder$cu_name_pse_modif))
-cond <- grepl(tolower(pattern),tolower(conservationunits_decoder$cu_name_dfo))
-cond <- grepl(tolower(pattern),tolower(conservationunits_decoder$cu_name_pse))
-conservationunits_decoder[cond,c("species_abbr","cu_name_dfo","cu_name_pse")]
-
-cond <- grepl("river",conservationunits_decoder$cu_name_pse)
-conservationunits_decoder[cond,c("species_abbr","cu_name_dfo","cu_name_pse")]
-
-cond <- tolower(conservationunits_decoder$cu_name_dfo) == "interior fraser" & 
-  conservationunits_decoder$species_abbr == species_here
-
-cond <- grepl("interior fraser",tolower(conservationunits_decoder$cu_name_dfo))
-conservationunits_decoder[cond,]
-
-"quesnel-summer timing"
-cond <- grepl("quesnel",tolower(conservationunits_decoder$cu_name_dfo))
-conservationunits_decoder[cond,]
-
-cond <- grepl(pattern = "vreq", x = conservationunits_decoder$cu_name_dfo)
-conservationunits_decoder[cond,]
+# use streamspawnersurveys_output
 
 
 

@@ -1324,23 +1324,32 @@ update_for_FULL_CU_IN_l <- function(){
   i <- 1
   # babine/onerka
   out[[i]] <- c(45452,45462,48064,48069,48074,48094,48099,48599,48674,48684,49354,
-                49379,49384,49389,49394,49399,49404,49419,49424,49434,49439)
+                49379,49384,49389,49394,49399,49404,49419,49424,49434,49439,
+                49429,48679)
   names(out)[i] <- "SEL-21-02-EW"
+  # to Add? --> Ask Eric
+  # 49429    607 Current  SEL-21-02      SEL-21-02 WRIGHT CREEK           N     SEL
+  # BABINE      SEL-21-02          Current  48679                  PENDELTON CREEK
   
   # nilkitkwa
   i <- i + 1
-  out[[i]] <- c(49359,49364,49369,49374,49457)
+  out[[i]] <- c(49359,49364,49369,49374,49457,
+                45457)
   names(out)[i] <-  "SEL-21-02-LW"
+  # TO ADD
+  # BABINE      SEL-21-02          Current  45457         BABINE RIVER - SECTION 5    --> should be 
   
-  # tahlo/morrison
-  i <- i + 1
-  out[[i]] <- c(49409,49414)
-  names(out)[i] <- "SEL-21-02-MW" # use SEL-21-11 so do not the change
+  # tahlo/morrison NOT DO IT ANY MORE BECAUWE DFO CORRECTED IT
+  # i <- i + 1
+  # out[[i]] <- c(49409,49414)
+  # names(out)[i] <- "SEL-21-02-MW" # use SEL-21-11 so do not the change DO NOT CHANGE
   
   #babine enhanced
   i <- i + 1
-  out[[i]] <-  c(3237,45467,45472,3238,45482)
+  out[[i]] <-  c(3237,45467,45472,3238,45482,
+                 45477)
   names(out)[i] <- "SEL-21-02-F"
+  # BABINE      SEL-21-02          Current  45477        PINKUT CREEK - ABOVE WEIR
   
   ### bella coola chum
   # Corrections in CU assignment for central coast chum from Carrie Holt
@@ -1359,4 +1368,5 @@ update_for_FULL_CU_IN_l <- function(){
   
   return(out)
 }
+
 

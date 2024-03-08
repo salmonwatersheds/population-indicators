@@ -60,7 +60,7 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
-# Loading packages
+# Loading packages & functions 
 library(tidyr)
 library(plyr)
 library(dplyr)
@@ -73,8 +73,6 @@ library(stringr)
 library(viridis)
 library(parallel)
 
-#
-# Functions ------
 source("code/functions.R")
 
 #
@@ -2465,71 +2463,45 @@ all_areas_nuseds <- read.csv(paste0(wd_output,"/all_areas_nuseds_cleaned.csv"),
 conservation_unit_system_sites <- read.csv(paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"),
                                            header = T)
 
-#' Make a copy of FULL_CU_IN conservation_unit_system_sites that will be updated
-#' below
-conservation_unit_system_sites$FULL_CU_IN_PSF <- conservation_unit_system_sites$FULL_CU_IN # previously "CU_findex"
-
-#'* Merge *
+#'* Merge NUSEDS with CUSS *
 #'
 col_common <- c("IndexId","POP_ID","GFE_ID")
 
-col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE"
-                # "ENUMERATION_METHODS",            # these must be kept out because they differ between years
-                # "ESTIMATE_CLASSIFICATION",
-                # "ESTIMATE_METHOD"
+col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE",
+                #"ENUMERATION_METHODS",            # 
+                "ESTIMATE_CLASSIFICATION",
+                "ESTIMATE_METHOD"
                 )
 
 col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
-              "FULL_CU_IN","FULL_CU_IN_PSF","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
+              "FULL_CU_IN","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
               "CU_LAT","CU_LONGT")
 
-# transform all_areas_nuseds to a wide format
+# Transform all_areas_nuseds to a wide format (NOT ANYMORE)
+# nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>% 
+#   pivot_wider(names_from = "Year",values_from = "MAX_ESTIMATE",names_sort = T)
+# 
+# nrow(all_areas_nuseds) # 307217
+# nrow(nuseds_long)      # 6910
+# nrow(conservation_unit_system_sites)  # 6910
+# 
+# nuseds_final <- base::merge(y = nuseds_long, 
+#                             x = conservation_unit_system_sites[,c(col_common,col_cuss)], 
+#                             by = col_common, 
+#                             all.y = T)
 
-nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>% 
-  pivot_wider(names_from = "Year",values_from = "MAX_ESTIMATE",names_sort = T)
-
-nrow(all_areas_nuseds) # 307217
-nrow(nuseds_long)      # 6910
-nrow(conservation_unit_system_sites)  # 6910
-
-nuseds_final <- base::merge(y = nuseds_long, 
-                            x = conservation_unit_system_sites[,c(col_common,col_cuss)], 
+nuseds_final <- base::merge(x = all_areas_nuseds[,c(col_common,col_nuseds)], 
+                            y = conservation_unit_system_sites[,c(col_common,col_cuss)], 
                             by = col_common, 
-                            all.y = T)
+                            all.x = T)
 
-#'* edite FULL_CU_IN for several POP_IDs * 
-
-# Corrections in CU assignment for central coast chum from Carrie Holt
-# https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
-# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705426563165399?thread_ts=1705344122.088409&cid=CJ5RVHVCG
-
-#' Import the corrections:
-full_cu_l <- update_for_FULL_CU_IN_l()
-
-for(i in 1:length(full_cu_l)){
-  # i <- 1
-  FULL_CU_IN_here <- names(full_cu_l)[i]
-  print(FULL_CU_IN_here)
-  
-  # 
-  POP_IDs_here <- full_cu_l[[i]]
-  
-  # 
-  cond <- nuseds_final$POP_ID %in% POP_IDs_here
-  nuseds_final$FULL_CU_IN_PSF[cond] <- FULL_CU_IN_here
-}
-
-#'* FIX: South Atnarko Lakes: *
-#' GFE_ID 968 for sockeye should be attributed to South Atnarko Lakes CU 
-#' (cf. Population meeting from 05/03/2024)
-cond <- nuseds_final$GFE_ID == 968 & nuseds_final$SPECIES == "Sockeye"
-nuseds_final$CU_NAME[cond] # "NORTHERN COASTAL FJORDS"
-nuseds_final$CU_NAME[cond] <- toupper("South Atnarko Lakes")
+nrow(nuseds_final)     # 307217
+nrow(all_areas_nuseds) # 307217
 
 #'* Rename fields *
 # Older file for comparison:
-wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
-nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
+# wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
+# nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
 
 field_toChange <- c("SYSTEM_SITE",
                     "IS_INDICATOR",
@@ -2537,7 +2509,8 @@ field_toChange <- c("SYSTEM_SITE",
                     "Y_LAT","X_LONGT",
                     "AREA",
                     "MAZ_ACRO","FAZ_ACRO","JAZ_ACRO",
-                    "CU_NAME")
+                    "CU_NAME",
+                    "Species")
 
 fields_new <- c("SYS_NM",
                 "IsIndicator",
@@ -2545,20 +2518,32 @@ fields_new <- c("SYS_NM",
                 "yLAT","xLONG",
                 "Area",
                 "maz_acro","faz_acro","jaz_acro",
-                "CU_name")
+                "CU_name",
+                "species_abbr")
 
 for(i in 1:length(field_toChange)){
   names(nuseds_final)[names(nuseds_final) == field_toChange[i]] <- fields_new[i]
 }
 
-# add "X" in from of the year columns:
-cond <- grepl("[1|2]",colnames(nuseds_final))
-col_yrs <-  colnames(nuseds_final)[cond]
-colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
-col_yrs <-  colnames(nuseds_final)[cond]
+#' * add "X" in from of the year columns *
+#' cond <- grepl("[1|2]",colnames(nuseds_final))
+#' col_yrs <-  colnames(nuseds_final)[cond]
+#' colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
+#' col_yrs <-  colnames(nuseds_final)[cond]
+
+#'* remove IndexId *
+nuseds_final <- nuseds_final[,colnames(nuseds_final) != "IndexId"]
 
 #
 # Export CSV files: ------
+
+# Export nusweds_final
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+
+write.csv(nuseds_final,paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
+          row.names = F)
 
 #' Export the series in NUSEDS with IndexIds and GFE_IDs not in CUSS with 
 #' info on the number of data points and POPULATION
@@ -2602,18 +2587,17 @@ write.csv(added_all,paste0(wd_output,"/series_added.csv"),row.names = F)
 # write.csv(GFE_IDs_new_coord_toFind,paste0(wd_output,"/GFE_IDs_new_coord_toFind.csv"),
 #           row.names = F)
 
-# Columns to retain for nuseds_final
- colToKeep <- c("POP_ID",
-                "GFE_ID",
-                "FULL_CU_IN","FULL_CU_IN_PSF",
-                fields_new,
-                col_yrs)
-# Export 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
- 
-write.csv(nuseds_final[,colToKeep],paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
-          row.names = F)
+# Columns to retain for nuseds_final (NOT WIDE FORMAT ANYMORE)
+# colToKeep <- c("POP_ID",
+#                "GFE_ID",
+#                "CU_TYPE",
+#                "FULL_CU_IN","FULL_CU_IN_PSF",
+#                fields_new,
+#                col_yrs)
 
-# 
+ 
+
+date <- "20240307"
+nuseds_final <- read.csv(paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
+                   header = T)
+

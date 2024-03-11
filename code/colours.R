@@ -26,7 +26,7 @@ SWP_cols <- c(
 
 status_cols <- c(green = "#83B687", amber = "#DED38A", red = "#C06363", extinct = "", datadeficient = "#A7A9AC")
 
-species_cols1 <- c(
+species_cols_light <- c(
   	Chinook = "#87AFA0",
   	Chum = "#A29490",
   	Coho = "#B99874",
@@ -35,7 +35,7 @@ species_cols1 <- c(
   	Steelhead = "#6F99AD"
 )
 
-species_cols1 <- c(
+species_cols_dark <- c(
   Chinook = "#58766C",
   Chum = "#6C6361",
   Coho = "#7A664C",

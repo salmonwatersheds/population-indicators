@@ -178,6 +178,7 @@ for(i in 1:n.cuid){
 ###############################################################################
 # Format for database (long format)
 ###############################################################################
+dat.wide2 <- dat.wide[, 1:365] + dat.wide[, 366:730]
 
 dat.out <- expand.grid(DOY, dat$cuid) %>%
   dplyr::rename(DOY = "Var1", cuid = "Var2")
@@ -192,6 +193,8 @@ for(i in 1:n.cuid){
   dat.out$run_timing_ppn[dat.out$cuid == cuid[i]] <- dum/max(dum)
   rm(dum)
 }
+
+dat.out$run_timing_ppn <- round(dat.out$run_timing_ppn, digits = 3)
 
 write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
 
@@ -228,7 +231,6 @@ for(i in 1:n){
 
 plot(DOY2, i + dat.wide[i, ], col = species_cols[dat$species[i]], "l", lwd = 1.2)
 
-dat.wide2 <- dat.wide[, 1:365] + dat.wide[, 366:730]
 xDate <- as.Date(paste(1999, DOY, sep = "-"), format = "%Y-%j")
 xDate2 <- as.Date(paste(c(rep(1999, 365), 2000), c(DOY, 1), sep = "-"), format = "%Y-%j")
 for(r in 1:9){

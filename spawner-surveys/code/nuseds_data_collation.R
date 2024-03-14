@@ -172,6 +172,10 @@ dupli <- conservation_unit_system_sites %>%
 
 dupli
 
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE")])) # 7145
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","GFE_ID")])) # 7145
+
+conservation_unit_system_sites$GFE_ID
 
 #' ** Import the definition of the different fields of these two datasets **
 fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
@@ -2463,6 +2467,10 @@ all_areas_nuseds <- read.csv(paste0(wd_output,"/all_areas_nuseds_cleaned.csv"),
 conservation_unit_system_sites <- read.csv(paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"),
                                            header = T)
 
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE")])) # 6910
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","GFE_ID")])) # 6910
+
+
 #'* Merge NUSEDS with CUSS *
 #'
 col_common <- c("IndexId","POP_ID","GFE_ID")
@@ -2503,27 +2511,29 @@ nrow(all_areas_nuseds) # 307217
 # wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
 # nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
 
-field_toChange <- c("SYSTEM_SITE",
-                    "IS_INDICATOR",
-                    "SPECIES_QUALIFIED",
-                    "Y_LAT","X_LONGT",
-                    "AREA",
-                    "MAZ_ACRO","FAZ_ACRO","JAZ_ACRO",
-                    "CU_NAME",
-                    "Species")
-
-fields_new <- c("SYS_NM",
-                "IsIndicator",
-                "Species",
-                "yLAT","xLONG",
-                "Area",
-                "maz_acro","faz_acro","jaz_acro",
-                "CU_name",
-                "species_abbr")
-
-for(i in 1:length(field_toChange)){
-  names(nuseds_final)[names(nuseds_final) == field_toChange[i]] <- fields_new[i]
-}
+# field_toChange <- c("SYSTEM_SITE",
+#                     "IS_INDICATOR",
+#                     "SPECIES_QUALIFIED",
+#                     "Y_LAT","X_LONGT",
+#                     "AREA",
+#                     "MAZ_ACRO","FAZ_ACRO","JAZ_ACRO",
+#                     "CU_NAME"
+#                     #"SPECIES"
+#                     )
+# 
+# fields_new <- c("SYS_NM",
+#                 "IsIndicator",
+#                 "species_abbr",
+#                 "yLAT","xLONG",
+#                 "Area",
+#                 "maz_acro","faz_acro","jaz_acro",
+#                 "CU_name"
+#                 #"species_abbr"
+#                 )
+# 
+# for(i in 1:length(field_toChange)){
+#   names(nuseds_final)[names(nuseds_final) == field_toChange[i]] <- fields_new[i]
+# }
 
 #' * add "X" in from of the year columns *
 #' cond <- grepl("[1|2]",colnames(nuseds_final))
@@ -2531,8 +2541,8 @@ for(i in 1:length(field_toChange)){
 #' colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
 #' col_yrs <-  colnames(nuseds_final)[cond]
 
-#'* remove IndexId *
-nuseds_final <- nuseds_final[,colnames(nuseds_final) != "IndexId"]
+#'* remove IndexId and SPECIES *
+nuseds_final <- nuseds_final[,! colnames(nuseds_final) %in% c("IndexId","SPECIES")]
 
 #
 # Export CSV files: ------
@@ -2595,9 +2605,10 @@ write.csv(added_all,paste0(wd_output,"/series_added.csv"),row.names = F)
 #                fields_new,
 #                col_yrs)
 
- 
-
 date <- "20240307"
 nuseds_final <- read.csv(paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
                    header = T)
+
+nrow(unique(nuseds_final[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6910
+nrow(unique(nuseds_final[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6910
 

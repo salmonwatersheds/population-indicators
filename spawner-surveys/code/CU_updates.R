@@ -231,6 +231,8 @@ for(c in chara){
 }
 
 nuseds$cuid <- NA
+nuseds$region <- NA
+nuseds$regionid <- NA
 
 count <- 1
 message_show <- T
@@ -259,7 +261,7 @@ for(r in 1:nrow(CU_name_species)){
     }
   }
   
-  # try match with CU_name
+  # still no match --> try match with CU_NAME
   if(sum(cond) == 0){ 
     
     cu_name_here_modif <- CU_name_species$CU_NAME_modif[r]
@@ -270,6 +272,7 @@ for(r in 1:nrow(CU_name_species)){
     
   }
   
+  # still no match, no nothing for now
   if(sum(cond) == 0){
     
     if(message_show){
@@ -280,14 +283,19 @@ for(r in 1:nrow(CU_name_species)){
     print(paste(count,r,species_here,cu_type_here,full_cu_in_psf_here,cu_name_here,sep = " - "))
     count <- count + 1
     
-  }else if(sum(cond) > 1){ # in case there are multiple rows returned
+  }else if(sum(cond) > 1){ # in case there are multiple rows returned --> should not happens, just flag
     print(r)
     print(conservationunits_decoder[cond,])
     
   }else{
     cuid_here <- conservationunits_decoder$cuid[cond]
+    region_here <- conservationunits_decoder$region[cond]
+    regionid_here <- conservationunits_decoder$regionid[cond]
+    
     cond <- nuseds$FULL_CU_IN_PSF == full_cu_in_psf_here
     nuseds$cuid[cond] <- cuid_here
+    nuseds$region[cond] <- region_here
+    nuseds$regionid[cond] <- regionid_here
   }
 }
 
@@ -295,9 +303,6 @@ for(r in 1:nrow(CU_name_species)){
 unique(nuseds[is.na(nuseds$cuid),c("SPECIES_QUALIFIED","FULL_CU_IN_PSF","CU_TYPE","CU_NAME")])
 nuseds <- nuseds[!is.na(nuseds$cuid),]
 nrow(nuseds) # 305204
-
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6825
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6825
 
 #
 #'* Bring the stream-related fields *
@@ -428,32 +433,69 @@ nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'cuid',"SYSTEM_SITE","WATERBODY","GFE_
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'POP_ID',"SYSTEM_SITE","WATERBODY")]))          # 6818
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'POP_ID',"SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6818
 
+col_nuseds <- c("cuid","SPECIES_QUALIFIED","FULL_CU_IN","POP_ID","CU_NAME","GFE_ID",
+                "SYSTEM_SITE","WATERBODY","X_LONGT","Y_LAT")
 
-
-nuseds_cuid_location <- unique(nuseds[,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY")])
-nrow(nuseds_cuid_location) # 6746
+nuseds_cuid_location <- unique(nuseds[,c("regionid","SPECIES_QUALIFIED","cuid",
+                                         "SYSTEM_SITE","WATERBODY",
+                                         "GAZETTED_NAME","LOCAL_NAME_1","LOCAL_NAME_2",
+                                         "GFE_ID","X_LONGT","Y_LAT")]) # inclide GFE_ID because there can be multiple SYSTEM_SITEs for a same CU
 nrow(nuseds_cuid_location) # 6758 if including GFE_ID...
 
-nuseds_cuid_location$SYSTEM_SITE_simple <- simplify_string_fun(nuseds_cuid_location$SYSTEM_SITE)
-nuseds_cuid_location$WATERBODY_simple <- simplify_string_fun(nuseds_cuid_location$WATERBODY)
+# simplify the location name fields:
+fields_locations <- c("SYSTEM_SITE","WATERBODY","GAZETTED_NAME",
+                      "LOCAL_NAME_1","LOCAL_NAME_2")
+# manual fix 1st:
+#'-  "BARRI\xc8RE RIVER" --> "BARRIERE RIVER"
+#'- "FRAN\xc7OIS LAKE" --> ""FRANCOIS LAKE"
+#'
+cond <- nuseds_cuid_location$SYSTEM_SITE == "BARRIERE RIVER"
+nuseds_cuid_location$LOCAL_NAME_1[cond] <- "BARRIERE RIVER"
+cond <- nuseds_cuid_location$SYSTEM_SITE == "EAST BARRIERE RIVER"
+nuseds_cuid_location$LOCAL_NAME_1[cond] <- "EAST BARRIERE RIVER"
+cond <- nuseds_cuid_location$SYSTEM_SITE == "FRANCOIS LAKE"
+nuseds_cuid_location$LOCAL_NAME_1[cond] <- "FRANCOIS LAKE"
+
+for(f in fields_locations){
+  # f <- fields_locations[1]
+  nuseds_cuid_location$X <- simplify_string_fun(nuseds_cuid_location[,f])
+  colnames(nuseds_cuid_location)[colnames(nuseds_cuid_location) == "X"] <- paste0(f,"_simple")
+}
+
 nuseds_cuid_location$streamid <- NA
 nuseds_cuid_location$field_nuseds_used <- NA
 nuseds_cuid_location$sys_nm <- NA            # to record which sys_nm was used
+nuseds_cuid_location$distance <- NA # the euclidean distance between the SYSTEM_SITE and sys_nm
 nuseds_cuid_location$comment <- NA
 
 streamlocationids$sys_nm_simple <- simplify_string_fun(streamlocationids$sys_nm)
 streamlocationids$taken <- F
 
-#' 1st fill all the one with perfect match and do not try to trouble shoot the 
+# options(warn = 0)
+# options(warn=1)  # print warnings as they occur
+options(warn = 2)  # treat warnings as errors
+
+#' 1) 1st fill all the one with perfect match and do not try to trouble shoot the 
 #' other ones yet because removing the perfect match 1st remove options when 
 #' multiple matches are available when using grepl (which is used for trouble 
 #' shooting).
-count <- 1
+count <- 0
+count_show <- 1
+
+# add the coordinate field
+fields_locations <- c(fields_locations,"COORDINATES")
+
 for(r in 1:nrow(nuseds_cuid_location)){
-  # r <- 1
+  # r <- 15
+  # r <- 381 case with multiple spatial coordinates for a same location (because several GFE_ID correspond to a same SYSTEM_SITE)
   SYSTEM_SITE_here <- nuseds_cuid_location$SYSTEM_SITE[r]
   WATERBODY_here <- nuseds_cuid_location$WATERBODY[r]
   cuid_here <- nuseds_cuid_location$cuid[r]
+  X_LONGT <- round(nuseds_cuid_location$X_LONGT[r],4)
+  Y_LAT <- round(nuseds_cuid_location$Y_LAT[r],4)
+  
+  cond_cuid <- streamlocationids$cuid == cuid_here
+  cond_fields_l <- list()
   
   cond_SYSTEM_SITE <- streamlocationids$cuid == cuid_here &
     streamlocationids$sys_nm_simple == nuseds_cuid_location$SYSTEM_SITE_simple[r]
@@ -461,54 +503,57 @@ for(r in 1:nrow(nuseds_cuid_location)){
   cond_WATERBODY <- streamlocationids$cuid == cuid_here &
     streamlocationids$sys_nm_simple == nuseds_cuid_location$WATERBODY_simple[r]
   
+  cond_coordinates <- streamlocationids$cuid == cuid_here &
+    round(streamlocationids$longitude,4) == X_LONGT &
+    round(streamlocationids$latitude,4) == Y_LAT
+
   comment <- NA
   
-  if(sum(cond_SYSTEM_SITE) + sum(cond_WATERBODY) > 0){
+  if(sum(cond_SYSTEM_SITE) + sum(cond_WATERBODY) + sum(cond_coordinates) > 0){
     
     # indicate which nuseds field(s) was used
-    if(sum(cond_SYSTEM_SITE) > 0 & sum(cond_WATERBODY) > 0){
-      nuseds_cuid_location$field_nuseds_used[r] <- "BOTH"
-      cond_toUse <- cond_SYSTEM_SITE
-    }else{
-      cond <- c(any(cond_SYSTEM_SITE),any(cond_WATERBODY))
-      nuseds_cuid_location$field_nuseds_used[r] <- c("SYSTEM_SITE","WATERBODY")[cond]
-      cond_toUse <- list(cond_SYSTEM_SITE,cond_WATERBODY)[cond][[1]]
-    }
+    fields_used <- c(sum(cond_SYSTEM_SITE) > 0, sum(cond_WATERBODY) > 0, sum(cond_coordinates) > 0)
+    nuseds_cuid_location$field_nuseds_used[r] <- paste(fields[fields_used], collapse = "-")
+    
+    # select condition
+    cond_toUse <- list(cond_SYSTEM_SITE,
+                       cond_WATERBODY,
+                       cond_coordinates)[fields_used][[1]]
+    
+    # calculate the distance
+    distances <- distance_Euclidean_fun(x_ref = X_LONGT, y_ref = Y_LAT, 
+                                        x = round(streamlocationids$longitude[cond_toUse],4),
+                                        y = round(streamlocationids$latitude[cond_toUse],4))
     
     # in case there are more than one option (there should not be)
     if(sum(cond_toUse) > 1){
+      #' Select the closest location: edit cond_toUse so it only retain the row 
+      #' with the smallest distance
+      cond_toUse_copy <- rep(FALSE,length(cond_toUse))
+      toKeep <- which(cond_toUse)[distances == min(distances)]
+      cond_toUse_copy[toKeep] <- TRUE
+      cond_toUse <- cond_toUse_copy
+      distance <- distances[distances == min(distances)] 
+      comment <- "More than one match so we picked the closest location"
       
-      # look at GIS coordinates
-      cond_nuseds <- nuseds$cuid == cuid_here &
-        nuseds$SYSTEM_SITE == SYSTEM_SITE_here & 
-        nuseds$WATERBODY == WATERBODY_here
-      
-      X_LONGT <- round(unique(nuseds$X_LONGT[cond_nuseds]),4)
-      Y_LAT <- round(unique(nuseds$Y_LAT[cond_nuseds]),4)
-      
-      cond_toUse_new <- cond_toUse &
-        round(streamlocationids$longitude,4) == X_LONGT &
-        round(streamlocationids$latitude,4) == Y_LAT
-      
-      if(sum(cond_toUse_new) == 1){
-        cond_toUse <- cond_toUse_new
-        comment <- "More than one match so we used X_LONGT and Y_LAT"
-        
-      }else if(sum(cond_toUse_new) == 0){ # take the location with the smallest distance
-        
-        distances <- distance_Euclidean_fun(x_ref = X_LONGT, y_ref = Y_LAT, 
-                                           x = streamlocationids$longitude[cond_toUse],
-                                           y = streamlocationids$latitude[cond_toUse])
-        
-        # edit cond_toUse so it only retain the row with the smallest distance
-        cond_toUse_copy <- rep(FALSE,length(cond_toUse))
-        toKeep <- which(cond_toUse)[distances == min(distances)]
-        cond_toUse_copy[toKeep] <- TRUE
-        cond_toUse <- cond_toUse_copy
-        comment <- "More than one match so we used X_LONGT and Y_LAT and picked the closest location"
+      # just to check
+      if(length(distance) > 1){
+        print(r)
+        break
       }
+      
+    }else if(sum(cond_toUse) == 1){
+      distance <- distances
     }
     
+    # in case there are still more than one option (there should not be)
+    if(sum(cond_toUse) > 1){
+      print("*** STILL MORE THSAN ONE CHOICE - TO FIX ***")
+      print(nuseds_cuid_location[r,])
+      break
+    }
+    
+    # fill streamlocationids if there is only one option
     if(sum(cond_toUse) == 1){
       
       # find the corresponding streamid:
@@ -516,45 +561,126 @@ for(r in 1:nrow(nuseds_cuid_location)){
       
       nuseds_cuid_location$streamid[r] <- streamid_here
       nuseds_cuid_location$sys_nm[r] <- streamlocationids$sys_nm[cond_toUse]
+      nuseds_cuid_location$distance[r] <- distance
       nuseds_cuid_location$comment[r] <- comment
       
       streamlocationids$taken[cond_toUse] <- T
       
-    }else{ # if there is more than one choice
+    }
+  }else{
+    
+    # 1st try without cuid and use regionid instead, which would mean we need to create a new
+    regionid_here <- nuseds_cuid_location$regionid[r]
+    cond_SYSTEM_SITE <- streamlocationids$regionid == regionid_here &
+      streamlocationids$sys_nm_simple == nuseds_cuid_location$SYSTEM_SITE_simple[r]
+    cond_WATERBODY <- streamlocationids$regionid == regionid_here &
+      streamlocationids$sys_nm_simple == nuseds_cuid_location$WATERBODY_simple[r]
+    cond_coordinates <- streamlocationids$regionid == regionid_here &
+      round(streamlocationids$longitude,4) == X_LONGT &
+      round(streamlocationids$latitude,4) == Y_LAT
+    
+    # indicate which nuseds field(s) was used
+    fields_used <- c(sum(cond_SYSTEM_SITE) > 0, sum(cond_WATERBODY) > 0, sum(cond_coordinates) > 0)
+    nuseds_cuid_location$field_nuseds_used[r] <- paste(fields[fields_used], collapse = "-")
+    
+    if(sum(fields_used) > 0){
       
-      print(paste("*** r:",r))
-      print(streamlocationids[cond_toUse,])
+      # select condition
+      cond_toUse <- cond_SYSTEM_SITE | cond_WATERBODY | cond_coordinates
       
-      print("")
+      # calculate the distance
+      distances <- distance_Euclidean_fun(x_ref = X_LONGT, y_ref = Y_LAT, 
+                                          x = round(streamlocationids$longitude[cond_toUse],4),
+                                          y = round(streamlocationids$latitude[cond_toUse],4))
       
-      cond_nuseds <- nuseds$cuid == cuid_here & nuseds$SYSTEM_SITE == SYSTEM_SITE_here
-      print(nuseds_cuid_location[r,])
+      #' Select the closest location: edit cond_toUse so it only retain the row 
+      #' with the smallest distance
+      cond_toUse_copy <- rep(FALSE,length(cond_toUse))
+      toKeep <- which(cond_toUse)[distances == min(distances)]
+      cond_toUse_copy[toKeep] <- TRUE
+      cond_toUse <- cond_toUse_copy
+      distance <- distances[distances == min(distances)] 
       
-      print("***")
+      # fill nuseds_cuid_location
+      nuseds_cuid_location$streamid[r] <- -99
+      nuseds_cuid_location$sys_nm[r] <- unique(streamlocationids$sys_nm[cond_toUse])
+      nuseds_cuid_location$distance[r] <- unique(distance) # should only be one
+      nuseds_cuid_location$comment[r] <- "Location exist but no streamid for its assocoation with this cuid"
       
-      break
+    }else{ # if there is still no match: just signal it for now
+      
+      count <- count + 1
+      count_percent <- round(count/nrow(nuseds_cuid_location)*100,1)
+      if(count_show <= count_percent){
+        print(paste("Proportion not matching:",count_percent,"%"))
+        count_show <- count_show + 1
+      }
     }
   }
 }
-
-# QUESTION: --> how come there are two options? : --> looking at the GIS coordinates did not solve the issue
-# I used the closest location for now
-# regionid streamid locationid pointid        sys_nm cuid latitude longitude             cu_name_pse sys_nm_simple
-# 6487        6     9388       8610     906 HARRIET CREEK  811 53.23655 -131.9050 East Haida Gwaii (even)  harrietcreek
-# 6557        6     9458       8680     905 HARRIET CREEK  811 52.29125 -131.2141 East Haida Gwaii (even)  harrietcreek
-# 
-# SPECIES_QUALIFIED cuid   SYSTEM_SITE     WATERBODY SYSTEM_SITE_simple WATERBODY_simple streamid field_nuseds_used
-# 215147               PKE  811 HARRIET CREEK HARRIET CREEK       harrietcreek     harrietcreek       NA              BOTH
+print(paste("Final proportion not matching:",count_percent,"%"))
 
 table(nuseds_cuid_location$comment)
 
-sum(!is.na(nuseds_cuid_location$streamid)) / nrow(nuseds_cuid_location) # 0.92
+#' Matches & not matched: Proportion and nb.:
+streamid_na <- is.na(nuseds_cuid_location$streamid)
+streamid_99 <- nuseds_cuid_location$streamid == -99 & !streamid_na
+(sum(!streamid_na) - sum(streamid_99)) / nrow(nuseds_cuid_location) # 0.93
+sum(!streamid_na) - sum(streamid_99)  # 6272
+sum(streamid_na) / nrow(nuseds_cuid_location) # 0.06
+sum(streamid_na)  # 433
 
-sum(is.na(nuseds_cuid_location$streamid)) # 538
+#' Missing streamid: 
+#' - proportion and number
+#' - distribution of distances for those where COORDINATES was not used
+#' --> there are two with distance > 1.0 --> might not be the right location.
+sum(streamid_99) # 53
+sum(streamid_99) / nrow(nuseds_cuid_location) # 0.008
+nuseds_cuid_location_99 <- nuseds_cuid_location[streamid_99,]
+table(nuseds_cuid_location_99$field_nuseds_used)
+streamid_99_noCoord <- !grepl("COORDINATES",nuseds_cuid_location_99$field_nuseds_used)
+hist(nuseds_cuid_location_99[streamid_99_noCoord,]$distance)
+nuseds_cuid_location_99[streamid_99_noCoord,][nuseds_cuid_location_99$distance[streamid_99_noCoord] > 0.1,]
+
+
+
+
+
+sum(is.na(nuseds_cuid_location$streamid)) # 433
 
 table(nuseds_cuid_location$field_nuseds_used)
 
-#' 2nd, use grepl for the matching of the remaining data:
+#' Look at the matches that were due to COORDINATES only and compare the location 
+#' names --> HOW WERE THESE DISCREPANCIES CREATED?
+cond <- nuseds_cuid_location$field_nuseds_used == "COORDINATES" & 
+  !is.na(nuseds_cuid_location$field_nuseds_used)
+nuseds_cuid_location[cond,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY",
+                            "GFE_ID","sys_nm")]
+
+#' Look at cases where the closest location was selected:
+#' --> there is only one case:
+#' question asked during pop meeting
+message <- "More than one match so we picked the closest location"
+cond <- nuseds_cuid_location$comment == message &
+  !is.na(nuseds_cuid_location$comment)
+nuseds_cuid_location[cond,]
+
+cond <- streamlocationids$sys_nm == "HARRIET CREEK" &
+  streamlocationids$cuid == 811
+streamlocationids[cond,]
+
+#' Check the distances for the matches done without coordinate
+#' QUESTIONS: THESE ARE PRETTY LARGE DISTANCES NO?
+cond <- grepl("COORDINATES",nuseds_cuid_location$field_nuseds_used)
+hist(nuseds_cuid_location$distance[!cond], breaks = 100, xlim = c(0,0.5))
+range(nuseds_cuid_location$distance[!cond],na.rm = T)
+cond <- !cond & !is.na(nuseds_cuid_location$distance) & nuseds_cuid_location$distance > 0.1 # 0.1 is roughly 3km
+nuseds_cuid_location[cond,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY","sys_nm","streamid","distance","comment")]
+
+
+
+#' 2) use grepl for the matching of the remaining data
+#' use spatial coordinate only to find the closest location
 count <- 1
 for(r in 1:nrow(nuseds_cuid_location)){
   # r <- 5  # no match
@@ -574,6 +700,15 @@ for(r in 1:nrow(nuseds_cuid_location)){
     cond_WATERBODY <- streamlocationids$cuid == cuid_here &
       grepl(nuseds_cuid_location$WATERBODY_simple[r],streamlocationids$sys_nm_simple)
     
+    # if there is no match --> try extra tricks
+    if(sum(cond_SYSTEM_SITE) + sum(cond_WATERBODY) == 0){
+      
+      
+      
+      
+    }
+    
+    # 
     if(sum(cond_SYSTEM_SITE) + sum(cond_WATERBODY) > 0){
       
       # indicate which nuseds field(s) was used
@@ -624,9 +759,10 @@ for(r in 1:nrow(nuseds_cuid_location)){
           toKeep <- which(cond_toUse)[distances == min(distances)]
           cond_toUse_copy[toKeep] <- TRUE
           cond_toUse <- cond_toUse_copy
-          comment <- paste(comment,"More than one match so we used X_LONGT and Y_LAT and picked the closest location",sep = " ; ")
+          comment_here <- "More than one match so we used X_LONGT and Y_LAT and picked the closest location"
+          comment <- paste(comment,
+                           paste0(comment_here," (distance = ",round(min(min(distances)),3),")"),sep = " ; ")
         }
-
       }
       
       if(sum(cond_toUse) == 1){
@@ -657,7 +793,7 @@ for(r in 1:nrow(nuseds_cuid_location)){
           
           nuseds_cuid_location$streamid[r] <- streamid_here
           nuseds_cuid_location$sys_nm[r] <- streamlocationids$sys_nm[cond_toUse]
-          nuseds_cuid_location$comment <- comment
+          nuseds_cuid_location$comment[r] <- comment
           
           streamlocationids$taken[cond_toUse] <- T
           
@@ -693,21 +829,24 @@ for(r in 1:nrow(nuseds_cuid_location)){
        
       }
       
-    }else{ # if there is no match
+    }else{ # if there is still no match
       
       print(paste(count,r,cuid_here,SYSTEM_SITE_here,WATERBODY_here,sep = " - "))
       count <- count + 1
       
+      if(count > 15){
+        break
+      }
     }
   }
 }
 
 table(nuseds_cuid_location$comment)
 
-
-unique(merge(x = unique(streamspawnersurveys_output[,c("region","streamid")]),
-      y = unique(streamlocationids[,c("regionid","streamid")]),
-      by = "streamid")[,c("region","regionid")])
+# fields regions and region to nuseds_cuid_location using cuid
+regionsid_df <- unique(merge(x = unique(streamspawnersurveys_output[,c("region","streamid")]),
+                             y = unique(streamlocationids[,c("regionid","streamid")]),
+                             by = "streamid")[,c("region","regionid")])
 #                             region regionid
 #                             Skeena        1
 #                               Nass        2
@@ -719,11 +858,18 @@ unique(merge(x = unique(streamspawnersurveys_output[,c("region","streamid")]),
 #                      Transboundary       10
 #                              Yukon        8
 
-streamspawnersurveys_output
 
-  
-streamlocationids$streamid
+location <- "MESACHIE"
+cuid <- 904
+cond <- streamlocationids$cuid == cuid & grepl(simplify_string_fun(location),streamlocationids$sys_nm_simple)
+streamlocationids[cond,]
 
+cond <- nuseds$cuid == cuid & (grepl(location,nuseds$SYSTEM_SITE) | 
+                                 grepl(location,nuseds$WATERBODY))
+cond <-  (grepl(location,nuseds$SYSTEM_SITE) | 
+            grepl(location,nuseds$WATERBODY))
+unique(nuseds[cond,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY","X_LONGT","Y_LAT")])
+nuseds$X_LONGT[cond]
 
 
 #' ASK DURING POP MEETING

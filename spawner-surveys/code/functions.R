@@ -143,8 +143,8 @@ nuseds_fields_definitions_fun <- function(wd_references){
 # IndexIds <- c("PKO_52704","SX_3302")
 # GFE_IDs <- NA
 # species_acro <- NA
-# IndexIds <- iid
-# GFE_IDs <- c(11485,3444)
+# IndexIds <- "CM_42743"
+# GFE_IDs <- c( 1829,1911)
 # species_acro <- c("PK","CM")
 plot_IndexId_GFE_ID_fun <- function(IndexIds = NA, GFE_IDs = NA, species_acro = NA,
                                     all_areas_nuseds, 

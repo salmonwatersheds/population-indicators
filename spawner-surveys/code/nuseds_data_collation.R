@@ -2545,7 +2545,7 @@ nrow(all_areas_nuseds) # 307217
 #' col_yrs <-  colnames(nuseds_final)[cond]
 
 #'* remove IndexId and SPECIES *
-nuseds_final <- nuseds_final[,! colnames(nuseds_final) %in% c("IndexId","SPECIES")]
+# nuseds_final <- nuseds_final[,! colnames(nuseds_final) %in% c("IndexId","SPECIES")]
 
 #
 # Export CSV files: ------

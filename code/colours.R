@@ -19,6 +19,7 @@ SWP_cols <- c(
 	clay1 = "#9E6a5A",
 	clay2 = "#924848",
 	clay3 = "#702121",
+	
 	sand2 = "#EEE9DF",
 	
 	soil1 = "#8B8477",
@@ -27,20 +28,20 @@ SWP_cols <- c(
 status_cols <- c(green = "#83B687", amber = "#DED38A", red = "#C06363", extinct = "", datadeficient = "#A7A9AC")
 
 species_cols_light <- c(
-  	Chinook = "#87AFA0",
-  	Chum = "#A29490",
-  	Coho = "#B99874",
-  	Pink = "#F69679",
-  	Sockeye = "#BBAF58",
+  	Chinook = "#87AC9F",
+  	Chum = "#BDA3A5",
+  	Coho = "#D0B669",
+  	Pink = "#EDBAAF",
+  	Sockeye = "#C5CC8C",
   	Steelhead = "#6F99AD"
 )
 
 species_cols_dark <- c(
-  Chinook = "#58766C",
-  Chum = "#6C6361",
-  Coho = "#7A664C",
-  Pink = "#A36350",
-  Sockeye = "#7B7538",
+  Chinook = "#59756B",
+  Chum = "#7E6E70",
+  Coho = "#897A45",
+  Pink = "#9D7D77",
+  Sockeye = "#83895E",
   Steelhead = "#486876"
 )
 

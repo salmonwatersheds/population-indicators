@@ -29,7 +29,7 @@ recent_year <- 2022 # What is the most recent year of spawner abundance data??
 # Set up empty dataframe
 ###############################################################################
 
-Dropbox_directory <- "/Users/stephaniepeacock/Salmon\ Watersheds\ Dropbox/Stephanie\ Peacock/X\ Drive/1_PROJECTS/1_Active/Population\ Methods\ and\ Analysis/population-indicators/"
+Dropbox_directory <- "/Users/erichertz/Salmon Watersheds Dropbox/Eric Hertz/X Drive/1_PROJECTS/1_Active/Population Methods and Analysis/population-indicators/"
 
 cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv"))
 
@@ -143,8 +143,48 @@ js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_
 
 head(js)
 
-# Assign score for each record
+# add gen_length for calculating most recent generation
+js <- js %>% 
+  left_join(cu_list %>%
+              select(gen_length, cuid),
+            by = "cuid")
 
+head(js)
+
+# Assign score for each record
+unique(js$enumeration_method)
+
+js$Q <- case_when(
+  js$enumeration_method == "Fyke/Inclined Plane Trap" ~ 3,
+  js$enumeration_method == "Fyke Trap" ~ 3,
+  js$enumeration_method == "Mark-recapture" ~ 4,
+  js$enumeration_method == "Fence" ~ 5,
+  js$enumeration_method == "Electrofishing" ~ 2,
+  js$enumeration_method == "Weir sampling" ~ 5,
+  js$enumeration_method == "Weir Sampling" ~ 5,
+  js$enumeration_method == "Snorkel" ~ 2,
+  js$enumeration_method == "Rotary Screw Trap" ~ 3,
+  js$enumeration_method == "Not specified" ~ 1,
+  js$enumeration_method == "Full Spanning Fence" ~ 5,
+  js$enumeration_method == "Fence, Mark-Recapture" ~ 4,
+  js$enumeration_method == "Fence?" ~ 5,
+  js$enumeration_method == "Mark recapture" ~ 4,
+  js$enumeration_method == "Smolt Weir" ~ 5,
+  js$enumeration_method == "Mark Recapture" ~ 4
+)
+
+unique(js$Q)
+
+# Calculate mean Q by cuid
+datavaluejs <- js %>%
+  filter(year > 2022 - gen_length + 1) %>% # Look over the most recent generation
+  group_by(cuid) %>%
+  summarise(juvenile_quality = mean(Q, na.rm = TRUE))
+datavaluejs <- datavaluejs[!is.na(datavaluejs$juvenile_quality),]
+
+par.js <- which(dataset390$parameter == "juvenile_quality")
+
+dataset390$datavalue[par.js[match(datavaluejs$cuid, dataset390$cuid[par.js])]] <- datavaluejs$juvenile_quality
 
 #------------------------------------------------------------------------------
 # rt_quality

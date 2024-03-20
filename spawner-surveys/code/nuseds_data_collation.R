@@ -172,6 +172,10 @@ dupli <- conservation_unit_system_sites %>%
 
 dupli
 
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE")])) # 7145
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","GFE_ID")])) # 7145
+
+conservation_unit_system_sites$GFE_ID
 
 #' ** Import the definition of the different fields of these two datasets **
 fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
@@ -2463,6 +2467,10 @@ all_areas_nuseds <- read.csv(paste0(wd_output,"/all_areas_nuseds_cleaned.csv"),
 conservation_unit_system_sites <- read.csv(paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"),
                                            header = T)
 
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE")])) # 6910
+nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","GFE_ID")])) # 6910
+
+
 #'* Merge NUSEDS with CUSS *
 #'
 col_common <- c("IndexId","POP_ID","GFE_ID")
@@ -2470,7 +2478,10 @@ col_common <- c("IndexId","POP_ID","GFE_ID")
 col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE",
                 #"ENUMERATION_METHODS",            # 
                 "ESTIMATE_CLASSIFICATION",
-                "ESTIMATE_METHOD"
+                "ESTIMATE_METHOD",
+                "GAZETTED_NAME",
+                "LOCAL_NAME_1",
+                "LOCAL_NAME_2"
                 )
 
 col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
@@ -2503,27 +2514,29 @@ nrow(all_areas_nuseds) # 307217
 # wd_here <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Fraser_VIMI/analysis/Compilation/Results")
 # nusedsPrevious <- read.csv(paste0(wd_here,"/NuSEDS_escapement_data_collated_20230818.csv"),header = T)
 
-field_toChange <- c("SYSTEM_SITE",
-                    "IS_INDICATOR",
-                    "SPECIES_QUALIFIED",
-                    "Y_LAT","X_LONGT",
-                    "AREA",
-                    "MAZ_ACRO","FAZ_ACRO","JAZ_ACRO",
-                    "CU_NAME",
-                    "Species")
-
-fields_new <- c("SYS_NM",
-                "IsIndicator",
-                "Species",
-                "yLAT","xLONG",
-                "Area",
-                "maz_acro","faz_acro","jaz_acro",
-                "CU_name",
-                "species_abbr")
-
-for(i in 1:length(field_toChange)){
-  names(nuseds_final)[names(nuseds_final) == field_toChange[i]] <- fields_new[i]
-}
+# field_toChange <- c("SYSTEM_SITE",
+#                     "IS_INDICATOR",
+#                     "SPECIES_QUALIFIED",
+#                     "Y_LAT","X_LONGT",
+#                     "AREA",
+#                     "MAZ_ACRO","FAZ_ACRO","JAZ_ACRO",
+#                     "CU_NAME"
+#                     #"SPECIES"
+#                     )
+# 
+# fields_new <- c("SYS_NM",
+#                 "IsIndicator",
+#                 "species_abbr",
+#                 "yLAT","xLONG",
+#                 "Area",
+#                 "maz_acro","faz_acro","jaz_acro",
+#                 "CU_name"
+#                 #"species_abbr"
+#                 )
+# 
+# for(i in 1:length(field_toChange)){
+#   names(nuseds_final)[names(nuseds_final) == field_toChange[i]] <- fields_new[i]
+# }
 
 #' * add "X" in from of the year columns *
 #' cond <- grepl("[1|2]",colnames(nuseds_final))
@@ -2531,8 +2544,8 @@ for(i in 1:length(field_toChange)){
 #' colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
 #' col_yrs <-  colnames(nuseds_final)[cond]
 
-#'* remove IndexId *
-nuseds_final <- nuseds_final[,colnames(nuseds_final) != "IndexId"]
+#'* remove IndexId and SPECIES *
+# nuseds_final <- nuseds_final[,! colnames(nuseds_final) %in% c("IndexId","SPECIES")]
 
 #
 # Export CSV files: ------
@@ -2595,9 +2608,71 @@ write.csv(added_all,paste0(wd_output,"/series_added.csv"),row.names = F)
 #                fields_new,
 #                col_yrs)
 
- 
-
 date <- "20240307"
 nuseds_final <- read.csv(paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
                    header = T)
+
+nrow(unique(nuseds_final[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6910
+nrow(unique(nuseds_final[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6910
+
+
+
+#' filter data where there are multiple GFE_IDs for a same SYSTEM_SITE & CU_NAME
+#' & SPECIES_QUALIFIED combination
+#' 
+
+col_nuseds <- c("SPECIES_QUALIFIED","POP_ID","CU_NAME","SYSTEM_SITE","WATERBODY",
+                "Y_LAT","X_LONGT")
+col_nuseds_short <- c("SPECIES_QUALIFIED","POP_ID","FULL_CU_IN","CU_NAME","SYSTEM_SITE","WATERBODY")
+nuseds_short <- unique(nuseds_final[,col_nuseds_short])
+nuseds_short$multipleCoord <- F
+nrow(nuseds_short) # 6835
+
+for(r in 1:nrow(nuseds_short)){
+  # r <- 1
+  cond_nuseds <- nuseds_final$SPECIES_QUALIFIED == nuseds_short$SPECIES_QUALIFIED[r] &
+    #nuseds_final$POP_ID == nuseds_short$POP_ID[r] &
+    nuseds_final$CU_NAME == nuseds_short$CU_NAME[r] &
+    nuseds_final$SYSTEM_SITE == nuseds_short$SYSTEM_SITE[r] &
+    nuseds_final$WATERBODY == nuseds_short$WATERBODY[r]
+  
+  X_LONGT <- unique(nuseds_final$X_LONGT[cond_nuseds])
+  Y_LAT <- unique(nuseds_final$Y_LAT[cond_nuseds])
+  
+  if(length(X_LONGT) > 1 | length(Y_LAT) > 1){
+    nuseds_short$multipleCoord[r] <- T
+    print(nuseds_short[r,])
+  }
+}
+
+nuseds_short_conserned <- nuseds_short[nuseds_short$multipleCoord,]
+nrow(nuseds_short_conserned) # 24
+
+r <- 1
+species <- nuseds_short_conserned$SPECIES_QUALIFIED[r]
+if(species %in% c("SER","SEL")){
+  species <- "SX"
+}
+POP_ID <- nuseds_short_conserned$POP_ID[r]
+
+cond_nuseds <- nuseds_final$SPECIES_QUALIFIED == nuseds_short_conserned$SPECIES_QUALIFIED[r] &
+  #nuseds_final$POP_ID == nuseds_short_conserned$POP_ID[r] &
+  nuseds_final$CU_NAME == nuseds_short_conserned$CU_NAME[r] &
+  nuseds_final$SYSTEM_SITE == nuseds_short_conserned$SYSTEM_SITE[r] &
+  nuseds_final$WATERBODY == nuseds_short_conserned$WATERBODY[r]
+
+GFE_IDs <- unique(nuseds_final$GFE_ID[cond_nuseds])
+
+plot_IndexId_GFE_ID_fun(IndexIds = rep(paste(species,POP_ID,sep = "_"),length(GFE_IDs)),
+                        GFE_IDs = GFE_IDs, 
+                        all_areas_nuseds = all_areas_nuseds)
+
+
+
+unique(all_areas_nuseds$IndexId)
+
+fields_IndexId_GFE_ID_fun()
+
+
+nuseds_final$FULL_CU_IN
 

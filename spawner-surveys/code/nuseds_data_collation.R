@@ -2544,13 +2544,28 @@ nrow(all_areas_nuseds) # 307217
 #' colnames(nuseds_final)[cond] <- paste0("X",col_yrs)
 #' col_yrs <-  colnames(nuseds_final)[cond]
 
-#'* remove IndexId and SPECIES *
+#'* remove IndexId and SPECIES * 
 # nuseds_final <- nuseds_final[,! colnames(nuseds_final) %in% c("IndexId","SPECIES")]
+
+#'* Replace 0s by NAs *
+#' There are cases where 0s means 0s and cases where they mean NAs (for instance)
+#' someone assess multiple populations of salmon at a given time that falls 
+#' outside the migratory period of some of the assess population. 
+#' In future we should try to discrimite the true 0s from the NA ones.
+#' cf. Population "2024 Population Analysis running notes" at March 19 for 
+#' corresponding documentation. 
+#' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
+cond <- nuseds_final$MAX_ESTIMATE == 0 & !is.na(nuseds_final$MAX_ESTIMATE)
+sum(cond) # 2996
+sum(cond)/nrow(nuseds_final) * 100
+nuseds_final$MAX_ESTIMATE[cond] <- NA
+
 
 #
 # Export CSV files: ------
 
 # Export nusweds_final
+date <- "20240307"
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)

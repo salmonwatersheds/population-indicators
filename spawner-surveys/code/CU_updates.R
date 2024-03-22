@@ -160,7 +160,7 @@ unique(nuseds$CU_NAME[cond]) # "NORTHERN COASTAL FJORDS"
 nuseds$CU_NAME[cond] <- toupper("South Atnarko Lakes")
 #
 
-#'* Edits create stream_survey_quality from ESTIMATE_CLASSIFICATION *
+#'* Create stream_survey_quality from ESTIMATE_CLASSIFICATION *
 #' cf. Table 4.5 in section 4.1.3 of the Tech Report
 estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
 estim_class_nuseds
@@ -185,7 +185,6 @@ for(ecn in estim_class_nuseds){
                       "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
     out <- "Low"
   }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
-                      "PRESENCE-ABSENCE (TYPE-6)",
                       "RELATIVE: VARYING MULTI-YEAR METHODS")){
     out <- "Low"
   }else if(ecn == "UNKNOWN"){
@@ -223,15 +222,19 @@ conservationunits_decoder$cu_name_pse_modif <- tolower(conservationunits_decoder
 conservationunits_decoder$cu_name_dfo_modif <- tolower(conservationunits_decoder$cu_name_dfo)
 CU_name_species$CU_NAME_modif <- tolower(CU_name_species$CU_NAME)
 
-chara <- c(" ","-","<<BIN>>","<<EXTIRPATED>>")
+chara <- c("<<bin>>","<<extirpated>>","<<extinct>>","<<de novo>>","(de novo)")
 for(c in chara){
   conservationunits_decoder$cu_name_pse_modif <- gsub(c,"",conservationunits_decoder$cu_name_pse_modif)
   conservationunits_decoder$cu_name_dfo_modif <- gsub(c,"",conservationunits_decoder$cu_name_dfo_modif)
   CU_name_species$CU_NAME_modif <- gsub(c,"",CU_name_species$CU_NAME_modif)
 }
+conservationunits_decoder$cu_name_pse_modif <- simplify_string_fun(conservationunits_decoder$cu_name_pse_modif)
+conservationunits_decoder$cu_name_dfo_modif <- simplify_string_fun(conservationunits_decoder$cu_name_dfo_modif)
+CU_name_species$CU_NAME_modif <- simplify_string_fun(CU_name_species$CU_NAME_modif)
 
 nuseds$cuid <- NA
 nuseds$cu_name_pse <- NA
+nuseds$cu_name_dfo <- NA
 nuseds$region <- NA
 nuseds$regionid <- NA
 
@@ -239,37 +242,43 @@ count <- 1
 message_show <- T
 for(r in 1:nrow(CU_name_species)){
   # r <- 6
-  cu_name_here <- tolower(CU_name_species$CU_NAME[r])
-  species_here <- CU_name_species$SPECIES_QUALIFIED[r]         # "CM"  "CK"  "CO"  "PKE" "PKO" "SER" "SEL"
-  cu_type_here <- CU_name_species$CU_TYPE[r]
-  #cu_name_here_modif <- CU_name_species$CU_name_modif[r]
-  full_cu_in_here <- CU_name_species$FULL_CU_IN[r]
-  full_cu_in_psf_here <- CU_name_species$FULL_CU_IN_PSF[r]
+  CU_NAME_here <- tolower(CU_name_species$CU_NAME[r])
+  SPECIES_QUALIFIED_here <- CU_name_species$SPECIES_QUALIFIED[r]         # "CM"  "CK"  "CO"  "PKE" "PKO" "SER" "SEL"
+  CU_TYPE_here <- CU_name_species$CU_TYPE[r]
+  #CU_NAME_here_modif <- CU_name_species$CU_name_modif[r]
+  FULL_CU_IN_here <- CU_name_species$FULL_CU_IN[r]
+  FULL_CU_IN_PSF_here <- CU_name_species$FULL_CU_IN_PSF[r]
   
   # try match with FULL_CU_IN_PSF
-  cond <- conservationunits_decoder$cu_index == full_cu_in_psf_here &
+  cond <- conservationunits_decoder$cu_index == FULL_CU_IN_PSF_here &
     !is.na(conservationunits_decoder$cu_index)
   
   # try with FULL_CU_IN
   if(sum(cond) == 0){ 
     
-    cond <- conservationunits_decoder$cu_index == full_cu_in_here &
+    cond <- conservationunits_decoder$cu_index == FULL_CU_IN_here &
       !is.na(conservationunits_decoder$cu_index)
     
+    # signal in case FULL_CU_IN matches but not FULL_CU_IN_PSF
     if(sum(cond) != 0){
-      print(paste0(count,r," - FULL_CU_IN (",full_cu_in_here,") used and not FULL_CU_IN_PSF (",full_cu_in_psf_here,") --> update the decoder?"))
+      print(paste0(count,r," - FULL_CU_IN (",FULL_CU_IN_here,") used and not FULL_CU_IN_PSF (",FULL_CU_IN_PSF_here,") --> update the decoder?"))
       count <- count + 1
     }
   }
   
-  # still no match --> try match with CU_NAME
+  # still no match --> try match with CU_NAME with cu_name_dfo and cu_name_dfo
   if(sum(cond) == 0){ 
     
-    cu_name_here_modif <- CU_name_species$CU_NAME_modif[r]
+    CU_NAME_here_modif <- CU_name_species$CU_NAME_modif[r]
     
-    cond <- (grepl(cu_name_here_modif,conservationunits_decoder$cu_name_dfo_modif) | 
-               grepl(cu_name_here_modif,conservationunits_decoder$cu_name_pse_modif)) & 
-      conservationunits_decoder$species_abbr == species_here
+    cond <- (grepl(CU_NAME_here_modif,conservationunits_decoder$cu_name_dfo_modif) | 
+               grepl(CU_NAME_here_modif,conservationunits_decoder$cu_name_pse_modif)) & 
+      conservationunits_decoder$species_abbr == SPECIES_QUALIFIED_here
+    
+    if(sum(cond) > 1){
+      print("more than one choice with CU_NAME_here_modif")
+      break
+    }
     
   }
   
@@ -281,7 +290,7 @@ for(r in 1:nrow(CU_name_species)){
       print("*** NuSEDS CUs without a match in conservationunits_decoder: ***")
     }
     
-    print(paste(count,r,species_here,cu_type_here,full_cu_in_psf_here,cu_name_here,sep = " - "))
+    print(paste(count,r,SPECIES_QUALIFIED_here,CU_TYPE_here,FULL_CU_IN_PSF_here,CU_NAME_here,sep = " - "))
     count <- count + 1
     
   }else if(sum(cond) > 1){ # in case there are multiple rows returned --> should not happens, just flag
@@ -291,21 +300,26 @@ for(r in 1:nrow(CU_name_species)){
   }else{
     cuid_here <- conservationunits_decoder$cuid[cond]
     cu_name_pse_here <- conservationunits_decoder$cu_name_pse[cond]
+    cu_name_dfo_here <- conservationunits_decoder$cu_name_dfo[cond]
     region_here <- conservationunits_decoder$region[cond]
     regionid_here <- conservationunits_decoder$regionid[cond]
     
-    cond <- nuseds$FULL_CU_IN_PSF == full_cu_in_psf_here
+    cond <- nuseds$FULL_CU_IN_PSF == FULL_CU_IN_PSF_here
     nuseds$cuid[cond] <- cuid_here
     nuseds$cu_name_pse[cond] <- cu_name_pse_here
+    nuseds$cu_name_dfo[cond] <- cu_name_dfo_here
     nuseds$region[cond] <- region_here
     nuseds$regionid[cond] <- regionid_here
   }
 }
 
 # Rows for which we could not find cuid: --> all are binned --> remove them
-unique(nuseds[is.na(nuseds$cuid),c("SPECIES_QUALIFIED","FULL_CU_IN_PSF","CU_TYPE","CU_NAME")])
+unique(nuseds[is.na(nuseds$cuid),c("SPECIES_QUALIFIED","FULL_CU_IN","FULL_CU_IN_PSF","CU_TYPE","CU_NAME")])
+
+#' TODO: troubleshoot with Katy after PSE 2.0
+
 nuseds <- nuseds[!is.na(nuseds$cuid),]
-nrow(nuseds) # 305204
+nrow(nuseds) # 305206
 
 #
 #'* Bring the stream-related fields *
@@ -315,11 +329,11 @@ nrow(nuseds) # 305204
 #' surveystreams --> CU in Skeena Lake sockeye  181 Bulkley/Maxan is only in 
 #' streamspawnersurveys_output
 #' https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1710353792636679
-#' 
+#' SOVLED
 
 #' 2) check if any cuid in nuseds are not present in streamspawnersurveys_output
 #' --> CUs 1207  419  753 are missing (note that other CUs were missing and 
-#' issues were fixed butI left the history of the message below for a record).
+#' issues were fixed but I left the history of the message below for a record).
 #' - Katy: 755 and 936 were removed based on this PSAC feedback
 #' - Eric: 531 was removed based on Technical Working Group feedback (can't be 
 #' sockeye there because there is an impassable falls)
@@ -328,6 +342,10 @@ nrow(nuseds) # 305204
 #' database. I've changed it to CUID 1202"
 #' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1682606819442789
 #' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1709857183818209?thread_ts=1708454531.181729&cid=C03LB7KM6JK
+
+#' 3) compare sys_nm in streamlocationids with stream_name_pse in surveystreams and
+#' streamspawnersurveys_output --> there are the same after simplification of the
+#' name. ALL GOOD.
 
 #' 1)
 streamlocationids$cuid[! streamlocationids$cuid %in% streamspawnersurveys_output$cuid] # 0
@@ -340,6 +358,18 @@ surveystreams[surveystreams$cuid == 181,]
 streamlocationids[streamlocationids$cuid == 181,]
 conservationunits_decoder[conservationunits_decoder$cuid == 181,]
 
+cond <- nuseds$cuid == 181
+nuseds[cond,]$MAX_ESTIMATE
+unique(nuseds[cond,]$SYSTEM_SITE)
+
+plot_IndexId_GFE_ID_fun(IndexIds = unique(nuseds$IndexId[cond]),
+                        GFE_IDs = unique(nuseds$GFE_ID[cond]),
+                        all_areas_nuseds = nuseds)
+
+cond <- grepl("[M|m]axan",streamspawnersurveys_output$stream_name_pse)
+sum(cond)
+streamspawnersurveys_output[cond,]
+
 #' 2)
 CUs_missing <- unique(nuseds$cuid[! nuseds$cuid %in% streamspawnersurveys_output$cuid])
 CUs_missing
@@ -349,47 +379,134 @@ CUs_missing
 cond <- nuseds$cuid %in% CUs_missing # c(1202,291,292,419,753)
 unique(nuseds[cond,c("SPECIES_QUALIFIED","cuid","FULL_CU_IN_PSF","CU_TYPE","CU_NAME")])
 
-cond <- conservationunits_decoder$cuid %in% CUs_missing # c(1202,291,292,419,753)
+cond <- conservationunits_decoder$cuid %in% c(1207,419,753) # CUs_missing # c(1202,291,292,419,753)
 conservationunits_decoder[cond,c("region","species_abbr","cuid","cu_name_pse",
                                  "cu_index","cu_type")]
 
-# Ask why these CUs are not in the streamid files:
-cuids <- c(1202,1207) # c(1202,291,292)
-conservationunits_decoder[conservationunits_decoder$cuid %in% cuids,
-                          c("region","species_abbr","cuid","cu_name_pse",
-                            "cu_index","cu_type")]
-streamlocationids[streamlocationids$cuid %in% cuids,c("streamid","cuid")]
-streamspawnersurveys_output[streamspawnersurveys_output$cuid %in% cuids,c("streamid","cuid")]
-
-cond <- nuseds$cuid %in% c(1202)
-cond <- nuseds$cuid == c(1202)
-nuseds$MAX_ESTIMATE[cond]
-
-cond <- nuseds$cuid %in% c(1202,1207)
-unique(nuseds[cond,c("SPECIES_QUALIFIED","cuid","FULL_CU_IN_PSF","CU_TYPE","CU_NAME")])
-
-cuids <- c(1202,1207)
-cuids <- c(1207)
-cond <- nuseds$cuid %in% cuids
-unique(nuseds[cond,c("SPECIES_QUALIFIED","cuid","CU_NAME","FULL_CU_IN_PSF","CU_TYPE","SYSTEM_SITE")])
-
-cond <- conservationunits_decoder$cuid %in% cuids
-conservationunits_decoder[cond,c("species_abbr","cuid","cu_name_pse","cu_index","cu_type")]
-
-cond <- streamlocationids$cuid %in% cuids 
-streamlocationids[cond,]
-
-cond <- streamspawnersurveys_output$cuid %in% cuids 
-streamspawnersurveys_output[cond,c("species_name","cuid","cu_name_pse","stream_name_pse","streamid")]
-
-cond <- surveystreams$cuid %in% cuids
+cond <- surveystreams$cuid %in% c(1207,419,753) # CUs_missing # c(1202,291,292,419,753)
 surveystreams[cond,]
 
-# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1710349319511559?thread_ts=1708454531.181729&cid=C03LB7KM6JK
-#'
+#' Start assembling the case where new streamid have to be associated to a cuid 
+#' (in new_streamids) and when a cuid has to be added to the streamid files and 
+#' associated to 
+new_streamids <- streamlocationids[NA,c("pointid","sys_nm","latitude","longitude",
+                                          "cuid","cu_name_pse")][1,]
+new_streamids$cuid_present <- NA
+new_streamids$location_present <- NA
+
+#' 1202 was rightly associated to streamid 10201 (it was cuid 1207 before)
+#' - Katy changed 
+cuid <- 1202
+cond <- nuseds$cuid == cuid
+unique(nuseds[cond,c("cuid","IndexId","SYSTEM_SITE","Y_LAT","X_LONGT")])
+cond <- streamlocationids$cuid == 1202
+streamlocationids[cond,c("cuid","streamid","sys_nm","latitude","longitude")]
+
+#' But cuid 1207 is in NuSEDS but not in streamlocationids
+#' - Katy changed 
+cuid <- 1207
+cond_nuseds <- nuseds$cuid == cuid
+locations <- unique(nuseds[cond_nuseds,c("regionid","cuid","cu_name_pse","IndexId","GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT")])
+# are these location already in streamlocationids ?
+for(i in 1:nrow(locations)){
+  
+  new_streamids_new <- new_streamids[NA,][1,]
+  new_streamids_new$cuid_present <- F
+  new_streamids_new$sys_nm <- locations$SYSTEM_SITE[i]
+  new_streamids_new$latitude <- locations$Y_LAT[i]
+  new_streamids_new$longitude <- locations$X_LONGT[i]
+  new_streamids_new$cuid <- locations$cuid[i]
+  new_streamids_new$cu_name_pse <- locations$cu_name_pse[i]
+  
+  print(locations$SYSTEM_SITE[i])
+  cond <- locations$SYSTEM_SITE[i] == streamlocationids$sys_nm |
+    (round(streamlocationids$latitude,3) == round(locations$Y_LAT[i],3) &
+       round(streamlocationids$longitude,3) == round(locations$X_LONGT[i],3))
+  
+  # if the location is not present in streamlocationids
+  if(nrow(streamlocationids[cond,]) == 0){
+    print(streamlocationids[cond,])
+    cond <- locations$regionid[i] == streamlocationids$regionid
+    dist <- distance_Euclidean_fun(x_ref = locations$X_LONGT[i], y_ref = locations$Y_LAT[i],
+                                   x = streamlocationids$longitude[cond],
+                                   y = streamlocationids$latitude[cond])
+    
+    print(paste(unique(streamlocationids$sys_nm[cond][which(dist ==  min(dist))]),
+                round(min(dist),4),sep = " - "))
+    
+    new_streamids_new$location_present <- F
+    
+  }else{
+    dist <- distance_Euclidean_fun(x_ref = locations$X_LONGT[i], y_ref = locations$Y_LAT[i],
+                           x = streamlocationids$longitude[cond],
+                           y = streamlocationids$latitude[cond])
+    dist <- data.frame(distance = dist)
+    print(cbind(streamlocationids[cond,],dist))
+    
+    new_streamids_new$location_present <- T
+    new_streamids_new$pointid <- unique(streamlocationids$pointid[cond])
+  }
+  plot_IndexId_GFE_ID_fun(IndexIds = locations$IndexId[i],
+                          GFE_IDs = locations$GFE_ID[i],
+                          all_areas_nuseds = nuseds)
+  legend("top",locations$SYSTEM_SITE[i])
+  print("***")
+  
+  if(nrow(new_streamids) == 1 & is.na(new_streamids$cuid)[1]){
+    new_streamids <- new_streamids_new
+  }else{
+    new_streamids <- rbind(new_streamids,new_streamids_new)
+  }
+}
+#' I asked Katy to create a new streamid for the existing location for cuid 1207.
+#' I said I will let her know about the two new location later.
+#' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1711060462098899?thread_ts=1708454531.181729&cid=C03LB7KM6JK
+new_streamids
+
+#' 419 --> the location exist so it is about creating a new streamid
+cuid <- 419
+cond_nuseds <- nuseds$cuid == cuid
+locations <- unique(nuseds[cond_nuseds,c("regionid","cuid","IndexId","GFE_ID",
+                                         "SYSTEM_SITE","Y_LAT","X_LONGT")])
+plot_IndexId_GFE_ID_fun(IndexIds = unique(locations$IndexId),
+                        GFE_IDs = locations$GFE_ID,
+                        all_areas_nuseds = nuseds)
+
+new_streamids_new <- new_streamids[NA,][1,]
+new_streamids_new$cuid_present <- F
+new_streamids_new$sys_nm <- locations$SYSTEM_SITE[1]
+new_streamids_new$latitude <- locations$Y_LAT[1]
+new_streamids_new$longitude <- locations$X_LONGT[1]
+new_streamids_new$cuid <- locations$cuid[1]
+new_streamids_new$cu_name_pse <- locations$cu_name_pse[1]
+
+cond <- locations$SYSTEM_SITE[1] == streamlocationids$sys_nm |
+  (round(streamlocationids$latitude,3) == round(locations$Y_LAT[1],3) &
+     round(streamlocationids$longitude,3) == round(locations$X_LONGT[1],3))
+
+
+#' 419
+cuid <- 753
+cond_nuseds <- nuseds$cuid == cuid
+locations <- unique(nuseds[cond_nuseds,c("regionid","cuid","IndexId","GFE_ID",
+                                         "SYSTEM_SITE","Y_LAT","X_LONGT")])
+plot_IndexId_GFE_ID_fun(IndexIds = unique(locations$IndexId),
+                        GFE_IDs = locations$GFE_ID,
+                        all_areas_nuseds = nuseds)
+# check if the location is in streamlocationids
+cond <- streamlocationids$sys_nm == "LEVERSON CREEK"
+streamlocationids[cond,]
+
+#' 3)
+stream_name_pse <- simplify_string_fun(surveystreams$stream_name_pse)
+sys_nm <- simplify_string_fun(streamlocationids$sys_nm)
+stream_name_pse[!stream_name_pse %in% sys_nm]
+sys_nm[!sys_nm %in% stream_name_pse]
+
+#
 #'** END **
 
-#' Remove the the CUs that are Bin or extinct
+#' TEMPORARY Remove the the CUs that are Bin or extinct
 nuseds <- nuseds[! nuseds$cuid %in% c(419,753),]
 
 #' TEMPORARY Remove the CUs not in the streamid-related datasets
@@ -403,7 +520,8 @@ nuseds <- nuseds[! nuseds$cuid %in% c(1207),]
 #'** CHECKS TEMPORARY **
 #' 1) Compare surveystreams$stream_name_pse and streamspawnersurveys_output$stream_name_pse
 #' with streamlocationids$sys_nm --> they are the same after simplifying the strings.
-#' 2) compare nuseds$SYSTEM_SITE with stream_name_pse --> 
+#' 2) compare nuseds$SYSTEM_SITE with stream_name_pse --> they are not necessarily
+#' the same.
 
 #' 1)
 surveystreams$stream_name_pse[! surveystreams$stream_name_pse %in% streamspawnersurveys_output$stream_name_pse]
@@ -431,11 +549,6 @@ sum(! SYSTEM_SITES_modif %in% stream_name_pse_modif) / length(SYSTEM_SITES_modif
 #' Simplify the strings before matching them to correct many of the typos creating 
 #' miss-matches.
 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'cuid',"SYSTEM_SITE","WATERBODY")]))          # 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'cuid',"SYSTEM_SITE","WATERBODY","GFE_ID")])) # 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'POP_ID',"SYSTEM_SITE","WATERBODY")]))          # 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED",'POP_ID',"SYSTEM_SITE","WATERBODY","GFE_ID")])) # 
-
 col_nuseds <- c("cuid","cu_name_pse","SPECIES_QUALIFIED","FULL_CU_IN","POP_ID","CU_NAME","GFE_ID",
                 "SYSTEM_SITE","WATERBODY","X_LONGT","Y_LAT")
 
@@ -443,12 +556,12 @@ nuseds_cuid_location <- unique(nuseds[,c("regionid","cu_name_pse","SPECIES_QUALI
                                          "SYSTEM_SITE","WATERBODY",
                                          "GAZETTED_NAME","LOCAL_NAME_1","LOCAL_NAME_2",
                                          "GFE_ID","X_LONGT","Y_LAT")]) # inclide GFE_ID because there can be multiple SYSTEM_SITEs for a same CU
-nrow(nuseds_cuid_location) # 6758 if including GFE_ID...
+nrow(nuseds_cuid_location) # 6759 if including GFE_ID...
 
 # simplify the location name fields:
 fields_locations <- c("SYSTEM_SITE","WATERBODY","GAZETTED_NAME",
                       "LOCAL_NAME_1","LOCAL_NAME_2")
-# manual fix 1st:
+# Manual fix 1st:
 #'-  "BARRI\xc8RE RIVER" --> "BARRIERE RIVER"
 #'- "FRAN\xc7OIS LAKE" --> ""FRANCOIS LAKE"
 #'
@@ -459,9 +572,12 @@ nuseds_cuid_location$LOCAL_NAME_1[cond] <- "EAST BARRIERE RIVER"
 cond <- nuseds_cuid_location$SYSTEM_SITE == "FRANCOIS LAKE"
 nuseds_cuid_location$LOCAL_NAME_1[cond] <- "FRANCOIS LAKE"
 
+# Simplify the fields_locations
+# and remove the "s" "creeks"
 for(f in fields_locations){
   # f <- fields_locations[1]
   nuseds_cuid_location$X <- simplify_string_fun(nuseds_cuid_location[,f])
+  nuseds_cuid_location$X <- gsub("creeks","creek",nuseds_cuid_location$X)
   colnames(nuseds_cuid_location)[colnames(nuseds_cuid_location) == "X"] <- paste0(f,"_simple")
 }
 
@@ -472,26 +588,35 @@ nuseds_cuid_location$distance <- NA # the euclidean distance between the SYSTEM_
 nuseds_cuid_location$comment <- NA
 
 streamlocationids$sys_nm_simple <- simplify_string_fun(streamlocationids$sys_nm)
+streamlocationids$sys_nm_simple <- gsub("creeks","creek",streamlocationids$sys_nm_simple)
 streamlocationids$taken <- NA
 
 # options(warn = 0)
 # options(warn=1)  # print warnings as they occur
 options(warn = 2)  # treat warnings as errors
 
-#' 1) 1st fill all the one with perfect match and do not try to trouble shoot the 
-#' other ones yet because removing the perfect match 1st remove options when 
-#' multiple matches are available when using grepl (which is used for trouble 
-#' shooting).
+#'* 1) 1st fill all the one with perfect match for location names and/or coordinates *
+#' Do not try to trouble shoot the other ones yet because removing the perfect 
+#' match 1st remove options when multiple matches are available when using grepl
+#' (which is used for trouble shooting).
 count <- 0
 count_show <- 1
 
 # add the coordinate field
 fields_locations <- c(fields_locations,"COORDINATES")
 
+# streamlocationids_copy <- streamlocationids
+# streamlocationids <- streamlocationids_copy
+
 for(r in 1:nrow(nuseds_cuid_location)){
   # r <- 1 # case with no match
   # r <- 15 case only coordinates match
   # r <- 381 case with multiple spatial coordinates for a same location (because several GFE_ID correspond to a same SYSTEM_SITE)
+  
+  # if(nuseds_cuid_location$cuid[r] == 811 & nuseds_cuid_location$SYSTEM_SITE[r] == "HARRIET CREEK"){
+  #   break
+  # }
+  
   fileds_values_l <- list()
   v_i <- 1
   for(v in c("cuid",fields_locations)){
@@ -618,10 +743,10 @@ for(r in 1:nrow(nuseds_cuid_location)){
       #' Select the closest location: edit cond_toUse so it only retain the row 
       #' with the smallest distance
       cond_toUse_copy <- rep(FALSE,length(cond_toUse))
-      toKeep <- which(cond_toUse)[distances == min(distances)]
+      toKeep <- which(cond_toUse)[distances == min(distances)][1] # [1] in case there are duplicated minimal values
       cond_toUse_copy[toKeep] <- TRUE
       cond_toUse <- cond_toUse_copy
-      distance <- distances[distances == min(distances)] 
+      distance <- distances[distances == min(distances)][1]
       
       # fill nuseds_cuid_location
       nuseds_cuid_location$streamid[r] <- -99
@@ -640,41 +765,54 @@ for(r in 1:nrow(nuseds_cuid_location)){
     }
   }
 }
-print(paste("Final proportion not matching:",count_percent,"%")) # 5.1 %
+print(paste("Final proportion not matching:",count_percent,"%")) # 5.3 %
 table(nuseds_cuid_location$comment)
 table(nuseds_cuid_location$field_nuseds_used)
+
+col <- c("regionid","SPECIES_QUALIFIED","cuid","cu_name_pse","SYSTEM_SITE","field_nuseds_used","sys_nm","distance" )
 
 #' Matches & not matched: Proportion and nb.:
 streamid_na <- is.na(nuseds_cuid_location$streamid)
 streamid_99 <- nuseds_cuid_location$streamid == -99 & !streamid_na
 (sum(!streamid_na) - sum(streamid_99)) / nrow(nuseds_cuid_location) # 0.94
-sum(!streamid_na) - sum(streamid_99)  # 6355
+sum(!streamid_na) - sum(streamid_99)  # 6363
 sum(streamid_na) / nrow(nuseds_cuid_location) # 0.05
-sum(streamid_na)  # 347
+sum(streamid_na)  # 357
 
 #' Missing streamid: 
 #' - proportion and number
 #' - distribution of distances for those where COORDINATES was not used
 #' --> there are two with distance > 1.0 --> might not be the right location.
-sum(streamid_99) # 56
+sum(streamid_99) # 55
 sum(streamid_99) / nrow(nuseds_cuid_location) # 0.008
 nuseds_cuid_location_99 <- nuseds_cuid_location[streamid_99,]
 table(nuseds_cuid_location_99$field_nuseds_used)
 streamid_99_noCoord <- !grepl("COORDINATES",nuseds_cuid_location_99$field_nuseds_used)
 hist(nuseds_cuid_location_99[streamid_99_noCoord,]$distance)
-
 # Cases where COORDINATES was not used:
-col <- c('regionid','SPECIES_QUALIFIED','cuid','cu_name_pse','SYSTEM_SITE','X_LONGT','Y_LAT',
-         'field_nuseds_used','sys_nm','distance')
 nuseds_cuid_location_99[streamid_99_noCoord,col]
 #' - for cuid 504 Bella Coola-Dean Rivers: 
 #' https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
+# Cases where the distance is > 0.1 ~9km --> could be that multiple sites with same name:
+nuseds_cuid_location_99[streamid_99_noCoord,c(col,"Y_LAT","X_LONGT")][nuseds_cuid_location_99$distance[streamid_99_noCoord] > 0.1,]
+cond <- streamlocationids$sys_nm == "GREEN RIVER"
+unique(streamlocationids[cond,c('latitude','longitude')])
+#' GREEN RIVER 
+#' - NUSEDS:            52.33052 -127.4542
+#' - streamlocationids: 52.99582 -128.3810
+cond <- streamlocationids$sys_nm == "TATSATUA RIVER"
+unique(streamlocationids[cond,c('latitude','longitude')])
+cond <- streamlocationids$sys_nm == "RAINBOW CREEK"
+unique(streamlocationids[cond,c('latitude','longitude')])
 
-# Cases where the distance is > ~3km --> could be that multiple sites with same name:
-nuseds_cuid_location_99[streamid_99_noCoord,col][nuseds_cuid_location_99$distance[streamid_99_noCoord] > 0.1,]
 
-# Cases with no match
-sum(is.na(nuseds_cuid_location$streamid)) # 347
+#' Look at comment = 'More than one match so we picked the closest location'
+cond <- nuseds_cuid_location$comment == 'More than one match so we picked the closest location' &
+  !is.na(nuseds_cuid_location$comment)
+nuseds_cuid_location[cond,col]
+cond <- streamlocationids$sys_nm == "HARRIET CREEK" & streamlocationids$cuid == 811
+streamlocationids[cond,]
+
 
 #' Look at the matches that were due to COORDINATES only and compare the location 
 #' names --> HOW WERE THESE DISCREPANCIES CREATED?
@@ -683,33 +821,120 @@ cond <- nuseds_cuid_location$field_nuseds_used == "COORDINATES" &
 nuseds_cuid_location[cond,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY",
                             "GFE_ID","sys_nm")]
 
-#' Look at cases where the closest location was selected:
-#' --> there is only one case:
-#' question asked during pop meeting
-message <- "More than one match so we picked the closest location"
-cond <- nuseds_cuid_location$comment == message &
-  !is.na(nuseds_cuid_location$comment)
-nuseds_cuid_location[cond,col]
-
-cond <- streamlocationids$sys_nm == "HARRIET CREEK" &
-  streamlocationids$cuid == 811
-streamlocationids[cond,]
 
 #' Check the distances for the matches done without coordinate
 #' QUESTIONS: THESE ARE PRETTY LARGE DISTANCES NO?
-cond <- grepl("COORDINATES",nuseds_cuid_location$field_nuseds_used) &
+cond <- !grepl("COORDINATES",nuseds_cuid_location$field_nuseds_used) &
   !streamid_na & 
   !streamid_99
+sum(cond) # 6150
+sum(cond)/nrow(nuseds_cuid_location)
 hist(nuseds_cuid_location$distance[!cond], breaks = 100, xlim = c(0,0.5))
 range(nuseds_cuid_location$distance[!cond],na.rm = T)
-cond <- !cond & !is.na(nuseds_cuid_location$distance) & nuseds_cuid_location$distance > 0.1 # 0.1 is roughly 3km
-nuseds_cuid_location[cond,col]
+nuseds_cuid_location[cond & nuseds_cuid_location$distance > 0.1,col]
+sum(cond & nuseds_cuid_location$distance > 0.1)
 
-#' 2) use grepl for the matching of the remaining data
+
+#'* 2) use grepl for the matching of the remaining data *
 #' use spatial coordinate only to find the closest location when multiple options.
 #' Check that the streamid has not been already taken in the section above.
 
-distance_threshold <- 0.5
+# manual fixes
+SYSTEM_SITE_fixes <- c("FANNIE COVE LEFT HAND CREEK",
+                       "FANNIE COVE RIGHT HAND CREEK",
+                       "COOPER INLET CREEKS",
+                       "CHILLIWACK RIVER",
+                       "BABINE RIVER - SECTION 1-3",
+                       "LOST VALLEY CREEK - SHORE SPAWNERS",
+                       "ISLAND BAY RIGHT HAND CREEK",
+                       "PEEL INLET 1ST LEFT HAND CREEK", 
+                       "PEEL INLET 2ND LEFT HAND CREEK",
+                       "MARSHALL INLET RIGHT HAND CREEK",
+                       "ISLAND BAY RIGHT HAND CREEK",
+                       "ISLAND BAY LEFT HAND CREEK",
+                       "FAIRFAX OUTER CREEK",
+                       "INNER BASIN RIVER (RANSOM)",
+                       "UPPER AHWHICHAOLTO CREEK",
+                       "LOWER AHWHICHAOLTO CREEK",
+                       "BURNABY NARROWS FIRST R.H. CR.",
+                       "BURNABY NARROWS SECOND R.H. CR.",
+                       "GRAY BAY CREEK OTHERS (3)",
+                       "HOCHSTADER BASIN CREEKS (2)",
+                       "MIKADO CREEK",
+                       "MAMQUAM SPAWNING CHANNEL",
+                       "BOUGHEY CREEK",
+                       "ZOLZAP SLOUGH",
+                       "TSEAX SLOUGH",
+                       "NIGGER CREEK",
+                       "MOODY CHANNEL",
+                       "STEPHENS CREEK (DOWNSTREAM OF STEPHENS LAKE)",
+                       "MESACHIE RIVER",
+                       "CHONAT CREEK",
+                       "WEAVER CHANNEL",
+                       "UPPER PARADISE CHANNEL",
+                       "LOWER PARADISE CHANNEL",
+                       "TATSAMENIE RIVER",
+                       "SETON CHANNELS - UPPER AND LOWER",
+                       "LASSITER AND ROWLEY CREEKS",
+                       "BRENNAN CHANNEL",
+                       "ADAMS CHANNEL",
+                       "SWAN LAKE CREEK #2 UNNAMED",
+                       "PEACH SPAWNING CHANNEL",
+                       "NADINA CHANNEL",
+                       "JONES CREEK CHANNEL",
+                       "CROWN ZELLERBACK CREEK",
+                       "CHILKO CHANNEL",
+                       "CENTENNIAL CHANNEL",
+                       "CARRINGTON CREEK")
+
+sys_nm_fixes <- c("COOPER INLET-FANNIE COVE LH CREEK",
+                  "COOPER INLET-FANNIE COVE RH CREEK",
+                  "COOPER INLET-FANNIE COVE CREEKS",
+                  "CHILLIWACK/VEDDER RIVER",
+                  "Babine-Sections 1 To 3",
+                  "LOST VALLEY CREEK-LAKE SHORE",
+                  "ISLAND BAY CREEKS-R/H",
+                  "PEEL INLET CREEK-L/H #1",
+                  "PEEL INLET CREEK-L/H #2",
+                  "MARSHALL INLET CREEK",
+                  "ISLAND BAY CREEKS-R/H",
+                  "ISLAND BAY CREEKS-L/H",
+                  "FAIRFAX INLET CREEK-OUTER",
+                  "RANSOM RIVER",
+                  "AHWHICHAOLTO CREEK-UPPER",
+                  "AHWHICHAOLTO CREEK-LOWER",
+                  "BURNABY NARROWS CREEK-FIRST R/H",
+                  "BURNABY NARROWS CREEK-SECOND R/H",
+                  "GRAY BAY CREEKS-OTHERS",
+                  "HOCHSTADER BASIN CREEK",
+                  "MIKADO LAKE CREEK",
+                  "MAMQUAM RIVER SPAWNING CHANNEL",
+                  "BOUGHEY BAY UNNAMED CREEK #2",
+                  "Ksi Ts'Oohl Ts'Ap 2",
+                  "Ksi Sii Aks 2",
+                  "N. CREEK",
+                  "MOODY\\S SPAWNING CHANNEL",
+                  "Stephens Creek",
+                  "MESACHIE CREEK",
+                  "CHONAT LAKE CREEK",
+                  "WEAVER  SPAWNING CHANNEL",
+                  "PARADISE SPAWNING CHANNEL-UPPER",
+                  "PARADISE SPAWNING CHANNEL-LOWER",
+                  "TATSAMENIE LAKE",
+                  "UPPER and  LOWER SETON CHANNELS",
+                  "LASSITER CREEK",
+                  "BRENNAN PARK SPAWNING CHANNEL",
+                  "ADAMS RIVER SPAWNING CHANNEL",
+                  "Swan Lake Creek  #2",
+                  "PEACH CREEK SIDE CHANNEL",
+                  "NADINA RIVER-UPPER",
+                  "JONES'  SPAWNING CHANNEL",
+                  "CROWN ZELLERBACH CREEK",
+                  "CHILKO SPAWNING CHANNELS",
+                  "CENTENNIAL SPAWNING CHANNEL",
+                  "CARRINGTON COVE CREEK")
+
+distance_threshold <- 1
 count <- 0
 count_show <- 1
 for(r in 1:nrow(nuseds_cuid_location)){
@@ -718,6 +943,13 @@ for(r in 1:nrow(nuseds_cuid_location)){
   
   if(is.na(nuseds_cuid_location$streamid[r])){
     
+    # if(grepl("#1 CREEK",nuseds_cuid_location$SYSTEM_SITE[r])){
+    #   break
+    # }
+    if("SWAN LAKE CREEK #2 UNNAMED" == nuseds_cuid_location$SYSTEM_SITE[r]){
+      break
+    }
+
     fileds_values_l <- list()
     v_i <- 1
     for(v in c("cuid",fields_locations)){
@@ -743,6 +975,7 @@ for(r in 1:nrow(nuseds_cuid_location)){
           round(streamlocationids$latitude,4) == fileds_values_l[[v]]$Y_LAT
       }else{
         val_here <- simplify_string_fun(fileds_values_l[[v]])
+        val_here <- gsub("creeks","creek",val_here)
         if(val_here == ""){
           condititions_l[[v_i]] <- rep(F,nrow(streamlocationids))
         }else{
@@ -761,68 +994,167 @@ for(r in 1:nrow(nuseds_cuid_location)){
     
     comment <- "Used grepl()"
     
-    # manual fixes
-    SYSTEM_SITE_fixes <- c("FANNIE COVE LEFT HAND CREEK",
-                           "CHILLIWACK RIVER",
-                           "BABINE RIVER - SECTION 1-3",
-                           "LOST VALLEY CREEK - SHORE SPAWNERS")
-    sys_nm_fixes <- c("COOPER INLET-FANNIE COVE LH CREEK",
-                      "CHILLIWACK/VEDDER RIVER",
-                      "Babine-Sections 1 To 3",
-                      "LOST VALLEY CREEK-LAKE SHORE")
-    
-    if(fileds_values_l$SYSTEM_SITE %in% SYSTEM_SITE_fixes){
-      i <- which(fileds_values_l$SYSTEM_SITE == SYSTEM_SITE_fixes)
-      fileds_values_l$SYSTEM_SITE <- sys_nm_fixes[i]
-      condititions_l$SYSTEM_SITE <- streamlocationids$sys_nm == fileds_values_l$SYSTEM_SITE
-      condititions_cuid_l$SYSTEM_SITE <- condititions_l$cuid & condititions_l$SYSTEM_SITE
-      fields_used <- rep(F,length(fields_used))
-      fields_used["SYSTEM_SITE"] <- T
-      comment <- paste0(comment," ; SYSTEM_SITE modified manually to match")
-    }
-    
-    # if there is no match --> try extra tricks or individual fixes
     if(sum(fields_used) == 0){
       
-      SYSTEM_SITE_simple_here <- simplify_string_fun(fileds_values_l$SYSTEM_SITE)
-      
-      #' try issues with:  RIGHT HAND to RH
-      #' -  R.H. CREEK --> CREEK R.H.
-      hand <- sapply(X = c("righthand","lefthand"),
-                     FUN = function(c){grepl(c,SYSTEM_SITE_simple_here)})
-      if(sum(hand) > 0){
-        char <- names(hand)[hand]
-        SYSTEM_SITE_simple_here <- gsub(char,"rh",SYSTEM_SITE_simple_here)
-      }
-      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
-                                            streamlocationids$sys_nm_simple)
-      
-      #' if sill no match, try issues with:  RIGHT HAND to RH
-      hand <- sapply(X = c("rh","lh"),
-                     FUN = function(c){grepl(c,SYSTEM_SITE_simple_here)})
-      cond <- sum(cond_SYSTEM_SITE_simple_here) == 0 &
-        grepl("creek",SYSTEM_SITE_simple_here) &
-        sum(hand) > 0
-      if(cond){
-        char <- paste0(names(hand)[hand],"creek")
-        char_new <- paste0("creek",names(hand)[hand])
-        SYSTEM_SITE_simple_here <- gsub(char,char_new,SYSTEM_SITE_simple_here)
-      }
-      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
-                                            streamlocationids$sys_nm_simple)
-      
-      if(sum(cond_SYSTEM_SITE_simple_here) > 0){
-        fileds_values_l$SYSTEM_SITE <-cond_SYSTEM_SITE_simple_here
-        condititions_l$SYSTEM_SITE <- streamlocationids$sys_nm == fileds_values_l$SYSTEM_SITE
+      # apply the changes identified by eye
+      if(fileds_values_l$SYSTEM_SITE %in% SYSTEM_SITE_fixes){
+        i <- which(SYSTEM_SITE_fixes == fileds_values_l$SYSTEM_SITE)
+        fileds_values_l$SYSTEM_SITE <- sys_nm_fixes[i]
+        condititions_l$SYSTEM_SITE <- simplify_string_fun(streamlocationids$sys_nm) == simplify_string_fun(fileds_values_l$SYSTEM_SITE)
         condititions_cuid_l$SYSTEM_SITE <- condititions_l$cuid & condititions_l$SYSTEM_SITE
-        fields_used <- rep(F,length(fields_used))
-        fields_used["SYSTEM_SITE"] <- T
         comment <- paste0(comment," ; SYSTEM_SITE modified manually to match")
+        
+        fields_used <- unlist(lapply(condititions_cuid_l,function(f){sum(f) > 0}))
+        
+      }else{ # try extra tricks or individual fixes
+        
+        cond_SYSTEM_SITE_simple_here <- F
+        
+        SYSTEM_SITE_here <- fileds_values_l$SYSTEM_SITE
+        SYSTEM_SITE_simple_here <- simplify_string_fun(SYSTEM_SITE_here)
+        SYSTEM_SITE_simple_here <- gsub("creeks","creek",SYSTEM_SITE_simple_here)
+        
+        #' try issues with:  RIGHT HAND to RH
+        hand <- sapply(X = c("righthand","lefthand"),
+                       FUN = function(c){grepl(c,SYSTEM_SITE_simple_here)})
+        if(sum(hand) > 0){
+          char <- names(hand)[hand]
+          char_new <- c("rh","lh")[hand]
+          SYSTEM_SITE_simple_here <- gsub(char,char_new,SYSTEM_SITE_simple_here)
+          cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                streamlocationids$sys_nm_simple)
+        }
+        
+        if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+          #' if sill no match, try issues with:  R.H. CREEK --> CREEK R.H.
+          hand <- sapply(X = c("rh","lh"),
+                         FUN = function(c){grepl(c,SYSTEM_SITE_simple_here)})
+          cond <- sum(cond_SYSTEM_SITE_simple_here) == 0 &
+            grepl("creek",SYSTEM_SITE_simple_here) &
+            sum(hand) > 0
+          if(cond){
+            char <- paste0(names(hand)[hand],"creek")
+            char_new <- paste0("creek",names(hand)[hand])
+            SYSTEM_SITE_simple_here <- gsub(char,char_new,SYSTEM_SITE_simple_here)
+            cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                  streamlocationids$sys_nm_simple)
+          }
+        }
+        
+        if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+          #' Cases with:
+          #1 CREEK --> CREEK #1
+          #2 CREEKS --> CREEK #2
+          #3 CREEKS --> CREEK #3
+          #4 CREEKS --> CREEK #4
+          patterns <- c("#1creek","#2creeks","#2creek","#3creeks","#3creek","#4creeks","#4creek")
+          patterns_new <- c("creek#1","creek#2","creek#2","creek#3","creek#3","creek#4","creek#4")
+          patterns_present <- sapply(patterns,
+                                     function(p){grepl(p,SYSTEM_SITE_simple_here)})
+          if(sum(patterns_present) > 0){
+            pattern <- patterns[patterns_present]
+            if(length(pattern) > 1){ # e.g. "#2creeks" "#2creek" --> it is "#2creeks"
+              pattern <- pattern[grepl("s",pattern)]
+              patterns_present <- sapply(patterns,
+                                         function(p){p == pattern})
+            }
+            pattern_new <- patterns_new[patterns_present]
+            SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+            cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                  streamlocationids$sys_nm_simple)
+          }
+        }
+        
+        if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+          #' Cases with:
+          patterns <- "headcreek"
+          patterns_new <- "creekhead"
+          patterns_present <- grepl(patterns,SYSTEM_SITE_simple_here)
+          if(sum(patterns_present) > 0){
+            pattern <- patterns[patterns_present]
+            pattern_new <- patterns_new[patterns_present]
+            SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+            cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                  streamlocationids$sys_nm_simple)
+          }
+        }
+        
+        if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+          #' Cases with:
+          patterns <- "outercreek"
+          patterns_new <- "creekouter"
+          patterns_present <- grepl(patterns,SYSTEM_SITE_simple_here)
+          if(sum(patterns_present) > 0){
+            pattern <- patterns[patterns_present]
+            pattern_new <- patterns_new[patterns_present]
+            SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+            cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                  streamlocationids$sys_nm_simple)
+          }
+        }
+        
+        if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+          #' Cases with:
+          patterns <- paste0("#",c("one","two","three","four","five","six","seven",
+                                   "eight","nine"))
+          patterns_new <- paste0("#",1:9)
+          patterns_present <- sapply(patterns,
+                                     function(p){grepl(p,SYSTEM_SITE_simple_here)})
+          if(sum(patterns_present) > 0){
+            pattern <- patterns[patterns_present]
+            pattern_new <- patterns_new[patterns_present]
+            SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+            cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                  streamlocationids$sys_nm_simple)
+          }
+        }
+        
+        if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+          #' Cases with:
+          patterns <- paste0("creek",1:9)
+          patterns_new <- paste0("#",1:9)
+          patterns_present <- sapply(patterns,
+                                     function(p){grepl(p,SYSTEM_SITE_simple_here,fixed = T)})
+          if(sum(patterns_present) > 0){
+            pattern <- patterns[patterns_present]
+            pattern_new <- patterns_new[patterns_present]
+            SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+            cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                  streamlocationids$sys_nm_simple)
+            
+          }
+          
+          # if still no match it could be a case such as: "CHOKE PASS CREEKS (3)" --> "CHOKE PASS CREEKS"
+          if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+            patterns <- paste0("#",1:9)
+            patterns_new <- rep("",9)
+            patterns_present <- sapply(patterns,
+                                       function(p){grepl(p,SYSTEM_SITE_simple_here,fixed = T)})
+            if(sum(patterns_present) > 0){
+              pattern <- patterns[patterns_present]
+              pattern_new <- patterns_new[patterns_present]
+              SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+              cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                                    streamlocationids$sys_nm_simple)
+              
+            }
+          }
+        }
+        
+        #
+        if(sum(cond_SYSTEM_SITE_simple_here) > 0){
+          #fileds_values_l$SYSTEM_SITE <- SYSTEM_SITE_here
+          condititions_l$SYSTEM_SITE <- cond_SYSTEM_SITE_simple_here
+          condititions_cuid_l$SYSTEM_SITE <- condititions_l$cuid & condititions_l$SYSTEM_SITE
+          fields_used <- sapply(fields_used,function(x){F})
+          fields_used["SYSTEM_SITE"] <- T
+          comment <- paste0(comment," ; SYSTEM_SITE modified manually to match")
+        }
       }
-
     }
     
-    # 
+    # After trying all the possible fixes using cuid
+    # if there are matches
     if(sum(fields_used) > 0){
       
       # indicate which nuseds field(s) was used
@@ -831,12 +1163,16 @@ for(r in 1:nrow(nuseds_cuid_location)){
       # select condition
       cond_toUse <- condititions_cuid_l[fields_used][[1]]
       
+      
       # make sure the streamid is not already taken
-      if(sum(cond_toUse) > 0 & sum(cond_toUse & is.na(streamlocationids$taken)) == 0){
+      streamidTaken_noOtherOption <- sum(cond_toUse) > 0 &
+        sum(cond_toUse & is.na(streamlocationids$taken)) == 0
+      
+      if(streamidTaken_noOtherOption){
         # to check if that happens
         print(paste0("*** Match already taken at r = ",r,":"))
         print(streamlocationids[cond_toUse,c("regionid","cuid","sys_nm","latitude",
-                                             "longitude","cu_name_pse")])
+                                             "longitude","cu_name_pse","taken")])
         print(nuseds_cuid_location[r,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE",
                                        "WATERBODY","GAZETTED_NAME","LOCAL_NAME_1",
                                        "LOCAL_NAME_2","X_LONGT","Y_LAT")])
@@ -845,7 +1181,7 @@ for(r in 1:nrow(nuseds_cuid_location)){
                                     "WATERBODY","GAZETTED_NAME","LOCAL_NAME_1",
                                     "LOCAL_NAME_2","X_LONGT","Y_LAT",
                                     "distance","comment")])
-        break
+        #break
         
       }
       cond_toUse <- cond_toUse & is.na(streamlocationids$taken)
@@ -861,9 +1197,14 @@ for(r in 1:nrow(nuseds_cuid_location)){
         
         # filter distance with distance_threshold
         distances_filtered <- distances[distances < distance_threshold]
-        if(length(distances) > 0 & length(distances_filtered) == 0){
-          comment <- paste0(comment,paste0(" ; not matched because distance > ",distance_threshold))
+        noMoreMatchAfterFiltering <- length(distances) > 0 & length(distances_filtered) == 0
+        if(noMoreMatchAfterFiltering){
+          comment <- paste0(comment,paste0(" ; not matched because distance > ",
+                                           distance_threshold))
+          nuseds_cuid_location$comment[r] <- comment
+          nuseds_cuid_location$streamid[r] <- -99
           cond_toUse <- rep(F,nrow(streamlocationids))
+          
         }else{
           distances <- distances_filtered
           cond_toUse <- cond_toUse 
@@ -912,46 +1253,224 @@ for(r in 1:nrow(nuseds_cuid_location)){
         streamlocationids$taken[cond_toUse] <- r
       }
       
-    }else{ # if there is still no match
-      count <- count + 1
-      print(paste(count,r,fileds_values_l$cuid,fileds_values_l$SYSTEM_SITE,sep = " - "))
-      count_percent <- round(count/nrow(nuseds_cuid_location)*100,1)
-      if(count_show <= count_percent){
-        print(paste("Proportion not matching:",count_percent,"%"))
-        count_show <- count_show + 1
-      }
+    }else{ # sum(fields_used) == 0 : if there is still no match --> use region and not cuid
       
-      # if(count > 15){
-      #   break
-      # }
+      #' If a location was matched but no streamid was found with this cuid -->
+      #' --> need to create a new streamid
+      #' But check with the distance 1st.
+      match_location <- sapply(condititions_l[fields_locations],function(f){sum(f)})
+      if(sum(match_location) > 0){
+        
+        fields_used[match_location > 0] <- T
+        cond_toUse <- condititions_l[c(F,fields_used)][[1]]
+        
+        distances <- distance_Euclidean_fun(x_ref = fileds_values_l$COORDINATES$X_LONGT,
+                                            y_ref = fileds_values_l$COORDINATES$Y_LAT, 
+                                            x = round(streamlocationids$longitude[cond_toUse],4),
+                                            y = round(streamlocationids$latitude[cond_toUse],4))
+        distance <- unique(distances[distances == min(distances)])
+        
+        if(distance < distance_threshold){
+          
+          nuseds_cuid_location$field_nuseds_used[r] <- paste(fields_locations[fields_used], 
+                                                             collapse = " ")
+          nuseds_cuid_location$streamid[r] <- -99
+          nuseds_cuid_location$sys_nm[r] <- unique(streamlocationids$sys_nm[cond_toUse])
+          nuseds_cuid_location$comment[r] <- paste0(comment," ; Location exist but no streamid for its assocoation with this cuid")
+          nuseds_cuid_location$distance[r] <- distance
+          
+        }else{
+          
+          nuseds_cuid_location$comment[r] <- paste0(comment," ; Location name exists but not for this cuid and distance > threshold")
+          nuseds_cuid_location$streamid[r] <- -99
+          count <- count + 1
+          print(paste(count,r,fileds_values_l$cuid,fileds_values_l$SYSTEM_SITE,sep = " - "))
+          
+          count_percent <- round(count/nrow(nuseds_cuid_location)*100,1)
+          if(count_show <= count_percent){
+            print(paste("Proportion not matching:",count_percent,"%"))
+            count_show <- count_show + 1
+          }
+        }
+        
+
+      }else{ # location was not matched, regardless of the cuid --> need to create a new locationid and streamid
+        
+        count <- count + 1
+        print(paste(count,r,fileds_values_l$cuid,fileds_values_l$SYSTEM_SITE,sep = " - "))
+        
+        count_percent <- round(count/nrow(nuseds_cuid_location)*100,1)
+        if(count_show <= count_percent){
+          print(paste("Proportion not matching:",count_percent,"%"))
+          count_show <- count_show + 1
+        }
+      }
     }
   }
 }
-print(paste("Proportion not matching:",count_percent,"%"))
-r <- 426
-811 - MATHESON RIGHT HAND CREEK
-811 - MATHESON L.H. CREEK
-MATHESON CREEK-R/H
-MATHESON CREEK-L/H
+print(paste("Proportion not matching:",count_percent,"%")) # 1.2%
+r/nrow(nuseds_cuid_location)
 
+col <- c("regionid","SPECIES_QUALIFIED","cuid","cu_name_pse","SYSTEM_SITE",
+         "field_nuseds_used","comment")
+cond_na <- is.na(nuseds_cuid_location$streamid)
+sum(cond_na)
+#nuseds_cuid_location[cond_na,col]
+rev(sort(table(nuseds_cuid_location$SYSTEM_SITE[cond_na])))
 
-807 - SKAAT HARBOUR R.H. CREEK
-807 - SKAAT HARBOUR HEAD CREEK
-807 - SKAAT HARBOUR L.H.CREEK
+#'* Need of new locations: *
 
-cuid <- 807
-cond <- streamlocationids$cuid == cuid &
-  grepl("SKAAT",streamlocationids$sys_nm)
+#'1) "CAMP SLOUGH" --> not "CAMP SLOUGH" because distance is way too far
+location <- "CAMP SLOUGH"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "CAMP CREEK"
+location <- "CAMP-LAKE"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
 streamlocationids[cond,]
 
 
-cond <- streamlocationids$cuid == 1214 & 
-  grepl("YUKON",streamlocationids$sys_nm)
+
+#'1) "CAMP SLOUGH" --> not "CAMP SLOUGH" because distance is way too far
+location <- "CAMP SLOUGH"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "CAMP CREEK"
+location <- "CAMP-LAKE"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
 streamlocationids[cond,]
 
-cond <- streamlocationids$cuid == 1214 & 
-  grepl("YUKON",streamlocationids$sys_nm)
+
+#'1) "FENNELL CREEK AND SASKUM CREEK"
+location <- "FENNELL CREEK AND SASKUM CREEK"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "FENNELL"
+location <- "SASKUM"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
 streamlocationids[cond,]
+
+#'1) "LATIMER CREEK"
+location <- "LATIMER CREEK"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "LATIMER"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1) "MILLIONAIRE CREEK"
+location <- "MILLIONAIRE CREEK"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "MILLIONAIRE"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1) "STILIQUE CREEK"
+location <- "STILIQUE CREEK"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "STILIQUE"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1)  "DRY CREEK"
+location <- "DRY CREEK"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "DRY"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1)  "JUDD SLOUGH"
+location <- "JUDD SLOUGH"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "JUDD"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1) "PIPER CREEK"
+location <- "PIPER CREEK"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "PIPER"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1) "TIEMPO SPAWNING CHANNEL"
+location <- "TIEMPO SPAWNING CHANNEL"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_cuid_location[cond,c(col,"LOCAL_NAME_1","sys_nm","Y_LAT","X_LONGT","distance")])
+unique(nuseds_cuid_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm")])
+location <- "TIEMPO"
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1) WATERSHED ABOVE STAMP FALLS
+location <- "STAMP"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE)
+unique(nuseds_cuid_location[cond,c(col,"sys_nm","Y_LAT","X_LONGT","distance")])
+cond <- grepl(location,streamlocationids$sys_nm)
+streamlocationids[cond,]
+
+#'1) SKEENA RIVER --> there is  Skeena River-West but distance > ~ 50km 
+location <- "SKEENA"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE)
+unique(nuseds_cuid_location[cond,c(col,"sys_nm","Y_LAT","X_LONGT","distance")])
+cond <- grepl(location,streamlocationids$sys_nm)
+cond <- grepl("skeena",streamlocationids$sys_nm_simple)
+streamlocationids[cond,]
+
+#'1) KINGKOWN INLET CREEKS --> there is no KINGKOWN
+location <- "KINGKOWN"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE)
+unique(nuseds_cuid_location[cond,c(col,"sys_nm","Y_LAT","X_LONGT","distance")])
+cond <- grepl(location,streamlocationids$sys_nm)
+cond <- grepl(tolower(location),streamlocationids$sys_nm_simple)
+streamlocationids[cond,]
+
+#'3) STRANDBY RIVER
+location <- "STRANDBY"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE)
+unique(nuseds_cuid_location[cond,c(col,"sys_nm","Y_LAT","X_LONGT","distance")])
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'2) BORROWMAN CREEK, BORROWMAN is not in database
+location <- "BORROWMAN"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE)
+unique(nuseds_cuid_location[cond,c(col,"distance")])
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'1) CLEARWATER CREEK, which is != CLEARWATER RIVER, there is a CLEARWATER CREEK
+#' but it is > the threshold (by a lot)
+location <- "CLEARWATER"
+cond <- grepl(location,nuseds_cuid_location$SYSTEM_SITE)
+unique(nuseds_cuid_location[cond,c(col,"distance")])
+cond <- grepl(location,streamlocationids$sys_nm)
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+
+
+
+
+
+
+
+
+
 
 
 # individual fixes in case the is one match but it is already taken
@@ -1021,14 +1540,29 @@ location <- "CHILCOTIN RIVER"
 location <- "CHILCOTIN"
 cuid <- 310
 cond <- streamlocationids$cuid == cuid & grepl(simplify_string_fun(location),streamlocationids$sys_nm_simple)
+location <- "CHILCOTIN"
+cond <- grepl(simplify_string_fun(location),streamlocationids$sys_nm_simple)
 streamlocationids[cond,]
 
 cond <- nuseds$cuid == cuid & (grepl(location,nuseds$SYSTEM_SITE) | 
                                  grepl(location,nuseds$WATERBODY))
 cond <-  (grepl(location,nuseds$SYSTEM_SITE) | 
                                  grepl(location,nuseds$WATERBODY))
-unique(nuseds[cond,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY")])
-nuseds$MAX_ESTIMATE[cond]
+unique(nuseds[cond,c("SPECIES_QUALIFIED","cuid","SYSTEM_SITE","WATERBODY","Y_LAT","X_LONGT")])
+
+
+#' Sys_nm “COOPER INLET-FANNIE COVE RH CREEK” and “COOPER INLET-FANNIE COVE CREEKS”
+#'  have exactly the same coordinates
+location <- "COOPER INLET-FANNIE COVE"
+cuid <- 503
+cond <- streamlocationids$cuid == cuid &
+  grepl(simplify_string_fun(location),streamlocationids$sys_nm_simple)
+streamlocationids[cond,]
+
+nuseds_cuid_location[c(47,551),c("regionid","cu_name_pse","SPECIES_QUALIFIED",
+                                 "cuid","SYSTEM_SITE","GFE_ID","Y_LAT","X_LONGT",
+                                 "sys_nm","distance","comment")]
+
 
 #' ASK DURING POP MEETING
 location <- "GOOSE POINT"

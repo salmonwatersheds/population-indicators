@@ -1369,4 +1369,45 @@ update_for_FULL_CU_IN_l <- function(){
   return(out)
 }
 
+#' Function to update new_streamids and new_cuid_streamids.
+streamids_update_fun <- function(new_streamids_data,pointid = NA,sys_nm = NA, 
+                                 latitude = NA, longitude = NA, cuid = NA, 
+                                 cu_name_pse = NA){
+  na_pointid <- is.na(pointid)
+  
+  if(na_pointid & any(sapply(X = c(sys_nm,latitude,longitude,cuid,cu_name_pse),is.na))){
+    # return empty dataset
+    new_streamids <- streamlocationids[NULL,c("pointid","sys_nm","latitude","longitude",
+                                              "cuid","cu_name_pse")]
+    
+    new_cuid_streamids <- streamlocationids[NULL,c("sys_nm","latitude","longitude",
+                                                   "cuid","cu_name_pse")]
+    
+    out <- list(new_streamids,new_cuid_streamids)
+    names(out) <- c("new_streamids","new_cuid_streamids")
+    return(out)
+    
+  }else if(any(sapply(X = c(sys_nm,latitude,longitude,cuid,cu_name_pse),is.na))){
+    print("Missing arguments")
+    
+  }else if(na_pointid){ # fill new_cuid_streamids: need to add the cuid and create a streamid
+    
+    d <- data.frame(sys_nm = sys_nm,
+                    latitude = latitude,
+                    longitude = longitude,
+                    cuid = cuid)
+    out <- rbind(new_streamids_data,d)
+    return(out)
+    
+  }else{ # fill new_streamids
+    
+    d <- data.frame(pointid = pointid,
+                    sys_nm = sys_nm,
+                    latitude = latitude,
+                    longitude = longitude,
+                    cuid = cuid)
+    out <- rbind(new_streamids_data,d)
+    return(out)
+  }
+}
 

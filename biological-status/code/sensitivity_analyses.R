@@ -544,9 +544,13 @@ biological_status_HBSR_df[biological_status_HBSR_df$cuid == 177,]$current_spawne
 
 sensitivity_RickerParam_LN_fun(postDist_l = postDist_l)
 sensitivity_RickerParam_LN_fun(postDist_l = postDist_l, biostatus = biostatus)
+sensitivity_RickerParam_LN_fun(postDist_l = postDist_l, biostatus = biostatus, 
+                               regions = "Skeena")
+sensitivity_RickerParam_LN_fun(postDist_l = postDist_l, biostatus = biostatus, 
+                               regions = "Haida Gwaii")
 
 #' 
-sensitivity_RickerParam_LN_fun <- function(postDist_l,biostatus = NA){
+sensitivity_RickerParam_LN_fun <- function(postDist_l,biostatus = NA, regions = NA){
   
   benchCols <- c(green = "#8EB687", amber = "#DFD98D", red = "#9A3F3F")
   
@@ -555,7 +559,13 @@ sensitivity_RickerParam_LN_fun <- function(postDist_l,biostatus = NA){
   
   parameters <- c("mu_a","sd_a","a","b")
   
-  for(rg in unique(postDist_l$output$region)){
+  if(all(is.na(regions))){
+    regions <- unique(postDist_l[[1]]$region)
+  }else{
+    regions <- regions[regions %in% unique(postDist_l[[1]]$region)] # just to avoid crashing if region name has typos
+  }
+  
+  for(rg in regions){
     # rg <-  unique(postDist_l$output$region)[6]
     condition <- dataN$region == rg
     dataNrg <- dataN[condition,]

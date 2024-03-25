@@ -756,10 +756,15 @@ simplify_string_fun <- function(string){
   string <- tolower(string)
   string <- gsub(" ","",string)
   string <- gsub("-","",string)
+  string <- gsub("_","",string)
   string <- gsub("'","",string)
   string <- gsub("\\\\","",string)
   string <- gsub("\\(","",string)
   string <- gsub(")","",string)
+  string <- gsub("\\[","",string)
+  string <- gsub("]","",string)
+  string <- gsub("\\.","",string)
+  string <- gsub("/","",string)
 
   return(string)
 }
@@ -771,4 +776,11 @@ distance_Euclidean_fun <- function(x_ref,y_ref,x,y){
   return(out)
 }
 
+#' Function to calculate the centroids of points in a 2-dimensional space
+# x <- y <- sample(1:20,5,replace = T)
+centroid_2D_fun <- function(x,y){
+  out <- list(mean(x),mean(y))
+  names(out) <- c("x","y")
+  return(out)
+}
 

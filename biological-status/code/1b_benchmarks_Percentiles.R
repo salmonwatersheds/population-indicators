@@ -89,7 +89,7 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Central_coast)
 
-region <- regions_df$Columbia
+region <- regions_df$Transboundary
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -132,7 +132,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 465
+nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 467
 
 # Import the spawner_abundance.csv, downloaded from SPS work. OLDER CODE
 # spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/data")
@@ -201,7 +201,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 3
+      # i_sp <- 1
       
       speciesAcroHere <- unique(species_acro)[i_sp]
       species_i <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
@@ -370,62 +370,7 @@ for(i_rg in 1:length(region)){
           spawnerAbundance_lastGen_m <- csa_df$curr_spw_abun
           spawnerAbundance_lastGen_dataPointNb <- csa_df$dataPointNb
           currentSpawnerData_availableRecentEnough <- csa_df$curr_spw_availableRecentEnough
-          
-          #' # Are there any spawner abundance data?
-          #' if(all(is.na(spawnerAbundance))){
-          #'   # spawnerAbundance <- SRm$S[, i]
-          #'   # print("The following CU has only NAs for spawner abundance:")
-          #'   # print(paste(region[i_rg],species[i_sp],CUname))
-          #'   currentSpawnerData_available <- F
-          #'   yrInitial <- NA
-          #'   yrFinal <- NA
-          #'   #' Eric: if estimated is not available, we can't apply spawner-recruit 
-          #'   #' benchmarks.
-          #' }else{
-          #'   currentSpawnerData_available <- T
-          #'   yrFinal <- tail(as.numeric(names(spawnerAbundance[!is.na(spawnerAbundance)])),1)
-          #' }
-          #' 
-          #' #' Determine current spawner abundance. 
-          #' if(is.na(yearCurrentAbundance)){
-          #'   # if there is data, remove the most recent year without data iteratively,
-          #'   # otherwise do nothing
-          #'   
-          #'   if(any(!is.na(spawnerAbundance))){
-          #'     while(is.na(tail(spawnerAbundance,1))){
-          #'       spawnerAbundance <- spawnerAbundance[-length(spawnerAbundance)]
-          #'     }
-          #'   }
-          #'   
-          #' }else{
-          #'   #' add number of years to spawnerAbundance until yearCurrentAbundance if needed
-          #'   yearsHere <- as.numeric(names(spawnerAbundance))
-          #'   yearLast <- max(yearsHere)
-          #'   while(yearLast < yearCurrentAbundance){
-          #'     yearLast <- yearLast + 1
-          #'     datapointHere <- NA
-          #'     names(datapointHere) <- yearLast
-          #'     spawnerAbundance <- c(spawnerAbundance,datapointHere)
-          #'   }
-          #' }
-          #' 
-          #' # calculate current spawner abundance = the geometric mean over the last generation
-          #' spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength)
-          #' spawnerAbundance_lastGen_m <- mean_geom_fun(x = spawnerAbundance_lastGen)
-          #' spawnerAbundance_lastGen_dataPointNb <- sum(!is.na(spawnerAbundance_lastGen))
-          #' 
-          #' #' Is there is only NAs in spawnerAbundance_lastGen (should not happen
-          #' #' if yearCurrentAbundance is NA).
-          #' if(all(is.na(spawnerAbundance_lastGen))){
-          #'   currentSpawnerData_availableRecentEnough <- F
-          #'   # the 1st year with data for the calculation of the current spawner abundance
-          #'   yrInitial <- NA
-          #' }else{
-          #'   currentSpawnerData_availableRecentEnough <- T
-          #'   # the 1st year with data for the calculation of the current spawner abundance
-          #'   yrInitial <- as.numeric(names(spawnerAbundance_lastGen[!is.na(spawnerAbundance_lastGen)]))[1]
-          #' }
-          
+        
           
           # determine the number of time this CUs fall under the Red, Amber and Green 
           # status over all the simulations

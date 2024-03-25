@@ -223,6 +223,15 @@ biological_status_all <- merge(x = biological_status_HBSRM[,!colnames(biological
 # 2) Create complete dataset with all the CUs and their biostatus and psf_staus_code -----
 # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1701464111241899?thread_ts=1701199596.229739&cid=CJG0SHWCW
 
+#' TODO: add the extra rule 2) in update chart: "is there a spawner-recruit relationship
+#' available with the CU-level catch estimates medium-low quality or higher"
+#' #' cf. Population "2024 Population Analysis running notes" at March 19 for 
+#' corresponding documentation. 
+#' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
+#' The data quality estimates are in:
+#' population-indicators/data-quality/output as dataset390-2023-05-20.csv
+#' 
+
 # Field to include:
 # percentile_red_prob
 # percentile_yellow_prob
@@ -972,6 +981,17 @@ biological_status_merge_diff <- biological_status_merge_diff[,colToKeep]
 #
 
 
+biological_status_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = "biological_status_percentiles",
+                                                         wd_output = wd_output,
+                                                         region = "Transboundary",
+                                                         species_all = species_all)
 
+rbind_biologicalStatusCSV_fun(pattern = "biological_status_percentiles",
+                              wd_output = wd_output,
+                              region = "Transboundary",
+                              species_all = species_all)
 
-
+rbind_biologicalStatusCSV_fun(pattern = "benchmarks_summary_percentiles",
+                              wd_output = wd_output,
+                              region = "Transboundary",
+                              species_all = species_all)

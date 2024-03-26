@@ -1518,3 +1518,210 @@ SYSTEM_SITE_fixes_fun <- function(){
   names(out) <- c("SYSTEM_SITE","sys_nm")
   return(out)
 }
+
+#' 
+# fields <- c("cuid",fields_locations)
+# nuseds_data <- nuseds
+nuseds_streamid_cond_fun <- function(fields,nuseds_data,streamlocationids,
+                                     decimals = 6, nuseds_full = F){
+  
+  if(nuseds_full){
+    # in case the actual nuseds data is given and not nuseds_location
+    fields_nuseds <- fields[fields != "COORDINATES"]
+    fields_nuseds <- c(fields_nuseds,"GFE_ID","regionid","X_LONGT","Y_LAT")
+    nuseds_data <- unique(nuseds_data[,fields_nuseds])
+  }
+
+  fileds_values_l <- list()
+  v_i <- 1
+  for(v in fields){
+    if(v == "COORDINATES"){
+      X_LONGT <- round(nuseds_data$X_LONGT[r],decimals)
+      Y_LAT <- round(nuseds_data$Y_LAT[r],decimals)
+      fileds_values_l[[v_i]] <- list(X_LONGT,Y_LAT)
+      names(fileds_values_l[[v_i]]) <- c("X_LONGT","Y_LAT")
+    }else{
+      fileds_values_l[[v_i]] <- nuseds_data[r,v]
+    }
+    v_i <- v_i + 1
+  }
+  names(fileds_values_l) <- fields
+  
+  conditions_l <- list()
+  v_i <- 1
+  for(v in fields){
+    if(v == "cuid"){
+      conditions_l[[v_i]] <- streamlocationids$cuid == fileds_values_l[[v]] 
+    }else if(v == "COORDINATES"){ # leave it but there is not match
+      conditions_l[[v_i]] <- round(streamlocationids$longitude,decimals) == fileds_values_l[[v]]$X_LONGT &
+        round(streamlocationids$latitude,decimals) == fileds_values_l[[v]]$Y_LAT
+    }else{
+      val_here <- simplify_string_fun(fileds_values_l[[v]])
+      val_here <- gsub("creeks","creek",val_here)
+      if(val_here == ""){
+        conditions_l[[v_i]] <- rep(F,nrow(streamlocationids))
+      }else{
+        sys_nm_simple <- simplify_string_fun(streamlocationids$sys_nm)
+        sys_nm_simple <- gsub("creeks","creek",sys_nm_simple)
+        
+        conditions_l[[v_i]] <- grepl(val_here,sys_nm_simple)
+      }
+    }
+    v_i <- v_i + 1
+  }
+  names(conditions_l) <- fields
+  
+  out <- list(fileds_values_l,conditions_l)
+  names(out) <- c("fileds_values","conditions")
+  return(out)
+}
+
+#'
+# SYSTEM_SITE <- nuseds_location$SYSTEM_SITE[r]
+SYSTEM_SITE_fixes_fun <- function(SYSTEM_SITE,streamlocationids){ # try extra tricks or individual fixes
+  
+  cond_SYSTEM_SITE_simple_here <- F
+  
+  SYSTEM_SITE_simple_here <- simplify_string_fun(SYSTEM_SITE)
+  SYSTEM_SITE_simple_here <- gsub("creeks","creek",SYSTEM_SITE_simple_here)
+  
+  #' try issues with:  RIGHT HAND to RH
+  hand <- sapply(X = c("righthand","lefthand"),
+                 FUN = function(c){grepl(c,SYSTEM_SITE_simple_here)})
+  if(sum(hand) > 0){
+    char <- names(hand)[hand]
+    char_new <- c("rh","lh")[hand]
+    SYSTEM_SITE_simple_here <- gsub(char,char_new,SYSTEM_SITE_simple_here)
+    cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                          streamlocationids$sys_nm_simple)
+  }
+  
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' if sill no match, try issues with:  R.H. CREEK --> CREEK R.H.
+    hand <- sapply(X = c("rh","lh"),
+                   FUN = function(c){grepl(c,SYSTEM_SITE_simple_here)})
+    cond <- sum(cond_SYSTEM_SITE_simple_here) == 0 &
+      grepl("creek",SYSTEM_SITE_simple_here) &
+      sum(hand) > 0
+    if(cond){
+      char <- paste0(names(hand)[hand],"creek")
+      char_new <- paste0("creek",names(hand)[hand])
+      SYSTEM_SITE_simple_here <- gsub(char,char_new,SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    #1 CREEK --> CREEK #1
+    #2 CREEKS --> CREEK #2
+    #3 CREEKS --> CREEK #3
+    #4 CREEKS --> CREEK #4
+    patterns <- c("#1creek","#2creeks","#2creek","#3creeks","#3creek","#4creeks","#4creek")
+    patterns_new <- c("creek#1","creek#2","creek#2","creek#3","creek#3","creek#4","creek#4")
+    patterns_present <- sapply(patterns,
+                               function(p){grepl(p,SYSTEM_SITE_simple_here)})
+    if(sum(patterns_present) > 0){
+      pattern <- patterns[patterns_present]
+      if(length(pattern) > 1){ # e.g. "#2creeks" "#2creek" --> it is "#2creeks"
+        pattern <- pattern[grepl("s",pattern)]
+        patterns_present <- sapply(patterns,
+                                   function(p){p == pattern})
+      }
+      pattern_new <- patterns_new[patterns_present]
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    patterns <- "headcreek"
+    patterns_new <- "creekhead"
+    patterns_present <- grepl(patterns,SYSTEM_SITE_simple_here)
+    if(sum(patterns_present) > 0){
+      pattern <- patterns[patterns_present]
+      pattern_new <- patterns_new[patterns_present]
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    patterns <- "outercreek"
+    patterns_new <- "creekouter"
+    patterns_present <- grepl(patterns,SYSTEM_SITE_simple_here)
+    if(sum(patterns_present) > 0){
+      pattern <- patterns[patterns_present]
+      pattern_new <- patterns_new[patterns_present]
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    patterns <- paste0("#",c("one","two","three","four","five","six","seven",
+                             "eight","nine"))
+    patterns_new <- paste0("#",1:9)
+    patterns_present <- sapply(patterns,
+                               function(p){grepl(p,SYSTEM_SITE_simple_here)})
+    if(sum(patterns_present) > 0){
+      pattern <- patterns[patterns_present]
+      pattern_new <- patterns_new[patterns_present]
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    patterns <- paste0("creek",1:9)
+    patterns_new <- paste0("#",1:9)
+    patterns_present <- sapply(patterns,
+                               function(p){grepl(p,SYSTEM_SITE_simple_here,fixed = T)})
+    if(sum(patterns_present) > 0){
+      pattern <- patterns[patterns_present]
+      pattern_new <- patterns_new[patterns_present]
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+      
+    }
+    
+    # if still no match it could be a case such as: "CHOKE PASS CREEKS (3)" --> "CHOKE PASS CREEKS"
+    if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+      patterns <- paste0("#",1:9)
+      patterns_new <- rep("",9)
+      patterns_present <- sapply(patterns,
+                                 function(p){grepl(p,SYSTEM_SITE_simple_here,fixed = T)})
+      if(sum(patterns_present) > 0){
+        pattern <- patterns[patterns_present]
+        pattern_new <- patterns_new[patterns_present]
+        SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+        cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                              streamlocationids$sys_nm_simple)
+        
+      }
+    }
+  }
+  
+  #
+  if(sum(cond_SYSTEM_SITE_simple_here) > 0){
+    #fileds_values_l$SYSTEM_SITE <- SYSTEM_SITE_here
+    out <- list(SYSTEM_SITE_simple_here,cond_SYSTEM_SITE_simple_here)
+    names(out) <- c("SYSTEM_SITE_simple_fixed","cond_SYSTEM_SITE_simple_fixed")
+    
+  }else{
+    out <- NA
+    print("No match found despite fixes")
+  }
+  
+  return(out)
+}

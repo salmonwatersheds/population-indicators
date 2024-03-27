@@ -1466,7 +1466,14 @@ SYSTEM_SITE_fixes_fun <- function(){
                          "CROWN ZELLERBACK CREEK",
                          "CHILKO CHANNEL",
                          "CENTENNIAL CHANNEL",
-                         "CARRINGTON CREEK")
+                         "CARRINGTON CREEK",
+                         "SLATE BAY - SHORE 1KM E",
+                         "ELYSIA - SHORE 1 KM WEST",
+                         "ROARING RIVER - DECEPTION POINT",
+                         "LIMESTONE POINT - SHORE .5KM S",
+                         "GOOSE POINT - SHORE .8KM S",
+                         "BIG SLIDE - SHORE 1KM W",
+                         "SQUEAH LAKE CREEK")
   
   sys_nm_fixes <- c("COOPER INLET-FANNIE COVE LH CREEK",
                     "COOPER INLET-FANNIE COVE RH CREEK",
@@ -1512,7 +1519,14 @@ SYSTEM_SITE_fixes_fun <- function(){
                     "CROWN ZELLERBACH CREEK",
                     "CHILKO SPAWNING CHANNELS",
                     "CENTENNIAL SPAWNING CHANNEL",
-                    "CARRINGTON COVE CREEK")
+                    "CARRINGTON COVE CREEK",
+                    "SLATE BAY-LAKE SHORE 1KM E",
+                    "ELYSIA SHORE-1KM W",
+                    "ROARING RIVER TO DECEPTION POINT-LAKE SHORE",
+                    "LIMESTONE PIONT-LAKE SHORE-S",
+                    "GOOSE POINT-LAKE SHORE-5 KM S",
+                    "BIG SLIDE-LAKE SHORE-1KM W",
+                    "UNNAMED CREEK NEAR SQUEAH LAKE")
   
   out <- list(SYSTEM_SITE_fixes,sys_nm_fixes)
   names(out) <- c("SYSTEM_SITE","sys_nm")
@@ -1578,12 +1592,13 @@ nuseds_streamid_cond_fun <- function(fields,nuseds_data,streamlocationids,
 
 #'
 # SYSTEM_SITE <- nuseds_location$SYSTEM_SITE[r]
-SYSTEM_SITE_fixes_fun <- function(SYSTEM_SITE,streamlocationids){ # try extra tricks or individual fixes
+SYSTEM_SITE_Extrafixes_fun <- function(SYSTEM_SITE,streamlocationids,silence = T){ # try extra tricks or individual fixes
   
   cond_SYSTEM_SITE_simple_here <- F
   
   SYSTEM_SITE_simple_here <- simplify_string_fun(SYSTEM_SITE)
-  SYSTEM_SITE_simple_here <- gsub("creeks","creek",SYSTEM_SITE_simple_here)
+  cond_creeks <- grepl("creeks",tolower(SYSTEM_SITE))
+  SYSTEM_SITE_simple_here[cond_creeks] <- gsub("creeks","creek",SYSTEM_SITE_simple_here[cond_creeks])
   
   #' try issues with:  RIGHT HAND to RH
   hand <- sapply(X = c("righthand","lefthand"),
@@ -1712,6 +1727,34 @@ SYSTEM_SITE_fixes_fun <- function(SYSTEM_SITE,streamlocationids){ # try extra tr
     }
   }
   
+  # remove "SHORE"
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    pattern <- "shore"
+    pattern_new <- ""
+    pattern_present <- grepl(pattern,SYSTEM_SITE_simple_here)
+    if(pattern_present){
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      SYSTEM_SITE_simple_here <- gsub(" ","",SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
+  # remove "LAKE"
+  if(sum(cond_SYSTEM_SITE_simple_here) == 0){
+    #' Cases with:
+    pattern <- "lake"
+    pattern_new <- ""
+    pattern_present <- grepl(pattern,SYSTEM_SITE_simple_here)
+    if(pattern_present){
+      SYSTEM_SITE_simple_here <- gsub(pattern,pattern_new,SYSTEM_SITE_simple_here)
+      SYSTEM_SITE_simple_here <- gsub(" ","",SYSTEM_SITE_simple_here)
+      cond_SYSTEM_SITE_simple_here <- grepl(SYSTEM_SITE_simple_here,
+                                            streamlocationids$sys_nm_simple)
+    }
+  }
+  
   #
   if(sum(cond_SYSTEM_SITE_simple_here) > 0){
     #fileds_values_l$SYSTEM_SITE <- SYSTEM_SITE_here
@@ -1720,8 +1763,85 @@ SYSTEM_SITE_fixes_fun <- function(SYSTEM_SITE,streamlocationids){ # try extra tr
     
   }else{
     out <- NA
-    print("No match found despite fixes")
+    if(!silence){
+      print("No match found despite fixes")
+    }
   }
   
   return(out)
 }
+
+#' Function to return the distance between the nuseds location whose matching  
+#' row(s) streamlocationids are in the list conditions_l for each field considered
+#' (e.g. SYSTEM_SITE, WATERBODY, etc)
+distance_condition_fun <- function(conditions_l,streamlocationids,
+                                   distance_threshold,decimals){
+  
+  # return the distance where matches were found
+  distances_l <- list()
+  pointid_alternative <- c()
+  for(i in 1:length(conditions_l)){
+    # i <- 1
+    cf <- conditions_l[[i]]
+    
+    if(any(cf)){
+      distances <- distance_Euclidean_fun(x_ref = fileds_values_l$COORDINATES$X_LONGT,
+                                          y_ref = fileds_values_l$COORDINATES$Y_LAT, 
+                                          x = round(streamlocationids$longitude[cf],decimals),
+                                          y = round(streamlocationids$latitude[cf],decimals))
+      
+      # filter the distances with distance_threshold and edit conditions_l[[i]] 
+      # accordingly
+      distance_toKeep <- distances[distances < distance_threshold]
+      distances_toremove <- distances[distances >= distance_threshold]
+      
+      # edit conditions_l
+      cf_new <- rep(FALSE,length(cf))
+      toKeep <- which(cf)[distances %in% distance_toKeep]
+      cf_new[toKeep] <- TRUE
+      conditions_l[[i]] <- cf <- cf_new
+      distances <- distance_toKeep
+      
+      # in case there are multiple distances --> select the smallest distance and update 
+      # conditions_l. If certain longer distance are < distance_threshold, 
+      # record the corresponding pointid
+      if(length(unique(distances)) > 1){
+        
+        distance_toKeep <- distances[distances == min(distances)]
+        distances_toremove <- distances[distances > min(distances)]
+        
+        # edit conditions_l
+        cf_new <- rep(FALSE,length(cf))
+        toKeep <- which(cf)[distances == min(distances)]
+        cf_new[toKeep] <- TRUE
+        conditions_l[[i]] <- cf_new
+        
+        distance <- unique(distance_toKeep)
+        
+        # check if other distances are < distance_threshold
+        # if yes, record their pointid
+        cond_dist <- distances < distance_threshold & distances != unique(distance_toKeep)
+        if(any(cond_dist)){
+          pointid_here <- unique(streamlocationids$pointid[which(cf)[cond_dist]])
+          pointid_alternative <- c(pointid_alternative,pointid_here)
+          # nuseds_location$pointid_alternative[r] <- paste0(pointid_here,collapse = ", ")
+        }
+      }else if(length(unique(distances)) == 1){
+        distance <- unique(distances)
+        
+      }else{
+        distance <- NA
+      }
+      
+    }else{
+      distance <- NA
+    }
+    distances_l[[i]] <- distance
+  }
+  names(distances_l) <- fields_locations
+  
+  out <- list(distances_l,conditions_l,unique(pointid_alternative))
+  names(out) <- c("distances_l","conditions_l","pointid_alternative")
+  return(out) 
+}
+

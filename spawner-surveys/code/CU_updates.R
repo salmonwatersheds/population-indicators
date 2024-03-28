@@ -76,10 +76,10 @@ nuseds <- import_mostRecent_file_fun(wd = wd_output,
                                      pattern = "NuSEDS_escapement_data_collated")
 
 head(nuseds)
-nrow(nuseds) # 307217
+nrow(nuseds) # 307009
 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6910
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6910
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6868
 
 #'* Files from PSF database *
 
@@ -1210,13 +1210,6 @@ nuseds_location[cond_noMatch,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT","comment
 
 #'* 3) find streamid *
 #' use 
-
-nuseds_location
-
-streamlocationids
-
-fields_nuseds_CU
-fields_nuseds_location
 
 nuseds_cuid_location <- unique(nuseds[,c("regionid","regionid","cuid",
                                          fields_nuseds_CU,

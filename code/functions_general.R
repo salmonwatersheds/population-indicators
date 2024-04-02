@@ -740,7 +740,7 @@ import_mostRecent_file_fun <- function(wd,pattern){
     print("File not found.")
     out <- NA
   }else{
-    file.mtime <- file.mtime(paste(wd_output,files_c,sep="/"))
+    file.mtime <- file.mtime(paste(wd,files_c,sep="/"))
     file <- files_c[file.mtime == max(file.mtime)]
     print(paste("File imported:",file))
     out <- read.csv(paste(wd,file,sep = "/"),header = T)

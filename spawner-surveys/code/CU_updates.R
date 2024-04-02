@@ -17,10 +17,6 @@
 
 #'******************************************************************************
 
-# NOTE (to remove eventually): original script is:
-# 1_nuseds_data_collationJun72023.R in:
-# \X Drive\1_PROJECTS\1_Active\Fraser_VIMI\analysis\Compilation\Code
-
 rm(list = ls())
 graphics.off()
 
@@ -76,7 +72,7 @@ nuseds <- import_mostRecent_file_fun(wd = wd_output,
                                      pattern = "NuSEDS_escapement_data_collated")
 
 head(nuseds)
-nrow(nuseds) # 307009
+nrow(nuseds) # 306999
 
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6868
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6868
@@ -107,7 +103,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 
 head(conservationunits_decoder)
 
-sum(is.na(conservationunits_decoder$cu_index))    # 46
+sum(is.na(conservationunits_decoder$cu_index))    # 45
 sum(is.na(conservationunits_decoder$cu_name_pse))
 cond <- is.na(conservationunits_decoder$cu_index)
 conservationunits_decoder[cond,]
@@ -393,7 +389,7 @@ unique(nuseds[cond_cuid_na,cols])
 
 #' TODO: troubleshoot with Katy after PSE 2.0
 # nuseds <- nuseds[!is.na(nuseds$cuid),]
-nrow(nuseds) # 307217
+nrow(nuseds) # 306999
 
 #
 #'* Bring the stream-related fields *
@@ -1553,7 +1549,6 @@ sum(cond_noNa) / nrow(nuseds_final) * 100     # 93.9%
 # remove transboundary data
 unique(nuseds_final$region)
 nuseds_final <- nuseds_final[nuseds_final$region != "Transboundary",]
-
 
 write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid.csv"),
           row.names = F)

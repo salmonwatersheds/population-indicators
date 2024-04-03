@@ -403,11 +403,11 @@ GFE_ID_nuseds_notCuss_df <- data.frame(GFE_ID = GFE_ID_nuseds_notCuss,
                                     need_coordinates = "no")
 
 #
-# CHECKS on all_areas_nuseds and conservation_unit_system_sites ---------
+# Fixes on all_areas_nuseds and conservation_unit_system_sites ---------
 
-#' * 1) Remove the IndexId & GFE_ID time series with only NAs and/or 0s*
+#' * 1) Remove the IndexId & GFE_ID time series in all_areas_nuseds with only NAs and/or 0s*
 all_areas_nuseds_all <- all_areas_nuseds
-nrow(all_areas_nuseds_all) # 412493
+nrow(all_areas_nuseds_all) # 412492
 
 conservation_unit_system_sites_all <- conservation_unit_system_sites
 nrow(conservation_unit_system_sites_all) # 7145
@@ -418,7 +418,7 @@ cores_nb <- 10
 all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
                                                              zeros_too = T, 
                                                              cores_nb = cores_nb)
-nrow(all_areas_nuseds) # 309648
+nrow(all_areas_nuseds) # 309647
 nrow(all_areas_nuseds)/nrow(all_areas_nuseds_all) # .75
 
 # Record the series that were removed and why:
@@ -452,6 +452,8 @@ removed_all$comment <- "Only NAs and/or 0s for MAX_ESTIMATE"
 
 head(removed_all)
 
+nrow(removed_all) # 4491
+
 # check
 i <- 3243
 plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
@@ -467,14 +469,14 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #' one should remove series in CUSS that have only NAs and/or 0s in NUSEDS.
 
 
-#' * 2) Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS  *
+#' * 2) Fix IndexId - GFE_ID series in NUSEDS that are not in CUSS  *
 #' Look for each IndexId & GFE_ID in conservation_unit_system_sites:
 #' - 1) check if there are multiple GFE_IDs associated
 #'      if yes: trouble shoot manually;
 #' - 2) else look if there is a time series with the iid & its GFE_ID ('gfeid') in 
 #'      all_areas_nuseds;
 #'      if yes: all good;
-#' - 3) esle: that could be due to either (i) a typo in the IndexId or
+#' - 3) else: that could be due to either (i) a typo in the IndexId or
 #'      (ii) a typo in the GFE_ID. The the rest of the code looks for potential
 #'      alternative series in NUSEDS with either a different IndexId (but with 
 #'      the same species) or a different GFE_ID. Alternative series identified 
@@ -487,6 +489,9 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 
 colNuSEDS <- c("SPECIES","IndexId","GFE_ID","WATERBODY","Year","MAX_ESTIMATE")
 
+
+# merge all_areas_nuseds and conservation_unit_system_sites by IndexId and GFE_ID
+# and keep the time series that do not have a match
 detectCores()
 detectCores(logical = FALSE)
 cores_nb <- 10
@@ -495,7 +500,9 @@ trackRecord <- cuss_nuseds_match_parallel_fun(conservation_unit_system_sites = c
                                               cores_nb = cores_nb)
 head(trackRecord)
 nrow(trackRecord) # 7145 same as CUSS
+nrow(conservation_unit_system_sites) # 7145
 
+# check the series related to different comments:
 unique(trackRecord$comment)
 
 comment <- "In CUSS: there are multiple GFE_IDs for"
@@ -811,7 +818,7 @@ legend("top",c("WATERBODY:",POP_WB$WATERBODY),bty = 'n')
 cond <- grepl("[N|n]adina",streamlocationids$sys_nm) & grepl("[S|s]ockeye",streamlocationids$species_name)
 streamlocationids[cond,]
 
-# they have the sane CU_NAME
+# they have the same CU_NAME
 sapply(X = c(2444,303),FUN = function(x){
   cond <- conservation_unit_system_sites$IndexId == iid &
     conservation_unit_system_sites$GFE_ID == x
@@ -2561,7 +2568,7 @@ sum(cond)/nrow(nuseds_final) * 100
 nuseds_final$MAX_ESTIMATE[cond] <- NA
 
 #
-# Additional fixes ------
+# Additional fix: when a CU have multiple IndexId/POP_ID in a same GFE_ID ------
 #' During the next phase (when attributing PFS cuid, pointid and streamid) I 
 #' noticed many cases where a same CU in a same location has multiple series (i.e. POP_ID)
 #' and that among those there are clear duplicates or single data point that 
@@ -2589,6 +2596,10 @@ fields_IndexId <- fields_IndexId[fields_IndexId %in% colnames(nuseds_final)]
 
 nuseds_CU_GFI_ID <- unique(nuseds_final[,c("SPECIES_QUALIFIED","CU_NAME","GFE_ID")])
 nrow(nuseds_CU_GFI_ID) # 6847
+
+# some extra cases spotted by eye
+delete_exception <- IndexId_focal == "CN_50619" & GFE_ID_here == 824 # here one data point is a duplicate, the other one almost is
+correct_exception <- IndexId_focal == "CM_50537" & GFE_ID_here == 816 
 
 count <- 1
 for(r in 1:nrow(nuseds_CU_GFI_ID)){
@@ -2641,10 +2652,6 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
     
     # series_compare[order(as.numeric(names(series_compare)))]
     
-    # some extra cases spotted by eye
-    delete_exception <- IndexId_focal == "CN_50619" & GFE_ID_here == 824 # here one data point is a duplicate, the other one almost is
-    correct_exception <- IndexId_focal == "CM_50537" & GFE_ID_here == 816 
-    
     # Case 1
     if(comparison$nb_dataPt == 1){
       
@@ -2690,7 +2697,7 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         legend("topright",legend = "DELETED",bty = 'n')
       }
       
-    }else if(comparison$nb_dataPt == comparison$duplicate | delete_exception){ # case 2 --> remove the short series
+    }else if(comparison$nb_dataPt == comparison$duplicate | delete_exception){ # case 2 --> remove the short series that is 100% duplicated
       
       nuseds_final <- nuseds_final[!cond_focal,]
       
@@ -2748,13 +2755,104 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
 
 removed_all <- rbind(removed_all,removed_all_new)
 
+# Additional fix: check duplicated years for a same IndexId/POP_ID - GFE_ID series ------
+#' If there are duplicated years:
+#' - if it is with NAs --> remove the duplicated row with NAs
+#' - if it is not with NA: deal with it (should not have happened)
 
+date <- "20240328"
+nuseds_final <- read.csv(paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
+                         header = T)
+nrow(nuseds_final) # 307009
+
+CU_GFE_ID <- unique(nuseds_final[,c("SPECIES_QUALIFIED","CU_NAME","GFE_ID")])
+nrow(CU_GFE_ID) # 6847
+
+count_show <- 1
+for(r in 1:nrow(CU_GFE_ID)){
+  # r <- 1
+  cond <- nuseds_final$SPECIES_QUALIFIED == CU_GFE_ID$SPECIES_QUALIFIED[r] &
+    nuseds_final$CU_NAME == CU_GFE_ID$CU_NAME[r] &
+    nuseds_final$GFE_ID == CU_GFE_ID$GFE_ID[r]
+  
+  yr_dupli <- nuseds_final$Year[cond][duplicated(nuseds_final$Year[cond])]
+  IndexIds <- unique(nuseds_final$IndexId[cond])
+  
+  # if there are duplicated years
+  if(length(yr_dupli) > 0){
+    
+    # if these duplicated years occur for a same IndexId
+    if(length(IndexIds) == 1){
+      
+      # for each duplicated year, check if there is only one MAX_ESTIMATE value 
+      # and the duplicated years have NAs
+      for(yr in yr_dupli){
+        # yr <- yr_dupli[1]
+        cond_yr <- cond & nuseds_final$Year == yr
+        MAX_ESTIMATE_here <- nuseds_final$MAX_ESTIMATE[cond_yr]
+        
+        if(sum(!is.na(MAX_ESTIMATE_here)) == 1){
+          #
+          cond_yr_NA <- cond_yr & is.na(nuseds_final$MAX_ESTIMATE)
+          print("Row removed:")
+          print(nuseds_final[cond_yr_NA,c("SPECIES_QUALIFIED","CU_NAME","GFE_ID","Year","MAX_ESTIMATE")])
+          
+          nuseds_final <- nuseds_final[!cond_yr_NA,]
+          
+        }else{ # problematic cases to flag and fix eventually
+          
+          if(sum(!is.na(MAX_ESTIMATE_here)) == 0){
+            print("Duplicated years occur for a same IndexId and has only NAs")
+            
+          }else{
+            print("Duplicated years occur for a same IndexId and has more than one value")
+          }
+          print(nuseds_final[cond,][cond_yr,c("SPECIES_QUALIFIED","CU_NAME","GFE_ID","Year","MAX_ESTIMATE")])
+          break
+        }
+      }
+      
+    }else{ # if there are multiple IndexIds
+      
+      # return the series 
+      series_l <- lapply(X = IndexIds, FUN = function(iid){
+        cond_here <- nuseds_final$IndexId[cond] == iid
+        return(nuseds_final[cond,][cond_here,c("Year","MAX_ESTIMATE")])
+          })
+      
+      # check if any series in series_l has only NAs
+      NA_any <- lapply(series_l,function(s){all(is.na(s[,"MAX_ESTIMATE"]))}) %>%
+        unlist() %>%
+        any()
+      
+      if(NA_any){ # remove them --> does not occure I did not code for it
+        
+        print("Duplicated years occur for a same CU with only NAs in certain series")
+        
+        plot_IndexId_GFE_ID_fun(IndexIds = IndexIds,
+                                GFE_IDs = rep(unique(nuseds_final$GFE_ID[cond]),length(IndexIds)),
+                                all_areas_nuseds = nuseds_final)
+        
+        break
+      }
+    }
+  }
+  
+  count_percent <- round(r/nrow(CU_GFE_ID)*100,1)
+  if(count_show <= count_percent){
+    print(paste("Progress:",count_percent,"%"))
+    count_show <- count_show + 1
+  }
+}
+print(paste("Progress:",count_percent,"%"))
+nrow(nuseds_final) # 306999
 
 #
 # Export CSV files: ------
 
 # Export nusweds_final
 date <- "20240307"
+date <- "20240328"
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)

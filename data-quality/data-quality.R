@@ -54,6 +54,24 @@ dataset390 <- dataset390 %>% left_join(cu_list %>%
   
 head(dataset390)
 
+# Output dataset parameters (https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1712104520826029?thread_ts=1712097226.312849&cid=CJG0SHWCW):
+# CUID
+# survey_quality
+# survey_coverage
+# survey_execution
+# catch_quality
+# stockid_quality
+# juvenile_quality
+# runtiming_quality
+# spawner_surveys
+# juvenile_surveys
+# spawner_abundance
+# run_timing
+# catch_run_size
+# recruits_per_spawner
+# trends_spawner_abund
+# biological_status
+
 ###############################################################################
 # Add in data-quality criteria 
 ###############################################################################

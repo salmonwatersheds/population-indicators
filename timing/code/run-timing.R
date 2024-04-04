@@ -27,7 +27,7 @@ dat <- read.csv(paste0(Dropbox_directory, "/timing/data/3Life_cycle_timing_by_CU
 
 cu_decoder <- read.csv(paste0(Dropbox_directory, "/data-input/conservationunits_decoder.csv"))
 
-dat$cuid <- cu_decoder$cuid[match(paste(dat$species, dat$culabel), paste(cu_decoder$species_abbr, cu_decoder$cu_name_pse))]
+dat$cuid <- cu_decoder$pooledcuid[match(paste(dat$species, dat$culabel), paste(cu_decoder$species_abbr, cu_decoder$cu_name_pse))]
 
 # Remove any duplicates (for some reason duplicate of TBR SER - check with sam)
 dat <- dat[-which(dat$cuid == 1023)[2], ]
@@ -200,22 +200,56 @@ write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_p
 
 write.csv(dat[, c("cuid", "rt_dat_qual")], file = paste0(Dropbox_directory, "/timing/output/run-timing-data-quality_", Sys.Date(), ".csv"), row.names = FALSE)
 
+#------------------------------------------------------------------------------
+# Second option: Normalize to sum to 1 rather than peak = 1
+#------------------------------------------------------------------------------
+
+dat.out2 <- expand.grid(DOY, dat$cuid) %>%
+  dplyr::rename(DOY = "Var1", cuid = "Var2")
+dat.out2$run_timing_ppn <- NA
+
+for(i in 1:n.cuid){
+  dum <- dat.wide2[which(as.numeric(rownames(dat.wide2)) == cuid[i]), ]
+  dat.out2$run_timing_ppn[dat.out$cuid == cuid[i]] <- dum/sum(dum)
+  rm(dum)
+}
+
+dat.out2$run_timing_ppn <- round(dat.out2$run_timing_ppn, digits = 3)
+
+# compare
+cuid2compare <- cu_decoder$pooledcuid[cu_decoder$region == "Fraser" & cu_decoder$species_abbr == "SEL" & cu_decoder$cu_type == 'Current']
+n <- length(cuid2compare)
+xDate <- as.Date(paste(1999, DOY, sep = "-"), format = "%Y-%j")
+xDate2 <- as.Date(paste(c(rep(1999, 365), 2000), c(DOY, 1), sep = "-"), format = "%Y-%j")
+quartz(width = 5, height =  n/6+1.5, pointsize = 10)
+par(mar = c(3,2,2,3))
+plot(range(xDate2), c(1, n + 1), "n", bty = "l", xlab = "Day", ylab = "", main = "Fraser SEL", yaxt = "n", yaxs = "i", xaxs = "i")
+mtext(side = 2, line = 1, "Run timing by CU")
+for(i in 1:n){
+  lines(xDate, i + dat.out$run_timing_ppn[dat.out$cuid == cuid2compare[i]], col = species_cols_dark["Sockeye"], lwd = 2, xpd = NA)
+  # lines(xDate, i + 30*dat.out2$run_timing_ppn[dat.out2$cuid == cuid2compare[i]], col = species_cols_light["Sockeye"], lwd = 2, xpd = NA)
+  text(par('usr')[2], i+0.2, dat$culabel[which(dat$cuid == cuid2compare[i])], col = species_cols_light["Sockeye"], lwd = 2, xpd = NA, cex = 0.7, xpd = NA)
+}
+
+
 ###############################################################################
 # Plot
 ###############################################################################
 
-species_cols <- c(
-  CK = SWP_cols['soil1'],
-  CM = SWP_cols['soil2'],
-  CO = SWP_cols['stone1'],
-  PKE = SWP_cols['clay'],
-  PKO = SWP_cols['clay'],
-  SEL = SWP_cols['stone2'],
-  SER = SWP_cols['stone2'],
-  SH = SWP_cols['tidal']
-)
-names(species_cols) <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER", "SH")
+# species_cols <- c(
+#   CK = SWP_cols['soil1'],
+#   CM = SWP_cols['soil2'],
+#   CO = SWP_cols['stone1'],
+#   PKE = SWP_cols['clay'],
+#   PKO = SWP_cols['clay'],
+#   SEL = SWP_cols['stone2'],
+#   SER = SWP_cols['stone2'],
+#   SH = SWP_cols['tidal']
+# )
 
+source("code/colours.R")
+species_cols <- species_cols_light[c(1, 2, 3, 4, 4, 5, 5, 6)]
+names(species_cols) <- c("CK", "CM", "CO", "PKE", "PKO", "SEL", "SER", "SH")
 
 for(r in 1:9){
   n <- length(which(dat$region == regions[r]))
@@ -246,4 +280,8 @@ for(r in 1:9){
   }
   # dev.off()
 }
+
+# Compare dat.out and dat.out2
+cu_decoder$pooledcuid[cu_decoder$region == "Fraser" & cu_decoder$species_abbr == "SEL" & cu_decoder$cu_type == 'Current']
+
 

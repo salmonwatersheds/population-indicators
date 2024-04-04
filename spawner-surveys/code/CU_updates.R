@@ -1577,7 +1577,8 @@ write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid.csv"),
 # example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
 # https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
 
-nuseds_final <- read.csv(paste0(wd_output,"/nuseds_cuid_streamid.csv"),header = T)
+nuseds_final <- read.csv(paste0(wd_output,"/nuseds_cuid_streamid.csv"),
+                         header = T)
 
 cond_cuid_na <- is.na(nuseds_final$cuid)
 cond_pointid_na <- is.na(nuseds_final$pointid)
@@ -1607,16 +1608,38 @@ for(i in 1:length(field_toChange)){
   colnames(dataset_1part2)[colnames(dataset_1part2) == field_toChange[i]] <- fields_new[i]
 }
 
+# remove NAs
+dataset_1part2 <- dataset_1part2[!is.na(dataset_1part2$stream_observed_count),]
+
+
 # select columns
 
 colToKeep <- c("region","species_name","cuid","cu_name_pse","streamid",
                "stream_name_pse","indicator","longitude","latitude","year",
                "stream_observed_count","survey_method","survey_quality")
 
+dataset_1part2 <- dataset_1part2[,colToKeep]
+
+# order fields:
+
+dataset_1part2 <- dataset_1part2 %>% 
+  arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
+                                    "Skeena","Central Coast",
+                                    "Vancouver Island & Mainland Inlets",
+                                    "Fraser","Columbia")),
+          species_name,
+          cu_name_pse,
+          factor(indicator, levels = c("Y","N","",NA)),
+          stream_name_pse,
+          year)
+
+
+# save file
+
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)
-write.csv(dataset_1part2[,colToKeep],paste0(wd_output,"/dataset_1part2_",date,".csv"),
+write.csv(dataset_1part2,paste0(wd_output,"/dataset_1part2_",date,".csv"),
           row.names = F)
 
 cond <- is.na(dataset_1part2$survey_quality)

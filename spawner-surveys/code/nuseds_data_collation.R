@@ -1849,6 +1849,10 @@ cuss_new <- CUSS_newRow_fun(IndexId = "CN_47277",
                             all_areas_nuseds = all_areas_nuseds)
 
 # TEMPORARY, WAIT TO GET THE VALUES FROM WU
+# --> Message from Wu Zhipeng from 04/04/2024:
+# there is no geop coordinates for GFE_ID 2464. 
+# The coordinate below are at the mouth of Cottonwood river, which is what 
+# X_LONGT and Y_LAT should represent.
 cuss_new$X_LONGT <- -122.610584
 cuss_new$Y_LAT <- 53.119965
 

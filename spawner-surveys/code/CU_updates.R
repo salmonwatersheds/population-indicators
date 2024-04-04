@@ -197,6 +197,7 @@ for(ecn in estim_class_nuseds){
                       "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
     out <- "Low"
   }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
+                      "PRESENCE-ABSENCE (TYPE-6)",
                       "RELATIVE: VARYING MULTI-YEAR METHODS")){
     out <- "Low"
   }else if(ecn == "UNKNOWN"){
@@ -230,7 +231,7 @@ fields_nuseds_CU <- c("CU_NAME","SPECIES_QUALIFIED","FULL_CU_IN",
                       "FULL_CU_IN_PSF","CU_TYPE")
 
 CU_name_species <- unique(nuseds[,fields_nuseds_CU])
-nrow(CU_name_species) # 415
+nrow(CU_name_species) # 414 415
 
 conservationunits_decoder$cu_name_pse_modif <- tolower(conservationunits_decoder$cu_name_pse)
 conservationunits_decoder$cu_name_dfo_modif <- tolower(conservationunits_decoder$cu_name_dfo)
@@ -389,7 +390,7 @@ unique(nuseds[cond_cuid_na,cols])
 
 #' TODO: troubleshoot with Katy after PSE 2.0
 # nuseds <- nuseds[!is.na(nuseds$cuid),]
-nrow(nuseds) # 306999
+nrow(nuseds) # 306823 306875 306999
 
 #
 #'* Bring the stream-related fields *
@@ -587,7 +588,7 @@ fields_nuseds_location <- c("SYSTEM_SITE","WATERBODY","GAZETTED_NAME",  # region
                             "GFE_ID","X_LONGT","Y_LAT")
 
 nuseds_location <- unique(nuseds[,fields_nuseds_location]) # inclide GFE_ID because there can be multiple SYSTEM_SITEs for a same CU
-nrow(nuseds_location) # 2311
+nrow(nuseds_location) # 2312
 
 # Manual fix 1st:
 #'-  "BARRI\xc8RE RIVER" --> "BARRIERE RIVER"
@@ -775,7 +776,7 @@ for(r in 1:nrow(nuseds_location)){
 print(paste("Proportion of locations not matching:",count_percent,"%")) # 6.6%
 
 table(nuseds_location$comment)
-sum(is.na(nuseds_location$pointid)) # 152
+sum(is.na(nuseds_location$pointid)) # 153
 sum(is.na(nuseds_location$pointid)) / nrow(nuseds_location) # 0.065
 sum(!is.na(nuseds_location$pointid)) / nrow(nuseds_location) # 0.93
 
@@ -941,11 +942,11 @@ for(r in 1:nrow(nuseds_location)){
     }
   }
 }
-print(paste("Proportion of locations not matching:",count_percent,"%")) # 1.3%
+print(paste("Proportion of locations not matching:",count_percent,"%")) # 1.4%
 # View(nuseds_location)
 
 cond_noMatch <- is.na(nuseds_location$pointid)
-sum(cond_noMatch) # 31
+sum(cond_noMatch) # 32
 nuseds_location[cond_noMatch,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT","comment")]
 
 # little fix
@@ -956,7 +957,7 @@ nuseds_location[cond,]$pointid_alternative <- NA
 #'* Locations not found --> Need of new locations: *
 
 cond_noMatch <- is.na(nuseds_location$pointid)
-sum(cond_noMatch) # 67
+sum(cond_noMatch) # 32
 nuseds_location[cond_noMatch,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT","comment")]
 
 SYSTEM_SITE_notFound <- c()
@@ -1012,8 +1013,6 @@ distance_Euclidean_fun(x_ref = unique(nuseds_location[cond,]$X_LONGT)[1],
                        y_ref = unique(nuseds_location[cond,]$Y_LAT)[1],
                        x = unique(streamlocationids[cond1,]$longitude),
                        y = unique(streamlocationids[cond1,]$latitude))
-
-streamlocationids[cond1,][which(dist == min(dist)),]
 
 #
 location <- "LAGOON CREEK"
@@ -1193,6 +1192,14 @@ streamlocationids[cond,]
 
 #'2) BORROWMAN CREEK, BORROWMAN is not in database
 location <- "BORROWMAN CREEK"
+SYSTEM_SITE_notFound <- c(SYSTEM_SITE_notFound,location)
+cond <- grepl(location,nuseds_location$SYSTEM_SITE)
+unique(nuseds_location[cond,c("SYSTEM_SITE","sys_nm","Y_LAT","X_LONGT","distance")])
+cond <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+streamlocationids[cond,]
+
+#'2) COTTONWOOD RIVER - LOWER is not in database
+location <- "COTTONWOOD RIVER - LOWER"
 SYSTEM_SITE_notFound <- c(SYSTEM_SITE_notFound,location)
 cond <- grepl(location,nuseds_location$SYSTEM_SITE)
 unique(nuseds_location[cond,c("SYSTEM_SITE","sys_nm","Y_LAT","X_LONGT","distance")])
@@ -1546,14 +1553,74 @@ sum(cond_streamid_na) / nrow(nuseds_final) * 100  # 6.1%
 sum(cond_noNa) / nrow(nuseds_final) * 100     # 93.9%
 
 
-# remove transboundary data
+#' Remove Transboundary and Yukon data
 unique(nuseds_final$region)
-nuseds_final <- nuseds_final[nuseds_final$region != "Transboundary",]
+nuseds_final <- nuseds_final[! nuseds_final$region %in% c("Transboundary","Yukon"),]
+
+#' Remove Okanagan River for Osoyoos Sockeye (cuid 1300, streamid 9703) in Columbia
+#' region because the data comes from another source (cf. population data April 2nd 
+#' 2024). 
+cond <- nuseds_final$cuid == 1300 &
+  !is.na(nuseds_final$cuid) &
+  nuseds_final$streamid == 9703
+nuseds_final[cond,]
+nuseds_final <- nuseds_final[!cond,]
+
+#' Remove Steelhead --> already removed in nuseds_data.collation.R
+
 
 write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid.csv"),
           row.names = F)
 
 
+# Generate spawner_surveys_dataset_1part2 --------
+# example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
+# https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
+
+nuseds_final <- read.csv(paste0(wd_output,"/nuseds_cuid_streamid.csv"),header = T)
+
+cond_cuid_na <- is.na(nuseds_final$cuid)
+cond_pointid_na <- is.na(nuseds_final$pointid)
+cond_gfe_id_na <- is.na(nuseds_final$GFE_ID)    # 0
+cond_streamid_na <- is.na(nuseds_final$streamid)
+cond_noNa <- !cond_cuid_na & !cond_pointid_na & !cond_streamid_na
+
+dataset_1part2 <- nuseds_final[cond_noNa,]
+
+# add stream_name_pse
+dataset_1part2$stream_name_pse <- NA
+streamids <- unique(dataset_1part2$streamid)
+for(sid in streamids){
+  cond <- dataset_1part2$streamid == sid
+  stream_name_pse_here <- surveystreams$stream_name_pse[surveystreams$streamid == sid]
+  dataset_1part2$stream_name_pse[cond] <- stream_name_pse_here
+}
+
+# edit column names
+field_toChange <- c("SPECIES","IS_INDICATOR","X_LONGT","Y_LAT","Year",
+                    "MAX_ESTIMATE","ESTIMATE_METHOD","stream_survey_quality")
+
+fields_new <- c("species_name","indicator","longitude","latitude","year",
+                "stream_observed_count","survey_method","survey_quality")
+
+for(i in 1:length(field_toChange)){
+  colnames(dataset_1part2)[colnames(dataset_1part2) == field_toChange[i]] <- fields_new[i]
+}
+
+# select columns
+
+colToKeep <- c("region","species_name","cuid","cu_name_pse","streamid",
+               "stream_name_pse","indicator","longitude","latitude","year",
+               "stream_observed_count","survey_method","survey_quality")
+
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+write.csv(dataset_1part2[,colToKeep],paste0(wd_output,"/dataset_1part2_",date,".csv"),
+          row.names = F)
+
+cond <- is.na(dataset_1part2$survey_quality)
+dataset_1part2$stream_observed_count[cond]
 
 #
 # FUTURE THINGS TO DO ------

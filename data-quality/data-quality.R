@@ -86,7 +86,13 @@ spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawners
 #------------------------------------------------------------------------------
 
 # Load cu list
-cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv"))
+cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
+  distinct(pooledcuid, .keep_all = TRUE) %>% # there are duplicates for pooledcuid
+  filter(cu_type != "Bin")
+  
+unique(tapply(cu_list$cuid, cu_list$cuid, length))
+# cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") 
+# write.csv(cu_list, file= paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) # Update in Dropbox
 
 dataset390 <- cu_list %>% select(region, species_name,cu_name_pse, pooledcuid) %>%
   rename(species = "species_name", regionname = "region", cuid = "pooledcuid") %>%

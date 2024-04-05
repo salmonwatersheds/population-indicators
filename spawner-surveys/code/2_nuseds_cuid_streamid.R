@@ -1577,8 +1577,8 @@ write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid.csv"),
 # example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
 # https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
 
-nuseds_final <- read.csv(paste0(wd_output,"/nuseds_cuid_streamid.csv"),
-                         header = T)
+nuseds_final <- import_mostRecent_file_fun(wd = wd_output,
+                                           pattern = "nuseds_cuid_streamid")
 
 cond_cuid_na <- is.na(nuseds_final$cuid)
 cond_pointid_na <- is.na(nuseds_final$pointid)
@@ -1598,10 +1598,10 @@ for(sid in streamids){
 }
 
 # edit column names
-field_toChange <- c("SPECIES","IS_INDICATOR","X_LONGT","Y_LAT","Year",
+field_toChange <- c("SPECIES","SPECIES_QUALIFIED","IS_INDICATOR","X_LONGT","Y_LAT","Year",
                     "MAX_ESTIMATE","ESTIMATE_METHOD","stream_survey_quality")
 
-fields_new <- c("species_name","indicator","longitude","latitude","year",
+fields_new <- c("species_name","species_abbr","indicator","longitude","latitude","year",
                 "stream_observed_count","survey_method","survey_quality")
 
 for(i in 1:length(field_toChange)){
@@ -1614,7 +1614,7 @@ dataset_1part2 <- dataset_1part2[!is.na(dataset_1part2$stream_observed_count),]
 
 # select columns
 
-colToKeep <- c("region","species_name","cuid","cu_name_pse","streamid",
+colToKeep <- c("region","species_name","species_abbr","cuid","cu_name_pse","streamid",
                "stream_name_pse","indicator","longitude","latitude","year",
                "stream_observed_count","survey_method","survey_quality")
 

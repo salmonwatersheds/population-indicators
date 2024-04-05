@@ -86,7 +86,13 @@ spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawners
 #------------------------------------------------------------------------------
 
 # Load cu list
-cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv"))
+cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
+  distinct(pooledcuid, .keep_all = TRUE) %>% # there are duplicates for pooledcuid
+  filter(cu_type != "Bin")
+  
+unique(tapply(cu_list$cuid, cu_list$cuid, length))
+# cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") 
+# write.csv(cu_list, file= paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) # Update in Dropbox
 
 dataset390 <- cu_list %>% select(region, species_name,cu_name_pse, pooledcuid) %>%
   rename(species = "species_name", regionname = "region", cuid = "pooledcuid") %>%
@@ -157,7 +163,7 @@ stream_summary <- stream_summary %>%
 # Sum stream quality across indicator streams, weighted by proportion of observed spawners in that stream 
 dataset390 <- dataset390 %>% left_join(stream_summary %>%
                            group_by(cuid) %>%
-                           summarise(survey_quality = sum(dq*prop_spawners))
+                           summarise(survey_quality = round(sum(dq*prop_spawners)))
 )
 
 head(dataset390)
@@ -268,7 +274,7 @@ unique(js$Q)
 dataset390 <- dataset390 %>% left_join(js %>%
   filter(year > 2022 - gen_length + 1) %>% # Look over the most recent generation
   group_by(cuid) %>%
-  summarise(juvenile_quality = mean(Q, na.rm = TRUE))
+  summarise(juvenile_quality = round(mean(Q, na.rm = TRUE)))
 )
 
 head(dataset390)
@@ -318,7 +324,7 @@ head(dataset390)
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(dq_score = sum(survey_quality, survey_coverage, survey_execution, catch_quality, na.rm = TRUE))
+              summarise(dq_score = round(sum(survey_quality, survey_coverage, survey_execution, catch_quality, na.rm = TRUE)))
   )
             
 #------------------------------------------------------------------------------
@@ -328,7 +334,7 @@ dataset390 <- dataset390 %>%
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(spawner_surveys = mean(c(survey_quality, survey_coverage, survey_execution), na.rm = TRUE))
+              summarise(spawner_surveys = round(mean(c(survey_quality, survey_coverage, survey_execution), na.rm = TRUE)))
   )
 
 #------------------------------------------------------------------------------
@@ -344,7 +350,7 @@ dataset390 <- dataset390 %>%
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(spawner_abundance = mean(c(survey_quality, survey_coverage, survey_execution), na.rm = TRUE))
+              summarise(spawner_abundance = round(mean(c(survey_quality, survey_coverage, survey_execution), na.rm = TRUE)))
   )
 
 #------------------------------------------------------------------------------
@@ -361,7 +367,7 @@ dataset390 <- dataset390 %>%
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(catch_run_size = mean(c(catch_quality, stockid_quality), na.rm = TRUE))
+              summarise(catch_run_size = round(mean(c(catch_quality, stockid_quality), na.rm = TRUE)))
   )
 
 #------------------------------------------------------------------------------
@@ -371,7 +377,7 @@ dataset390 <- dataset390 %>%
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(recruits_per_spawner = mean(c(survey_quality, survey_coverage, survey_execution, catch_quality, stockid_quality), na.rm = TRUE))
+              summarise(recruits_per_spawner = round(mean(c(survey_quality, survey_coverage, survey_execution, catch_quality, stockid_quality), na.rm = TRUE)))
   )
 
 #------------------------------------------------------------------------------
@@ -381,7 +387,7 @@ dataset390 <- dataset390 %>%
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(trends_spawner_abund = mean(c(survey_quality, survey_coverage, survey_execution), na.rm = TRUE))
+              summarise(trends_spawner_abund = round(mean(c(survey_quality, survey_coverage, survey_execution), na.rm = TRUE)))
   )
 #------------------------------------------------------------------------------
 # biological_status 
@@ -390,12 +396,15 @@ dataset390 <- dataset390 %>%
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
-              summarise(biological_status = mean(c(survey_quality, survey_coverage, survey_execution, catch_quality, stockid_quality), na.rm = TRUE))
+              summarise(biological_status = round(mean(c(survey_quality, survey_coverage, survey_execution, catch_quality, stockid_quality), na.rm = TRUE)))
   )
 
 ###############################################################################
 # Write output dataset
 ###############################################################################
+
+# Replace NAs with DQ score of zero
+dataset390[which(is.na(dataset390), arr.ind = TRUE)] <- 0
 
 write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/dataset390_", Sys.Date(), ".csv"), row.names = FALSE)
 

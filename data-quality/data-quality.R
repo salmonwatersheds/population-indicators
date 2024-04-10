@@ -185,18 +185,24 @@ dataset390 <- dataset390 %>%
                               ))
   
 #------------------------------------------------------------------------------
-# survey_execution - Eric to move over old code and revise if needed
+# survey_execution 
 #------------------------------------------------------------------------------
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-excecution
 
 # Use old data for now
-dataset390 <- dataset390 %>%
-  left_join(dataset390_old %>% 
-              filter(parameter == "survey_execution") %>%
-              select(cuid, datavalue) %>% 
-              rename(survey_execution = "datavalue")
-  )
+spawner_surveys_ex <- spawner_surveys %>%
+  filter(indicator == "Y") %>% # Use only indicator streams
+  filter(year > 2023 - gen_length + 1) %>% # Look over the most recent generation
+  group_by(cuid) %>%
+  summarise(survey_execution = ))) ## didn't quite figure this out yet
+
+
+df <- subset(nuseds.counts, CU_findex=="SER-22" )%>%
+  subset(.,IsIndicator=="Y")%>%
+  select(.,X2015,X2016,X2017,X2018,X2019)
+
+((length(df)*nrow(df))-sum(is.na(df)))/(length(df)*nrow(df))
 
 #------------------------------------------------------------------------------
 # catch_quality

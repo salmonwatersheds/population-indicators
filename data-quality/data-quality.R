@@ -76,9 +76,7 @@ js <- read.csv(paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Re
 
 # Read from Dropbox so script can be sourced
 spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawnersurveys_output.csv")) %>%
-  filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) %>% # Remove survey years when spawner survey methods were Unknown
-  filter(indicator == "Y") # Use only indicator streams
-
+  filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) # Remove survey years when spawner survey methods were Unknown
 
 
 #------------------------------------------------------------------------------
@@ -149,7 +147,7 @@ stream_summary <- spawner_surveys %>%
   ) %>%
   left_join(spawner_surveys %>% # Add in cuid
               distinct(streamid, .keep_all = TRUE) %>%
-              select(streamid, cuid)
+              select(streamid, cuid,indicator)
   ) 
 
 # add in summed CU spawners
@@ -163,23 +161,28 @@ stream_summary <- stream_summary %>%
 # Sum stream quality across indicator streams, weighted by proportion of observed spawners in that stream 
 dataset390 <- dataset390 %>% left_join(stream_summary %>%
                            group_by(cuid) %>%
+                           filter(indicator == "Y")%>% # Use only indicator streams
                            summarise(survey_quality = round(sum(dq*prop_spawners)))
 )
 
 head(dataset390)
 #------------------------------------------------------------------------------
-# survey_coverage - Eric to move over old code and revise if needed
+# survey_coverage 
 #------------------------------------------------------------------------------
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-coverage
 
-# Use old data for now
+dataset390 <- dataset390 %>% left_join(stream_summary %>%
+                                        group_by(cuid) %>%
+                                        summarise(survey_coverage = (sum(prop_spawners[indicator=='Y']))))
+
 dataset390 <- dataset390 %>%
-  left_join(dataset390_old %>% 
-              filter(parameter == "survey_coverage") %>%
-              select(cuid, datavalue) %>% 
-              rename(survey_coverage = "datavalue")
-  )
+  mutate(survey_coverage = case_when(survey_coverage >= 0.9 ~ 5,
+                              survey_coverage < 0.9 & survey_coverage >= 0.7 ~ 4,
+                              survey_coverage < 0.7 & survey_coverage >= 0.5 ~ 3,
+                              survey_coverage < 0.5 & survey_coverage >= 0.3 ~ 2,
+                              survey_coverage < 0.3 & survey_coverage >= 0 ~ 1,
+                              ))
   
 #------------------------------------------------------------------------------
 # survey_execution - Eric to move over old code and revise if needed

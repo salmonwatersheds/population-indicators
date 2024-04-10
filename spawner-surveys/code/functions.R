@@ -461,7 +461,7 @@ is_MAX_ESTIMATE_duplicate_fun <- function(IndexId,GFE_ID,all_areas_nuseds,shortC
 }
 
 
-#' Function that takes one IndexId ('iid') from conservation_unit_system_sites and
+#' Function that takes one IndexId ('iid') from CUSS and
 #' - 1) check if there are multiple GFE_IDs associated
 #' - 2) else look if there is a time series with the iid & its GFE_ID ('gfeid') in 
 #'      all_areas_nuseds
@@ -546,21 +546,21 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
       #   escapement <- rbind(escapement,nuseds_iid_gfeid)
       # }
       
-    }else{ # 2. above --> there is no time series (# e.g. i = 174)
+    }else{ # 2. above --> there is no time series in NUSEDS (# e.g. i = 174)
       
       trackRecord_here$in_nused <- "no"
       
       #' Look in nuseds for potential alternative series", with the potential 
       #' scenarios:
-      #' - iid is correct and GFE_ID is wrong --> other series for iid but with 
-      #'   different GFE_IDs 
-      #' - iid is wrong and GFE_ID is correct --> other series for gfeid of the 
+      #' 1) iid is correct and GFE_ID is wrong --> other series for iid but with 
+      #'    different GFE_IDs 
+      #' 2) iid is wrong and GFE_ID is correct --> other series for gfeid of the 
       #'   same species.
-      #' For each potential altenative series, check if their Index_Id & GFE_ID 
-      #' assocation is in CUSS. 
-      #' - If YES, we assumes these alternative series have no mistake and do not 
+      #' For each potential alternative series, check if their Index_Id & GFE_ID 
+      #' association is in CUSS. 
+      #' - If YES, we assumes these alternative series has no mistake and do not 
       #'   consider them as alternatives.
-      #'- If NO: the series can potenial canditates. 
+      #'- If NO: the series is a potential candidate. 
       #'  - If there is only one series, replace either the IndexId or the GFE_ID
       #'    in nuseds.
       #'  - If there are multiple, look at the series and decide manually.
@@ -568,7 +568,9 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
       comment_iid <- NULL
       comment_gfheid <- NULL
       
-      #' 1) Scenario where iid is correct and GFE_ID is wrong:
+      #' 1) Scenario where iid is correct and GFE_ID is wrong: --> find alternative
+      #' series with the same iid but different GFE_ID in NUSEDS that are not in
+      #' CUSS
       nuseds_iid <- all_areas_nuseds[condi_nuseds_iid,]
       d <- unique(nuseds_iid[,c("IndexId","GFE_ID")])
       iid_GFE_IDs_here <- data.frame(IndexId = d$IndexId,
@@ -579,6 +581,8 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
         comment_iid <- paste(iid,"is not in all_areas_nuseds") # NOT USED
         
       }else{
+        # For each series with alternative GFE_ID: check if there are present in 
+        # CUSS, and only retain those that are not.
         for(r in 1:nrow(iid_GFE_IDs_here)){
           cond <- conservation_unit_system_sites$IndexId == iid_GFE_IDs_here$IndexId[r] &
             conservation_unit_system_sites$GFE_ID == iid_GFE_IDs_here$GFE_ID[r]
@@ -591,7 +595,9 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
         iid_GFE_IDs_here <- iid_GFE_IDs_here[iid_GFE_IDs_here$in_cuss == "no",]
       }
       
-      #' 2) Scenario where iid is wrong and GFE_ID is correct:
+      #' 2) Scenario where iid is wrong and GFE_ID is correct: --> find alternative
+      #' series with the same GFE_ID and species but different iid in NUSEDS that
+      #' are not in CUSS.
       species_acr <- strsplit(iid,split = "_")[[1]][1]
       condi_nuseds_sp <- grepl(species_acr,all_areas_nuseds$IndexId)
       nuseds_sp_gfeid <- all_areas_nuseds[condi_nuseds_sp & condi_nuseds_gfeid,]
@@ -602,10 +608,13 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
       IndexIds_gfeid_here <- data.frame(IndexId = d$IndexId,
                                         GFE_ID = d$GFE_ID,
                                         in_cuss = rep(NA,nrow(d)))
+      
       if(nrow(IndexIds_gfeid_here) == 0){ # species + gfeid is not present in all_areas_nuseds
         comment_gfeid <- paste(species_acr,"&",gfeid,"is not in all_areas_nuseds") # NOT USED
         
       }else{
+        # For each series with alternative IndexId: check if there are present in 
+        # CUSS, and only retain those that are not.
         for(r in 1:nrow(IndexIds_gfeid_here)){
           cond <- conservation_unit_system_sites$IndexId == IndexIds_gfeid_here$IndexId[r] &
             conservation_unit_system_sites$GFE_ID == IndexIds_gfeid_here$GFE_ID[r]
@@ -618,7 +627,7 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
         IndexIds_gfeid_here <- IndexIds_gfeid_here[IndexIds_gfeid_here$in_cuss == "no",]
       }
       
-      # combine the two
+      # combine the two datasets
       alternatives <- rbind(iid_GFE_IDs_here,IndexIds_gfeid_here)
       
       if(nrow(alternatives) == 0){

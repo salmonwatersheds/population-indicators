@@ -469,8 +469,8 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #' one should remove series in CUSS that have only NAs and/or 0s in NUSEDS.
 
 
-#' * 2) Fix IndexId - GFE_ID series in NUSEDS that are not in CUSS  *
-#' Look for each IndexId & GFE_ID in conservation_unit_system_sites:
+#' * 2) Fix IndexId - GFE_ID series in CUSS that are not in NUSEDS  *
+#' Look for each IndexId & GFE_ID series in conservation_unit_system_sites:
 #' - 1) check if there are multiple GFE_IDs associated
 #'      if yes: trouble shoot manually;
 #' - 2) else look if there is a time series with the iid & its GFE_ID ('gfeid') in 
@@ -489,7 +489,6 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 
 colNuSEDS <- c("SPECIES","IndexId","GFE_ID","WATERBODY","Year","MAX_ESTIMATE")
 
-
 # merge all_areas_nuseds and conservation_unit_system_sites by IndexId and GFE_ID
 # and keep the time series that do not have a match
 detectCores()
@@ -499,8 +498,9 @@ trackRecord <- cuss_nuseds_match_parallel_fun(conservation_unit_system_sites = c
                                               all_areas_nuseds = all_areas_nuseds, 
                                               cores_nb = cores_nb)
 head(trackRecord)
-nrow(trackRecord) # 7145 same as CUSS
+nrow(trackRecord)                    # 7145 same as CUSS
 nrow(conservation_unit_system_sites) # 7145
+sum(trackRecord$in_nused == "no")    # n = 259
 
 # check the series related to different comments:
 unique(trackRecord$comment)
@@ -547,7 +547,7 @@ unique(all_areas_nuseds$POPULATION[cond])
 cond <- all_areas_nuseds$POPULATION == "Chilcotin River (Williams Lake Area) Chinook Run 2"
 unique(all_areas_nuseds$IndexId[cond])
 
-#' TODO: replace CN_46842 & GFE_ID = 2463 and by CN_46841 & GFE_ID = 285 by 
+#' TODO: replace CN_46842 & GFE_ID = 2463 and CN_46841 & GFE_ID = 285 by 
 #' CN_46842 & GFE_ID = 285 in all_area_nuseds.
 
 #' conversation about merging them:
@@ -721,7 +721,7 @@ trackRecord_cuss_noAlernative
 nrow(trackRecord_cuss_noAlernative) # 254
 #' TODO: remove them from cuss and check if they were in all_areas_nuseds_all. If
 #' yes comment = "Only NAs and/or 0s in nuseds", else "time series not present in
-#' nuseds a and not alternative.
+#' nuseds and not alternative.
 for(r in 1:nrow(trackRecord_cuss_noAlernative)){
   # r <- 1
   iid <- trackRecord_cuss_noAlernative$IndexId[r]
@@ -834,7 +834,7 @@ sapply(X = c(2444,303),FUN = function(x){
   return(out)
 })
 
-# check fpop size for the blue (to see if correspond to values in the PSE)
+# check pop size for the blue (to see if correspond to values in the PSE)
 cond <- all_areas_nuseds$IndexId == "SX_45525" & all_areas_nuseds$GFE_ID == 303
 all_areas_nuseds[cond,c("Year","MAX_ESTIMATE")][order(all_areas_nuseds[cond,c("Year")]),]
 
@@ -848,6 +848,12 @@ added_all <- toAdd
 
 #
 #'* 3) Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS *
+#' Look for each IndexId & GFE_ID series in NUSEDS that are not in CUSS
+#' 1) remove series with <= 3 data points (n = 94)
+#' 2) look if there are alternative series in NUSEDS that are also in CUSS
+#'  - if yes then check if they can be merged
+#'    - if they cannot -->  add the series to CUSS
+#'  - if no --> add the series to CUSS
 
 series_nuseds <- paste(all_areas_nuseds$IndexId,
                        all_areas_nuseds$GFE_ID,sep = "&")
@@ -881,8 +887,8 @@ trackRecord_nuseds <- data.frame(IndexId = iids,
 trackRecord_nuseds$nb_dataPt <- NA
 trackRecord_nuseds$alternative_IndexId <- NA
 trackRecord_nuseds$alternative_GFE_ID <- NA
-trackRecord_nuseds$alternative_IndexId_track <- NA
-trackRecord_nuseds$alternative_GFE_ID_track <- NA
+trackRecord_nuseds$alternative_IndexId_track <- NA # to retain the alternative IndexId not retained because series is not in CUSS
+trackRecord_nuseds$alternative_GFE_ID_track <- NA # to retain the alternative GFE_ID not retained because series is not in CUSS
 # trackRecord_nuseds$only_0s <- NA
 rownames(trackRecord_nuseds) <- NULL
 
@@ -897,7 +903,7 @@ for(i in 1:nrow(trackRecord_nuseds)){
   #                         all_areas_nuseds = all_areas_nuseds)
   # legend("topright", paste("Series not in CUSS"), bty = 'n')
   
-  # Find the number of data points 
+  # Find the number of data points
   cond <- all_areas_nuseds$IndexId == iid &
     all_areas_nuseds$GFE_ID == gfeid
   nuseds_cut <- all_areas_nuseds[cond,]
@@ -908,13 +914,15 @@ for(i in 1:nrow(trackRecord_nuseds)){
   #   trackRecord_nuseds$only_0s[i] <- T
   # }
   
-  #' Check in NUSEDS for alternative series that are in CUSS with the same IndexId
+  #' 1) Look in NUSEDS for alternative series that are in CUSS with the same IndexId
   #' but different GFE_ID.
   cond <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID != gfeid
   nuseds_here <- all_areas_nuseds[cond,]
   
   alternative_GFE_ID <- c()
   alternative_GFE_ID_track <- c()
+  
+  # there is no alternative series in NUSEDS
   if(nrow(nuseds_here) == 0){
     alternative_GFE_ID <- "none"
     
@@ -932,7 +940,7 @@ for(i in 1:nrow(trackRecord_nuseds)){
         alternative_GFE_ID <- c(alternative_GFE_ID,
                                 conservation_unit_system_sites$GFE_ID[cond])
         
-      }else{ # in that case the altenative series has to be in trackRecord_nuseds
+      }else{ # in that case the alternative series has to be in trackRecord_nuseds
         cond <- trackRecord_nuseds$IndexId == iid &
           trackRecord_nuseds$GFE_ID == gfeid_i
         
@@ -945,8 +953,8 @@ for(i in 1:nrow(trackRecord_nuseds)){
     }
   }
   
-  #' Check in NUSEDS for alternative series that are in CUSS with the same GFE_ID 
-  #' and species but different GFE_ID.
+  #' 2) Look in NUSEDS for alternative series that are in CUSS with the same GFE_ID 
+  #' and species but different IndexId
   cond <- all_areas_nuseds$species_acronym_ncc == speciesAcro & 
     all_areas_nuseds$GFE_ID == gfeid &
     all_areas_nuseds$IndexId != iid
@@ -954,6 +962,8 @@ for(i in 1:nrow(trackRecord_nuseds)){
   
   alternative_IndexId <- c()
   alternative_IndexId_track <- c()
+  
+  # there is no alternative series in NUSEDS
   if(nrow(nuseds_here) == 0){
     alternative_IndexId <- "none"
     
@@ -970,7 +980,7 @@ for(i in 1:nrow(trackRecord_nuseds)){
         alternative_IndexId <- c(alternative_IndexId,
                                  conservation_unit_system_sites$IndexId[cond])
         
-      }else{ # in that case the altenative series has to be in trackRecord_nuseds
+      }else{ # in that case the alternative series has to be in trackRecord_nuseds
         cond <- trackRecord_nuseds$IndexId == iid_i &
           trackRecord_nuseds$GFE_ID == gfeid
         
@@ -1015,7 +1025,7 @@ removed$comment <- paste("Only",trackRecord_nuseds_3$nb_dataPt,
 all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
                                            toRemove = removed, 
                                            fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 308251
+nrow(all_areas_nuseds) # 308250
 
 removed_all <- rbind(removed_all,removed)
 nrow(removed_all) # 4593
@@ -1081,6 +1091,7 @@ for(i in 1:nrow(trackRecord_nuseds_iid)){
   removed_here <- NULL
   #' 1) If the series is 100% duplicated with another: remove
   if(any(comparison_series$duplicate == 100)){
+    
     cond <- comparison_series$duplicate == 100
     iid_replacement <- comparison_series$IndexId[cond]
     gfeid_replacement <- comparison_series$GFE_ID[cond]
@@ -1202,7 +1213,7 @@ nrow(all_areas_nuseds) # 308195
 
 #' Case with CN_39983 (i = 3):
 #' It is not in the PSE
-#' TODO: add to CUSS. Note that the POP_ID is not in CUSS not in the PSE (or decoder)
+#' TODO: add to CUSS. Note that the POP_ID is not in CUSS nor in the PSE (or decoder)
 #' There is consequently no CU associated to it.
 #' But it is very close to the Nanaimo river for which there is a Chinook summer 
 #' (i.e. ) for which the Chemainus river is included as a spawning location
@@ -1580,6 +1591,7 @@ cuss_new$X_LONGT
 #' Take GIS coordinates from Google map just above the Stamp falls (on the left of 
 #' the Stamp river fish ladder):
 #' Google uses the World Geodetic System WGS84 standard. --> same as in CUSS
+#' The coordinates below are given latter in the process.
 # cuss_new$Y_LAT <- 49.332224
 # cuss_new$X_LONGT <- -124.919717
 
@@ -2342,7 +2354,7 @@ for(i in 17:22){
 }
 
 #
-#' ** 3.4) Alternative GFE_ID without or without alternative IndexId **
+#' ** 3.4) No alternative series **
 cond <- trackRecord_nuseds$alternative_GFE_ID == "none" &
   trackRecord_nuseds$alternative_IndexId == "none" &
   !cond_3
@@ -2484,6 +2496,8 @@ for(r in 1:nrow(m)){
   conservation_unit_system_sites$X_LONGT[cond] <- m$X_LONGT[r]
 }
 
+#
+# Export cleaned all_areas_nuseds and conservation_unit_system_sites -----
 
 #' Export NUSEDS:
 write.csv(all_areas_nuseds,paste0(wd_output,"/all_areas_nuseds_cleaned.csv"), 
@@ -2627,7 +2641,7 @@ fields_IndexId <- unique(c(fields_l$NUSEDS$IndexId,fields_l$CUSS$IndexId))
 fields_IndexId <- fields_IndexId[fields_IndexId %in% colnames(nuseds_final)]
 
 nuseds_CU_GFI_ID <- unique(nuseds_final[,c("SPECIES_QUALIFIED","CU_NAME","GFE_ID")])
-nrow(nuseds_CU_GFI_ID) # 6848
+nrow(nuseds_CU_GFI_ID) # 6847
 
 count <- 1
 for(r in 1:nrow(nuseds_CU_GFI_ID)){
@@ -2812,7 +2826,6 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
       if("CN_2483" %in% IndexId_here & GFE_ID_here == 142){
         
-        # TODO:
         # - 1) merge CN_47277 - 142 to CN_2483 - 142
         # - 2) remove the point CN_47278 - 142
         
@@ -2902,6 +2915,7 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
 removed_all <- rbind(removed_all,removed_all_new)
 removed_all <- unique(removed_all)
 
+#
 # Additional fix: check duplicated years for a same IndexId/POP_ID - GFE_ID series ------
 #' If there are duplicated years:
 #' - if it is with NAs --> remove the duplicated row with NAs

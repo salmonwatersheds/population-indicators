@@ -62,6 +62,7 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
 
 # Loading packages & functions
 library(tidyr)
+library(dplyr) # for arrange()
 
 source("code/functions.R")
 
@@ -211,7 +212,22 @@ for(ecn in estim_class_nuseds){
   nuseds$stream_survey_quality[cond_nuseds] <- out
 }
 
+
+#'* Fixes in the methods *
+# Katy's request:
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1712611492405689?thread_ts=1712252256.802999&cid=C03LB7KM6JK
+
 unique(nuseds$ESTIMATE_METHOD)
+
+nuseds$ESTIMATE_METHOD <- gsub("Cummulative","Cumulative",nuseds$ESTIMATE_METHOD)
+
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Unknown"] <-  "Unknown Estimate Method"
+
+#' Additional changes requested (cf. Population meeting April 9th 2024)
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Fixed Site Census"] <-  "Fence Count"
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Aerial"] <- "Aerial Survey"
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Fence"] <- "Fence Count"
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Insufficient Information"] <- "Unknown Estimate Method"
 
 #
 # Find cuid from conservationunits_decoder -----
@@ -646,8 +662,8 @@ count_show <- 1
 distance_threshold <- 0.5 # ~ 50km
 
 # options(warn = 0)
-options(warn=1)  # print warnings as they occur
-options(warn = 2)  # treat warnings as errors
+# options(warn=1)  # print warnings as they occur
+# options(warn = 2)  # treat warnings as errors
 
 decimals <- 6
 
@@ -1636,6 +1652,7 @@ dataset_1part2 <- dataset_1part2 %>%
 
 # save file
 
+date <- "20240404"
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)

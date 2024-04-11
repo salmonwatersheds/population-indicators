@@ -190,19 +190,33 @@ dataset390 <- dataset390 %>%
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-excecution
 
-# Use old data for now
 spawner_surveys_ex <- spawner_surveys %>%
   filter(indicator == "Y") %>% # Use only indicator streams
-  filter(year > 2023 - gen_length + 1) %>% # Look over the most recent generation
+  filter(year > 2023 - gen_length + 1)%>%  # Look over the most recent generation
   group_by(cuid) %>%
-  summarise(survey_execution = ))) ## didn't quite figure this out yet
+  summarise(n=n(),
+    streams=n_distinct(streamid))
+
+spawner_surveys_ex <- spawner_surveys_ex %>% 
+  left_join(cu_list %>%
+              select(gen_length, cuid),
+            by = "cuid")          
 
 
-df <- subset(nuseds.counts, CU_findex=="SER-22" )%>%
-  subset(.,IsIndicator=="Y")%>%
-  select(.,X2015,X2016,X2017,X2018,X2019)
+spawner_surveys_ex$survey_execution <- with(spawner_surveys_ex, n/(streams*gen_length))
 
-((length(df)*nrow(df))-sum(is.na(df)))/(length(df)*nrow(df))
+spawner_surveys_ex <- spawner_surveys_ex %>%
+  select(cuid, survey_execution)
+
+dataset390 <- dataset390 %>% left_join(spawner_surveys_ex, by='cuid')
+
+dataset390 <- dataset390 %>%
+  mutate(survey_execution = case_when(survey_execution >= 0.8 ~ 5,
+                                      survey_execution < 0.8 & survey_execution >= 0.6 ~ 4,
+                                      survey_execution < 0.6 & survey_execution >= 0.4 ~ 3,
+                                      survey_execution < 0.4 & survey_execution >= 0.2 ~ 2,
+                                      survey_execution < 0.2 & survey_execution >= 0 ~ 1,
+  ))
 
 #------------------------------------------------------------------------------
 # catch_quality

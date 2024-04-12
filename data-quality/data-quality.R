@@ -185,18 +185,38 @@ dataset390 <- dataset390 %>%
                               ))
   
 #------------------------------------------------------------------------------
-# survey_execution - Eric to move over old code and revise if needed
+# survey_execution 
 #------------------------------------------------------------------------------
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-excecution
 
-# Use old data for now
+spawner_surveys_ex <- spawner_surveys %>%
+  filter(indicator == "Y") %>% # Use only indicator streams
+  filter(year > 2023 - gen_length + 1)%>%  # Look over the most recent generation
+  group_by(cuid) %>%
+  summarise(n=n(),
+    streams=n_distinct(streamid))
+
+spawner_surveys_ex <- spawner_surveys_ex %>% 
+  left_join(cu_list %>%
+              select(gen_length, cuid),
+            by = "cuid")          
+
+
+spawner_surveys_ex$survey_execution <- with(spawner_surveys_ex, n/(streams*gen_length))
+
+spawner_surveys_ex <- spawner_surveys_ex %>%
+  select(cuid, survey_execution)
+
+dataset390 <- dataset390 %>% left_join(spawner_surveys_ex, by='cuid')
+
 dataset390 <- dataset390 %>%
-  left_join(dataset390_old %>% 
-              filter(parameter == "survey_execution") %>%
-              select(cuid, datavalue) %>% 
-              rename(survey_execution = "datavalue")
-  )
+  mutate(survey_execution = case_when(survey_execution >= 0.8 ~ 5,
+                                      survey_execution < 0.8 & survey_execution >= 0.6 ~ 4,
+                                      survey_execution < 0.6 & survey_execution >= 0.4 ~ 3,
+                                      survey_execution < 0.4 & survey_execution >= 0.2 ~ 2,
+                                      survey_execution < 0.2 & survey_execution >= 0 ~ 1,
+  ))
 
 #------------------------------------------------------------------------------
 # catch_quality

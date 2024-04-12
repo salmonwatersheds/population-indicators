@@ -78,6 +78,10 @@ nrow(nuseds) # 306999
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6868
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6868
 
+sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 0
+sum(is.na(nuseds$MAX_ESTIMATE))
+
+
 #'* Files from PSF database *
 
 #'Import the name of the different datasets in the PSF database and their 
@@ -404,12 +408,12 @@ nuseds[cond_cuid_na,]$regionid[cond] <- regionsid_df$regionid[regionsid_df$regio
 unique(nuseds[cond_cuid_na,cols])
 
 
-#' TODO: troubleshoot with Katy after PSE 2.0
+#' TODO: troubleshoot with Katy after PSE 2.0 --> add these CUs
 # nuseds <- nuseds[!is.na(nuseds$cuid),]
 nrow(nuseds) # 306823 306875 306999
 
 #
-#'* Bring the stream-related fields *
+# Attribute pointid -------
 
 #'** CHECKS TEMPORARY **
 #' 1) compare cuid between streamlocationids, streamspawnersurveys_output and 
@@ -659,13 +663,22 @@ count_show <- 1
 # streamlocationids_copy <- streamlocationids
 # streamlocationids <- streamlocationids_copy
 
-distance_threshold <- 0.5 # ~ 50km
+distance_threshold <-  0.1 # ~ 10km # 0.05 # ~ 5km # 0.5 # ~ 50km
 
 # options(warn = 0)
 # options(warn=1)  # print warnings as they occur
 # options(warn = 2)  # treat warnings as errors
 
 decimals <- 6
+
+#' Make exception for location just above the threshold of 0.1 but that seem to
+#' to be the correct location after visual inspection on google map.
+#' Note that certain location have multiple distances, meaning that they are
+#' several location with the same sys_nm but different pointid and coordinates 
+#' in the PSE --> to correct later?
+exception_threshold <- c("VETTER CREEK",  # distances 0.1043280 0.1043055
+                         "NAKINA RIVER",  # distances 0.2548975 0.1034031
+                         "COLE CREEK")    # distances 0.1130038
 
 for(r in 1:nrow(nuseds_location)){
   # r <- 1 
@@ -689,6 +702,13 @@ for(r in 1:nrow(nuseds_location)){
   }
   names(fileds_values_l) <- fields_locations
 
+  # Exceptions for certain names
+  if(fileds_values_l$SYSTEM_SITE == "BLUE LEAD CREEK - SHORE"){     # otherwise matched to QUESNEL LAKE EAST ARM-UNNAMED CREEK #1
+    fileds_values_l$SYSTEM_SITE <- "BLUE LEAD CREEK-LAKE SHORE"
+  }else if(fileds_values_l$SYSTEM_SITE == "KILLDOG CREEK - SHORE"){ # otherwise matched to QUESNEL LAKE EAST ARM-UNNAMED CREEK #1
+    fileds_values_l$SYSTEM_SITE <- "KILLDOG CREEK-LAKE SHORE"
+  }
+  
   # return the matches in streamlocationids
   conditions_l <- list()
   v_i <- 1
@@ -706,10 +726,20 @@ for(r in 1:nrow(nuseds_location)){
   }
   names(conditions_l) <- fields_locations
   
+  # Exceptions: increase the threshold a little bit
+  if(fileds_values_l$SYSTEM_SITE %in% exception_threshold){
+    print(paste0("Exception for: ",fileds_values_l$SYSTEM_SITE))
+    distance_threshold_to_use <- distance_threshold + 0.02
+    # break
+    
+  }else{
+    distance_threshold_to_use <- distance_threshold
+  }
+  
   # return the distance where matches were found
   dist_pointids_l <- distance_condition_fun(conditions_l = conditions_l,
                                             streamlocationids = streamlocationids,
-                                            distance_threshold = distance_threshold,
+                                            distance_threshold = distance_threshold_to_use,
                                             decimals = decimals)
   distances_l <- dist_pointids_l$distances_l
   conditions_l <- dist_pointids_l$conditions_l
@@ -743,7 +773,7 @@ for(r in 1:nrow(nuseds_location)){
     
     # check if the distance is < distance_threshold
     # if not then do nothing for now
-    if(distance > distance_threshold){
+    if(distance > distance_threshold_to_use){
       print("Distance > distance_threshold and that should not be happening")
       break
     }
@@ -789,11 +819,11 @@ for(r in 1:nrow(nuseds_location)){
     }
   }
 }
-print(paste("Proportion of locations not matching:",count_percent,"%")) # 6.6%
+print(paste("Proportion of locations not matching:",count_percent,"%")) # 6.9%
 
 table(nuseds_location$comment)
-sum(is.na(nuseds_location$pointid)) # 153
-sum(is.na(nuseds_location$pointid)) / nrow(nuseds_location) # 0.065
+sum(is.na(nuseds_location$pointid)) # 159
+sum(is.na(nuseds_location$pointid)) / nrow(nuseds_location) # 0.07
 sum(!is.na(nuseds_location$pointid)) / nrow(nuseds_location) # 0.93
 
 
@@ -812,7 +842,7 @@ nuseds_location$SYSTEM_SITE_corrected <- NA
 count <- 0
 count_show <- 1
 for(r in 1:nrow(nuseds_location)){
-  # r <- 5
+  # r <- 1
   if(is.na(nuseds_location$pointid[r])){
     
     # if(nuseds_location$SYSTEM_SITE[r] == "SWAN LAKE CREEK #2 UNNAMED"){
@@ -958,26 +988,40 @@ for(r in 1:nrow(nuseds_location)){
     }
   }
 }
-print(paste("Proportion of locations not matching:",count_percent,"%")) # 1.4%
+print(paste("Proportion of locations not matching:",count_percent,"%")) # 1.6%
 # View(nuseds_location)
 
 cond_noMatch <- is.na(nuseds_location$pointid)
-sum(cond_noMatch) # 32
+sum(cond_noMatch) # 37
 nuseds_location[cond_noMatch,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT","comment")]
+
+nuseds_location$distance[!cond_noMatch][nuseds_location$distance[!cond_noMatch] > 0.01]
 
 # little fix
 cond <- nuseds_location$pointid_alternative == "" & !is.na(nuseds_location$pointid_alternative)
 nuseds_location[cond,]$pointid_alternative <- NA
 
+# 
+
 
 #'* Locations not found --> Need of new locations: *
 
 cond_noMatch <- is.na(nuseds_location$pointid)
-sum(cond_noMatch) # 32
+sum(cond_noMatch) # 37
 nuseds_location[cond_noMatch,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT","comment")]
 
 SYSTEM_SITE_notFound <- c()
 
+# These location were all checked individually
+
+location <- "QUESNEL LAKE EAST ARM - UNNAMED CREEK 2 - SHORE"    # none of the sys_nm locations with QUESNEL are close enough
+SYSTEM_SITE_notFound <- c(SYSTEM_SITE_notFound,location)
+
+location <- "NADINA CHANNEL"
+SYSTEM_SITE_notFound <- c(SYSTEM_SITE_notFound,location)
+
+location <- "TATSATUA CREEK"
+SYSTEM_SITE_notFound <- c(SYSTEM_SITE_notFound,location)
 
 location <- "LOWER YUKON RIVER"
 SYSTEM_SITE_notFound <- c(SYSTEM_SITE_notFound,location)
@@ -1227,10 +1271,56 @@ cond_noMatch <- cond_noMatch & !nuseds_location$SYSTEM_SITE %in% SYSTEM_SITE_not
 nuseds_location[cond_noMatch,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT","comment")]
 
 
+# for additonal check ups:
+
+
+
+
+location <- "KILLDOG CREEK - SHORE"
+cond <- grepl(location,nuseds_location$SYSTEM_SITE,fixed = T) & is.na(nuseds_location$distance)
+cond <- grepl(location,nuseds_location$SYSTEM_SITE,fixed = T)
+unique(nuseds_location[cond,c("SYSTEM_SITE","WATERBODY","LOCAL_NAME_1","LOCAL_NAME_2","sys_nm","Y_LAT","X_LONGT","distance")])
+location <- "KILLDOG CREEK"
+cond1 <- grepl(simplify_string_fun(location),simplify_string_fun(streamlocationids$sys_nm))
+cond1 <- simplify_string_fun(location) == simplify_string_fun(streamlocationids$sys_nm)
+streamlocationids[cond1,]
+
+distance_Euclidean_fun(x_ref = unique(nuseds_location[cond,]$X_LONGT)[1],
+                       y_ref = unique(nuseds_location[cond,]$Y_LAT)[1],
+                       x = unique(streamlocationids[cond1,]$longitude),
+                       y = unique(streamlocationids[cond1,]$latitude))
+
+#
+# Define new pointid for location that did not match -------
+#
+pointids_taken <- unique(streamlocationids$pointid)
+
+nuseds_location$pointid_new <- F
+nuseds_location$pointid_new[is.na(nuseds_location$pointid)] <- T
+
+sum(nuseds_location$pointid_new) # 35
+
+cond_pointid_new <- is.na(nuseds_location$pointid)
+nuseds_location$pointid[cond_pointid_new] <- (max(pointids_taken) + 1):(max(pointids_taken) + 1 + sum(nuseds_location$pointid_new) - 1)
+
+
+sum(duplicated(nuseds_location$pointid)) # 26
+
+pointid_tocheck <- unique(nuseds_location$pointid[duplicated(nuseds_location$pointid)])
+
+cond <- nuseds_location$pointid %in% pointid_tocheck
+
+nuseds_location[cond,c("SYSTEM_SITE","WATERBODY","GAZETTED_NAME","LOCAL_NAME_1",
+                       "LOCAL_NAME_2","sys_nm","pointid","distance")][order(nuseds_location$pointid[cond]),]
+
+
+#
+# Find streamid -----------
+#
 #'* 3) find streamid *
 #' use 
 
-nuseds_cuid_location <- unique(nuseds[,c("regionid","regionid","cuid",
+nuseds_cuid_location <- unique(nuseds[,c("region","regionid","cuid",
                                          fields_nuseds_CU,
                                          fields_nuseds_location)])
 
@@ -1245,240 +1335,131 @@ nuseds$distance <- NA
 
 cuid_nuseds_toCheck <- c()
 
-figures_print <- T
+figures_print <- F
 figures_show <- T
 cond_exception <- F # in case exceptions must be considered
 
-count <- 0
 count_show <- 1
 for(r in 1:nrow(nuseds_cuid_location)){
   # r <- 1
   
+  region_here <- nuseds_cuid_location$region[r]
   cuid_here <- nuseds_cuid_location$cuid[r]
   SYSTEM_SITE_here <- nuseds_cuid_location$SYSTEM_SITE[r]
   GFE_ID_here <- nuseds_cuid_location$GFE_ID[r]
+  
+  # if(SYSTEM_SITE_here == "BLUE LEAD CREEK - SHORE" & cuid_here == 728){
+  #   break
+  # }
   
   #' 1) Find the location in nuseds_location and return corresponding pointid and
   #' sys_nm, latitude and longitude
   cond_nuseds_location <- nuseds_location$SYSTEM_SITE == SYSTEM_SITE_here &
     nuseds_location$GFE_ID == GFE_ID_here
   
-  pointid_here <- unique(nuseds_location$pointid[cond_nuseds_location])
-  sys_nm_here <- unique(nuseds_location$sys_nm[cond_nuseds_location])
-  latitude_here <- unique(nuseds_location$latitude[cond_nuseds_location])
-  longitude_here <- unique(nuseds_location$longitude[cond_nuseds_location])
-  distance_here <- unique(nuseds_location$distance[cond_nuseds_location])
+  #' Conditions to meet proceed:
+  #' - Only attempt to find the streamid if no new pointid was attributed
+  #' - the SYSTEM_SITE_here is not in the list of SYSTEM_SITE there are recognozed as not present in streamlocationids
+  cond_proceed <- !nuseds_location$pointid_new[cond_nuseds_location] &
+    !SYSTEM_SITE_here %in% SYSTEM_SITE_notFound
   
-  # check
-  if(length(pointid_here) > 1){
-    print("more than one pointid here where it should not be")
-    break
-  }
-
-  #' 2) Find streamid if possible
-  if(!is.na(pointid_here) & !is.na(cuid_here)){
+  if(cond_proceed){
     
-    # additional fixes
-    if(cuid_here == 215 & SYSTEM_SITE_here == "BABINE RIVER - SECTION 1-3"){
-      pointid_here <- 95
-      sys_nm_here <- "Babine-Sections 1 To 3"
-      cond_streamlocationids <- streamlocationids$sys_nm == sys_nm_here &
-        streamlocationids$pointid == pointid_here
-      latitude_here <- unique(nuseds_location$latitude[cond_nuseds_location])
-      longitude_here <- unique(nuseds_location$longitude[cond_nuseds_location])
-      distance_here <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
-                                              y_ref = nuseds_cuid_location$Y_LAT[r],
-                                              x = longitude_here,
-                                              y = latitude_here)
+    sys_nm_here <- unique(nuseds_location$sys_nm[cond_nuseds_location])
+    pointid_here <- unique(nuseds_location$pointid[cond_nuseds_location])
+    latitude_here <- unique(nuseds_location$latitude[cond_nuseds_location])
+    longitude_here <- unique(nuseds_location$longitude[cond_nuseds_location])
+    distance_here <- unique(nuseds_location$distance[cond_nuseds_location])
+    
+    cond_check <- region_here == "Fraser" & cuid_here == 728 & pointid_here == 1809 &
+      !is.na(pointid_here) & !is.na(cuid_here)
+    
+    # if(cond_check){
+    #   break
+    #   cond_nuseds <- nuseds$region == region_here &
+    #     nuseds$cuid == cuid_here &
+    #     nuseds$SYSTEM_SITE == SYSTEM_SITE_here
+    #   sum(cond_nuseds)
+    #   nuseds[cond_nuseds,]$MAX_ESTIMATE
+    # }
+    
+    # check
+    if(length(pointid_here) > 1){
+      print("more than one pointid here where it should not be")
+      break
     }
     
-    cond_streamlocationids <- streamlocationids$sys_nm == sys_nm_here &
-      streamlocationids$pointid == pointid_here &
-      streamlocationids$cuid == cuid_here
-    
-    streamlocationids[cond_streamlocationids,]
-    nuseds_location[cond_nuseds_location,]
-    
-    if(sum(cond_streamlocationids) > 0){
-      streamid_here <- streamlocationids$streamid[cond_streamlocationids]
+    #' 2) Find streamid if possible
+    if(!is.na(pointid_here) & !is.na(cuid_here)){
       
-    }else{
+      # additional fixes
+      if(cuid_here == 215 & SYSTEM_SITE_here == "BABINE RIVER - SECTION 1-3"){
+        pointid_here <- 95
+        sys_nm_here <- "Babine-Sections 1 To 3"
+        cond_streamlocationids <- streamlocationids$sys_nm == sys_nm_here &
+          streamlocationids$pointid == pointid_here
+        latitude_here <- unique(nuseds_location$latitude[cond_nuseds_location])
+        longitude_here <- unique(nuseds_location$longitude[cond_nuseds_location])
+        distance_here <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
+                                                y_ref = nuseds_cuid_location$Y_LAT[r],
+                                                x = longitude_here,
+                                                y = latitude_here)
+      }
       
-      #' cuid and pointid exist but not their association, which could be due to:
-      #' 1) the fact the multile pointids were given to a same location --> check pointid_alternative
-      #' 2) mutliple variation in sys_nm were given to a same location for different cuids --> match location wit 1st word
+      cond_streamlocationids <- streamlocationids$sys_nm == sys_nm_here &
+        streamlocationids$pointid == pointid_here &
+        streamlocationids$cuid == cuid_here
       
-      streamid_here <- NA
+      # streamlocationids[cond_streamlocationids,]
+      # nuseds_location[cond_nuseds_location,]
       
-      #' 1) look if there are alternative pointids
-      pointid_alternative_here <- unique(nuseds_location$pointid_alternative[cond_nuseds_location])
-      
-      if(!is.na(pointid_alternative_here)[1]){
+      if(sum(cond_streamlocationids) > 0){
+        streamid_here <- streamlocationids$streamid[cond_streamlocationids]
         
-        pointid_alternative_here <- unlist(strsplit(pointid_alternative_here,", "))
-        pointid_alternative_here <- as.numeric(pointid_alternative_here)
+      }else{
         
-        #' 1st try with the same sys_nm_here
-        cond_streamlocationids_l <- lapply(pointid_alternative_here,function(pid){
-          out <- streamlocationids$sys_nm == sys_nm_here &
-            streamlocationids$pointid == pid &
-            streamlocationids$cuid == cuid_here
-          return(out)
-        })
-        cond_pointid_alternative <- sapply(cond_streamlocationids_l,any)
+        #' cuid and pointid exist but not their association, which could be due to:
+        #' 1) the fact the multiple pointids were given to a same location --> check pointid_alternative
+        #' 2) multiple variation in sys_nm were given to a same location for different cuids --> match location with 1st word
         
-        #' 2nd, if not match, try without sys_nm_here
-        if(sum(cond_pointid_alternative) == 0){
+        streamid_here <- NA
+        
+        #' 1) look if there are alternative pointids
+        pointid_alternative_here <- unique(nuseds_location$pointid_alternative[cond_nuseds_location])
+        
+        if(!is.na(pointid_alternative_here)[1]){
+          
+          pointid_alternative_here <- unlist(strsplit(pointid_alternative_here,", "))
+          pointid_alternative_here <- as.numeric(pointid_alternative_here)
+          
+          #' 1st try with the same sys_nm_here
           cond_streamlocationids_l <- lapply(pointid_alternative_here,function(pid){
-            cond_pid <- streamlocationids$pointid == pid
-            sys_nm_here_here <- unique(streamlocationids$sys_nm[cond_pid])
-
-            out <- streamlocationids$sys_nm %in% sys_nm_here_here &
+            out <- streamlocationids$sys_nm == sys_nm_here &
               streamlocationids$pointid == pid &
               streamlocationids$cuid == cuid_here
             return(out)
           })
           cond_pointid_alternative <- sapply(cond_streamlocationids_l,any)
-        }
-        
-        if(sum(cond_pointid_alternative) == 1){
           
-          cond_streamlocationids <- cond_streamlocationids_l[cond_pointid_alternative][[1]]
-          
-          # streamlocationids[cond_streamlocationids,]
-          
-          pointid_here <- streamlocationids$pointid[cond_streamlocationids]
-          sys_nm_here <- streamlocationids$sys_nm[cond_streamlocationids]
-          latitude_here <- streamlocationids$latitude[cond_streamlocationids]
-          longitude_here <- streamlocationids$longitude[cond_streamlocationids]
-          streamid_here <- streamlocationids$streamid[cond_streamlocationids]
-          
-          distance_here <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
-                                                  y_ref = nuseds_cuid_location$Y_LAT[r],
-                                                  x = streamlocationids$longitude[cond_streamlocationids],
-                                                  y = streamlocationids$latitude[cond_streamlocationids])
-          
-          # print(paste0("Matched with pointid_alternative at r ",r," - ",SYSTEM_SITE_here," - ",sys_nm_here," - ",round(distance_here,4)))
-          
-        }else if(sum(cond_pointid_alternative) > 1){
-          
-          if(!cond_exception){
-            
-            cond_streamlocationids_l <- cond_streamlocationids_l[cond_pointid_alternative]
-            cond_streamlocationids <- cond_streamlocationids_l[[1]]
-            for(i in 2:length(cond_streamlocationids_l)){
-              cond_streamlocationids <- cond_streamlocationids | cond_streamlocationids_l[[i]]
-            }
-            
-            distances <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
-                                                y_ref = nuseds_cuid_location$Y_LAT[r],
-                                                x = streamlocationids$longitude[cond_streamlocationids],
-                                                y = streamlocationids$latitude[cond_streamlocationids])
-            
-            #' 1st, select the smallest distance
-            cond_distance <- distances == min(distances)
-            cond_new <- rep(F,length(cond_streamlocationids))
-            cond_new[which(cond_streamlocationids)[cond_distance]] <- T
-            cond_streamlocationids <- cond_new
-            distances <- distances[cond_distance]
-            
-            #' 2nd, if still more than one choice, use grepl on the full name
-            if(sum(cond_streamlocationids) > 1){
+          #' 2nd, if not match, try without sys_nm_here
+          if(sum(cond_pointid_alternative) == 0){
+            cond_streamlocationids_l <- lapply(pointid_alternative_here,function(pid){
+              cond_pid <- streamlocationids$pointid == pid
+              sys_nm_here_here <- unique(streamlocationids$sys_nm[cond_pid])
               
-              sys_nm_alternatives <- sapply(streamlocationids$sys_nm[cond_streamlocationids],
-                                            function(sysnm){
-                                              out <- grepl(simplify_string_fun(SYSTEM_SITE_here),
-                                                           simplify_string_fun(sysnm))
-                                              return(out)
-                                            })
-              cond_new <- rep(F,length(cond_streamlocationids))
-              cond_new[which(cond_streamlocationids)[cond_distance]] <- T
-              cond_streamlocationids <- cond_new
-              distances <- unique(distances)
-            }
-            
-            #' 3rd, if sill more than one option, select the 1st one
-            if(sum(cond_streamlocationids) > 1){
-              cond_new <- rep(F,length(cond_streamlocationids))
-              cond_new[which(cond_streamlocationids)[1]] <- T
-              cond_streamlocationids <- cond_new
-            }
-            
-            if(sum(cond_streamlocationids) > 0){
-              
-              pointid_here <- streamlocationids$pointid[cond_streamlocationids]
-              sys_nm_here <- streamlocationids$sys_nm[cond_streamlocationids]
-              latitude_here <- streamlocationids$latitude[cond_streamlocationids]
-              longitude_here <- streamlocationids$longitude[cond_streamlocationids]
-              streamid_here <- streamlocationids$streamid[cond_streamlocationids]
-              distance_here <- distances
-              
-              # print(paste0("Matched with pointid_alternative at r ",r," - ",SYSTEM_SITE_here," - ",sys_nm_here," - ",round(distance_here,4)))
-            }
-          }
-        }
-      }
-      
-      #' 2) if still no match, try matching with 1st word
-      if(sum(cond_streamlocationids) == 0){
-        
-        SYSTEM_SITE_here_word1 <- strsplit(SYSTEM_SITE_here," ")[[1]][1]
-        cond_streamlocationids <- streamlocationids$cuid == cuid_here & 
-          grepl(simplify_string_fun(SYSTEM_SITE_here_word1),streamlocationids$sys_nm_simple)
-        
-        if(sum(cond_streamlocationids) > 0){
-          
-          # streamlocationids[cond,]
-          distances <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
-                                              y_ref = nuseds_cuid_location$Y_LAT[r],
-                                              x = streamlocationids$longitude[cond],
-                                              y = streamlocationids$latitude[cond])
-          
-          # filter with distance_threshold
-          cond_distance <- distances < distance_threshold 
-          cond_new <- rep(F,length(cond_streamlocationids)) 
-          cond_new[which(cond_streamlocationids)[cond_distance]] <- T
-          cond_streamlocationids <- cond_new
-          distances <- distances[cond_distance]
-          
-          if(length(distances) > 1){
-            
-            #' 1st, select the smallest distance
-            cond_distance <- distances == min(distances)
-            cond_new <- rep(F,length(cond_streamlocationids))
-            cond_new[which(cond_streamlocationids)[cond_distance]] <- T
-            cond_streamlocationids <- cond_new
-            distances <- distances[cond_distance]
-            
-            #' 2nd, if still more than one choice, use grepl on the full name
-            if(sum(cond_streamlocationids) > 1){
-              
-              sys_nm_alternatives <- sapply(streamlocationids$sys_nm[cond_streamlocationids],
-                                            function(sysnm){
-                                              out <- grepl(simplify_string_fun(SYSTEM_SITE_here),
-                                                           simplify_string_fun(sysnm))
-                                              return(out)
-                                            })
-              cond_new <- rep(F,length(cond_streamlocationids))
-              cond_new[which(cond_streamlocationids)[cond_distance]] <- T
-              cond_streamlocationids <- cond_new
-              distances <- unique(distances)
-            }
-            
-            #' 3rd, if sill more than one option, select the 1st one
-            if(sum(cond_streamlocationids) > 1){
-              cond_new <- rep(F,length(cond_streamlocationids))
-              cond_new[which(cond_streamlocationids)[1]] <- T
-              cond_streamlocationids <- cond_new
-            }
-            
-            # print("*** BREAK ***")
-            # break
+              out <- streamlocationids$sys_nm %in% sys_nm_here_here &
+                streamlocationids$pointid == pid &
+                streamlocationids$cuid == cuid_here
+              return(out)
+            })
+            cond_pointid_alternative <- sapply(cond_streamlocationids_l,any)
           }
           
-          if(length(distances) == 1){
+          if(sum(cond_pointid_alternative) == 1){
             
-            distance_here <- distances
+            cond_streamlocationids <- cond_streamlocationids_l[cond_pointid_alternative][[1]]
+            
+            # streamlocationids[cond_streamlocationids,]
             
             pointid_here <- streamlocationids$pointid[cond_streamlocationids]
             sys_nm_here <- streamlocationids$sys_nm[cond_streamlocationids]
@@ -1486,74 +1467,281 @@ for(r in 1:nrow(nuseds_cuid_location)){
             longitude_here <- streamlocationids$longitude[cond_streamlocationids]
             streamid_here <- streamlocationids$streamid[cond_streamlocationids]
             
-            print(paste0("Matched with 1st word at r ",r," - ",SYSTEM_SITE_here," - ",sys_nm_here," - ",round(distance_here,4)))
+            distance_here <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
+                                                    y_ref = nuseds_cuid_location$Y_LAT[r],
+                                                    x = streamlocationids$longitude[cond_streamlocationids],
+                                                    y = streamlocationids$latitude[cond_streamlocationids])
             
-          }else{
-            streamid_here <- NA
+            # print(paste0("Matched with pointid_alternative at r ",r," - ",SYSTEM_SITE_here," - ",sys_nm_here," - ",round(distance_here,4)))
+            
+          }else if(sum(cond_pointid_alternative) > 1){
+            
+            if(!cond_exception){
+              
+              cond_streamlocationids_l <- cond_streamlocationids_l[cond_pointid_alternative]
+              cond_streamlocationids <- cond_streamlocationids_l[[1]]
+              for(i in 2:length(cond_streamlocationids_l)){
+                cond_streamlocationids <- cond_streamlocationids | cond_streamlocationids_l[[i]]
+              }
+              
+              distances <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
+                                                  y_ref = nuseds_cuid_location$Y_LAT[r],
+                                                  x = streamlocationids$longitude[cond_streamlocationids],
+                                                  y = streamlocationids$latitude[cond_streamlocationids])
+              
+              #' 1st, select the smallest distance
+              cond_distance <- distances == min(distances)
+              cond_new <- rep(F,length(cond_streamlocationids))
+              cond_new[which(cond_streamlocationids)[cond_distance]] <- T
+              cond_streamlocationids <- cond_new
+              distances <- distances[cond_distance]
+              
+              #' 2nd, if still more than one choice, use grepl on the full name
+              if(sum(cond_streamlocationids) > 1){
+                
+                sys_nm_alternatives <- sapply(streamlocationids$sys_nm[cond_streamlocationids],
+                                              function(sysnm){
+                                                out <- grepl(simplify_string_fun(SYSTEM_SITE_here),
+                                                             simplify_string_fun(sysnm))
+                                                return(out)
+                                              })
+                cond_new <- rep(F,length(cond_streamlocationids))
+                cond_new[which(cond_streamlocationids)[cond_distance]] <- T
+                cond_streamlocationids <- cond_new
+                distances <- unique(distances)
+              }
+              
+              #' 3rd, if sill more than one option, select the 1st one
+              if(sum(cond_streamlocationids) > 1){
+                cond_new <- rep(F,length(cond_streamlocationids))
+                cond_new[which(cond_streamlocationids)[1]] <- T
+                cond_streamlocationids <- cond_new
+              }
+              
+              if(sum(cond_streamlocationids) > 0){
+                
+                pointid_here <- streamlocationids$pointid[cond_streamlocationids]
+                sys_nm_here <- streamlocationids$sys_nm[cond_streamlocationids]
+                latitude_here <- streamlocationids$latitude[cond_streamlocationids]
+                longitude_here <- streamlocationids$longitude[cond_streamlocationids]
+                streamid_here <- streamlocationids$streamid[cond_streamlocationids]
+                distance_here <- distances
+                
+                # print(paste0("Matched with pointid_alternative at r ",r," - ",SYSTEM_SITE_here," - ",sys_nm_here," - ",round(distance_here,4)))
+              }
+            }
           }
         }
+        
+        #' 2) if still no match, try matching with 1st word
+        if(sum(cond_streamlocationids) == 0){
+          
+          SYSTEM_SITE_here_word1 <- strsplit(SYSTEM_SITE_here," ")[[1]][1]
+          cond_streamlocationids <- streamlocationids$cuid == cuid_here & 
+            grepl(simplify_string_fun(SYSTEM_SITE_here_word1),streamlocationids$sys_nm_simple)
+          
+          if(sum(cond_streamlocationids) > 0){
+            
+            # streamlocationids[cond,]
+            distances <- distance_Euclidean_fun(x_ref = nuseds_cuid_location$X_LONGT[r],
+                                                y_ref = nuseds_cuid_location$Y_LAT[r],
+                                                x = streamlocationids$longitude[cond_streamlocationids],
+                                                y = streamlocationids$latitude[cond_streamlocationids])
+            
+            # filter with distance_threshold
+            cond_distance <- distances < distance_threshold
+            cond_new <- rep(F,length(cond_streamlocationids)) 
+            cond_new[which(cond_streamlocationids)[cond_distance]] <- T
+            cond_streamlocationids <- cond_new
+            distances <- distances[cond_distance]
+            
+            # remove the options for which the streamid was already attributed
+            if(length(distances) > 1){
+              
+              # get the streamids
+              streamids_options <- streamlocationids$streamid[cond_streamlocationids]
+              
+              # get the streamids already taken in nuseds
+              streamids_taken <- unique(nuseds$streamid)
+              streamids_taken <- streamids_taken[!is.na(streamids_taken)]
+              
+              # update cond_streamlocationids and distances
+              cond_new <- rep(F,length(cond_streamlocationids))
+              cond_new[which(cond_streamlocationids)[!streamids_options %in% streamids_taken]] <- T
+              cond_streamlocationids <- cond_new
+              distances <- distances[!streamids_options %in% streamids_taken]
+            }
+            
+            # if still more than one option, select the shorted distance
+            if(length(distances) > 1){
+              
+              #' 1st, select the smallest distance
+              cond_distance <- distances == min(distances)
+              cond_new <- rep(F,length(cond_streamlocationids))
+              cond_new[which(cond_streamlocationids)[cond_distance]] <- T
+              cond_streamlocationids <- cond_new
+              distances <- distances[cond_distance]
+              
+              #' 2nd, if still more than one choice, use grepl on the full name
+              if(sum(cond_streamlocationids) > 1){
+                
+                sys_nm_alternatives <- sapply(streamlocationids$sys_nm[cond_streamlocationids],
+                                              function(sysnm){
+                                                out <- grepl(simplify_string_fun(SYSTEM_SITE_here),
+                                                             simplify_string_fun(sysnm))
+                                                return(out)
+                                              })
+                cond_new <- rep(F,length(cond_streamlocationids))
+                cond_new[which(cond_streamlocationids)[cond_distance]] <- T
+                cond_streamlocationids <- cond_new
+                distances <- unique(distances)
+              }
+              
+              #' 3rd, if sill more than one option, select the 1st one
+              if(sum(cond_streamlocationids) > 1){
+                cond_new <- rep(F,length(cond_streamlocationids))
+                cond_new[which(cond_streamlocationids)[1]] <- T
+                cond_streamlocationids <- cond_new
+              }
+              
+              # print("*** BREAK ***")
+              # break
+            }
+            
+            if(length(distances) == 1){
+              
+              distance_here <- distances
+              
+              pointid_here <- streamlocationids$pointid[cond_streamlocationids]
+              sys_nm_here <- streamlocationids$sys_nm[cond_streamlocationids]
+              latitude_here <- streamlocationids$latitude[cond_streamlocationids]
+              longitude_here <- streamlocationids$longitude[cond_streamlocationids]
+              streamid_here <- streamlocationids$streamid[cond_streamlocationids]
+              
+              print(paste0("Matched with 1st word at r ",r," - ",SYSTEM_SITE_here," - ",sys_nm_here," - ",round(distance_here,4)))
+              
+            }else{
+              streamid_here <- NA
+            }
+          }
+        }
+        streamid_here <- NA
       }
+      
+    }else{
       streamid_here <- NA
     }
     
-  }else{
-    streamid_here <- NA
-  }
-
-  # check
-  if(length(streamid_here) > 1){
-    print("more than one streamid_here here where it should not be")
-    break
-  }
-  
-  #' 3) Fill nuseds
-  if(is.na(cuid_here)){
-    cond_nuseds_cuid <- is.na(nuseds$cuid)
-  }else{
-    cond_nuseds_cuid <- nuseds$cuid == cuid_here &  !is.na(nuseds$cuid)
-  }
-  cond_nuseds <- nuseds$SYSTEM_SITE == SYSTEM_SITE_here &
-    nuseds$GFE_ID == GFE_ID_here & 
-    cond_nuseds_cuid
-  
-  # sort(nuseds$Year[cond_nuseds])
-  # unique(nuseds$SYSTEM_SITE[cond_nuseds])
-  
-  # check
-  if(any(duplicated(sort(nuseds$Year[cond_nuseds]))) & !is.na(cuid_here)){
-    # 
-    print("duplicated years where it should not be")
+    # check
+    if(length(streamid_here) > 1){
+      print("more than one streamid_here here where it should not be")
+      break
+    }
     
-    if(figures_print){
-      jpeg(paste0(wd_figures,"/Tocheck_cuid_",cuid_here,"_r_",r,".jpeg"), 
-           width = 20, height = 20, units = "cm", res = 200)
+    #' 3) Fill nuseds
+    if(is.na(cuid_here)){
+      cond_nuseds_cuid <- is.na(nuseds$cuid)
+    }else{
+      cond_nuseds_cuid <- nuseds$cuid == cuid_here &  !is.na(nuseds$cuid)
     }
-    if(figures_show){
-      plot_IndexId_GFE_ID_fun(IndexIds = unique(nuseds$IndexId[cond_nuseds]),
-                              GFE_IDs = rep(unique(nuseds$GFE_ID[cond_nuseds]),length(unique(nuseds$IndexId[cond_nuseds]))),
-                              all_areas_nuseds = nuseds)
-      legend("top",legend = paste0("cuid = ",cuid_here,", r = ",r),bty = 'n')
+    cond_nuseds <- nuseds$SYSTEM_SITE == SYSTEM_SITE_here &
+      nuseds$GFE_ID == GFE_ID_here & 
+      cond_nuseds_cuid
+    
+    # sort(nuseds$Year[cond_nuseds])
+    # unique(nuseds$SYSTEM_SITE[cond_nuseds])
+    
+    # check
+    if(any(duplicated(sort(nuseds$Year[cond_nuseds]))) & !is.na(cuid_here)){
+      # 
+      print("duplicated years where it should not be")
+      
+      if(figures_print){
+        jpeg(paste0(wd_figures,"/Tocheck_cuid_",cuid_here,"_r_",r,".jpeg"), 
+             width = 20, height = 20, units = "cm", res = 200)
+      }
+      if(figures_show){
+        plot_IndexId_GFE_ID_fun(IndexIds = unique(nuseds$IndexId[cond_nuseds]),
+                                GFE_IDs = rep(unique(nuseds$GFE_ID[cond_nuseds]),length(unique(nuseds$IndexId[cond_nuseds]))),
+                                all_areas_nuseds = nuseds)
+        legend("top",legend = paste0("cuid = ",cuid_here,", r = ",r),bty = 'n')
+      }
+      if(figures_print){
+        dev.off()
+      }
+      cuid_nuseds_toCheck <- c(cuid_nuseds_toCheck,cuid_here)
     }
-    if(figures_print){
-      dev.off()
-    }
-    cuid_nuseds_toCheck <- c(cuid_nuseds_toCheck,cuid_here)
+    
+    nuseds$pointid[cond_nuseds] <- pointid_here
+    nuseds$sys_nm[cond_nuseds] <- sys_nm_here
+    nuseds$streamid[cond_nuseds] <- streamid_here
+    nuseds$latitude[cond_nuseds] <- latitude_here
+    nuseds$longitude[cond_nuseds] <- longitude_here
+    nuseds$distance[cond_nuseds] <- distance_here
+    
   }
   
-  nuseds$pointid[cond_nuseds] <- pointid_here
-  nuseds$sys_nm[cond_nuseds] <- sys_nm_here
-  nuseds$streamid[cond_nuseds] <- streamid_here
-  nuseds$latitude[cond_nuseds] <- latitude_here
-  nuseds$longitude[cond_nuseds] <- longitude_here
-  nuseds$distance[cond_nuseds] <- distance_here
-  
-  count <- count + 1
-  count_percent <- round(count/nrow(nuseds_cuid_location)*100,1)
+  count_percent <- round(r/nrow(nuseds_cuid_location)*100,1)
   if(count_show <= count_percent){
     print(paste("Progress:",count_percent,"%"))
     count_show <- count_show + 1
   }
 }
+
+max(nuseds$distance, na.rm = T)
+
+cond_cuid_na <- is.na(nuseds$cuid)
+cond_pointid_na <- is.na(nuseds$pointid)
+cond_streamid_na <- is.na(nuseds$streamid)
+cond_noNa <- !cond_cuid_na & !cond_pointid_na & !cond_streamid_na
+
+sum(cond_cuid_na) / nrow(nuseds) * 100     # 0.65%
+sum(cond_pointid_na) / nrow(nuseds) * 100  # 1.3%
+sum(cond_streamid_na) / nrow(nuseds) * 100  # 6.5%
+(sum(cond_streamid_na) - sum(cond_cuid_na) - sum(cond_pointid_na)) / nrow(nuseds) * 100  # 4.5%
+sum(cond_noNa) / nrow(nuseds) * 100     # 93.5%
+
+
+#
+# Fill missing streamid ------------
+
+cond_cuid_na <- is.na(nuseds$cuid)
+cond_pointid_na <- is.na(nuseds$pointid)
+cond_streamid_na <- is.na(nuseds$streamid)
+cond_noNa <- !cond_cuid_na & !cond_pointid_na & !cond_streamid_na
+
+pointid_new <- nuseds_location$pointid[nuseds_location$pointid_new]
+for(i in 1:length(pointid_new)){
+  # i <- 1
+  pid <- pointid_new[i]
+  cond <- nuseds_location$pointid == pid
+  SYSTEM_SITE <- nuseds_location$SYSTEM_SITE[cond]
+  WATERBODY <- nuseds_location$WATERBODY[cond]
+  LOCAL_NAME_1 <- nuseds_location$LOCAL_NAME_1[cond]
+  LOCAL_NAME_2 <- nuseds_location$LOCAL_NAME_2[cond]
+  X_LONGT <- round(nuseds_location$X_LONGT[cond],decimals)
+  Y_LAT <- round(nuseds_location$Y_LAT[cond],decimals)
+  GFE_ID <- nuseds_location$GFE_ID[cond]
+  
+  cond_nuseds <- nuseds$SYSTEM_SITE == SYSTEM_SITE &
+    nuseds$WATERBODY == WATERBODY &
+    nuseds$LOCAL_NAME_1 == LOCAL_NAME_1 &
+    nuseds$LOCAL_NAME_2 == LOCAL_NAME_2 &
+    round(nuseds$X_LONGT,decimals) == X_LONGT &
+    round(nuseds$Y_LAT,decimals) == Y_LAT &
+    nuseds$GFE_ID == GFE_ID
+  
+  nuseds$pointid[cond_nuseds] <- pid
+  nuseds$pointid_new[cond_nuseds] <- T
+}
+
+sum(is.na(nuseds$pointid)) # 1341
+sum(is.na(nuseds$cuid)) # 1998
+unique(nuseds$cuid[is.na(nuseds$pointid)]) # this should be null, I do not get it....
+
+
+
+# --------------
 
 nuseds_final <- nuseds
 
@@ -1584,12 +1772,13 @@ nuseds_final <- nuseds_final[!cond,]
 
 #' Remove Steelhead --> already removed in nuseds_data.collation.R
 
-
+# Write nuseds_cuid_streamid.csv -------------
+#
 write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid.csv"),
           row.names = F)
 
 
-# Generate spawner_surveys_dataset_1part2 --------
+# Generate dataset_1part2 --------
 # example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
 # https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
 
@@ -1614,10 +1803,10 @@ for(sid in streamids){
 }
 
 # edit column names
-field_toChange <- c("SPECIES","SPECIES_QUALIFIED","IS_INDICATOR","X_LONGT","Y_LAT","Year",
+field_toChange <- c("SPECIES","SPECIES_QUALIFIED","IS_INDICATOR","Year",
                     "MAX_ESTIMATE","ESTIMATE_METHOD","stream_survey_quality")
 
-fields_new <- c("species_name","species_abbr","indicator","longitude","latitude","year",
+fields_new <- c("species_name","species_abbr","indicator","year",
                 "stream_observed_count","survey_method","survey_quality")
 
 for(i in 1:length(field_toChange)){
@@ -1630,7 +1819,8 @@ dataset_1part2 <- dataset_1part2[!is.na(dataset_1part2$stream_observed_count),]
 
 # select columns
 
-colToKeep <- c("region","species_name","species_abbr","cuid","cu_name_pse","streamid",
+colToKeep <- c("region","species_name","species_abbr","cuid","cu_name_pse",
+               "pointid","streamid",
                "stream_name_pse","indicator","longitude","latitude","year",
                "stream_observed_count","survey_method","survey_quality")
 
@@ -1648,6 +1838,102 @@ dataset_1part2 <- dataset_1part2 %>%
           factor(indicator, levels = c("Y","N","",NA)),
           stream_name_pse,
           year)
+
+
+#' There are several instances were there are multiple locations are associated to a same sys_nm for a same cuid
+#' where generate multiple instances where several time series have the same streamid and cuid and point id.
+#' These are summed up for now but different locations should be attributed in the future.
+
+nrow(dataset_1part2) # 140512
+
+d1 <- dataset_1part2 %>%
+  # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
+  group_by(region,species_name,species_abbr,cuid,cu_name_pse,pointid,streamid,
+           stream_name_pse,year,survey_method,survey_quality) %>%
+  summarise(stream_observed_count_2 = sum(stream_observed_count))
+
+nrow(d1) # 140399
+
+nrow(dataset_1part2) - nrow(d1) # 31
+
+d2 <- dataset_1part2 %>%
+  # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
+  group_by(region,species_name,species_abbr,cuid,cu_name_pse,pointid,streamid,
+           stream_name_pse,year,survey_method,survey_quality) %>%
+  summarise(stream_observed_count_2 = sum(stream_observed_count))
+
+nrow(d2) # 140345
+
+nrow(dataset_1part2) - nrow(d2) # 70
+
+series <- unique(dataset_1part2[,c("region","cuid","pointid","streamid")])
+for(r in 5573:nrow(series)){
+  # r <- 1
+  region <- series$region[r]
+  cuid <- series$cuid[r]
+  pointid <- series$pointid[r]
+  streamid <- series$streamid[r]
+  
+  cond <- dataset_1part2$region == region &
+    dataset_1part2$cuid == cuid &
+    dataset_1part2$streamid == streamid
+  
+  yrs <- dataset_1part2[cond,]$year
+  
+  if(any(duplicated(yrs))){
+    
+    dataset_1part2_cut <- dataset_1part2[cond,]
+    
+    # years with conflicting survey_method and survey_quality
+    yrs_dupli <- yrs[duplicated(yrs)]
+    cond_method_diff <- cond & dataset_1part2$year %in% yrs_dupli 
+    
+    # check if the survey_method are the same for each duplicated year:
+    survey_method_yr_diff <- sapply(X = yrs_dupli, FUN = function(yr){
+      cond_yr <- cond & dataset_1part2$year == yr
+      survey_method <- unique(dataset_1part2$survey_method[cond_yr])
+      out <- length(survey_method) > 1
+      return(out)
+    })
+    
+    # check if the survey_quality are the same for each duplicated year:
+    survey_quality_yr_diff <- sapply(X = yrs_dupli, FUN = function(yr){
+      cond_yr <- cond & dataset_1part2$year == yr
+      survey_quality <- unique(dataset_1part2$survey_quality[cond_yr])
+      out <- length(survey_quality) > 1
+      return(out)
+    })
+    
+    # no different in the survey methods and quality in duplicated years
+    if(!any(survey_method_yr_diff) & !any(survey_quality_yr_diff)){
+      
+      d_new <- dataset_1part2_cut %>%
+        # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
+        group_by(region,species_name,species_abbr,cuid,cu_name_pse,pointid,streamid,
+                 stream_name_pse,indicator,longitude,latitude,year,
+                 survey_method,survey_quality) %>%
+        summarise(stream_observed_count = sum(stream_observed_count))
+      
+      
+    }else{
+      break
+      
+      
+      
+    }
+    
+    
+    # dataset_1part2 <- dataset_1part2[!cond,]
+    # dataset_1part2 <- rbind(dataset_1part2,d_new)
+    
+    
+  }
+  
+}
+
+
+
+dataset_1part2$streamid
 
 
 # save file

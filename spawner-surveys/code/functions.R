@@ -1470,7 +1470,7 @@ SYSTEM_SITE_fixes_fun <- function(){
                          "ADAMS CHANNEL",
                          "SWAN LAKE CREEK #2 UNNAMED",
                          "PEACH SPAWNING CHANNEL",
-                         "NADINA CHANNEL",
+                         # "NADINA CHANNEL",                # the channel is at the opposite direction of the lake from NADINA RIVER-UPPER
                          "JONES CREEK CHANNEL",
                          "CROWN ZELLERBACK CREEK",
                          "CHILKO CHANNEL",
@@ -1482,7 +1482,9 @@ SYSTEM_SITE_fixes_fun <- function(){
                          "LIMESTONE POINT - SHORE .5KM S",
                          "GOOSE POINT - SHORE .8KM S",
                          "BIG SLIDE - SHORE 1KM W",
-                         "SQUEAH LAKE CREEK")
+                         "SQUEAH LAKE CREEK",
+                         "BOULDERY CREEK - SHORE 2KM E",
+                         "BILL MINER CREEK - SHORE 3KM W")
   
   sys_nm_fixes <- c("COOPER INLET-FANNIE COVE LH CREEK",
                     "COOPER INLET-FANNIE COVE RH CREEK",
@@ -1520,10 +1522,10 @@ SYSTEM_SITE_fixes_fun <- function(){
                     "UPPER and  LOWER SETON CHANNELS",
                     "LASSITER CREEK",
                     "BRENNAN PARK SPAWNING CHANNEL",
-                    "ADAMS RIVER SPAWNING CHANNEL",
+                    "ADAMS RIVER MOUTH-LAKE SHORE", # "ADAMS RIVER SPAWNING CHANNEL",
                     "Swan Lake Creek  #2",
                     "PEACH CREEK SIDE CHANNEL",
-                    "NADINA RIVER-UPPER",
+                    # "NADINA RIVER-UPPER",
                     "JONES'  SPAWNING CHANNEL",
                     "CROWN ZELLERBACH CREEK",
                     "CHILKO SPAWNING CHANNELS",
@@ -1535,7 +1537,9 @@ SYSTEM_SITE_fixes_fun <- function(){
                     "LIMESTONE PIONT-LAKE SHORE-S",
                     "GOOSE POINT-LAKE SHORE-5 KM S",
                     "BIG SLIDE-LAKE SHORE-1KM W",
-                    "UNNAMED CREEK NEAR SQUEAH LAKE")
+                    "UNNAMED CREEK NEAR SQUEAH LAKE",
+                    "BOULDERY CREEK-E-LAKE SHORE",
+                    "BILL MINER CREEK-LAKE SHORE-3KM W")
   
   out <- list(SYSTEM_SITE_fixes,sys_nm_fixes)
   names(out) <- c("SYSTEM_SITE","sys_nm")

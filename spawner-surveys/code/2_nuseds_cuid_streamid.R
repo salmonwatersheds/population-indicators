@@ -701,7 +701,7 @@ for(r in 1:nrow(nuseds_location)){
     v_i <- v_i + 1
   }
   names(fileds_values_l) <- fields_locations
-
+  
   # Exceptions for certain names
   if(fileds_values_l$SYSTEM_SITE == "BLUE LEAD CREEK - SHORE"){     # otherwise matched to QUESNEL LAKE EAST ARM-UNNAMED CREEK #1
     fileds_values_l$SYSTEM_SITE <- "BLUE LEAD CREEK-LAKE SHORE"
@@ -1701,27 +1701,39 @@ sum(cond_streamid_na) / nrow(nuseds) * 100  # 6.5%
 (sum(cond_streamid_na) - sum(cond_cuid_na) - sum(cond_pointid_na)) / nrow(nuseds) * 100  # 4.5%
 sum(cond_noNa) / nrow(nuseds) * 100     # 93.5%
 
+nuseds_copy <- nuseds
 
 #
-# Fill missing streamid ------------
+# Fill missing pointid and streamid ------------
+# Note that pointid of matched locations were not attributed in nuseds in the 
+# procedure above when there was no streamid match.
+#
 
-cond_cuid_na <- is.na(nuseds$cuid)
-cond_pointid_na <- is.na(nuseds$pointid)
-cond_streamid_na <- is.na(nuseds$streamid)
-cond_noNa <- !cond_cuid_na & !cond_pointid_na & !cond_streamid_na
+# nuseds <- nuseds_copy
 
-pointid_new <- nuseds_location$pointid[nuseds_location$pointid_new]
-for(i in 1:length(pointid_new)){
-  # i <- 1
-  pid <- pointid_new[i]
-  cond <- nuseds_location$pointid == pid
-  SYSTEM_SITE <- nuseds_location$SYSTEM_SITE[cond]
-  WATERBODY <- nuseds_location$WATERBODY[cond]
-  LOCAL_NAME_1 <- nuseds_location$LOCAL_NAME_1[cond]
-  LOCAL_NAME_2 <- nuseds_location$LOCAL_NAME_2[cond]
-  X_LONGT <- round(nuseds_location$X_LONGT[cond],decimals)
-  Y_LAT <- round(nuseds_location$Y_LAT[cond],decimals)
-  GFE_ID <- nuseds_location$GFE_ID[cond]
+# options(warn = 0)
+# options(warn=1)  # print warnings as they occur
+options(warn = 2)  # treat warnings as errors
+
+# 1st fill missing pointid
+nuseds$pointid_new <- F
+
+count_show <- 0
+for(r in 1:nrow(nuseds_location)){
+  # r <- 1
+  
+  # nuseds_location[r,]
+  
+  pid <- nuseds_location$pointid[r]
+  pointid_new <- nuseds_location$pointid_new[r]
+  
+  SYSTEM_SITE <- nuseds_location$SYSTEM_SITE[r]
+  WATERBODY <- nuseds_location$WATERBODY[r]
+  LOCAL_NAME_1 <- nuseds_location$LOCAL_NAME_1[r]
+  LOCAL_NAME_2 <- nuseds_location$LOCAL_NAME_2[r]
+  X_LONGT <- round(nuseds_location$X_LONGT[r],decimals)
+  Y_LAT <- round(nuseds_location$Y_LAT[r],decimals)
+  GFE_ID <- nuseds_location$GFE_ID[r]
   
   cond_nuseds <- nuseds$SYSTEM_SITE == SYSTEM_SITE &
     nuseds$WATERBODY == WATERBODY &
@@ -1731,17 +1743,103 @@ for(i in 1:length(pointid_new)){
     round(nuseds$Y_LAT,decimals) == Y_LAT &
     nuseds$GFE_ID == GFE_ID
   
-  nuseds$pointid[cond_nuseds] <- pid
-  nuseds$pointid_new[cond_nuseds] <- T
+  # unique(nuseds[cond_nuseds,c("sys_nm","pointid","SYSTEM_SITE","distance")])
+  
+  cond_nuseds_pointidNA <- cond_nuseds & is.na(nuseds$pointid)
+  cond_nuseds_pointidNA_no <- cond_nuseds & !is.na(nuseds$pointid)
+  
+  # attribute new pointid 
+  if(sum(cond_nuseds_pointidNA) > 0){
+    nuseds$pointid[cond_nuseds_pointidNA] <- pid
+    nuseds$pointid_new[cond_nuseds_pointidNA] <- T
+  }
+  
+  # if pointid was already attributed, check that it matches
+  # note that it could not match because mupliple pointids were attributed in the
+  # same location --> check that the alternative pointid is associated to the 
+  # same values in the location-related fields
+  if(sum(cond_nuseds_pointidNA_no) > 0){
+    # pointids_here <- unique(nuseds$pointid[cond_nuseds_pointidNA_no])
+    # pointids_notMatching <- pointids_here[pointids_here != pid]
+    
+    # if(length(pointids_notMatching) > 0){
+      
+      #' NOTE: this check up is not done because the pointid attributed to a location
+      #' in nuseds_location is not always the same than the one given to the same
+      #' location in nuseds because during the process of attributing new streamid
+      #' it is possible that the suggested pointid (from nuseds_location) was not 
+      #' selected but instead the an pointid_alternative was.
+      
+      # matches <- sapply(X = pointids_notMatching, FUN = function(pidnm){
+      #   # pidnm <- pointids_notMatching[1]
+      #   cond_here <- nuseds$pointid == pidnm & !is.na(nuseds$pointid)
+      #   
+      #   match_here <- SYSTEM_SITE == unique(nuseds$SYSTEM_SITE[cond_here]) &
+      #     WATERBODY == unique(nuseds$WATERBODY[cond_here]) &
+      #     LOCAL_NAME_1 == unique(nuseds$LOCAL_NAME_1[cond_here]) &
+      #     LOCAL_NAME_2 == unique(nuseds$LOCAL_NAME_2[cond_here]) &
+      #     SYSTEM_SITE == unique(nuseds$SYSTEM_SITE[cond_here]) &
+      #     X_LONGT == unique(round(nuseds$X_LONGT[cond_here],decimals)) &
+      #     Y_LAT == unique(round(nuseds$Y_LAT[cond_here],decimals)) &
+      #     GFE_ID == unique(nuseds$GFE_ID[cond_here])
+      #   
+      #   return(match_here)
+      # })
+      # 
+      # if(any(!matches)){
+      #   print(paste0("pointids differ"))
+      #   cond_here <- nuseds$pointid == pointids_notMatching[!matches] & !is.na(nuseds$pointid)
+      #   print(paste0("pointid not matching: ", pointids_notMatching[!matches]))
+      #   cond_here <- nuseds$pointid %in% pointids_notMatching & !is.na(nuseds$pointid)
+      #   print(unique(nuseds[cond_here,c("sys_nm","pointid","SYSTEM_SITE","distance")]))
+      #   print(nuseds_location[r,])
+      #   break
+      # }
+  #  }
+  }
+  
+  count_percent <- round(r/nrow(nuseds_location)*100,1)
+  if(count_show <= count_percent){
+    print(paste("Progress:",count_percent,"%"))
+    count_show <- count_show + 1
+  }
 }
 
-sum(is.na(nuseds$pointid)) # 1341
+sum(is.na(nuseds$pointid)) # 0
 sum(is.na(nuseds$cuid)) # 1998
-unique(nuseds$cuid[is.na(nuseds$pointid)]) # this should be null, I do not get it....
+
+options(warn = 0)
+
+# 2nd fill missing streamid and provide stream_name_pse
+
+streamid_here <- max(streamlocationids$streamid) + 1
+
+nuseds$streamid_new <- F
+nuseds_cuid_pointid_streamid <- unique(nuseds[,c("cuid","pointid","streamid")])
+for(r in 1:nrow(nuseds_cuid_pointid_streamid)){
+  # r <- 1
+  cuid <- nuseds_cuid_pointid_streamid$cuid[r]
+  pointid <- nuseds_cuid_pointid_streamid$pointid[r]
+  streamid <- nuseds_cuid_pointid_streamid$streamid[r]
+  
+  if(!is.na(cuid) & is.na(streamid)){
+    cond <- nuseds$cuid == cuid &
+      nuseds$pointid == pointid
+    
+    nuseds$streamid[cond] <- streamid_here
+    nuseds$streamid_new[cond] <- T
+    streamid_here <- streamid_here + 1
+  }
+}
+
+sum(is.na(nuseds$cuid)) # 1998
+sum(is.na(nuseds$streamid)) # 1998
 
 
 
-# --------------
+#
+# Write nuseds_cuid_streamid.csv -------------
+#
 
 nuseds_final <- nuseds
 
@@ -1770,14 +1868,14 @@ cond <- nuseds_final$cuid == 1300 &
 nuseds_final[cond,]
 nuseds_final <- nuseds_final[!cond,]
 
-#' Remove Steelhead --> already removed in nuseds_data.collation.R
-
-# Write nuseds_cuid_streamid.csv -------------
-#
-write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid.csv"),
+date <- "20240404"
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+write.csv(nuseds_final,paste0(wd_output,"/nuseds_cuid_streamid_",date,".csv"),
           row.names = F)
 
-
+#
 # Generate dataset_1part2 --------
 # example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
 # https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
@@ -1790,6 +1888,8 @@ cond_pointid_na <- is.na(nuseds_final$pointid)
 cond_gfe_id_na <- is.na(nuseds_final$GFE_ID)    # 0
 cond_streamid_na <- is.na(nuseds_final$streamid)
 cond_noNa <- !cond_cuid_na & !cond_pointid_na & !cond_streamid_na
+
+#' Remove Steelhead --> already removed in nuseds_data.collation.R
 
 dataset_1part2 <- nuseds_final[cond_noNa,]
 

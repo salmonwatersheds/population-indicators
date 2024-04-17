@@ -49,7 +49,7 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
-# define wd to access population-indicators/spawner-surveys/data/conservation-units.csv
+# Define wd to access population-indicators/spawner-surveys/data/conservation-units.csv
 
 wd_spawner_surveys_data <- paste(wd_X_Drive1_PROJECTS,
                                  "1_Active/Population Methods and Analysis/population-indicators/spawner-surveys",
@@ -62,11 +62,19 @@ library(stringr)
 
 source(paste(wd_code,"functions.R",sep = "/"))
 
+#
+# Update from PSF_modified_SEP_releases_DATE.xlsx --------
 #'** Import conservation-units.csv from wd_spawner_surveys_data **
 #' This file comes from the PSF database all allows to match the DFO STOCK_CU_INDEX
 #' with the PSF 'cuid' (or 'CUID') with the field 'cu_index' (= STOCK_CU_INDEX)
-conservationunits_decoder <- read.csv(paste(wd_pop_indic_data_input_dropbox,"conservationunits_decoder.csv",sep = "/"),
-                               header = T)
+#' Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = F,
+                                                   update_file_csv = F,
+                                                   wd = wd_pop_indic_data_input_dropbox)
 
 #'** Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data **
 DFO_df_all <- return_file_lastVersion_fun(wd_data,pattern = "PSF_modified_SEP_releases")
@@ -94,7 +102,7 @@ DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(D
 #' 3) "Seapen" released (RELEASE_STAGE_NAME == "Seapen")
 #' Steph and Eric: "some cases REL_CU_INDEX = blank is for seapen released, since
 #' maybe in those cases the release can’t be assigned to a CU? But in those cases
-#'  do we assume the fish will return to the broodstock CU? Eric: Yes."
+#' do we assume the fish will return to the broodstock CU? Eric: Yes."
 #' TODO: deal with it later.
 # View(DFO_df_all[grepl("Seapen",DFO_df_all$RELEASE_STAGE_NAME),])
 
@@ -107,7 +115,7 @@ DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(D
 CUToRemove <- c("CK-9002","CK-9005","CK-9006","CK-9007","CK-9008","SEL-15-03","CM-9004")
 DFO_df <- DFO_df[! DFO_df$STOCK_CU_INDEX %in% CUToRemove,]
 DFO_df <- DFO_df[! DFO_df$REL_CU_INDEX %in% CUToRemove,]
-nrow(DFO_df)
+nrow(DFO_df) # 31830
 
 #' ** Import the hatchery template from wd_data as a list **
 filePSF_l <- hatchery_template_fun(wd_data = wd_data,
@@ -123,6 +131,11 @@ matchCol_df <- matching_columns_fun(wd_data = wd_data,
 # make a copy of filePSF_l that is going to be filled
 filePSFnew_l <- filePSF_l
 #' TODO: correct/clear the 1st sheet (?)
+
+#' Make a dataframe to report the case where there are multiple cuid_broodstock 
+#' for a same release_site_name-release_stage-release_site_CUID-release_date
+#' combination --> to send to Katy,
+cuid_broodstock_multi <- NULL
 
 # Fill filePSF_l with new data
 for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by hand or not at all (QUESTION)
@@ -366,6 +379,12 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
               print("The following release_site_name-release_stage-release_site_CUID-release_date combination has multiple cuid_broodstock:")
               print("Ask Katy to know what to do")
               print(sheetNew_rsn_rs_cuid_rd)
+              
+              if(is.null(cuid_broodstock_multi)){
+                cuid_broodstock_multi <- sheetNew_rsn_rs_cuid_rd
+              }else{
+                cuid_broodstock_multi <- rbind(cuid_broodstock_multi,sheetNew_rsn_rs_cuid_rd)
+              }
             }
           }
         }
@@ -390,6 +409,15 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
   filePSFnew_l[[sheet_i]] <- sheetNew
 }
 
+
+#' 
+colOrder <- c("species","release_site_latitude","release_site_longitude","facilityID",
+              "release_site_name","release_stage","release_site_CUID","release_date",
+              "cuid_broodstock","total_release")
+
+# write.csv(cuid_broodstock_multi[,colOrder],paste0(wd_output,"/cuid_broodstock_multi.csv"),
+#           row.names = F)
+
 #' In sheet DataEntry_releases, remove the row with NA values for release_site_latitude
 #' and release_site_longitude and places these in a new additional sheet
 toKeep <- !is.na(filePSFnew_l$DataEntry_releases$release_site_latitude) & 
@@ -410,6 +438,23 @@ DataEntry_facilitiescuids_NA <- filePSFnew_l$DataEntry_facilitiescuids[!filePSFn
 filePSFnew_l$DataEntry_facilitiescuids <- DataEntry_facilitiescuids_noNA
 filePSFnew_l$DataEntry_facilitiescuids_NAcoord <- DataEntry_facilitiescuids_NA
 
+
+# ad column release_type_pse in DataEntry_releases ------ 
+#' Cf. Pop meeting April 3rd 2024
+#' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
+
+release_type_df <- release_type_pse_fun()
+
+filePSFnew_l$DataEntry_releases$release_type_pse <- NA
+
+for(i in 1:nrow(release_type_df)){
+  rs <- release_type_df$release_stage[i]
+  rss <- release_type_df$release_type_pse[i]
+  cond <- filePSFnew_l$DataEntry_releases$release_stage == rs
+  filePSFnew_l$DataEntry_releases$release_type_pse[cond] <- rss
+}
+
+
 # export the file
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
@@ -424,7 +469,7 @@ for(sh_i in 1:length(names(filePSFnew_l))){
   sheetName <- names(filePSFnew_l)[sh_i]
   sheet <- as.data.frame(filePSFnew_l[[sheetName]])
   write.xlsx(sheet, 
-             file = paste0(wd_output,"/SWP_hatchery_data_TBR_",date,".xlsx"),
+             file = paste0(wd_output,"/SWP_hatchery_data_",date,".xlsx"),
              sheetName = sheetName, 
              row.names = FALSE,
              append = append,
@@ -432,22 +477,326 @@ for(sh_i in 1:length(names(filePSFnew_l))){
   print(sh_i)
 }
 
-
 # Notes for Katy
 # - 1) I implemented a CHECK to check that facilityname have a unique combination of facility_latitude and facility_longitude --> they do
-# - 2) I implemented a CHECK to check that release_site_name have a unique combination ofrelease_site_latitude and release_site_longitude --> they do
+# - 2) I implemented a CHECK to check that release_site_name have a unique combination of release_site_latitude and release_site_longitude --> they do
 # - 3) I sum total_release for a same combination of (i) release_site_name, (ii) release_stage, (iii) release_site_CUID and (iv) release_date
 # - 4) I implemented a CHECK in 3) above to very if multiple cuid_broodstock are present in a single combinations --> THERE ARE (wait to hear from Katy)
 # - 5) In sheet DataEntry_releases, I removed the row with NA values for release_site_latitude and release_site_longitude and places these in a new additional sheet called DataEntry_releases_NAcoord
 # - 6) In sheet DataEntry_facilitiescuids, I removed the facilites (i.e., facilityID) that do not have coordinate in sheet DataEntry_facilities and placed these in a new additional sheet called DataEntry_facilitiescuids_NAcoord
 # - 7) I cannot do anything about the 1st sheet ??? progratically, it has to be copy pasted by hand from the template and then filled by hand
 
+# Edit release_type_pse for Transboundary and steelhead -----------
+
+#' #'Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#' Import dataset384_output
+dataset384_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[12],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+
+nrow(dataset384_output) # 1480
+head(dataset384_output)
+unique(dataset384_output$species_name)
+unique(dataset384_output$region)
+
+#'* create location_name_pse *
+dataset384_output$location_name_pse <- dataset384_output$locationname
+
+cond <- grepl(" [R|r]",dataset384_output$location_name_pse) & !grepl(" RIVER",dataset384_output$location_name_pse)
+dataset384_output$location_name_pse[cond]
+dataset384_output$location_name_pse[cond] <- gsub(" R"," River",dataset384_output$location_name_pse[cond])
+
+cond <- grepl(" Lk",dataset384_output$location_name_pse)
+dataset384_output$location_name_pse[cond]
+dataset384_output$location_name_pse[cond] <- gsub(" Lk"," Lake",dataset384_output$location_name_pse[cond])
+
+cond <- grepl(" Cr",dataset384_output$location_name_pse)
+dataset384_output$location_name_pse[cond]
+dataset384_output$location_name_pse[cond] <- gsub(" Cr"," Creek",dataset384_output$location_name_pse[cond])
+
+cond <- grepl(" Pd",dataset384_output$location_name_pse)
+dataset384_output$location_name_pse[cond]
+
+cond <- grepl(" In",dataset384_output$location_name_pse)
+dataset384_output$location_name_pse[cond]
+
+#'* Add release_type_pse *
+release_type_df <- release_type_pse_fun()
+
+dataset384_output$release_type_pse <- NA
+
+for(i in 1:nrow(release_type_df)){
+  rs <- release_type_df$release_stage[i]
+  rss <- release_type_df$release_type_pse[i]
+  cond <- dataset384_output$release_stage == rs
+  dataset384_output$release_type_pse[cond] <- rss
+}
 
 
+#'* create the different datasets *
+dataset384_output_SH <- dataset384_output[dataset384_output$species_name == "Steelhead",]
+nrow(dataset384_output_SH) # 1369
+
+dataset384_output_TB <- dataset384_output[dataset384_output$region == "Transboundary",]
+nrow(dataset384_output_TB) # 111
+
+dataset384_output_rest <- dataset384_output[dataset384_output$region != "Transboundary",]
+dataset384_output_rest <- dataset384_output_rest[dataset384_output_rest$species_name  != "Steelhead",]
+
+unique(dataset384_output_SH$release_stage)
+unique(dataset384_output_TB$release_stage)
+unique(dataset384_output_rest$release_stage)
+
+unique(dataset384_output_SH$release_type_pse)
+unique(dataset384_output_TB$release_type_pse)
+
+#' * Correction *
+#' Remove the following two data points from dataset384_output_SH
+cond <- dataset384_output_SH$release_stage %in% c("Catchable","2 years") # get ride of them PLUS they don't match the value in the PSE
+dataset384_output_SH[cond,]
+dataset384_output_SH <- dataset384_output_SH[!cond,]
+
+# export the file
+date <- Sys.Date()
+date <- gsub(pattern = "-",replacement = "",x = date)
+date <- "20240404"
+write.csv(dataset384_output_SH,paste0(wd_output,"/dataset384_output_SH_",date,".csv"),
+          row.names = F)
+write.csv(dataset384_output_TB,paste0(wd_output,"/dataset384_output_TB_",date,".csv"),
+          row.names = F)
+
+#'* Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx *
+DataEntry_relase <- read.xlsx(file = paste0(wd_output,"/SWP_hatchery_data_20240404.xlsx"),
+                              sheetName = "DataEntry_releases")
+
+DataEntry_relase$location_name_pse <- DataEntry_relase$release_site_name
+
+cond <- grepl(" [R|r]",DataEntry_relase$location_name_pse) & !grepl(" RIVER",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" R"," River",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Lk",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Lk"," Lake",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Cr",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Cr"," Creek",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Cv",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Cv"," Cove",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Pd",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Pd"," Pond",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Ch",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Ch"," Channel",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" In",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" In"," Inlet",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Sl",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Sl"," Slough",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Is",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Is"," Island",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Strm",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Strm"," Stream",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Pk",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Pk"," Peak",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Sp",DataEntry_relase$location_name_pse) & !grepl(" Spit",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Sp"," Spawning",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Cst",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Cst"," Coast",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Val",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Val"," Valley",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Sd",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Sd"," Sound",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Est",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Est"," Estuary",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Wtshd",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Wtshd"," Watershed",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Tribs",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Tribs"," Tributaries",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Trib",DataEntry_relase$location_name_pse) & !grepl(" Tributaries",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Trib"," Tributary",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Div",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Div"," Division",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Hb",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Hb"," Harbour",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Fwy",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Fwy"," Freeway",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Msh",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Msh"," Marsh",DataEntry_relase$location_name_pse[cond])
+ 
+cond <- grepl(" N",DataEntry_relase$location_name_pse) & !grepl(" No",DataEntry_relase$location_name_pse) & !grepl(" Na",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" N"," North",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" S",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" S",l),DataEntry_relase$location_name_pse)
+}
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" S"," South",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" E",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" E",l),DataEntry_relase$location_name_pse)
+}
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" E"," East",DataEntry_relase$location_name_pse[cond])
+
+# remove Transboundary data
+cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
+DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cuid_toRemove,]
+
+#
+date <- Sys.Date()
+date <- gsub(pattern = "-",replacement = "",x = date)
+date <- "20240404"
+write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTB_",date,".csv"),
+          row.names = F)
+
+# related slack thread:
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1713375227574009?thread_ts=1712267027.385489&cid=C03LB7KM6JK
 
 
+#'* CHECK: Compare dataset384_output_TB to the TB in SWP_hatchery_data_20240404.xlsx *
+#' 
+#' Related slack thread: TODO: still need to be addressed.
+#' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1713377494509899
 
+DataEntry_relase <- read.xlsx(file = paste0(wd_output,"/SWP_hatchery_data_20240404.xlsx"),
+                              sheetName = "DataEntry_releases")
+head(DataEntry_relase)
 
+#' Check if there are cuid in dataset384_output that are not in 
+#' SWP_hatchery_data_20240404.xlsx
+unique(dataset384_output_TB$cuid)[!unique(dataset384_output_TB$cuid) %in% unique(DataEntry_relase$cuid_broodstock)] 
+#' There are two: 1028 1033
+#' This is not unexpected because these come from another source than the DFO one.
+
+#' Check if there are facilityid in SWP_hatchery_data_20240404.xlsx not in 
+#' dataset384_output
+#' --> need to create the field region using conservationunits_decoder
+cuid_TB <- unique(conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"])
+DataEntry_relase_TB <- DataEntry_relase[DataEntry_relase$cuid_broodstock %in% cuid_TB,]
+unique(DataEntry_relase_TB$cuid_broodstock)[!unique(DataEntry_relase_TB$cuid_broodstock) %in% unique(dataset384_output_TB$cuid)] 
+#' There is one: 1017, which is not normal.
+DataEntry_relase_TB[DataEntry_relase_TB$cuid_broodstock == 1017,]
+# TO REMOVE there is an issue with the facilityID (cf. Population meeting 16/04/2024)
+# https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
+# I told Katy to do so there:
+# 
+
+# Make a simpler column for species name in dataset384_output
+dataset384_output_TB$species_name_simple <- dataset384_output_TB$species_name
+dataset384_output_TB$species_name_simple <- gsub("Lake s","S",dataset384_output_TB$species_name_simple)
+dataset384_output_TB$species_name_simple <- gsub("River s","S",dataset384_output_TB$species_name_simple)
+
+colnames(dataset384_output_TB)
+colnames(DataEntry_relase_TB)
+
+unique(dataset384_output_TB$locationname)
+unique(DataEntry_relase_TB$release_site_name)
+
+#' * Fix Tatsaminie vs. Tatsaminie LK *
+#' Coordinate differ a bit
+#' For Tatsaminie issue between VESTA and Katy --> there were multiple locations 
+#' combined into one.
+#' https://www.dropbox.com/s/mllqe0jfk5el1yn/Transboundary_Hatchery%20Data%20Sources%20%26%20Processing.docx?dl=0
+unique(dataset384_output_TB[,c("latitude","longitude")][dataset384_output_TB$locationname == "Tatsamenie",])
+unique(DataEntry_relase_TB[,c("release_site_latitude","release_site_longitude")][DataEntry_relase_TB$release_site_name == "Tatsamenie Lk",])
+DataEntry_relase_TB$release_site_name[DataEntry_relase_TB$release_site_name == "Tatsamenie Lk"] <- "Tatsamenie"
+
+#' * Compare the datasets *
+col_384 <-       c("species_name_simple","cuid","locationname","release_stage")  # facilityid
+col_DataEntry <- c("species","cuid_broodstock","release_site_name","release_stage") # facilityID
+
+cuid_facility_yr_384 <- unique(dataset384_output_TB[,col_384])
+cuid_facility_yr_DataEntry <- unique(DataEntry_relase_TB[,col_DataEntry])
+
+# Data in common:
+data_merged_all <- merge(x = dataset384_output_TB[,c(col_384,"year","total_release")], 
+                        y = DataEntry_relase_TB[,c(col_DataEntry,"release_date","total_release")],
+                        by.x = c(col_384,"year"), by.y = c(col_DataEntry,"release_date"), all = T)
+data_merged_all
+
+# Data in dataset384_output_TB not in DataEntry_relase_TB
+cond_384_DERno <- !is.na(data_merged_all$total_release.x) & is.na(data_merged_all$total_release.y)
+data_merged_all[cond_384_DERno,c("species_name_simple","cuid","locationname","release_stage","year",
+                                         "total_release.x","total_release.y")]
+sum(cond_384_DERno)/nrow(data_merged_all) * 100 # 77.19
+
+# Data in DataEntry_relase_TB not in dataset384_output_TB 
+cond_384no_DER <- is.na(data_merged_all$total_release.x) & !is.na(data_merged_all$total_release.y)
+data_merged_all[cond_384no_DER,c("species_name_simple","cuid","locationname","release_stage","year",
+                                         "total_release.x","total_release.y")]
+#' As mentioned above this data point can be ignore because there is an issue with
+#' the facilityID
+sum(cond_384no_DER)/nrow(data_merged_all) * 100 # 0.9
+
+# Data in both
+cond_384_DER <- !is.na(data_merged_all$total_release.x) & !is.na(data_merged_all$total_release.y)
+data_common <- data_merged_all[cond_384_DER,]
+data_common
+sum(cond_384_DER)/nrow(data_merged_all) * 100 # 20,2
+
+# Data in both that does not match
+cond_diff <- data_common$total_release.x != data_common$total_release.y
+data_common[cond_diff,]
+sum(cond_diff)/nrow(data_merged_all) * 100 # 8.0
+
+cond <- dataset384_output_TB$year == 2015 &
+  dataset384_output_TB$locationname == "Tatsamenie" 
+dataset384_output_TB[cond,]
+
+cond <- DataEntry_relase_TB$release_date == 2015 &
+  DataEntry_relase_TB$release_site_name == "Tatsamenie" 
+DataEntry_relase_TB[cond,]
+
+# 
 # OLD NOTES: -------
 # - Eric: the only trick will be translating the "STOCK_CU_INDEX" field into 
 # "cuid_broodstock" AND CUID of the release site. Will have to use one of the tables in the decoder repo. 

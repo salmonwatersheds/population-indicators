@@ -322,4 +322,50 @@ program_acronym_fun <- function(prog_acro = NA, prog_name = NA){
   return(output)
 }
 
+#' Function to create the field "release_type_simple" from "release_stage":
+release_type_pse_fun <- function(){
+  
+  release_type_df <- data.frame(release_stage = c("Fed Fry","Fed Fall",
+                                                  "Smolt 1+","Smolt 0+",
+                                                  "Unfed","Chan Fry",
+                                                  "Eyed Egg",
+                                                  "Seapen 0+","Seapen","Seapen 1+",
+                                                  "Nat Fry",
+                                                  "Nat Sm 0+",
+                                                  "Nat Emerg",
+                                                  "Nat Sm 1+",
+                                                  "Seapen 2+",
+                                                  "Fall Fry",
+                                                  "Parr",
+                                                  "Fry",
+                                                  "Smolt",
+                                                  "Fingerling",
+                                                  "Yearling",
+                                                  "Egg",
+                                                  "Unknown"),
+                                release_type_pse = c("Fry","Fry",
+                                                     "Smolt","Smolt",
+                                                     "Fry","Fry",
+                                                     "Egg",
+                                                     "Seapen","Seapen","Seapen",
+                                                     "Fry",
+                                                     "Smolt",
+                                                     "Fry",
+                                                     "Smolt",
+                                                     "Seapen",
+                                                     "Fry",
+                                                     "Smolt",
+                                                     "Fry",
+                                                     "Smolt",
+                                                     "Smolt",
+                                                     "Smolt",
+                                                     "Egg",
+                                                     "Unknown"
+                                                     ))
+  
+  release_type_df <- release_type_df[order(release_type_df$release_type_pse),]
+  
+  return(release_type_df)
+}
+
 

@@ -290,19 +290,31 @@ datasetsNames_database_fun <- function(){
       "appdata.vwdl_catchrunsize_output",
       "appdata.vwdl_conservationunits",
       "appdata.vwstreamlocationids",
-      "appdata.vwdl_surveystreams"
+      "appdata.vwdl_surveystreams",
+      "appdata.vwdl_dataset391_output",
+      "appdata.vwdl_dataset380_output",
+      "appdata.vwdl_dataset384_output",
+      "appdata.vwdl_dataset101_output",
+      "appdata.vwdl_catchrunsize_output",
+      "appdata.vwdl_dataset1cu_output"
       ),
     
     name_CSV = c(
       "conservationunits_decoder.csv",
       "cuspawnerabundance.csv",
       "recruitsperspawner.csv",
-      "streamspawnersurveys_output.csv",
+      "streamspawnersurveys_output.csv",     # dataset_1part2
       "setr_appendix4.csv",
       "catchrunsize_output.csv",
       "conservationunits.csv",
       "streamlocationids.csv",
-      "surveystreams.csv"
+      "surveystreams.csv",
+      "dataset391_output.csv",
+      "dataset380_output.csv",
+      "dataset384_output.csv",
+      "dataset101_output.csv",
+      "catchrunsize_output.csv",
+      "dataset1cu_output.csv"               # dataset_1part1
       ))
   
   out_df$index <- 1:nrow(out_df)
@@ -742,7 +754,7 @@ import_mostRecent_file_fun <- function(wd,pattern){
   }else{
     file.mtime <- file.mtime(paste(wd,files_c,sep="/"))
     file <- files_c[file.mtime == max(file.mtime)]
-    print(paste("File imported:",file))
+    print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
     out <- read.csv(paste(wd,file,sep = "/"),header = T)
   }
   

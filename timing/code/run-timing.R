@@ -196,7 +196,6 @@ for(i in 1:n.cuid){
 
 dat.out$run_timing_ppn <- round(dat.out$run_timing_ppn, digits = 3)
 
-write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
 
 write.csv(dat[, c("cuid", "rt_dat_qual")], file = paste0(Dropbox_directory, "/timing/output/run-timing-data-quality_", Sys.Date(), ".csv"), row.names = FALSE)
 
@@ -210,26 +209,28 @@ dat.out2$run_timing_ppn <- NA
 
 for(i in 1:n.cuid){
   dum <- dat.wide2[which(as.numeric(rownames(dat.wide2)) == cuid[i]), ]
-  dat.out2$run_timing_ppn[dat.out$cuid == cuid[i]] <- dum/sum(dum)
+  dat.out2$run_timing_ppn[dat.out2$cuid == cuid[i]] <- dum/sum(dum)
   rm(dum)
 }
 
-dat.out2$run_timing_ppn <- round(dat.out2$run_timing_ppn, digits = 3)
+dat.out2$run_timing_ppn <- round(dat.out2$run_timing_ppn, digits = 4)
 
-# compare
-cuid2compare <- cu_decoder$pooledcuid[cu_decoder$region == "Fraser" & cu_decoder$species_abbr == "SEL" & cu_decoder$cu_type == 'Current']
-n <- length(cuid2compare)
-xDate <- as.Date(paste(1999, DOY, sep = "-"), format = "%Y-%j")
-xDate2 <- as.Date(paste(c(rep(1999, 365), 2000), c(DOY, 1), sep = "-"), format = "%Y-%j")
-quartz(width = 5, height =  n/6+1.5, pointsize = 10)
-par(mar = c(3,2,2,3))
-plot(range(xDate2), c(1, n + 1), "n", bty = "l", xlab = "Day", ylab = "", main = "Fraser SEL", yaxt = "n", yaxs = "i", xaxs = "i")
-mtext(side = 2, line = 1, "Run timing by CU")
-for(i in 1:n){
-  lines(xDate, i + dat.out$run_timing_ppn[dat.out$cuid == cuid2compare[i]], col = species_cols_dark["Sockeye"], lwd = 2, xpd = NA)
-  # lines(xDate, i + 30*dat.out2$run_timing_ppn[dat.out2$cuid == cuid2compare[i]], col = species_cols_light["Sockeye"], lwd = 2, xpd = NA)
-  text(par('usr')[2], i+0.2, dat$culabel[which(dat$cuid == cuid2compare[i])], col = species_cols_light["Sockeye"], lwd = 2, xpd = NA, cex = 0.7, xpd = NA)
-}
+write.csv(dat.out2[!is.na(dat.out2$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
+
+# # compare
+# cuid2compare <- cu_decoder$pooledcuid[cu_decoder$region == "Fraser" & cu_decoder$species_abbr == "SEL" & cu_decoder$cu_type == 'Current']
+# n <- length(cuid2compare)
+# xDate <- as.Date(paste(1999, DOY, sep = "-"), format = "%Y-%j")
+# xDate2 <- as.Date(paste(c(rep(1999, 365), 2000), c(DOY, 1), sep = "-"), format = "%Y-%j")
+# quartz(width = 5, height =  n/6+1.5, pointsize = 10)
+# par(mar = c(3,2,2,3))
+# plot(range(xDate2), c(1, n + 1), "n", bty = "l", xlab = "Day", ylab = "", main = "Fraser SEL", yaxt = "n", yaxs = "i", xaxs = "i")
+# mtext(side = 2, line = 1, "Run timing by CU")
+# for(i in 1:n){
+#   lines(xDate, i + dat.out$run_timing_ppn[dat.out$cuid == cuid2compare[i]], col = species_cols_dark["Sockeye"], lwd = 2, xpd = NA)
+#   # lines(xDate, i + 30*dat.out2$run_timing_ppn[dat.out2$cuid == cuid2compare[i]], col = species_cols_light["Sockeye"], lwd = 2, xpd = NA)
+#   text(par('usr')[2], i+0.2, dat$culabel[which(dat$cuid == cuid2compare[i])], col = species_cols_light["Sockeye"], lwd = 2, xpd = NA, cex = 0.7, xpd = NA)
+# }
 
 
 ###############################################################################

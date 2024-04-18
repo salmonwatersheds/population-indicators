@@ -75,6 +75,8 @@ library(parallel)
 
 source("code/functions.R")
 
+options(digits = 9)
+
 #
 # Import datasets -----
 
@@ -215,6 +217,7 @@ conservation_unit_system_sites <- filter(conservation_unit_system_sites,
 # unique(all_areas_nuseds$SPECIES)
 # unique(conservation_unit_system_sites$SPECIES_QUALIFIED)
 
+#
 # Add or edit certain fields in all_areas_nuseds & conservation_unit_system_sites -----
 
 # rename the year column
@@ -405,12 +408,285 @@ GFE_ID_nuseds_notCuss_df <- data.frame(GFE_ID = GFE_ID_nuseds_notCuss,
 #
 # Fixes on all_areas_nuseds and conservation_unit_system_sites ---------
 
-#' * 1) Remove the IndexId & GFE_ID time series in all_areas_nuseds with only NAs and/or 0s*
 all_areas_nuseds_all <- all_areas_nuseds
 nrow(all_areas_nuseds_all) # 412492
 
 conservation_unit_system_sites_all <- conservation_unit_system_sites
 nrow(conservation_unit_system_sites_all) # 7145
+
+#'* Fix: coordinates of locations conservation_unit_system_sites *
+#' There are multiple locations in conservation_unit_system_sites that have 
+#' different names and GFE_ID but exactly the same geo coordinates. 
+#' This causes an issue in the next data processing process when trying to 
+#' provide streamid for the PSE.
+#' The goal is to estimate the coordinates of the locations by hand using 
+#' - google map
+#' - https://maps.gov.bc.ca/ess/hm/imap4m
+
+fields_def$cu_system_sites$X_LONGT
+
+conservation_unit_system_sites$X_LONGT <- round(conservation_unit_system_sites $X_LONGT,6)
+conservation_unit_system_sites$Y_LAT <- round(conservation_unit_system_sites $Y_LAT,6)
+
+locations <- unique(conservation_unit_system_sites [,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2312
+locations$GFE_ID[duplicated(locations$GFE_ID)] # 0
+
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][duplicated(locations[,c("X_LONGT","Y_LAT")]),]
+nrow(coord_duplicated) # 21
+
+GFE_ID_duplicated <- c()
+for(r in 1:nrow(coord_duplicated)){
+  cond <- locations$X_LONGT == coord_duplicated$X_LONGT[r] &
+    locations$Y_LAT == coord_duplicated$Y_LAT[r]
+  GFE_ID_duplicated <- c(GFE_ID_duplicated,locations$GFE_ID[cond])
+}
+
+length(GFE_ID_duplicated) # 44
+GFE_ID_duplicated <- unique(GFE_ID_duplicated)
+length(GFE_ID_duplicated) # 41
+
+cond <- conservation_unit_system_sites $GFE_ID %in% GFE_ID_duplicated
+
+col <- c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT")
+locations_duplicated <- unique(conservation_unit_system_sites[cond,col])
+nrow(locations_duplicated) # 41
+
+#' Sort the dataset and group per coordinates
+locations_duplicated <- locations_duplicated_group_fun(locations_duplicated)
+
+# Fill the coordinate appropriately in each case:
+i <- 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(51.344756,-119.797289)
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.090741,-121.531078)  # not sure where the channel so I picked a location a little bit above the creek mouth
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(49.107077, -121.636804)  #
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.169178, -122.191740)  # could not check if the creek is called Hawkins
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(52.720154, -120.867586)  # could not found the beach so I picked a location just beside it
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+i_toChange <- 3
+X_Y <- c(52.746393, -120.837075)  # could not found the beach so I picked a location just beside it
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BAXTER BEACH"
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BEAR BEACH - SHORE"
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BETTY FRANK'S - SHORE"
+cond <- conservation_unit_system_sites$SYSTEM_SITE %in% c("BAXTER BEACH",
+                                                          "BEAR BEACH - SHORE",
+                                                          "BETTY FRANK'S - SHORE")
+conservation_unit_system_sites[cond,]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.740213, -122.147390)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "LILLOOET RIVER"
+conservation_unit_system_sites[cond,]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(50.680016, -121.929476)  # moved to CAYOOSH CREEK's mouth
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.626847, -122.671116)  # moved north a little bit
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.111242, -123.168505)  # just besid it 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(51.745035, -122.413504)  # just above it 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.294603, -124.879074)  # moved to the cross between the two rivers
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(49.201198, -125.512450)  # placed it above
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(54.445124, -125.458809)  # moved above the weir
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(52.378979, -126.581766)  # no idea where these two creeks are exactly
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BETTY FRANK'S - SHORE"
+cond <- conservation_unit_system_sites$SYSTEM_SITE %in% c("FORESTRY CREEK",
+                                                          "MARTY'S CREEK")
+conservation_unit_system_sites[cond,]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(50.342682, -127.437795)  # I don't know what is the difference between "creek" and "system"
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(55.081340, -125.560056)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(54.816010, -126.163338)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(52.225501, -127.598108)  # moved it just a little nord
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(52.044541, -128.068576)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 1
+X_Y <- c(52.877146, -132.000700)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+# Replace these values in conservation_unit_system_sites
+
+conservation_unit_system_sites$coordinates_changed <- F
+
+for(l in unique(locations_duplicated$group)){
+  # l <- unique(locations_duplicated$group)[1]
+  cond_l <- locations_duplicated$group == l & !is.na(locations_duplicated$Y_LAT_new)
+  GFE_ID <- locations_duplicated$GFE_ID[cond_l]
+  SYSTEM_SITE <- locations_duplicated$SYSTEM_SITE[cond_l]
+  Y_LAT_new <- locations_duplicated$Y_LAT_new[cond_l]
+  X_LONGT_new <- locations_duplicated$X_LONGT_new[cond_l]
+  
+  for(i in 1:length(GFE_ID)){
+    cond_cuss <- conservation_unit_system_sites$GFE_ID == GFE_ID[i] & 
+      conservation_unit_system_sites$SYSTEM_SITE == SYSTEM_SITE[i]
+    
+    conservation_unit_system_sites$Y_LAT[cond_cuss] <- Y_LAT_new[i]
+    conservation_unit_system_sites$X_LONGT[cond_cuss] <- X_LONGT_new[i]
+    conservation_unit_system_sites$coordinates_changed[cond_cuss] <- T
+  }
+}
+
+# check if there is no more duplicated coordinates
+locations <- unique(conservation_unit_system_sites [,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2333
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][duplicated(locations[,c("X_LONGT","Y_LAT")]),]
+nrow(coord_duplicated) # 0
+
+
+#
+#' * 1) Remove the IndexId & GFE_ID time series in all_areas_nuseds with only NAs and/or 0s*
 
 detectCores()
 detectCores(logical = FALSE)
@@ -481,6 +757,7 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #'      alternative series in NUSEDS with either a different IndexId (but with 
 #'      the same species) or a different GFE_ID. Alternative series identified 
 #'      NOT present in CUSS are kept, the ones present are removed.
+
 #' The function returns a simple dataframe with the IndexId and GFE_ID concerned
 #' and associated comment and eventual potential alternative series that have to 
 #' be checked manually after.
@@ -622,7 +899,7 @@ condition <- all_areas_nuseds$IndexId == removed$IndexId[2] &
   all_areas_nuseds$GFE_ID == removed$GFE_ID[2]
 all_areas_nuseds[condition,colNuSEDS]
 all_areas_nuseds <- all_areas_nuseds[!condition,]
-nrow(all_areas_nuseds) # 309638
+nrow(all_areas_nuseds) # 309637
 
 # ***
 r <- 3
@@ -1028,7 +1305,7 @@ all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds,
 nrow(all_areas_nuseds) # 308250
 
 removed_all <- rbind(removed_all,removed)
-nrow(removed_all) # 4593
+nrow(removed_all) # 4591
 
 #
 #' ** 3.2) Alternative IndexId AND no alternative GFE_ID **
@@ -1374,7 +1651,7 @@ trackRecord_nuseds_gfeid$i <- NA
 IndexId_GFE_ID_alternative <- unique(paste(trackRecord_nuseds_gfeid$IndexId,
                                            trackRecord_nuseds_gfeid$alternative_GFE_ID,
                                            sep = "&"))
-length(IndexId_GFE_ID_alternative) # 22 20 18
+length(IndexId_GFE_ID_alternative) # 22
 
 # change order based on GFE_ID_alternative
 GFE_ID_alternative <- sapply(X = IndexId_GFE_ID_alternative, 
@@ -1560,7 +1837,7 @@ for(i in 1:length(IndexId_GFE_ID_alternative)){
 #' --> do we create a data point to WATERHED ABOVE STAMP FALLS in CUSS then create a streamID --> get lat long OR GFE_ID (if possible)
 #' 
 #' CM (i = 1) --> merge potentially but check streamID --> only a few make it up the falls --> keep separate 
-#' CN (i = 2) --> combine red a and green and remove blue --> SUM ALL OF THEM because most individual chinook would pass the falls
+#' CN (i = 2) --> combine red and green and remove blue --> SUM ALL OF THEM because most individual chinook would pass the falls
 #' PK (i = 3) --> ?
 #' SX (i = 4) --> top plot: don't mix, bottom: combine series and FLAG TO BRUCE cf. email forwarded
 i <- 1:4
@@ -1867,6 +2144,7 @@ cuss_new <- CUSS_newRow_fun(IndexId = "CN_47277",
 # X_LONGT and Y_LAT should represent.
 cuss_new$X_LONGT <- -122.610584
 cuss_new$Y_LAT <- 53.119965
+cuss_new$coordinates_changed <- T
 
 conservation_unit_system_sites <- rbind(conservation_unit_system_sites,
                                         cuss_new)
@@ -2362,6 +2640,8 @@ trackRecord_nuseds_nocuss <- trackRecord_nuseds[cond,]
 nrow(trackRecord_nuseds_nocuss) # 37
 
 #' TODO: delete them from NUSEDS because we cannot attribute them a CU_NAME.
+#' TODO: in future we could spend some time finding the CU name for the series 
+#' with many points
 
 for(r in 1:nrow(trackRecord_nuseds_nocuss)){
   # r <- 1
@@ -2405,7 +2685,7 @@ for(r in 1:nrow(trackRecord_nuseds_nocuss)){
                                              fields = c("IndexId","GFE_ID"))
 }
 
-nrow(all_areas_nuseds) # 307217 307244
+nrow(all_areas_nuseds) # 307217
 
 
 # Check - normally all series in NUSEDS and in CUSS now:
@@ -2494,7 +2774,116 @@ for(r in 1:nrow(m)){
   cond <- conservation_unit_system_sites$GFE_ID == m$GFE_ID[r]
   conservation_unit_system_sites$Y_LAT[cond] <- m$Y_LAT[r]
   conservation_unit_system_sites$X_LONGT[cond] <- m$X_LONGT[r]
+  conservation_unit_system_sites$coordinates_changed[cond] <- T
 }
+
+
+# Check for locations with different SYSTEM_SITE but same coordinates (like initially)
+conservation_unit_system_sites_copy <- conservation_unit_system_sites
+# conservation_unit_system_sites <- conservation_unit_system_sites_copy
+
+conservation_unit_system_sites$X_LONGT <- round(as.numeric(conservation_unit_system_sites$X_LONGT),6)
+conservation_unit_system_sites$Y_LAT <- round(as.numeric(conservation_unit_system_sites$Y_LAT),6)
+
+locations <- unique(conservation_unit_system_sites[,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2312
+locations$GFE_ID[duplicated(locations$GFE_ID)] # 0
+
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][duplicated(locations[,c("X_LONGT","Y_LAT")]),]
+nrow(coord_duplicated) # 7
+
+GFE_ID_duplicated <- c()
+for(r in 1:nrow(coord_duplicated)){
+  cond <- locations$X_LONGT == coord_duplicated$X_LONGT[r] &
+    locations$Y_LAT == coord_duplicated$Y_LAT[r]
+  GFE_ID_duplicated <- c(GFE_ID_duplicated,locations$GFE_ID[cond])
+}
+
+length(GFE_ID_duplicated) # 34
+GFE_ID_duplicated <- unique(GFE_ID_duplicated)
+length(GFE_ID_duplicated) # 10
+
+cond <- conservation_unit_system_sites $GFE_ID %in% GFE_ID_duplicated
+col <- c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT")
+locations_duplicated <- unique(conservation_unit_system_sites[cond,col])
+nrow(locations_duplicated) # 10
+locations_duplicated
+
+#' Sort the dataset and group per coordinates
+locations_duplicated <- locations_duplicated_group_fun(locations_duplicated)
+locations_duplicated
+
+# Fill the coordinate appropriately in each case:
+i <- 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(52.112252,-119.289006)  # moved it up
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+# cf. p 31 in https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40888721.pdf
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(51.593091, -119.701668)  # moved roughly betwen mouth and UPPER NORTH
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+i_toChange <- 3
+X_Y <- c(52.345236, -119.177796)  # moved above MILEDGE CREEK
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+i_toChange <- 4
+X_Y <- c(51.598602, -119.889197)  # moved way North to near BIRCH ISLAND
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+i_toChange <- 5
+X_Y <- c(52.281312, -119.173514)  # moved to MILEDGE CREEK
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+i_toChange <- 6
+X_Y <- c(51.579465, -119.810014)  # moved to PiG Channel according to pdf map
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+locations_duplicated[cond,]
+i_toChange <- 2
+X_Y <- c(50.162828, -120.665360) # location of the dam East of Merritt
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+
+# Edit conservation_unit_system_sites
+for(l in unique(locations_duplicated$group)){
+  # l <- unique(locations_duplicated$group)[1]
+  cond <- locations_duplicated$group == l & !is.na(locations_duplicated$Y_LAT_new)
+  GFE_ID <- locations_duplicated$GFE_ID[cond]
+  Y_LAT_new <- locations_duplicated$Y_LAT_new[cond]
+  X_LONGT_new <- locations_duplicated$X_LONGT_new[cond]
+  for(i in 1:length(GFE_ID)){
+    # i <- 1
+    cond <- conservation_unit_system_sites$GFE_ID == GFE_ID[i]
+    conservation_unit_system_sites$X_LONGT[cond] <- X_LONGT_new[i]
+    conservation_unit_system_sites$Y_LAT[cond] <- Y_LAT_new[i]
+    conservation_unit_system_sites$coordinates_changed[cond] <- T
+  }
+}
+
+# check
+locations <- unique(conservation_unit_system_sites[,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2312
+locations$GFE_ID[duplicated(locations$GFE_ID)] # 0
+
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][duplicated(locations[,c("X_LONGT","Y_LAT")]),]
+nrow(coord_duplicated) # 0
+
+# check 
+sum(is.na(conservation_unit_system_sites$coordinates_changed))
 
 #
 # Export cleaned all_areas_nuseds and conservation_unit_system_sites -----
@@ -2508,7 +2897,7 @@ write.csv(conservation_unit_system_sites,paste0(wd_output,"/conservation_unit_sy
           row.names = F)
 
 #
-# Merge NUSEDS AND CUSS and so some edits -----
+# Merge NUSEDS AND CUSS and do some edits -----
 #
 
 all_areas_nuseds <- read.csv(paste0(wd_output,"/all_areas_nuseds_cleaned.csv"),
@@ -2536,7 +2925,7 @@ col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE",
 
 col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
               "FULL_CU_IN","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
-              "CU_LAT","CU_LONGT")
+              "CU_LAT","CU_LONGT","coordinates_changed")
 
 # Transform all_areas_nuseds to a wide format (NOT ANYMORE)
 # nuseds_long <- all_areas_nuseds[,c(col_common,col_nuseds)] %>% 
@@ -2634,14 +3023,16 @@ nuseds_final$MAX_ESTIMATE[cond] <- NA
 # head(removed_all)
 # unique(removed_all$comment)
 
-removed_all_new <- removed_all[NULL,] 
+removed_all_new <- removed_all[NULL,]
 
-fields_l <- fields_IndexId_GFE_ID_fun()
+fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
+                                      conservation_unit_system_sites = conservation_unit_system_sites)
+
 fields_IndexId <- unique(c(fields_l$NUSEDS$IndexId,fields_l$CUSS$IndexId))
 fields_IndexId <- fields_IndexId[fields_IndexId %in% colnames(nuseds_final)]
 
 nuseds_CU_GFI_ID <- unique(nuseds_final[,c("SPECIES_QUALIFIED","CU_NAME","GFE_ID")])
-nrow(nuseds_CU_GFI_ID) # 6847
+nrow(nuseds_CU_GFI_ID) # 6848
 
 count <- 1
 for(r in 1:nrow(nuseds_CU_GFI_ID)){
@@ -3006,6 +3397,25 @@ print(paste("Progress:",count_percent,"%"))
 nrow(nuseds_final) # 306823
 
 #
+# Additional fix: locations with same coordinates (dealt earlier but just in case) -----
+#
+# nuseds_final <- import_mostRecent_file_fun(wd = wd_output,
+#                                            pattern = "NuSEDS_escapement_data_collated")
+
+nuseds_final$X_LONGT <- round(nuseds_final$X_LONGT,6)
+nuseds_final$Y_LAT <- round(nuseds_final$Y_LAT,6)
+
+locations <- unique(nuseds_final[,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2312
+locations$GFE_ID[duplicated(locations$GFE_ID)] # 0
+
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][duplicated(locations[,c("X_LONGT","Y_LAT")]),]
+nrow(coord_duplicated) # 0
+
+# check
+sum(is.na(nuseds_final$coordinates_changed))
+
+#
 # Export CSV files: ------
 
 # Export nusweds_final
@@ -3043,98 +3453,13 @@ trackRecord_toExport$POPULATION <- apply(X = trackRecord_toExport, 1,
                                            return(unique(all_areas_nuseds_all$POPULATION[cond]))
                                          })
 
-write.csv(trackRecord_toExport,paste0(wd_output,"/series_inNUSEDS_noInCUSS.csv"),
+write.csv(trackRecord_toExport,paste0(wd_output,"/series_inNUSEDS_noInCUSS_",date,".csv"),
           row.names = F)
 
 
 #' Export the CUs removed and those added:
 write.csv(removed_all,paste0(wd_output,"/series_removed_",date,".csv"),row.names = F)
 
-write.csv(added_all,paste0(wd_output,"/series_added.csv"),row.names = F)
+write.csv(added_all,paste0(wd_output,"/series_added_",date,".csv"),row.names = F)
 
-# Export the GFE_IDs added to CUSS that need geospatial coordinates: NOT NEEDED ANYMORE
-# cols <- c("GFE_ID","SYSTEM_SITE","X_LONGT","Y_LAT")
-# cond <- is.na(conservation_unit_system_sites$Y_LAT) | conservation_unit_system_sites$GFE_ID == 11486
-# GFE_IDs_new_coord_toFind <- unique(conservation_unit_system_sites[cond,cols])
-# 
-# write.csv(GFE_IDs_new_coord_toFind,paste0(wd_output,"/GFE_IDs_new_coord_toFind.csv"),
-#           row.names = F)
-
-# Columns to retain for nuseds_final (NOT WIDE FORMAT ANYMORE)
-# colToKeep <- c("POP_ID",
-#                "GFE_ID",
-#                "CU_TYPE",
-#                "FULL_CU_IN","FULL_CU_IN_PSF",
-#                fields_new,
-#                col_yrs)
-
-date <- "20240307"
-date <- "20240328"
-nuseds_final <- read.csv(paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
-                   header = T)
-
-nrow(unique(nuseds_final[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6910
-nrow(unique(nuseds_final[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6910
-
-
-
-
-#' filter data where there are multiple GFE_IDs for a same SYSTEM_SITE & CU_NAME
-#' & SPECIES_QUALIFIED combination
-#' 
-
-col_nuseds <- c("SPECIES_QUALIFIED","POP_ID","CU_NAME","SYSTEM_SITE","WATERBODY",
-                "Y_LAT","X_LONGT")
-col_nuseds_short <- c("SPECIES_QUALIFIED","POP_ID","FULL_CU_IN","CU_NAME","SYSTEM_SITE","WATERBODY")
-nuseds_short <- unique(nuseds_final[,col_nuseds_short])
-nuseds_short$multipleCoord <- F
-nrow(nuseds_short) # 6835
-
-for(r in 1:nrow(nuseds_short)){
-  # r <- 1
-  cond_nuseds <- nuseds_final$SPECIES_QUALIFIED == nuseds_short$SPECIES_QUALIFIED[r] &
-    #nuseds_final$POP_ID == nuseds_short$POP_ID[r] &
-    nuseds_final$CU_NAME == nuseds_short$CU_NAME[r] &
-    nuseds_final$SYSTEM_SITE == nuseds_short$SYSTEM_SITE[r] &
-    nuseds_final$WATERBODY == nuseds_short$WATERBODY[r]
-  
-  X_LONGT <- unique(nuseds_final$X_LONGT[cond_nuseds])
-  Y_LAT <- unique(nuseds_final$Y_LAT[cond_nuseds])
-  
-  if(length(X_LONGT) > 1 | length(Y_LAT) > 1){
-    nuseds_short$multipleCoord[r] <- T
-    print(nuseds_short[r,])
-  }
-}
-
-nuseds_short_conserned <- nuseds_short[nuseds_short$multipleCoord,]
-nrow(nuseds_short_conserned) # 24
-
-r <- 1
-species <- nuseds_short_conserned$SPECIES_QUALIFIED[r]
-if(species %in% c("SER","SEL")){
-  species <- "SX"
-}
-POP_ID <- nuseds_short_conserned$POP_ID[r]
-
-cond_nuseds <- nuseds_final$SPECIES_QUALIFIED == nuseds_short_conserned$SPECIES_QUALIFIED[r] &
-  #nuseds_final$POP_ID == nuseds_short_conserned$POP_ID[r] &
-  nuseds_final$CU_NAME == nuseds_short_conserned$CU_NAME[r] &
-  nuseds_final$SYSTEM_SITE == nuseds_short_conserned$SYSTEM_SITE[r] &
-  nuseds_final$WATERBODY == nuseds_short_conserned$WATERBODY[r]
-
-GFE_IDs <- unique(nuseds_final$GFE_ID[cond_nuseds])
-
-plot_IndexId_GFE_ID_fun(IndexIds = rep(paste(species,POP_ID,sep = "_"),length(GFE_IDs)),
-                        GFE_IDs = GFE_IDs, 
-                        all_areas_nuseds = all_areas_nuseds)
-
-
-
-unique(all_areas_nuseds$IndexId)
-
-fields_IndexId_GFE_ID_fun()
-
-
-nuseds_final$FULL_CU_IN
-
+# END

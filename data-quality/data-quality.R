@@ -76,9 +76,7 @@ js <- read.csv(paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Re
 
 # Read from Dropbox so script can be sourced
 spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawnersurveys_output.csv")) %>%
-  filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) %>% # Remove survey years when spawner survey methods were Unknown
-  filter(indicator == "Y") # Use only indicator streams
-
+  filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) # Remove survey years when spawner survey methods were Unknown
 
 
 #------------------------------------------------------------------------------
@@ -149,7 +147,7 @@ stream_summary <- spawner_surveys %>%
   ) %>%
   left_join(spawner_surveys %>% # Add in cuid
               distinct(streamid, .keep_all = TRUE) %>%
-              select(streamid, cuid)
+              select(streamid, cuid,indicator)
   ) 
 
 # add in summed CU spawners
@@ -163,37 +161,62 @@ stream_summary <- stream_summary %>%
 # Sum stream quality across indicator streams, weighted by proportion of observed spawners in that stream 
 dataset390 <- dataset390 %>% left_join(stream_summary %>%
                            group_by(cuid) %>%
+                           filter(indicator == "Y")%>% # Use only indicator streams
                            summarise(survey_quality = round(sum(dq*prop_spawners)))
 )
 
 head(dataset390)
 #------------------------------------------------------------------------------
-# survey_coverage - Eric to move over old code and revise if needed
+# survey_coverage 
 #------------------------------------------------------------------------------
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-coverage
 
-# Use old data for now
+dataset390 <- dataset390 %>% left_join(stream_summary %>%
+                                        group_by(cuid) %>%
+                                        summarise(survey_coverage = (sum(prop_spawners[indicator=='Y']))))
+
 dataset390 <- dataset390 %>%
-  left_join(dataset390_old %>% 
-              filter(parameter == "survey_coverage") %>%
-              select(cuid, datavalue) %>% 
-              rename(survey_coverage = "datavalue")
-  )
+  mutate(survey_coverage = case_when(survey_coverage >= 0.9 ~ 5,
+                              survey_coverage < 0.9 & survey_coverage >= 0.7 ~ 4,
+                              survey_coverage < 0.7 & survey_coverage >= 0.5 ~ 3,
+                              survey_coverage < 0.5 & survey_coverage >= 0.3 ~ 2,
+                              survey_coverage < 0.3 & survey_coverage >= 0 ~ 1,
+                              ))
   
 #------------------------------------------------------------------------------
-# survey_execution - Eric to move over old code and revise if needed
+# survey_execution 
 #------------------------------------------------------------------------------
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-excecution
 
-# Use old data for now
+spawner_surveys_ex <- spawner_surveys %>%
+  filter(indicator == "Y") %>% # Use only indicator streams
+  filter(year > 2023 - gen_length + 1)%>%  # Look over the most recent generation
+  group_by(cuid) %>%
+  summarise(n=n(),
+    streams=n_distinct(streamid))
+
+spawner_surveys_ex <- spawner_surveys_ex %>% 
+  left_join(cu_list %>%
+              select(gen_length, cuid),
+            by = "cuid")          
+
+
+spawner_surveys_ex$survey_execution <- with(spawner_surveys_ex, n/(streams*gen_length))
+
+spawner_surveys_ex <- spawner_surveys_ex %>%
+  select(cuid, survey_execution)
+
+dataset390 <- dataset390 %>% left_join(spawner_surveys_ex, by='cuid')
+
 dataset390 <- dataset390 %>%
-  left_join(dataset390_old %>% 
-              filter(parameter == "survey_execution") %>%
-              select(cuid, datavalue) %>% 
-              rename(survey_execution = "datavalue")
-  )
+  mutate(survey_execution = case_when(survey_execution >= 0.8 ~ 5,
+                                      survey_execution < 0.8 & survey_execution >= 0.6 ~ 4,
+                                      survey_execution < 0.6 & survey_execution >= 0.4 ~ 3,
+                                      survey_execution < 0.4 & survey_execution >= 0.2 ~ 2,
+                                      survey_execution < 0.2 & survey_execution >= 0 ~ 1,
+  ))
 
 #------------------------------------------------------------------------------
 # catch_quality

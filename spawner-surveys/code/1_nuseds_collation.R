@@ -2163,7 +2163,7 @@ added_all <- rbind(added_all,toAdd)
 #' TODO: 
 #' - merge green to blue --> GFE_ID from 2461 to 213 
 #' - create a new series in CUSS for the blue because the dam is closer to the 
-#' UPPER NICOLA RIVER and shoud consequently not be merge to lower parts of the 
+#' UPPER NICOLA RIVER and should consequently not be merged to lower parts of the 
 #' river. The dam is even closer to Clapperton Creek, which the time series is 
 #' shown below. But its POP_ID is different so merging is excluded.
 i <- 7
@@ -2611,8 +2611,8 @@ for(i in 17:22){
                                           cuss_new)
   
   toAdd <- data.frame(IndexId = trackRecord_nuseds_gfeid$IndexId[cond_i],
-                      GFE_ID = 1204,
-                      dataset = trackRecord_nuseds_gfeid$GFE_ID[cond_i],
+                      GFE_ID = trackRecord_nuseds_gfeid$GFE_ID[cond_i],
+                      dataset = "conservation_unit_system_sites",
                       CU_NAME = cuss_new$CU_NAME,
                       comment = paste0("Series not in CUSS and not merged with ",
                                        trackRecord_nuseds_gfeid$IndexId[cond_i]," - ",
@@ -2829,7 +2829,7 @@ letter <- unique(locations_duplicated$group)[i]
 cond <- locations_duplicated$group == letter
 locations_duplicated[cond,]
 i_toChange <- 2
-X_Y <- c(51.593091, -119.701668)  # moved roughly betwen mouth and UPPER NORTH
+X_Y <- c(51.593091, -119.701668)  # moved roughly between mouth and UPPER NORTH
 locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
 locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
 i_toChange <- 3
@@ -3453,13 +3453,41 @@ trackRecord_toExport$POPULATION <- apply(X = trackRecord_toExport, 1,
                                            return(unique(all_areas_nuseds_all$POPULATION[cond]))
                                          })
 
+trackRecord_toExport$POP_ID <- sapply(X = trackRecord_toExport$IndexId, 
+                             FUN = function(iid){strsplit(x = iid,split = "_")[[1]][2]})
+
+trackRecord_toExport$species_acro <- sapply(X = trackRecord_toExport$IndexId, 
+                                   FUN = function(iid){strsplit(x = iid,split = "_")[[1]][1]}) 
+
+trackRecord_toExport <- trackRecord_toExport[,c("IndexId","POP_ID","species_acro",
+                                                "GFE_ID","nb_dataPt","POPULATION")]
+
 write.csv(trackRecord_toExport,paste0(wd_output,"/series_inNUSEDS_noInCUSS_",date,".csv"),
           row.names = F)
 
 
 #' Export the CUs removed and those added:
+removed_all$POP_ID <- sapply(X = removed_all$IndexId, 
+                             FUN = function(iid){strsplit(x = iid,split = "_")[[1]][2]})
+
+removed_all$species_acro <- sapply(X = removed_all$IndexId, 
+                                   FUN = function(iid){strsplit(x = iid,split = "_")[[1]][1]}) 
+ 
+removed_all <- removed_all[,c("IndexId","POP_ID","species_acro","GFE_ID","dataset","comment")]
+
 write.csv(removed_all,paste0(wd_output,"/series_removed_",date,".csv"),row.names = F)
+
+#
+added_all$POP_ID <- sapply(X = added_all$IndexId, 
+                             FUN = function(iid){strsplit(x = iid,split = "_")[[1]][2]})
+
+added_all$species_acro <- sapply(X = added_all$IndexId, 
+                                   FUN = function(iid){strsplit(x = iid,split = "_")[[1]][1]}) 
+
+added_all <- added_all[,c("IndexId","POP_ID","species_acro","CU_NAME","GFE_ID","dataset","comment")]
+
 
 write.csv(added_all,paste0(wd_output,"/series_added_",date,".csv"),row.names = F)
 
-# END
+
+

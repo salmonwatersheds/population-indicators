@@ -152,7 +152,6 @@ for(i in 1:nrow(cu_list)){
   # i <- 2
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
-  # QUESTION: no need to do anything with pink because the smoothing function
   region <- cu_list$region[i]
   species_name <- cu_list$species_name[i]
   cuid <- cu_list$cuid[i]
@@ -184,7 +183,6 @@ for(i in 1:nrow(cu_list)){
     align = "right") #
   
   # Fill  dataset103_output 
-  # QUESTION: is that correct for avg_escape_log? WRONG
   dataset103_output_here <- dataset103_output[1:length(x),]
   dataset103_output_here$region <- region
   dataset103_output_here$species_name <- species_name
@@ -197,24 +195,23 @@ for(i in 1:nrow(cu_list)){
   # Fit linear model
   lm_LT <- lm(smooth.y[!is.na(smooth.y)] ~ x[!is.na(smooth.y)])
   
+  # percent_change
+  year.span <- c(min(x[!is.na(smooth.y)]):max(x[!is.na(smooth.y)]))
+  percent_change <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1
+  percent_change <- round(percent_change * 100)
+  
   # Fill dataset202_output
   dataset202_output_here <- dataset202_output[1,]
   dataset202_output_here$region <- region
   dataset202_output_here$species_name <- species_name
   dataset202_output_here$cuid <- cuid
   dataset202_output_here$cu_name_pse <- cu_name_pse
-  dataset202_output_here$percent_change <- exp(lm_LT$coefficients[2] * length(x[!is.na(smooth.y)]) - 1)
+  dataset202_output_here$percent_change <- percent_change
   dataset202_output_here$slope <- lm_LT$coefficients[2]
   dataset202_output_here$intercept <- lm_LT$coefficients["(Intercept)"]
   dataset202_output_new <- rbind(dataset202_output_new,dataset202_output_here)
   
   #'* Calculate last 3 generations trends *
-  # x3g <- tail(x[!is.na(smooth.y)], g*3 - 1)
-  # lm_3g <- lm(tail(smooth.y[!is.na(smooth.y)], g*3 - 1) ~ x3g)
-  # QUESTION: why removing the NAs? That potentially extend the period, like below
-  # x3g <- tail(x, g*3 - 1)
-  # lm_g <- lm(tail(smooth.y, g*3 - 1) ~ x3g, na.action = "na.exclude")
-  # QUESTION: why doing g*3 - 1
   x3g <- tail(x, g*3)
   lm_3g <- lm(tail(smooth.y, g*3) ~ x3g, na.action = "na.exclude")
   
@@ -230,7 +227,8 @@ for(i in 1:nrow(cu_list)){
     threegen_slope <- NA
     threegen_intercept <- NA
   }else{
-    threegen_percent_change <- exp(lm_3g$coefficients[2] * length(x3g) - 1)
+    threegen_percent_change <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1
+    threegen_percent_change <- round(threegen_percent_change * 100)
     threegen_slope <- lm_3g$coefficients[2]
     threegen_intercept <- lm_3g$coefficients["(Intercept)"]
   }
@@ -304,6 +302,9 @@ write.csv(dataset202_output_new,paste0(wd_output,"/dataset202_output_",date,".cs
 write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output_",date,".csv"),
           row.names = F)
 
+
+# QUESTION:
+# cases with the 3 gen length regression line > total length: i = 233
 
 # Old notes:
 

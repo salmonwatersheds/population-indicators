@@ -13,7 +13,8 @@ subDir_projects_fun <- function(){
                       "hatchery-releases",
                       "spawner-abundance",
                       "spawner-surveys",
-                      "timing")
+                      "timing",
+                      "trends")
   
   # make a list
   out_l <- lapply(X = subDir_options, FUN = function(x){x})

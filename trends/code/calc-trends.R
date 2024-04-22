@@ -3,143 +3,314 @@
 # 
 # inputs: spawner abundance from the database
 # outputs: dataset202 and dataset 391
-# 
+#
+# Related Tech-Report documentation:
+# https://bookdown.org/salmonwatersheds/state-of-salmon/methods-results.html#25_Quantifying_change
+#
 # Stephanie Peacock
 # January 17, 2024
 ###############################################################################
+
+# Steph's notes
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1713593152783499
+# https://www.dropbox.com/scl/fo/w0wpfhaoa5hd0tb3lcbnb/ANKzPkbsunvofXav50moBHc?rlkey=aub20ix3s83j5unc6bnj4p0kc&st=qenwuo4m&dl=0
+# https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1713592075622849
+
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
+
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("code/functions_set_wd.R")
+source("code/functions_general.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$trends,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_project <- wds_l$wd_project
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                               wds_l$wd_project_dropbox,
+                               "references",sep="/")
+
+wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                         wds_l$wd_project_dropbox,
+                         "data",sep="/")
+
+wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                                         wds_l$wd_population_indicator_data_input_dropbox,
+                                         sep = "/")
+
+# Loading packages & functions
 library(dplyr)
 library(zoo) # for rollmean function
 
-source("code/functions_general.R")
+# source("code/functions.R")
 
 
 ###############################################################################
 # Load input data from database
 ###############################################################################
 
-# CU-level spawner abundance data
-spawners <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset1cu_output")
+#' Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- F
+update_file_csv <- F
+
+# CU-level spawner abundance data (dataset1cu_output.csv):
+# spawners <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset1cu_output")
+spawners <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[15],
+                                  fromDatabase = fromDatabase,
+                                  update_file_csv = update_file_csv,
+                                  wd = wd_pop_indic_data_input_dropbox)
+
 spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
 
-# Filter out no estimated spawner abudnance
+# Filter out no estimated spawner abundance
 spawners <- spawners %>% filter(!is.na(estimated_count))
 
-# CU list (includes gen length info for running avg)
-cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
+# CU list (includes gen length info for running avg) (conservationunits_decoder.csv)
+# cu_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
+#   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
+cu_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                 fromDatabase = fromDatabase,
+                                 update_file_csv = update_file_csv,
+                                 wd = wd_pop_indic_data_input_dropbox)
+
+cu_decoder <- cu_decoder  %>%
   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
 
-###############################################################################
-# Functions (to be moved to code/functions_general.R ?) 
-###############################################################################
+# Import the dataste to export to access structure:
+fromDatabase <- update_file_csv <- F
+# Dataset 202, 391, 103
+# vwdl_dataset103_output: Average Spawners per Generation for Salmon and Steelhead Conservation Units
+dataset103_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+head(dataset103_output)
 
-# #------------------------------------------------------------------------------
-# # Smooth abundance using running mean over generation length
-# # ** Note: not geometric mean because spawners are already on log scale
-# #------------------------------------------------------------------------------
-# 
-# gen_smooth <- function(
-#     abund, # Estimate of abundance (run size or spawner abundance) in order of increasing year
-#     years, # Ordered vector of years that correspond to abund
-#     genLength # generation length for geometric smoothing
-# ){
-#   
-#   
-#   g <- as.numeric(genLength)
-#   yrs <- sort(unique(years))
-#   n.yrs <- length(yrs)
-#   
-#   # Run checks
-#   if(length(yrs[1]:max(yrs)) != n.yrs){
-#     stop("Vector of years must be continuous.")
-#   }
-#   
-#   if(length(abund) != n.yrs){
-#     stop("Length of abundance does not match length of unique years.")
-#   }
-#   
-#   # Set up vector to store smoothed abundance
-#   smoothedAbund <- rep(NA, n.yrs)
-#   
-#   for(k in 1:n.yrs){ # For each year
-#     
-#     smoothYrs <- c(max(yrs[1], yrs[k] - g + 1):yrs[k]) # define previous years over which to smooth
-#     
-#     # Unweighted geometric mean
-#     S <- abund[which(yrs %in% smoothYrs)] + 0.01
-#     # Add 0.01 to spawners so that geometric mean is not zero for multiple years if there is an observation of zero?
-#     
-#     
-#     N <- sum(!is.na(S)) # number of years with data
-#     if(N > 0){ # If there are no data, leave as NA
-#       smoothedAbund[k] <- prod(S, na.rm = TRUE) ^ (1/N)
-#     }
-#   } # end k years
-#   
-#   return(smoothedAbund)
-# }
+# vwdl_dataset202_output: Trends in Spawner Abundance (All Generations) for Salmon and Steelhead Conservation Units
+dataset202_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[17],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+head(dataset202_output)
 
-# Can just use standard running mean functions
-
+# vwdl_dataset391_output: Trends in Spawner Abundance (Three Generations) for Salmon and Steelhead Conservation Units
+dataset391_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[10],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+head(dataset391_output)
 
 ###############################################################################
-# Create structure of output dataset
+# Fill datasets and produce figures
 ###############################################################################
 
 cuid <- unique(spawners$cuid)
 
-spawner_trends <- data.frame(
-  region = cu_list$region[match(cuid, cu_list$pooledcuid)],
+cu_list <- data.frame(
+  region = cu_decoder$region[match(cuid, cu_decoder$pooledcuid)],
   cuid = cuid,
-  species = cu_list$species_abbr[match(cuid, cu_list$pooledcuid)],
-  cu_name_pse = cu_list$cu_name_pse[match(cuid, cu_list$pooledcuid)],
-  trend_LT = NA,
-  trend_3gen = NA
+  species_abbr = cu_decoder$species_abbr[match(cuid, cu_decoder$pooledcuid)],
+  species_name = spawners$species_name[match(cuid, spawners$cuid)],
+  cu_name_pse = cu_decoder$cu_name_pse[match(cuid, cu_decoder$pooledcuid)]
 )
-
-###############################################################################
-# Calculate long-term trends
-###############################################################################
-
-head(spawners)
 
 # Add year range
-spawner_trends <- spawner_trends %>% left_join(
+cu_list <- cu_list %>% left_join(
   spawners %>% 
-  select(cuid, year, estimated_count) %>%
-  filter(!is.na(estimated_count)) %>%
-  group_by(cuid) %>%
-  summarise(first_year = min(year), last_year = max(year))
+    select(cuid, year, estimated_count) %>%
+    filter(!is.na(estimated_count)) %>%
+    group_by(cuid) %>%
+    summarise(first_year = min(year), last_year = max(year))
 )
 
 
+dataset103_output_new <- dataset103_output[NULL,]
+dataset202_output_new <- dataset202_output[NULL,]
+dataset391_output_new <- dataset391_output[NULL,]
 
-for(i in 1:nrow(spawner_trends)){
+figure_print <- F
+for(i in 1:nrow(cu_list)){
+  # i <- 2
+  # i <- 112
+  # i <- which(cu_list$species %in% c("PKE","SER"))[1]
+  # QUESTION: no need to do anything with pink because the smoothing function
+  region <- cu_list$region[i]
+  species_name <- cu_list$species_name[i]
+  cuid <- cu_list$cuid[i]
+  cu_name_pse <- cu_list$cu_name_pse[i]
   
-  spawners.i <- subset(spawners, cuid == spawner_trends$cuid[i]) 
+  spawners.i <- subset(spawners, cuid == cu_list$cuid[i])
   
-  # Ensure dataframe is in increasing year
-  x <- spawner_trends$first_year[i]:spawner_trends$last_year[i]
+  # Ensure dataframe is in increasing year with no missing year
+  x <- cu_list$first_year[i]:cu_list$last_year[i]
   y <- rep(NA, length(x))
   y[match(spawners.i$year, x)] <- spawners.i$estimated_count
   
-  log.y <- log(y + 0.01)
+  #** Calculate long-term trends *
+  
+  # log transform (and deal with 0s)
+  y[y == 0 & !is.na(y)] <- 0.01
+  # log.y <- log(y + 0.01)
+  log.y <- log(y)
+  
+  # get generation length
+  g <- cu_decoder$gen_length[cu_decoder$cuid == cuid]
   
   # Smooth spawner abundance using running mean
-  smooth.y <- rollmean(
-    log.y, 
-    k = cu_list$gen_length[cu_list$cuid == spawner_trends$cuid[i]], 
-    na.pad = TRUE, 
-    align = "right")
+  smooth.y <- rollapply(
+    data = log.y, FUN = mean, width = g,
+    # na.pad = TRUE, # deprecated. Use fill = NA instead of na.pad = TRUE
+    na.rm = T, 
+    fill = NA,
+    align = "right") #
   
-  # Calculate long-term trend
-  lm1 <- lm(smooth.y ~ x)
-  lines(x, predict(lm1, newdata = data.frame(x)), col = 4)
+  # Fill  dataset103_output 
+  # QUESTION: is that correct for avg_escape_log? WRONG
+  dataset103_output_here <- dataset103_output[1:length(x),]
+  dataset103_output_here$region <- region
+  dataset103_output_here$species_name <- species_name
+  dataset103_output_here$cuid <- cuid
+  dataset103_output_here$cu_name_pse <- cu_name_pse
+  dataset103_output_here$year <- x
+  dataset103_output_here$avg_escape_log <- smooth.y
+  dataset103_output_new <- rbind(dataset103_output_new,dataset103_output_here)
   
-  # Plotting
-  plot(spawners.i$year, spawners.i$estimated_count, col = grey(0.8), "o")
-  lines(spawners.i$year, smooothedSpawners.i)
+  # Fit linear model
+  lm_LT <- lm(smooth.y[!is.na(smooth.y)] ~ x[!is.na(smooth.y)])
   
-  plot(spawners.i$year, log(smooothedSpawners.i), "o", pch = 19, cex = 0.8, ylog = TRUE)
- 
+  # Fill dataset202_output
+  dataset202_output_here <- dataset202_output[1,]
+  dataset202_output_here$region <- region
+  dataset202_output_here$species_name <- species_name
+  dataset202_output_here$cuid <- cuid
+  dataset202_output_here$cu_name_pse <- cu_name_pse
+  dataset202_output_here$percent_change <- exp(lm_LT$coefficients[2] * length(x[!is.na(smooth.y)]) - 1)
+  dataset202_output_here$slope <- lm_LT$coefficients[2]
+  dataset202_output_here$intercept <- lm_LT$coefficients["(Intercept)"]
+  dataset202_output_new <- rbind(dataset202_output_new,dataset202_output_here)
   
+  #'* Calculate last 3 generations trends *
+  # x3g <- tail(x[!is.na(smooth.y)], g*3 - 1)
+  # lm_3g <- lm(tail(smooth.y[!is.na(smooth.y)], g*3 - 1) ~ x3g)
+  # QUESTION: why removing the NAs? That potentially extend the period, like below
+  # x3g <- tail(x, g*3 - 1)
+  # lm_g <- lm(tail(smooth.y, g*3 - 1) ~ x3g, na.action = "na.exclude")
+  # QUESTION: why doing g*3 - 1
+  x3g <- tail(x, g*3)
+  lm_3g <- lm(tail(smooth.y, g*3) ~ x3g, na.action = "na.exclude")
+  
+  #' Exclusion rule:
+  #' If the number of NAs in x3g is > g --> we do not calculate the trend
+  #' (i.e. we need at least 66.66% of data points to calculate the trend)
+  cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > g
+  if(grepl("Pink",species_name)){ # for pink salmon
+    cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > 3 + 1  # because g = 2 and there is 3 NAs in a complete series --> 
+  }
+  if(cond_noEnoughData){
+    threegen_percent_change <- NA
+    threegen_slope <- NA
+    threegen_intercept <- NA
+  }else{
+    threegen_percent_change <- exp(lm_3g$coefficients[2] * length(x3g) - 1)
+    threegen_slope <- lm_3g$coefficients[2]
+    threegen_intercept <- lm_3g$coefficients["(Intercept)"]
+  }
+  
+  # Fill dataset391_output
+  dataset391_output_here <-  dataset391_output[1,]
+  dataset391_output_here$region <- region
+  dataset391_output_here$species_name <- species_name
+  dataset391_output_here$cuid <- cuid
+  dataset391_output_here$cu_name_pse <- cu_name_pse
+  dataset391_output_here$threegen_percent_change <- threegen_percent_change
+  dataset391_output_here$threegen_slope <- threegen_slope
+  dataset391_output_here$threegen_intercept <- threegen_intercept
+  dataset391_output_here$threegen_start_year <- x3g[1]
+  dataset391_output_here$uploadid <- NA   # QUESTION: to remove?
+  dataset391_output_new <- rbind( dataset391_output_new, dataset391_output_here)
+  
+  #'* Figure *
+  region_here <- region
+  if(region_here ==  "Vancouver Island & Mainland Inlets"){
+    region_here <- "VIMI"
+  }
+  main <- paste(region_here,species_name,cuid,cu_name_pse,sep = "_")
+  main <- gsub("/",".",main)
+  main <- gsub(" ","_",main)
+  
+  if(figure_print){
+    jpeg(filename = paste0(wd_figures,"/",main,".jpeg"),units = "cm", res = 300, 
+         width = 20, height = 15)
+  }
+  
+  main <- paste(region_here,species_name,cuid,cu_name_pse,sep = " - ")
+
+  plot(x = x, y = log.y, col = grey(0.5), lwd = 2, pch = 16, main = main, las = 1,
+       xlab = "Year", ylab = "Spawner abundance (log)")
+  lines(x[!is.na(y)],log(y)[!is.na(y)],lwd = 2, col = grey(0.5))
+  # plot smoothed line
+  lines(x, smooth.y, lwd = 2, col = "black")
+  # points(x[!is.na(y)], smooth.y[!is.na(y)], lwd = 2, col = "black", pch = 1)
+  # plot regression line for the 3 generation:
+  # - if not enough data points:
+  if(cond_noEnoughData){
+    legend("topright","NOT ENOUGH DATA",text.col = "blue",bty = "n")
+  }else{ # if enough datapoints
+    lines(x3g, predict(lm_3g, newdata = data.frame(x3g)), lwd = 2, col = "blue")
+  }
+  # plot regression line for LT
+  lines(x[!is.na(smooth.y)], predict(lm_LT, newdata = data.frame(x[!is.na(smooth.y)])),
+        lwd = 2, col = "red", lty = 2)
+  legend("bottomright",paste0("i = ",i),bty = "n")
+  #
+  if(figure_print){
+    dev.off()
+  }
 }
+
+head(cu_list)
+
+head(dataset103_output_new)
+head(dataset202_output_new)
+head(dataset391_output_new)
+
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+
+write.csv(dataset103_output_new,paste0(wd_output,"/dataset103_output_",date,".csv"),
+          row.names = F)
+write.csv(dataset202_output_new,paste0(wd_output,"/dataset202_output_",date,".csv"),
+          row.names = F)
+write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output_",date,".csv"),
+          row.names = F)
+
+
+# Old notes:
+
+# QUESTION: the smooth function does not calculate value if there are NAs in the 
+# width --> loss of a lot of information. see ex. i = 2. Can we fill the NAs?
+# Or can we not use the smooth function in this case then?
+# Other potential solution: fill NAs by predicting the values with a smoothing spline.
+# https://stackoverflow.com/questions/18695335/replacing-all-nas-with-smoothing-spline
+# If not, may be just use it for Pink only? I am not sure what is done originally
+# (the code in the Rmd script is unclear (731 and after)).

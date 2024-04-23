@@ -6,6 +6,20 @@ July 7, 2023
 
 This is a draft example of how we might centralize the population indicator compilation across regions. Steph initiated this as a trial for discussion among the population group (Eric, Bruno, Steph). The idea would be to mirror the headings in the [tech-report](https://bookdown.org/salmonwatersheds/tech-report/).
 
+
+Working directory setup:
+
+Many of the files used as input are saved in the PSF Dropbox. In order to set up 
+the working directories properly, each use must:
+
+1. Create a text file `named wd_X_Drive1_PROJECTS.txt` in your local 
+`population-indicator` github folder (along with the R project file).
+
+2. Paste in the file the your personal path from the C drive to the PSF dropbox 
+`1_PROJECTS` folder on dropbox (e.g. C:/Users/YOUR OWN PATH/X Drive/1_PROJECTS).
+For Microsoft Windows OS, replace the `\` by `/`.
+
+
 ## Files
 
 #### `biological-status`

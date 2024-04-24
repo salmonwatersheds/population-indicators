@@ -201,7 +201,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 1
+      # i_sp <- 5
       
       speciesAcroHere <- unique(species_acro)[i_sp]
       species_i <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
@@ -218,6 +218,12 @@ for(i_rg in 1:length(region)){
       # cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[species_i_luc,cuspawnerabundance_rg$species_name),]
       
       cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[cuspawnerabundance_rg$species_name %in% species_i,]
+      
+      #' TEMPORARY FIX with uploadid 1717 and region Transboudary
+      # if(region == "Transboundary" & any(cuspawnerabundance_rg_sp$uploadid == 1717)){
+      #   cond_remove <- cuspawnerabundance_rg_sp$uploadid == 1717
+      #   cuspawnerabundance_rg_sp <- cuspawnerabundance_rg_sp[!cond_remove,]
+      # }
       
       # in case the species was selected by the user it is not present in that region:
       if(nrow(cuspawnerabundance_rg_sp) == 0){
@@ -257,7 +263,7 @@ for(i_rg in 1:length(region)){
         
         for(i_cu in 1:length(CUs)){
           
-          # i_cu <- 1
+          # i_cu <- 4
           
           # subset cuspawnerabundance_rg_sp
           cuspawnerabundance_rg_sp_cu <- cuspawnerabundance_rg_sp[cuspawnerabundance_rg_sp$cu_name_pse == CUs[i_cu],]
@@ -361,7 +367,7 @@ for(i_rg in 1:length(region)){
           
           # Calculate current spawner abundance:
           csa_df <- current_spawner_abundance_fun(cuids = cuids[i_cu], 
-                                                  cuspawnerabundance = cuspawnerabundance, 
+                                                  cuspawnerabundance = cuspawnerabundance_rg_sp_cu, 
                                                   yearCurrentAbundance = yearCurrentAbundance, 
                                                   CU_genLength = CU_genLength)
           yrInitial <- csa_df$yr_withData_start

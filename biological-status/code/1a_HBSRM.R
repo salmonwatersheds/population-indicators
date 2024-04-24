@@ -322,26 +322,29 @@ for(i_rg in 1:length(region)){
       
       for(r in 1:nrow(CUs_priors)){
         # r <- 1
-        cuidHere <- conservationunits_decoder_rg_sp$cuid[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
-        speciesHere <- conservationunits_decoder_rg_sp$species_name[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
+        cond <- conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]
+        cuidHere <- conservationunits_decoder_rg_sp$cuid[cond]
+        speciesHere <- conservationunits_decoder_rg_sp$species_name[cond]
         
         # in case multiple instances are returned (happens with pooled CUs)
         if(length(cuidHere) > 1){
 
-          cuidPooledHere <- conservationunits_decoder_rg_sp$pooledcuid[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
+          cuidPooledHere <- conservationunits_decoder_rg_sp$pooledcuid[cond]
           
           if(length(unique(cuidPooledHere)) == 1){
             cuidHere <- unique(cuidPooledHere)
             speciesHere <- unique(speciesHere)
 
           }else{
-            print(paste0("There are multiple different CUs here: i_rg: ",i_rg," ; i_sp: ",i_sp," ; r: ",r))
-            print(conservationunits_decoder_rg_sp[conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r],])
+            print(paste0("There are multiple different CUs here: i_rg: ",i_rg,
+                         " ; i_sp: ",i_sp," ; r: ",r))
+            print(conservationunits_decoder_rg_sp[cond,])
           }
         }
         
-        prSmaxHere <- priors_HBSRmodel_rg_sp$prSmax[priors_HBSRmodel_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
-        prCVHere <- priors_HBSRmodel_rg_sp$prCV[priors_HBSRmodel_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]]
+        cond <- priors_HBSRmodel_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]
+        prSmaxHere <- priors_HBSRmodel_rg_sp$prSmax[cond]
+        prCVHere <- priors_HBSRmodel_rg_sp$prCV[cond]
 
         if(length(prSmaxHere) == 0){
           prSmaxHere <- prCVHere <- NA
@@ -480,7 +483,7 @@ for(i_rg in 1:length(region)){
         		# a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
         		# a[i] ~ dlnorm(mu_a, tau_a) # TOCHANGE: CONFUSION WITH ALPHA = exp(a) --> a[i] ~ dnorm(mu_a, tau_a) ???
         		
-        		a[i] ~ dnorm(mu_a, tau_a) # --> FINAL CALL from 30/01/2024.
+        		a[i] ~ dnorm(mu_a, tau_a) # --> FINAL CALL from Population meeting 30/01/2024.
         		
         		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
         		

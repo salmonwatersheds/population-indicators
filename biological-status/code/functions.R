@@ -1498,11 +1498,14 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
 #' - biological_status_HSPercent_df: data frame of the biostatus probabilities 
 #' obtained with percentile method. It is returned by the function 
 #' biological_status_HSPercent_df() and the argument pattern = "biological_status_SH_percentiles".
-cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA, 
-                                       region = NA, wd_output = NA, species_all = T){
+cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
+                                       conservationunits_decoder = NA,
+                                       wd_pop_indic_data_input_dropbox = NA,
+                                       region = NA, wd_output = NA, species_all = T,
+                                       export_csv = F){
   
   if(is.na(biological_status_percentile)[1]){
-    pattern <- "biological_status_SH_percentiles"
+    pattern <- "biological_status_percentiles"
     biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                                     wd_output = wd_output,
                                                                     region = region,
@@ -1529,20 +1532,59 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
   
   highExploit_lowProd <- data.frame(
     region = c(rep("Fraser",7),rep("Vancouver Island & Mainland Inlets",2)),
-    species = c(rep("Coho",5),rep("Chinook",4)),
-    species_abbr = c(rep("CO",5),rep("CK",4)), 
+    species_name = c(rep("Coho",5),rep("Chinook",4)),
+    #species_abbr = c(rep("CO",5),rep("CK",4)), 
     cuid = c(705,749,707,709,708,303,315,322,321),
-    CU_name = c("Fraser Canyon","Interior Fraser","Lower Thompson","North Thompson",
+    cu_name_pse = c("Fraser Canyon","Interior Fraser","Lower Thompson","North Thompson",
                 "South Thompson","Lower Fraser River (Fall 4-1)","Shuswap River (Summer 4-1)",
                 "East Vancouver Island-Cowichan and Koksilah (Fall x-1)",
                 "East Vancouver Island-Goldstream (Fall x-1)"))
   
+  #' As of Population meeting of 23/04/2014
+  #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
+  #' --> all Chinook in Fraser and VIMI are low productivity/high exploitation
+  if(is.na(conservationunits_decoder)[1]){
+    conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                       fromDatabase = F,
+                                                       update_file_csv = F,
+                                                       wd = wd_pop_indic_data_input_dropbox)
+  }
+  cond <- conservationunits_decoder$species_name == "Chinook" &
+    conservationunits_decoder$region %in% c("Vancouver Island & Mainland Inlets",
+                                            "Fraser")
+  highExploit_lowProd <- rbind(highExploit_lowProd,
+                               conservationunits_decoder[cond,c("region","species_name","cuid","cu_name_pse")])
+  
+  highExploit_lowProd <- unique(highExploit_lowProd)
+  
+  # Export list if not already present in wd_pop_indic_data_input_dropbox
+  if(export_csv){
+    highExploit_lowProd_2 <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
+                                                        pattern = "CUs_highExploitation_lowProductivity")
+    
+    if(is.na(highExploit_lowProd_2)[1]){
+      write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
+                                           "/CUs_highExploitation_lowProductivity.csv"),
+                row.names = F)
+      
+    }else{ # check that the file present contains the same cuid
+      cond_1 <- all(highExploit_lowProd$cuid %in% highExploit_lowProd_2$cuid)
+      cond_2 <- all(highExploit_lowProd_2$cuid %in% highExploit_lowProd$cuid)
+      
+      if(!cond_1 | !cond_2){
+        print(paste0("CUs_highExploitation_lowProductivity.csv in ",wd_pop_indic_data_input_dropbox," differs from list in the code."))
+        print("File not exported to avoid risking losing information. Issue must be resolved manually.")
+        
+      }
+    }
+  }
+
   highExploit_lowProd$biostatus_percentile <- NA
   highExploit_lowProd$toRemove <- T
   for(i in 1:nrow(highExploit_lowProd)){
     # i <- 1
     sp <- highExploit_lowProd$species[i]
-    cu <- highExploit_lowProd$CU_name[i]
+    cu <- highExploit_lowProd$cu_name_pse[i]
     biological_status_percentileHere <- biological_status_percentile[biological_status_percentile$CU_pse == cu,]
     if(nrow(biological_status_percentileHere) > 1){
       print(biological_status_percentileHere)

@@ -298,7 +298,8 @@ datasetsNames_database_fun <- function(){
       "appdata.vwdl_catchrunsize_output",
       "appdata.vwdl_dataset1cu_output",
       "appdata.vwdl_dataset103_output",
-      "appdata.vwdl_dataset202_output"
+      "appdata.vwdl_dataset202_output",
+      "appdata.vwdl_dataset390_output"
       ),
     
     name_CSV = c(
@@ -318,7 +319,8 @@ datasetsNames_database_fun <- function(){
       "catchrunsize_output.csv",
       "dataset1cu_output.csv",              # dataset_1part1
       "dataset103_output.csv",
-      "dataset202_output.csv"
+      "dataset202_output.csv",
+      "dataset390_output.csv"
       ))
   
   out_df$index <- 1:nrow(out_df)

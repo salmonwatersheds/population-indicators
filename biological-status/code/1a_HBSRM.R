@@ -3,15 +3,19 @@
 #'******************************************************************************
 #' The goal of the script is to conduct a hierarchical Bayesian spawner recruits 
 #' (HBSR) R analysis for all regions and conservation units.
-#' Code adpated from Korman and English (2013).
+#' Code adapted from Korman and English (2013).
 #' 
 #' Files imported (from dropbox):
-#' - species_SRdata_date.txt --> TO UPDATE
+#' - recruitsperspawner.csv (from database)
+#' - conservationunits_decoder (from database)
+#' - data/priors_HBSRmodel.csv (created in checks_fixes.R which assemble the 
+#' SRdata.txt files present in the "HBM and status" subfolders in each 
+#' region-specific folders in dropbox)
 #' 
 #' Files produced: 
-#' - output/region_species_SR_matrices.rds
-#' - output/region_posteriors_priorShift.rds
-#' - output/region_species_CUs_names.csv
+#' - output/REGION_SPECIES_SR_matrices.rds
+#' - output/REGION_SPECIES_priorShift.rds
+#' 
 #'******************************************************************************
 
 rm(list = ls())
@@ -70,8 +74,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 #' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
-fromDatabase <- F
-update_file_csv <- F
+fromDatabase <- update_file_csv <- F
 
 recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
                                             fromDatabase = fromDatabase,
@@ -158,30 +161,13 @@ options(warn = 2)  # treat warnings as errors
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
-  
   # i_rg <- 3
-  
-  #*** OLD CODE BELOW TO REMOVE EVENTUALLY ***
-
-  # set the path of the input data sets for that specific region
-  # wd_data_input <- paste0(wd_data_regions[,region[i_rg]])
-  
-  # Returns a list with the species and the corresponding path of the _SRdata files
-  # (the most up to date)
-  # fndata <- SRdata_path_species_fun(wd = wd_data_input,
-  #                                   species = species,
-  #                                   species_all = species_all)
-  
-  # species <- fndata$species  # species is updated is was NULL or certain species do not have a file
-  # fndata <- fndata$SRdata
-  
-  #*** OLD CODE above TO REMOVE EVENTUALLY ***
   
   recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
   
   species <- unique(recruitsperspawner_rg$species_name)
   
-  species <- species[species != "Steelhead"]
+  species <- species[species != "Steelhead"] # QUESTION: is it still relevant?
   
   species_acro <- sapply(X = species,FUN = function(sp){
     species_acronym_df$species_acro[species_acronym_df$species_name == sp]
@@ -192,10 +178,6 @@ for(i_rg in 1:length(region)){
     regionName <- "VIMI"
   }
   
-  # recruitsperspawner[recruitsperspawner$species_name == "Coho" & 
-  #                      recruitsperspawner$region == "Fraser",]
-  # unique(recruitsperspawner$species_name)
-  # unique(recruitsperspawner$region)
   if(sum(!is.na(recruitsperspawner_rg$spawners)) == 0 | sum(!is.na(recruitsperspawner_rg$recruits)) == 0){
     
     print(paste0("*** There is no data in recruitsperspawner.csv for salmon in ",region[i_rg]," ***"))
@@ -546,7 +528,7 @@ for(i_rg in 1:length(region)){
       #           file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"HBSR_CUs_names.csv"), 
       #           row.names = F)
       
-      ##### INFERENCE ???#####
+      ##### INFERENCE #####
       
       # Gelman and Rubin's convergence diagnostic
       # remove the "deviance" column because it is not a model parameter
@@ -623,7 +605,7 @@ for(i_rg in 1:length(region)){
                                  sd = apply(post_m,2,sd),
                                  ci = t(apply(post_m,2,quantile,c(.025,.975)))),
                            digits = 8)
-      model.probs
+      # model.probs
     } # species loop
   }  # if there is data for this region
 } # region loop

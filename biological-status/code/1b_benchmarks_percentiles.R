@@ -4,10 +4,13 @@
 #' approach on the history spawner (HS) data.
 #' 
 #' #' Files imported (from dropbox):
-#' - /data/spawner_abundance.csv
+#' - cuspawnerabundance (from database)
+#' - conservationunits_decoder (from database)
 #' 
 #' Files produced: 
-#' - output/region_species__benchmarks_HS_percentiles_summary.csv
+#' - output/REGION_SPECIES_benchmarks_percentiles_summary.csv
+#' - output/REGION_SPECIES_biological_status_percentiles.csv
+#' 
 #'******************************************************************************
 
 #' Background info: 
@@ -152,7 +155,7 @@ benchmarks <- c(0.25, 0.5, 0.75) # was c(0.25, 0.5)
 #' data available in more recent years.
 yearCurrentAbundance <- NA # was 2021
 
-# 
+# Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
 #
@@ -175,15 +178,9 @@ for(i_rg in 1:length(region)){
   
   if(species_all){
     species <- unique(cuspawnerabundance_rg$species_name)
-  }else{
-    # return the full name of the species
-    # species <- sapply(X = species, FUN = function(x){
-    #   output <- species_acronym_df$species_name[species_acronym_df$species_acro == x]
-    #   return(output)
-    # })
+    
   }
   
-  #' TODO: simplify this messy work around for species and species_acro
   # remove Steelhead
   # species <- species[species != "Steelhead"]
 
@@ -204,30 +201,14 @@ for(i_rg in 1:length(region)){
       # i_sp <- 5
       
       speciesAcroHere <- unique(species_acro)[i_sp]
-      species_i <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
+      cond <- species_acronym_df$species_acro %in% speciesAcroHere
+      species_i <- species_acronym_df$species_name[cond]
       
-      # species_i <- species[i_sp]
-      #
-      # species_i <- gsub(pattern = "Lake ",replacement = "",x = species_i)  # for sockeye
-      # species_i <- gsub(pattern = "River ",replacement = "",x = species_i) # for sockeye
-      # species_i <- gsub(pattern = "\\s*\\(odd\\)",replacement = "",x = species_i) # for Pink
-      # species_i <- gsub(pattern = "\\s*\\(even\\)",replacement = "",x = species_i)# for Pink
-      
-      # subset cuspawnerabundance_rg 
-      # cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[cuspawnerabundance_rg$species_name == species[i_sp],]
-      # cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[species_i_luc,cuspawnerabundance_rg$species_name),]
-      
-      cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[cuspawnerabundance_rg$species_name %in% species_i,]
-      
-      #' TEMPORARY FIX with uploadid 1717 and region Transboudary
-      # if(region == "Transboundary" & any(cuspawnerabundance_rg_sp$uploadid == 1717)){
-      #   cond_remove <- cuspawnerabundance_rg_sp$uploadid == 1717
-      #   cuspawnerabundance_rg_sp <- cuspawnerabundance_rg_sp[!cond_remove,]
-      # }
+      cond <- cuspawnerabundance_rg$species_name %in% species_i
+      cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[cond,]
       
       # in case the species was selected by the user it is not present in that region:
       if(nrow(cuspawnerabundance_rg_sp) == 0){
-        
         print(paste0("The species ",species_i," is not present in ",region_i," in the dataset used."))
         
       }else{
@@ -235,25 +216,29 @@ for(i_rg in 1:length(region)){
         # find the CUs present
         CUs <- unique(cuspawnerabundance_rg_sp$cu_name_pse)
         
-        # find the corresponding cuid 
-        cuids <- sapply(X = CUs, function(cu){
-          # cu <- CUs[6]
-          conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
-                                                                     conservationunits_decoder$species_name %in% species_i & 
-                                                                     conservationunits_decoder$cu_name_pse == cu,]
-          
-          # we could probably simply use pooledcuid
-          if(nrow(conservationunits_decoder_cut) == 1){
-            out <- conservationunits_decoder_cut$cuid
-          }else{
-            out <- unique(conservationunits_decoder_cut$pooledcuid)
-          }
-
-          if(length(out) == 0){
-            print(paste("There is no cuid for:",region[i_rg],"-",species_i,"-",cu))
-          }
-          return(out)
-        })
+        # find the corresponding cuid
+        cuids <-  unique(cuspawnerabundance_rg_sp$cuid) # 
+        
+        # BSC: not sure why I was doing it more complicated (below) but to keep
+        # until I run the code again in case I am missing something.
+        # cuids <- sapply(X = CUs, function(cu){
+        #   # cu <- CUs[6]
+        #   conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
+        #                                                              conservationunits_decoder$species_name %in% species_i & 
+        #                                                              conservationunits_decoder$cu_name_pse == cu,]
+        #   
+        #   # we could probably simply use pooledcuid
+        #   if(nrow(conservationunits_decoder_cut) == 1){
+        #     out <- conservationunits_decoder_cut$cuid
+        #   }else{
+        #     out <- unique(conservationunits_decoder_cut$pooledcuid)
+        #   }
+        # 
+        #   if(length(out) == 0){
+        #     print(paste("There is no cuid for:",region[i_rg],"-",species_i,"-",cu))
+        #   }
+        #   return(out)
+        # })
         
         # create a dataframe to retain the benchmark information for all the CUs of
         # the species in the region
@@ -292,7 +277,6 @@ for(i_rg in 1:length(region)){
                                benchmarks = benchmarks)  # to be able to compare
           
           # place the information a dataframe
-          
           benchSummary_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
                                         species = rep(speciesAcroHere,length(benchmarks)),
                                         cuid = rep(cuids[i_cu],length(benchmarks)),
@@ -359,13 +343,15 @@ for(i_rg in 1:length(region)){
             #' even- and odd-year lineages are considered separate CUs, the most 
             #' recent spawner abundance is simply the most recent year’s estimated 
             #' spawner abundance for this species
-            CU_genLength <- generationLengthEstiamte_df$genLength[generationLengthEstiamte_df$species %in% speciesName]
+            cond <- generationLengthEstiamte_df$species %in% speciesName # generationLengthEstiamte_df is created in functions_general.R
+            CU_genLength <- generationLengthEstiamte_df$genLength[cond] 
             CU_genLength_available <- FALSE
             print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))
           }
           
-          
           # Calculate current spawner abundance:
+          # yearCurrentAbundance should be NA so it is calculated from the most 
+          # recent year with data
           csa_df <- current_spawner_abundance_fun(cuids = cuids[i_cu], 
                                                   cuspawnerabundance = cuspawnerabundance_rg_sp_cu, 
                                                   yearCurrentAbundance = yearCurrentAbundance, 

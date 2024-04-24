@@ -45,7 +45,7 @@ set_working_directories_fun <- function(subDir = NA, Export_locally = T){
   # The pass is personal and must be copy past in wd_X_Drive1_PROJECTS.txt
   # e.g.: "C:/Users/bcarturan/Salmon Watersheds Dropbox/Bruno Carturan/X Drive/1_PROJECTS"
   # TODO: find generic solution
-  wd_X_Drive1_PROJECTS <- readLines( "wd_X_Drive1_PROJECTS.txt")
+  wd_X_Drive1_PROJECTS <- readLines("wd_X_Drive1_PROJECTS.txt")
   
   # get the name of the sub directories for the different projects
   subDir_options_l <- subDir_projects_fun()

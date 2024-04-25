@@ -411,7 +411,7 @@ for(i_rg in 1:length(region)){
           #' even- and odd-year lineages are considered separate CUs, the most 
           #' recent spawner abundance is simply the most recent year’s estimated 
           #' spawner abundance for this species
-          cond <- generationLengthEstiamte_df$species %in% speciesName
+          cond <- generationLengthEstiamte_df$species %in% speciesName # generationLengthEstiamte_df is created in functions_general.R
           CU_genLength <- generationLengthEstiamte_df$genLength[cond]
           CU_genLength_available <- FALSE
           print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))

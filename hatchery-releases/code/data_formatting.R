@@ -1,9 +1,20 @@
 
 #'******************************************************************************
-#' The goal of the script is to
+#' The goal of the script is to import the PSF_modified_SEP_releases.xlsx file 
+#' from DFO and organise it to match the structure in
+#' SWP_hatchery_data_template.xlsx.
 #' 
-#' #' Files imported (from /output --> produced in this subdir):
-#' -
+#' #' Files imported:
+#' - PSF_modified_SEP_releases_2023.xlsx (from DFO)
+#' - conservationunits_decoder (from database)
+#' - SWP_hatchery_data_template.xlsx # use for formating the output dataset
+#' - 
+#' 
+#' Files exported:
+#' - cuid_broodstock_multi.csv  # case where there are multiple cuid_broodstock 
+#' for a same release_site_name-release_stage-release_site_CUID-release_date
+#' combination.
+#' 
 #' 
 #' Files produced: 
 #' - 
@@ -63,7 +74,8 @@ library(stringr)
 source(paste(wd_code,"functions.R",sep = "/"))
 
 #
-# Update from PSF_modified_SEP_releases_DATE.xlsx --------
+# Import datasets --------
+
 #'** Import conservation-units.csv from wd_spawner_surveys_data **
 #' This file comes from the PSF database all allows to match the DFO STOCK_CU_INDEX
 #' with the PSF 'cuid' (or 'CUID') with the field 'cu_index' (= STOCK_CU_INDEX)
@@ -77,7 +89,8 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    wd = wd_pop_indic_data_input_dropbox)
 
 #'** Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data **
-DFO_df_all <- return_file_lastVersion_fun(wd_data,pattern = "PSF_modified_SEP_releases")
+DFO_df_all <- return_file_lastVersion_fun(wd_data = wd_data,
+                                          pattern = "PSF_modified_SEP_releases")
 
 #' 1) Deal with NAs in STOCK_CU_INDEX
 #' FOR NOW: --> remove the rows without values for STOCK_CU_INDEX 
@@ -121,7 +134,8 @@ nrow(DFO_df) # 31830
 filePSF_l <- hatchery_template_fun(wd_data = wd_data,
                                       filePSFname = "SWP_hatchery_data_template.xlsx")
 
-
+#
+# Create  ----------
 #' Create a dataframe with the name of the columns in PSF_modified_SEP_releases_DATE.xlsx
 #' and corresponding column names and sheets in the survey file SWP_hatchery_data_...xlsx
 matchCol_df <- matching_columns_fun(wd_data = wd_data,
@@ -130,7 +144,6 @@ matchCol_df <- matching_columns_fun(wd_data = wd_data,
 
 # make a copy of filePSF_l that is going to be filled
 filePSFnew_l <- filePSF_l
-#' TODO: correct/clear the 1st sheet (?)
 
 #' Make a dataframe to report the case where there are multiple cuid_broodstock 
 #' for a same release_site_name-release_stage-release_site_CUID-release_date
@@ -431,15 +444,20 @@ filePSFnew_l$DataEntry_releases_NAcoord <- DataEntry_releases_NA
 #' In sheet DataEntry_facilitiescuids, remove the facilites (i.e., facilityID) 
 #' that do not have coordinate in sheet DataEntry_facilities and places these in 
 #' a new additional sheet
-facilityIDtoKeep <- filePSFnew_l$DataEntry_facilities$facilityid[!is.na(filePSFnew_l$DataEntry_facilities$facility_latitude) &
-                                                                   !is.na(filePSFnew_l$DataEntry_facilities$facility_longitude)]
-DataEntry_facilitiescuids_noNA <- filePSFnew_l$DataEntry_facilitiescuids[filePSFnew_l$DataEntry_facilitiescuids$facilityID %in% facilityIDtoKeep,]
-DataEntry_facilitiescuids_NA <- filePSFnew_l$DataEntry_facilitiescuids[!filePSFnew_l$DataEntry_facilitiescuids$facilityID %in% facilityIDtoKeep,]
+
+cond <- !is.na(filePSFnew_l$DataEntry_facilities$facility_latitude) &
+  !is.na(filePSFnew_l$DataEntry_facilities$facility_longitude)
+facilityIDtoKeep <- filePSFnew_l$DataEntry_facilities$facilityid[cond]
+
+cond <- filePSFnew_l$DataEntry_facilitiescuids$facilityID %in% facilityIDtoKeep
+DataEntry_facilitiescuids_noNA <- filePSFnew_l$DataEntry_facilitiescuids[cond,]
+DataEntry_facilitiescuids_NA <- filePSFnew_l$DataEntry_facilitiescuids[!cond,]
+
 filePSFnew_l$DataEntry_facilitiescuids <- DataEntry_facilitiescuids_noNA
 filePSFnew_l$DataEntry_facilitiescuids_NAcoord <- DataEntry_facilitiescuids_NA
 
-
-# ad column release_type_pse in DataEntry_releases ------ 
+#
+# Ad column release_type_pse in DataEntry_releases ------ 
 #' Cf. Pop meeting April 3rd 2024
 #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
 
@@ -486,7 +504,7 @@ for(sh_i in 1:length(names(filePSFnew_l))){
 # - 6) In sheet DataEntry_facilitiescuids, I removed the facilites (i.e., facilityID) that do not have coordinate in sheet DataEntry_facilities and placed these in a new additional sheet called DataEntry_facilitiescuids_NAcoord
 # - 7) I cannot do anything about the 1st sheet ??? progratically, it has to be copy pasted by hand from the template and then filled by hand
 
-# Edit release_type_pse for Transboundary and steelhead -----------
+# Edit release_type_pse for Transboundary and steelhead (ONE TIME FIX?) -----------
 
 #' #'Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
@@ -525,6 +543,10 @@ dataset384_output$location_name_pse[cond]
 
 cond <- grepl(" In",dataset384_output$location_name_pse)
 dataset384_output$location_name_pse[cond]
+
+cond <- grepl(" Ch",dataset384_output$location_name_pse)
+dataset384_output$location_name_pse[cond]
+
 
 #'* Add release_type_pse *
 release_type_df <- release_type_pse_fun()
@@ -571,7 +593,9 @@ write.csv(dataset384_output_SH,paste0(wd_output,"/dataset384_output_SH_",date,".
 write.csv(dataset384_output_TB,paste0(wd_output,"/dataset384_output_TB_",date,".csv"),
           row.names = F)
 
-#'* Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx *
+#
+#' Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx (ONE TIME FIX?) -----
+#' 
 DataEntry_relase <- read.xlsx(file = paste0(wd_output,"/SWP_hatchery_data_20240404.xlsx"),
                               sheetName = "DataEntry_releases")
 
@@ -598,8 +622,10 @@ unique(DataEntry_relase$location_name_pse[cond])
 DataEntry_relase$location_name_pse[cond] <- gsub(" Pd"," Pond",DataEntry_relase$location_name_pse[cond])
 
 cond <- grepl(" Ch",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" Ch",l),DataEntry_relase$location_name_pse)
+}
 unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Ch"," Channel",DataEntry_relase$location_name_pse[cond])
 
 cond <- grepl(" In",DataEntry_relase$location_name_pse)
 unique(DataEntry_relase$location_name_pse[cond])
@@ -694,15 +720,15 @@ DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cui
 #
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
-date <- "20240404"
+# date <- "20240404"
 write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTB_",date,".csv"),
           row.names = F)
 
 # related slack thread:
 # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1713375227574009?thread_ts=1712267027.385489&cid=C03LB7KM6JK
 
-
-#'* CHECK: Compare dataset384_output_TB to the TB in SWP_hatchery_data_20240404.xlsx *
+#
+# CHECK: Compare dataset384_output_TB to the TB in SWP_hatchery_data_20240404.xlsx -----
 #' 
 #' Related slack thread: TODO: still need to be addressed.
 #' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1713377494509899

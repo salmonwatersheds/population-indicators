@@ -4,10 +4,13 @@
 #' The goal of the script is to import, clean and format NuSEDS data.
 #' Script based on Emma Atkinson's previous version (26-Mar-2019).
 #' 
-#' Files imported (from dropbox):
+#' Files imported:
 #' - conservationunits_decoder.csv (from database)
 #' - streamlocationids.csv (from database)
-#' - all_areas_nuseds.csv (from DFO)
+#' - all_areas_nuseds_DATE.csv (from DFO)
+#' - conservation_unit_system_sites_DATE.csv (from DFO)
+#' - nuseds_report_definitions.csv (from DFO)
+#' - conservation_unit_report_definitions.csv (from DFO)
 #' - DFO_GFE_IDs_list_1.xlsx (from Wu Zhipeng, DFO)
 #' - DFO_GFE_IDs_list_2.xlsx (from Wu Zhipeng, DFO)
 #' 
@@ -15,12 +18,11 @@
 #' - all_areas_nuseds_cleaned_DATE.csv
 #' - conservation_unit_system_sites_cleaned_DATE.csv
 #' - NuSEDS_escapement_data_collated_DATE.csv         # the merged and further corrected all_areas_nuseds and conservation_unit_system_sites
-#' - series_inNUSEDS_noInCUSS_DATE.csv
-#' - series_removed_DATE.csv
-#' - series_added_DATE.csv
+#' - series_inNUSEDS_noInCUSS_DATE.csv                # series removed because no alternative series could be found in conservation_unit_system_sites; to investigate later may be
+#' - series_removed_DATE.csv                          # series removed from either datasets and why
+#' - series_added_DATE.csv                            # series added to either dataset and why
 
 #'******************************************************************************
-
 
 # NOTE (to remove eventually): original script is:
 # 1_nuseds_data_collationJun72023.R in:
@@ -90,14 +92,12 @@ options(digits = 9)
 #
 # Import datasets -----
 
-#' * Import the PSE list of CUs (conservationunits_decoder) *
-#' --> To obtain the generation length and calculate the the "current spawner
-#'  abundance".
-
 #' Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
+#' * Import the PSE list of CUs (conservationunits_decoder) *
+#' --> just to do some check up
 #' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
 fromDatabase <- F
@@ -382,8 +382,14 @@ all_areas_nuseds$MAX_ESTIMATE[is.infinite(all_areas_nuseds$MAX_ESTIMATE)] <- NA
 # plot(log(all_areas_nuseds$Returns) ~ log(all_areas_nuseds$MAX_ESTIMATE))
 # abline(a = 0, b = 1)
 
+#
+# Fixes on NUSEDS and CUSS ---------
 
+all_areas_nuseds_all <- all_areas_nuseds
+nrow(all_areas_nuseds_all) # 412492
 
+conservation_unit_system_sites_all <- conservation_unit_system_sites
+nrow(conservation_unit_system_sites_all) # 7145
 
 #'* Get the GFE_IDs in NUSEDS that are not in CUSS * IS THIS NEEDED ? 
 #' There are several series (i.e. data points of a unique POP_ID/IndexId - GFE_ID 
@@ -410,14 +416,7 @@ GFE_ID_nuseds_notCuss_df <- data.frame(GFE_ID = GFE_ID_nuseds_notCuss,
                                        WATERBODY = waterbody_nuseds_notCuss,
                                        need_coordinates = "no")
 
-#
-# Fixes on NUSEDS and CUSS ---------
-
-all_areas_nuseds_all <- all_areas_nuseds
-nrow(all_areas_nuseds_all) # 412492
-
-conservation_unit_system_sites_all <- conservation_unit_system_sites
-nrow(conservation_unit_system_sites_all) # 7145
+#' NOTE: this is not used afterward but it is kept just in case for now. 
 
 #'* Fix: coordinates of certain locations in CUSS *
 #' There are multiple locations in conservation_unit_system_sites that have 

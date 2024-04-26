@@ -61,7 +61,6 @@ datasets_NuSEDS_fun <- function(name_dataSet, from_NuSEDS_website = F, wd){
   return(output)
 }
 
-# QUESTION: why doing this?
 #' Function to convert the areas of the 'map of Pacific Fishery Management Areas"
 #' (https://www.pac.dfo-mpo.gc.ca/fm-gp/maps-cartes/areas-secteurs/index-eng.html)
 #' into???

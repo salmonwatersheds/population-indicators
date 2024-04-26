@@ -102,7 +102,7 @@ biological_status_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       species_all = species_all)
 head(biological_status_HBSRM)
 colnames(biological_status_HBSRM)
-nrow(biological_status_HBSRM) # 136
+nrow(biological_status_HBSRM) # 137
 unique(biological_status_HBSRM$comment)
 
 # add column biostatus for both thresholds (Smsy and 80% Smsy)
@@ -131,7 +131,7 @@ biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       region = region,
                                                       species_all = species_all)
 
-nrow(biological_status_percentile) # 447
+nrow(biological_status_percentile) # 448
 
 # add final biostatus for both thresholds (i.e., 0.75 and 0.5 upper threshold)
 colProb <- colnames(biological_status_percentile)[grepl("_075_",colnames(biological_status_percentile))]
@@ -224,12 +224,6 @@ highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_percentile,
 #                                y = biological_status_percentile[,!colnames(biological_status_percentile) %in% colRemove_Percent], 
 #                                by = colComm, 
 #                                all = T)
-
-cond <- grepl("Swan/Club",biological_status_HBSRM$CU_pse)
-biological_status_HBSRM[cond,]
-cond <- grepl("Swan/Club",biological_status_percentile$CU_pse)
-biological_status_percentile[cond,]
-
 
 #
 # 2) Create complete dataset with biostatus and psf_staus_code -----
@@ -582,11 +576,11 @@ head(biological_status_merged)
 biological_status_merged[grepl("cyclic",biological_status_merged$cu_name_pse),]
 
 # Number CUs total:
-nrow(biological_status_merged) # 447
+nrow(biological_status_merged) # 448
 
 # number CUs with biostatus assessed over both methods
 condition <- biological_status_merged$psf_status_code %in% 1:3
-sum(condition) # 192
+sum(condition) # 191
 
 # CUs not assessed because cyclic dynamics, low productivity/high mortality or data deficient
 condition_5 <- grepl(pattern = "5",biological_status_merged$psf_status_code_all)
@@ -599,12 +593,12 @@ sum(condition_5_6_7) # 263
 # number CUs with biostatus assessed with HBSRM:
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$sr_status) # 
-nrow(biological_status_merged[condition_1_2_3 & condition_HBSRM,]) # 135
+nrow(biological_status_merged[condition_1_2_3 & condition_HBSRM,]) # 136
 
 # number CUs with biostatus assessed with percentile method: 
 condition_Percent <- !is.na(biological_status_merged$percentile_status)
-nrow(biological_status_merged[condition_1_2_3 & condition_Percent,]) # 192
-nrow(biological_status_merged[condition_1_2_3 & condition_Percent & !condition_HBSRM,]) # 57
+nrow(biological_status_merged[condition_1_2_3 & condition_Percent,]) # 191
+nrow(biological_status_merged[condition_1_2_3 & condition_Percent & !condition_HBSRM,]) # 55
 
 # Write the file -----
 #

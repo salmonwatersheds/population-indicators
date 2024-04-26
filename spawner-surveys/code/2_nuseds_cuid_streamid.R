@@ -1074,6 +1074,12 @@ date <- gsub("-","",date)
 write.csv(dataset_1part2,paste0(wd_output,"/dataset_1part2_",date,".csv"),
           row.names = F)
 
+dataset_1part2 <- import_mostRecent_file_fun(wd = wd_output,
+                                             pattern = "dataset_1part2")
+cond <- dataset_1part2$species_name == "Coho"
+sites_Coho <- unique(dataset_1part2$GFE_ID[cond])
+length(sites_Coho) # 1705
+
 #
 # Check if multiple series appear for a same cuid - streamid combination -----------
 #' There WERE several instances were there were multiple locations associated to

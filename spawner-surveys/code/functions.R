@@ -878,6 +878,9 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
     out <- c('GFE_ID','SYSTEM_SITE','GFE_TYPE','Y_LAT','X_LONGT','WATERSHED_CDE',
              'FWA_WATERSHED_CDE')
     
+    if("coordinates_changed" %in% colnames(conservation_unit_system_sites)){
+      out <- c(out,"coordinates_changed")
+    }
   }
   CUSS_l[[2]] <- out
   
@@ -1484,7 +1487,12 @@ SYSTEM_SITE_fixes_fun <- function(){
                          "BIG SLIDE - SHORE 1KM W",
                          "SQUEAH LAKE CREEK",
                          "BOULDERY CREEK - SHORE 2KM E",
-                         "BILL MINER CREEK - SHORE 3KM W")
+                         "BILL MINER CREEK - SHORE 3KM W",
+                         "KNIGHT CREEK - SHORE",
+                         "MARTEN CREEK - SHORE",
+                         "LYNX CREEK - SHORE",
+                         "BILL MINER CREEK - SHORE",
+                         "BABINE RIVER - UNACCOUNTED")
   
   sys_nm_fixes <- c("COOPER INLET-FANNIE COVE LH CREEK",
                     "COOPER INLET-FANNIE COVE RH CREEK",
@@ -1522,7 +1530,7 @@ SYSTEM_SITE_fixes_fun <- function(){
                     "UPPER and  LOWER SETON CHANNELS",
                     "LASSITER CREEK",
                     "BRENNAN PARK SPAWNING CHANNEL",
-                    "ADAMS RIVER MOUTH-LAKE SHORE", # "ADAMS RIVER SPAWNING CHANNEL",
+                    "ADAMS RIVER MOUTH-LAKE SHORE", # "ADAMS RIVER SPAWNING CHANNEL", --> actually this is the correct correction for cuid 738 ; it is wrong for cuid 739
                     "Swan Lake Creek  #2",
                     "PEACH CREEK SIDE CHANNEL",
                     # "NADINA RIVER-UPPER",
@@ -1534,17 +1542,23 @@ SYSTEM_SITE_fixes_fun <- function(){
                     "SLATE BAY-LAKE SHORE 1KM E",
                     "ELYSIA SHORE-1KM W",
                     "ROARING RIVER TO DECEPTION POINT-LAKE SHORE",
-                    "LIMESTONE PIONT-LAKE SHORE-S",
-                    "GOOSE POINT-LAKE SHORE-5 KM S",
+                    "LIMESTONE PIONT-LAKE SHORE",                    # "LIMESTONE PIONT-LAKE SHORE-S",
+                    "GOOSE POINT-LAKE SHORE",                        #  "GOOSE POINT-LAKE SHORE-5 KM S",
                     "BIG SLIDE-LAKE SHORE-1KM W",
                     "UNNAMED CREEK NEAR SQUEAH LAKE",
                     "BOULDERY CREEK-E-LAKE SHORE",
-                    "BILL MINER CREEK-LAKE SHORE-3KM W")
+                    "BILL MINER CREEK-LAKE SHORE-3KM W",
+                    "KNIGHT CREEK-LAKE SHORE",
+                    "MARTEN CREEK-LAKE SHORE",
+                    "LYNX CREEK-LAKE SHORE",
+                    "BILL MINER CREEK-LAKE SHORE",
+                    "Babine-Unaccounted")
   
   out <- list(SYSTEM_SITE_fixes,sys_nm_fixes)
   names(out) <- c("SYSTEM_SITE","sys_nm")
   return(out)
 }
+
 
 #' 
 # fields <- c("cuid",fields_locations)
@@ -1857,4 +1871,43 @@ distance_condition_fun <- function(conditions_l,streamlocationids,
   names(out) <- c("distances_l","conditions_l","pointid_alternative")
   return(out) 
 }
+
+#' Function that takes the dataframe locations_duplicated with the column GFE_ID,
+#' SYSTEM_SITE, Y_LAT and X_LONGT from conservation_system_sites and returns the 
+#' same dataframe but with the rows grouped by identical coordinates. It is used
+#' to manually define new coordinates to locations having different SYSTEM_SITE
+#' but same coordinates in conservation_system_sites.
+#' Additional fields are created: X_LONGT_new and Y_LAT_new to fill after when 
+#' attributing new coordinates for certain rows. 
+locations_duplicated_group_fun <- function(locations_duplicated){
+  
+  #' Sort the dataset with the distance from a unique (random) location, and create
+  #' a group column
+  locations_duplicated$dist <- distance_Euclidean_fun(x_ref = 0,y_ref = 0,
+                                                      x = locations_duplicated$X_LONGT, 
+                                                      y = locations_duplicated$Y_LAT)
+  
+  locations_duplicated <- locations_duplicated[order(locations_duplicated$dist),]
+  
+  locations_duplicated$group <- NA
+  r <- 1
+  i_l <- 1
+  while(any(is.na(locations_duplicated$group))){
+    x <- locations_duplicated$X_LONGT[r]
+    y <- locations_duplicated$Y_LAT[r]
+    cond <- locations_duplicated$X_LONGT == x & 
+      locations_duplicated$Y_LAT == y
+    locations_duplicated$group[cond] <- LETTERS[i_l]
+    i_l <- i_l + 1
+    if(any(is.na(locations_duplicated$group))){
+      r <- min(which(is.na(locations_duplicated$group)))
+    }
+  }
+  
+  locations_duplicated$X_LONGT_new <- locations_duplicated$Y_LAT_new <- NA
+  return(locations_duplicated)
+}
+
+
+
 

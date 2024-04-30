@@ -669,7 +669,8 @@ for(i_rg in 1:length(region)){
                                       species = rep(species[i_sp],4),
                                       cuid = rep(cuids[i],4),
                                       CU = rep(CUs[i],4),
-                                      benchmark = c(rep(names(benchSummary)[1],2),rep(names(benchSummary)[2],2)),
+                                      benchmark = c(rep(names(benchSummary)[1],2),
+                                                    rep(names(benchSummary)[2],2)),
                                       method = rep(rownames(benchSummary[[1]]),2))
         
         benchSummary_df$m <- c(benchSummary$Sgen[,"m"],benchSummary$Smsy[,"m"])

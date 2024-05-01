@@ -178,25 +178,29 @@ for(i_rg in 1:length(region)){
     for(i_sp in 1:length(species)){
       
       # i_sp <- 5
+      cond <- species_acronym_df$species_acro == species[i_sp]
+      speciesHere <- species_acronym_df$species_name[cond]
       
-      speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro == species[i_sp]]
+      cond <- cuspawnerabundance$region == region_i &
+        cuspawnerabundance$species_name %in% speciesHere
+      cuspawnerabundance_rg_sp <- cuspawnerabundance[cond,]
       
-      cuspawnerabundance_rg_sp <- cuspawnerabundance[cuspawnerabundance$region == region_i &
-                                                       cuspawnerabundance$species_name %in% speciesHere,]
-      
-      conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == region_i &
-                                                                     conservationunits_decoder$species_name%in% speciesHere,]
+      cond <- conservationunits_decoder$region == region_i &
+        conservationunits_decoder$species_name%in% speciesHere
+      conservationunits_decoder_rg_sp <- conservationunits_decoder[cond,]
       
       # Import the HBSRM outputs, i.e., the posterior distributions of:
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
       # - with bi the CU-level density dependence parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
       # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
-      post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_HBSRM_posteriors_priorShift.rds"))
+      post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],
+                             "_HBSRM_posteriors_priorShift.rds"))
       
       # Import the S and R matrices used for fitting the HBSR model:
       # BSC: the wd here will eventually have to be set to the final repo for the 
       # exported datasets.
-      SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_SR_matrices.rds"))
+      SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],
+                            "_SR_matrices.rds"))
       
       # Find the nb of CUs
       # CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"),
@@ -208,10 +212,8 @@ for(i_rg in 1:length(region)){
       # find the corresponding cuid 
       cuids <- sapply(X = CUs, function(cu){
         # cu <- CUs[6]
-        regionHere <- region_i
-        conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == regionHere &
-                                                                     conservationunits_decoder$species_name %in% speciesHere & 
-                                                                     conservationunits_decoder$cu_name_pse == cu,]
+        cond <- conservationunits_decoder_rg_sp$cu_name_pse == cu
+        conservationunits_decoder_cut <- conservationunits_decoder_rg_sp[cond,]
         
         # we could probably simply use pooledcuid
         if(nrow(conservationunits_decoder_cut) == 1){
@@ -226,6 +228,7 @@ for(i_rg in 1:length(region)){
         return(out)
       })
       
+      # nb of chains
       nchains <- length(post) # 6 chains
       # parameter names
       pnames <- colnames(post[[1]])
@@ -290,7 +293,6 @@ for(i_rg in 1:length(region)){
       # Calculate Smsy & Sgen (this takes a few mins...think of vectorizing/parallelizing)
       # Uses 1_functions.R which is different from previous versions by estimating Smsy
       # directly using the methods of Scheuerell (2016).
-      
       for(i in 1:nCUs){
         # i <- 1
         # i <- 3   # issue with Sgen in Fraser CO CU nb 3
@@ -344,14 +346,14 @@ for(i_rg in 1:length(region)){
       #   pdf(file = pathFile, width = 8.5, height = 11)
       # }
       
-      # data frame that will contain the benchmark central values and CI for the two
-      # methods used (median and quantile and HPD)
-      benchSummary_region_species_df <- NULL
-      
       # data frame that will contain the biological status expressed as probabilities
       # for each of the three levls (i.e., red, amber and green) both with 
       # upper threshold Smsy and 80% of Smsy
       biologicalStatus_region_species_df <- NULL
+      
+      # data frame that will contain the benchmark central values and CI for the two
+      # methods used (median and quantile and HPD)
+      benchSummary_region_species_df <- NULL
       
       statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F") 
       # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
@@ -440,7 +442,7 @@ for(i_rg in 1:length(region)){
             # j <- 1
             for(k in 1:nrow(post[[1]])){   # for each mcmc draw
               # k <- 1
-              LB_Sgen <- SR_bench[i, "Sgen", j, k]
+              LB_Sgen <- SR_bench[i, "Sgen", j, k]    # i corresponds to the CU
               UB_Smsy <- SR_bench[i, "Smsy", j, k]
               UB_Smsy80 <- UB_Smsy * .8
               
@@ -484,7 +486,7 @@ for(i_rg in 1:length(region)){
           }
         }
         
-        # 
+        # Record the probabilities:
         biologicalStatus_df <- data.frame(region = region[i_rg],
                                           species = species[i_sp],
                                           cuid = cuids[i],
@@ -505,6 +507,49 @@ for(i_rg in 1:length(region)){
                                           status_Smsy80_amber = status_Smsy80_prob["amber"],
                                           status_Smsy80_green = status_Smsy80_prob["green"],
                                           comment = comment)
+        
+        
+        # add it to biologicalStatus_region_species_df
+        if(is.null(biologicalStatus_region_species_df)){
+          biologicalStatus_region_species_df <- biologicalStatus_df
+        }else{
+          biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
+                                                      biologicalStatus_df)
+        }
+        
+        #' Obtain the benchamrks CI
+        #' - Median and 95% quantiles
+        #' - highest posterior density (HPD) and HPD interval
+        benchSummary <- list(
+          Sgen = rbind(
+            medQuan = medQuan(SR_bench[i, "Sgen", , ]),
+            HPD = HPD(SR_bench[i, "Sgen", , ])),
+          Smsy = rbind(
+            medQuan = medQuan(SR_bench[i, "Smsy", , ]),
+            HPD = HPD(SR_bench[i, "Smsy", , ]))
+        )
+        
+        # Report the benchmark values and CI
+        benchSummary_df <- data.frame(region = rep(region[i_rg],4),
+                                      species = rep(species[i_sp],4),
+                                      cuid = rep(cuids[i],4),
+                                      CU = rep(CUs[i],4),
+                                      benchmark = c(rep(names(benchSummary)[1],2),
+                                                    rep(names(benchSummary)[2],2)),
+                                      method = rep(rownames(benchSummary[[1]]),2))
+        
+        benchSummary_df$m <- c(benchSummary$Sgen[,"m"],benchSummary$Smsy[,"m"])
+        benchSummary_df$CI025 <- c(benchSummary$Sgen[,2],benchSummary$Smsy[,2])
+        benchSummary_df$CI975 <- c(benchSummary$Sgen[,3],benchSummary$Smsy[,3])
+        
+        # add it to benchSummary_region_species_df
+        if(is.null(benchSummary_region_species_df)){
+          benchSummary_region_species_df <- benchSummary_df
+        }else{
+          benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
+                                                  benchSummary_df)
+        }
+        
         
         #----------------------
         # Plot
@@ -569,15 +614,7 @@ for(i_rg in 1:length(region)){
         #----------------------
         # Plot benchmarks
         #----------------------
-        benchSummary <- list(
-          Sgen = rbind(
-            medQuan = medQuan(SR_bench[i, "Sgen", , ]),
-            HPD = HPD(SR_bench[i, "Sgen", , ])),
-          Smsy = rbind(
-            medQuan = medQuan(SR_bench[i, "Smsy", , ]),
-            HPD = HPD(SR_bench[i, "Smsy", , ]))
-        )
-        
+
         u <- par('usr')
         for(j in 1:2){    # median, CI
           # j <- 1
@@ -612,7 +649,7 @@ for(i_rg in 1:length(region)){
         dens <- list(density(SR_bench[i, "Sgen", , ], from = 0, to = maxS/1.5, na.rm = T), # BSC: I had to add na.rm = T
                      density(SR_bench[i, "Smsy", , ], from = 0, to = maxS/1.5, na.rm = T))
         
-        # Ih there are Sgen and Smsy values < Smax:
+        # If there are Sgen and Smsy values < Smax:
         if(length(Sgen) > 0 & length(Smsy) > 0){
           
           h1 <- hist(x = Sgen, col = paste0(statusCols['r'], 50), border = NA,
@@ -658,40 +695,18 @@ for(i_rg in 1:length(region)){
                                                  commentHere, sep = " ; ERROR: ")
           }
         }
+        # # Add legend
+        # plot(1,1,"n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+        # legend("top", fill = c(statusCols['r'], statusCols['g']), legend = c("Sgen", "Smsy"), bty = "n", border = NA, cex = 1.5)
+        # legend("center", lty = c(2,1), title = "Posterior summary", legend = c("median", "HPD"), bty = "n", border = NA, cex = 1.5)
+        
+        # Add spawner points along bottom for reference
+        #points(x = d$Esc[d$CU == keepCU[i]], y = rep(0, length(which(d$CU == keepCU[i]))))
         
         if(print_fig){
           dev.off()
         }
-        # Add spawner points along bottom for reference
-        #points(x = d$Esc[d$CU == keepCU[i]], y = rep(0, length(which(d$CU == keepCU[i]))))
-        
-        benchSummary_df <- data.frame(region = rep(region[i_rg],4),
-                                      species = rep(species[i_sp],4),
-                                      cuid = rep(cuids[i],4),
-                                      CU = rep(CUs[i],4),
-                                      benchmark = c(rep(names(benchSummary)[1],2),
-                                                    rep(names(benchSummary)[2],2)),
-                                      method = rep(rownames(benchSummary[[1]]),2))
-        
-        benchSummary_df$m <- c(benchSummary$Sgen[,"m"],benchSummary$Smsy[,"m"])
-        benchSummary_df$CI025 <- c(benchSummary$Sgen[,2],benchSummary$Smsy[,2])
-        benchSummary_df$CI975 <- c(benchSummary$Sgen[,3],benchSummary$Smsy[,3])
-        
-        if(is.null(benchSummary_region_species_df)){
-          benchSummary_region_species_df <- benchSummary_df
-        }else{
-          benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
-                                                  benchSummary_df)
-        }
-        
-        # 
-        if(is.null(biologicalStatus_region_species_df)){
-          biologicalStatus_region_species_df <- biologicalStatus_df
-        }else{
-          biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
-                                                      biologicalStatus_df)
-        }
-        
+
       } # end of for each CU
       
       print(paste0("*** ",region[i_rg],"_",species[i_sp]," done ***"))
@@ -703,19 +718,9 @@ for(i_rg in 1:length(region)){
       write.csv(x = biologicalStatus_region_species_df, 
                 file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_biological_status_HBSRM.csv"),
                 row.names = F)
-      
-      # # Add legend
-      # plot(1,1,"n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
-      # legend("top", fill = c(statusCols['r'], statusCols['g']), legend = c("Sgen", "Smsy"), bty = "n", border = NA, cex = 1.5)
-      # legend("center", lty = c(2,1), title = "Posterior summary", legend = c("median", "HPD"), bty = "n", border = NA, cex = 1.5)
+
     } # end of for each species
   }
 } # end of for each region
-
-
-
-
-
-
 
 

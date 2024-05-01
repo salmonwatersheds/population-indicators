@@ -504,7 +504,7 @@ linRegRicker_fun <- function(S, R, plot_figures = F, verbose = F){
 }
 
 # Function to calculate posterior median and quantiles
-# * THis is the current method used in the PSE*
+# * This is the current method used in the PSE*
 medQuan <- function(x, na.rm = TRUE){
   m <- median(x, na.rm = na.rm)
   mCI <- quantile(x, probs = c(0.025, 0.975), na.rm = na.rm)

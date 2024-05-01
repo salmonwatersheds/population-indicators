@@ -750,6 +750,9 @@ for(r in 1:nrow(benchmarks_merged)){
     benchmarks_merged$sgen_lower[r] <- benchmarks_HBSRM$CI025[cond_cuid & cond_method & cond_sgen]
     benchmarks_merged$sgen_upper[r] <- benchmarks_HBSRM$CI975[cond_cuid & cond_method & cond_sgen]
 
+    # QUESTION: how to deal with the CI for 80% Smsy:
+    # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714495136554939?thread_ts=1701199596.229739&cid=CJG0SHWCW
+    
     benchmarks_merged$smsy[r] <- benchmarks_HBSRM$m[cond_cuid & cond_method & cond_Smsy] * 0.8
     benchmarks_merged$smsy_lower[r] <- benchmarks_HBSRM$CI025[cond_cuid & cond_method & cond_Smsy] * 0.8
     benchmarks_merged$smsy_upper[r] <- benchmarks_HBSRM$CI975[cond_cuid & cond_method & cond_Smsy] * 0.8

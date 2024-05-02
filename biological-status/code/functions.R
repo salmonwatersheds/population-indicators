@@ -1628,9 +1628,16 @@ cu_extinct_fun <- function(){
     species = c(rep("Lake sockeye",8),rep(NA,1)),
     species_abbr = c(rep("SEL",8),rep(NA,1)), 
     cuid = c(760,756,757,753,758,761,763,759,936),
-    CU_name = c("Adams-Early Summer","Alouette-Early Summer","Coquitlam-Early Summer",
-                "Fraser-Early Summer","Kawkawa-Late","Momich-Early Summer",
-                "North Barriere-Early Summer","Seton-Summer",NA))
+    cu_name_pse = c("Adams-Early Summer","Alouette-Early Summer","Coquitlam-Early Summer",
+                    "Fraser-Early Summer","Kawkawa-Late","Momich-Early Summer",
+                    "North Barriere-Early Summer","Seton-Summer",NA))
+  
+  # Updates:
+  # cuids 753, 756 and 757 are no longer extinct.
+  # https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1710887067544039
+  cuid_toRemove <- c(753,756,757)
+  cu_extinct <- cu_extinct[!cu_extinct$cuid %in% cuid_toRemove,]
+  
   return(cu_extinct)
 }
 

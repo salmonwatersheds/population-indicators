@@ -695,10 +695,11 @@ nrow(biological_status_merged[condition_1_2_3 & condition_Percent & !condition_H
 # Write the file Biological_status_HBSR_Percentile_all.csv (future dataset_101)-----
 #
 
-
 write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
           row.names = F)
 
+biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+                                     header = T)
 
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
@@ -783,9 +784,11 @@ for(r in 1:nrow(benchmarks_merged)){
 write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
           row.names = F)
 
+benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+                                     header = T)
 
-
-
+cond <- benchmarks_merged$cuid %in% c(753,756,757)
+benchmarks_merged[cond,]
 
 
 

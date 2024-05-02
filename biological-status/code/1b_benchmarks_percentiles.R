@@ -161,7 +161,7 @@ nBoot <- 5000
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
+  # i_rg <- 7
   
   region_i <- gsub("_"," ",region[i_rg])
   if(region_i == "Central coast"){
@@ -198,7 +198,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 5
+      # i_sp <- 3
       
       speciesAcroHere <- unique(species_acro)[i_sp]
       cond <- species_acronym_df$species_acro %in% speciesAcroHere

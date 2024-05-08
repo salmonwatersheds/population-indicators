@@ -77,7 +77,7 @@ source("Code/functions.R")
 printFig <- F
 
 #
-# 1) Import Datasets -----
+# Import Datasets -----
 
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
@@ -248,10 +248,10 @@ highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_percentile,
 #                                all = T)
 
 #
-# 2) Create complete dataset with biostatus and psf_staus_code -----
+# Create complete dataset with biostatus and psf_staus_code -----
 # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1701464111241899?thread_ts=1701199596.229739&cid=CJG0SHWCW
 
-#' TODO: add the extra rule 2) in update chart: "is there a spawner-recruit relationship
+#' Add the extra rule 2) in update chart: "is there a spawner-recruit relationship
 #' available with the CU-level catch estimates medium-low quality or higher"
 #' #' cf. Population "2024 Population Analysis running notes" at March 19 for 
 #' corresponding documentation. 
@@ -701,6 +701,7 @@ write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Per
 biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
                                      header = T)
 
+
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
 
@@ -790,11 +791,68 @@ benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.
 cond <- benchmarks_merged$cuid %in% c(753,756,757)
 benchmarks_merged[cond,]
 
+#
+# Add the missing CUs to the output files ------
+#' There are 18 CUs that were excluded in the biostatus analysis because there is 
+#' no spawner survery for them (not in dataset5_output (in the R code: recruitsperspawner)
+#' nor in dataset1cu_output (in the R code: cuspawnerabundance)).
+#' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714665184357159?thread_ts=1701199596.229739&cid=CJG0SHWCW
+
+biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+                                     header = T)
+
+benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+                              header = T)
+
+# find their cuid:
+cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid
+cuidMissing <- conservationunits_decoder$cuid[cond]
+cuidMissing
+length(cuidMissing)
+
+#'* Add to biological_status_merged * 
+head(biological_status_merged)
+
+biological_status_add <- biological_status_merged[1:length(cuidMissing),]
+biological_status_add$region <- conservationunits_decoder$region[cond]
+biological_status_add$cuid <- conservationunits_decoder$cuid[cond]
+biological_status_add$species_abbr <- conservationunits_decoder$species_abbr[cond]
+biological_status_add$species_name <- conservationunits_decoder$species_name[cond]
+biological_status_add$cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
+
+cond_col <- ! colnames(biological_status_add) %in% c("region","cuid","species_abbr",
+                                                     "species_name","cu_name_pse")
+biological_status_add[,cond_col] <- NA
+biological_status_add$psf_status_code <- 8
+biological_status_add$psf_status_code_all <- "8, 9" 
+
+biological_status_merged <- rbind(biological_status_merged,
+                                  biological_status_add)
+
+#'* Add to benchmarks_merged *
+head(benchmarks_merged)
+
+benchmarks_add <- benchmarks_merged[1:length(cuidMissing),]
+benchmarks_add$region <- conservationunits_decoder$region[cond]
+benchmarks_add$cuid <- conservationunits_decoder$cuid[cond]
+benchmarks_add$species_abbr <- conservationunits_decoder$species_abbr[cond]
+benchmarks_add$species_name <- conservationunits_decoder$species_name[cond]
+benchmarks_add$cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
+
+cond_col <- ! colnames(benchmarks_add) %in% c("region","cuid","species_abbr",
+                                              "species_name","cu_name_pse")
+
+benchmarks_add[,cond_col] <- NA
+
+benchmarks_merged <- rbind(benchmarks_merged,
+                           benchmarks_add)
 
 
+write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+          row.names = F)
 
-
-
+write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+          row.names = F)
 
 
 

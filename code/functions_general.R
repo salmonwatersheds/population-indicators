@@ -196,7 +196,12 @@ generationLengthEstiamte_df <- data.frame(species   = c("CM","CK","CO","SX","PK"
 #' IP address must have been entered in the list of approved IP addressed (as Katy).
 #' For more detailed instructions see accessing-swp-database.pdf in:
 #' X Drive/1_PROJECTS/1_Active/Population Methods and Analysis/Resources/Accessing database
-#' A password is asked. 
+#' A password is asked.
+#'dsn_database = 
+#'  - "salmondb_prod": where 2.0 data updates and new dataset schemas are.
+#'  - "salmondb_legacy": the live/legacy PSE datasets
+#' https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1715195842788699
+#' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1715195833836169
 # name_dataset <- "Appdata.vwdl_conservationunits_decoder" # conservationunits_decoder.csv (has generation length for current spawner abundance calc)
 # name_dataset <- "Appdata.vwdl_dataset1cu_output"         # cuspawnerabundance.csv (has CU-level spawner abundance for calculating current spawner abundance for biostatus assessment)
 # name_dataset <- "Appdata.vwdl_dataset5_output"           # recruitsperspawner.csv (has R-S data for fitting HBSR models for benchmarks)
@@ -790,6 +795,10 @@ simplify_string_fun <- function(string){
 #' Function to compute the euclidean distance between a reference point
 #' and points whose coordinates are provided 
 distance_Euclidean_fun <- function(x_ref,y_ref,x,y){
+  x_ref <- as.numeric(x_ref)
+  y_ref <- as.numeric(y_ref)
+  x <- as.numeric(x)
+  y <- as.numeric(y)
   out <- sqrt((x_ref - x)^2 + (y_ref - y)^2)
   return(out)
 }
@@ -801,4 +810,96 @@ centroid_2D_fun <- function(x,y){
   names(out) <- c("x","y")
   return(out)
 }
+
+#' Function to replace a given character by another making sure the character 
+#' to replace cannot be part of a anothe word that should bot be modified 
+#' (e.g. " Ch" to be replaced by "Channel" when alone, but not when in 
+#' "Chilliwack"). The function takes a vector of characters and returns the 
+#' same vector but corrected. It also returns a boolean vector of the locations
+#' in the vector of string characters that were changed. 
+#' To use with abbreviations_df.
+character_replace_fun <- function(charToChange, charNew, name_vector, print = F){
+  
+  # charToChange <- "R"
+  # charNew <- "River"
+  # name_vector <- c("Simpson Cr","Nechako R","Tseax R","West Road R")
+  
+  name_vector_split <- strsplit(x = name_vector, split = " ")
+  
+  name_vector_new <- lapply(X = name_vector_split, FUN = function(chr){
+    # chr <- name_vector_split[[2]]
+    chr[chr == charToChange] <- charNew
+    out <- paste(chr,collapse = " ")
+    return(out)
+  })
+  name_vector_new <- unlist(name_vector_new)
+  
+  cond <- grepl(charNew,name_vector_new)
+  
+  if(print){
+    print("Words concerned before the change:")
+    print(unique(name_vector[cond]))
+    
+    print("Words concerned after the change:")
+    print(unique(name_vector_new[cond]))
+  }
+  
+  out <- list(name_vector_new,name_vector)
+  names(out) <- c("name_vector_new","name_vector_old")
+  return(out)
+}
+
+
+#' Abbreviations found in locations (specifically for the hatchery data; to complete
+#' eventually). To use with character_replace_fun().
+abbreviations_df <- data.frame(
+  abbrevation = c("R","Lk","Cr","Cv","Pd","Pds","Ch","In","Sl",
+                  "Is","Strm","Strms","Pk","Sp","Cst","Val","Sd",
+                  "Est","Wtshd","Tribs","Trib","Div",
+                  "Hb","Fwy","Msh","N","S","E",
+                  "Brk","Hd","L", "Pt","Rd"),
+  word_full = c("River","Lake","Creek","Cove","Pond","Ponds","Channel","Inlet","Slough",
+                "Island","Stream","Streams","Peak","Spwaning","Coast","Valley","Sound",
+                "Estuary","Watershed","Tributaries","Tributary","Division",
+                "Harbour","Freeway","Marsh","North","South","East",
+                "Brook","Head","Little","Point","Road")
+)
+
+#' Acronyms found in locations (specifically for the hatchery data; to complete
+#' eventually). To use with character_replace_fun().
+# https://www.marinescience.psf.ca/wp-content/uploads/2023/05/LFR_ReleaseStrategyEvaluationBC_16July2021-Cover-Screen.pdf
+# https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40594361.pdf
+acronyms_df <- data.frame(
+  acronym = c("UPFR","LWFR","JNST",
+              "TOMF","TOMM",
+              "CCST","SKNA",
+              "SWVI","NWVI",
+              "GSMN","GSVI",
+              "QCI",
+              "NCST",
+              "YUKN"),
+  word_full = c("Upper Fraser","Lower Fraser","Johnstone Strait",
+                "Upper Thompson","Lower Thompson",               # ?!
+                "Central Coast","Skeena River",
+                "Southwest Vancouver Island","Northwest Vancouver Island",
+                "Strait of Georgia Mainland","Strait of Georgia Vancouver Island",
+                "Haida Gwaii",  # QCI stands for "Queen Charlotte Islands", which is now Haida Gwaii
+                "North Coast",
+                "Yukon")
+)
+
+
+#' Function that takes coordinates in degree, minute seconds (separated by " ")
+#' and returns them in decimal format.
+# angle <- SFU_stream$Latitude 
+angle_to_dec_fun <- function(angle){
+  angle <- as.character(angle)
+  x <- do.call(rbind, strsplit(angle, split = ' '))
+  x <- apply(x, 1, function(y){
+    y <- as.numeric(y)
+    y[1] + y[2]/60 + y[3]/3600
+  })
+  return(x)
+}
+
 

@@ -364,6 +364,53 @@ plot_IndexId_GFE_ID_COMBO_fun <- function(iid_i,
   legend("topright",paste("iid_i =",iid_i),bty = "n")
 }
 
+#' Function to plot MAX_ESTIMATE vs. ANALYSIS_YR when given a subset of 
+#' all_areas_nuseds.
+plot_nuseds_fun <- function(all_areas_nuseds,legend_ratio = 3, ymax = NA){
+  
+  sp_popid_gfeid <- unique(all_areas_nuseds[,c("SPECIES","POP_ID","GFE_ID")])
+  
+  #' xlim; expend to the left to give room to the legend
+  yr_range <- range(all_areas_nuseds$ANALYSIS_YR, na.rm = T)
+  if(!is.na(ymax)){
+    yr_range[2] <- ymax
+  }
+  yr_expend <- (max(yr_range) - min(yr_range)) / legend_ratio |>
+    ceiling()
+  yr_range[1] <- yr_range[1] - yr_expend
+  
+  y_max <- max(all_areas_nuseds$MAX_ESTIMATE, na.rm = T)
+  
+  plot(NA, xlim = yr_range, ylim = c(0,y_max), 
+       xlab = "Years", ylab = "Spawner abundance")
+  
+  colours <- rainbow(n = nrow(sp_popid_gfeid))
+  
+  for(r in 1:nrow(sp_popid_gfeid)){
+    # r <- 1
+    GFE_ID <- sp_popid_gfeid$GFE_ID
+    POP_ID <- sp_popid_gfeid$POP_ID
+    SPECIES <- sp_popid_gfeid$SPECIES
+    
+    cond <- all_areas_nuseds$GFE_ID == GFE_ID &
+      all_areas_nuseds$POP_ID == POP_ID
+    
+    all_areas_nuseds_cut <- all_areas_nuseds[cond,]
+    all_areas_nuseds_cut <- all_areas_nuseds_cut[order(all_areas_nuseds_cut$ANALYSIS_YR),]
+    
+    points(x = all_areas_nuseds_cut$ANALYSIS_YR, y = all_areas_nuseds_cut$MAX_ESTIMATE, 
+           pch = 16, col = colours[r])
+    lines(x = all_areas_nuseds_cut$ANALYSIS_YR, y = all_areas_nuseds_cut$MAX_ESTIMATE,
+          col = colours[r])
+    
+  }
+  
+  leg <- apply(sp_popid_gfeid, 1, FUN = function(r){paste(r,collapse = " - ")})
+  leg <- c(paste(c("species","POP_ID","GFE_ID"),collapse = " "),leg)
+  legend("topleft",leg, col = c(NA,colours), lwd = 2, pch = 16, bty = "n")
+  
+}
+
 #' Function to return the number and % of MAX_ESTIMATE data points overlapping 
 #' between two time series defined by IndexIds and GFE_IDs.
 # IndexIds <- unique(IndexId_GFE_ID_dupli$IndexId[IndexId_GFE_ID_dupli$iid_i == 6])

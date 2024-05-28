@@ -69,8 +69,7 @@ library(zoo) # for rollmean function
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
-fromDatabase <- F
-update_file_csv <- F
+fromDatabase <- update_file_csv <- F
 
 # CU-level spawner abundance data (dataset1cu_output.csv):
 # spawners <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset1cu_output")
@@ -96,7 +95,6 @@ cu_decoder <- cu_decoder  %>%
   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
 
 # Import the dataste to export to access structure:
-fromDatabase <- update_file_csv <- F
 # Dataset 202, 391, 103
 # vwdl_dataset103_output: Average Spawners per Generation for Salmon and Steelhead Conservation Units
 dataset103_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
@@ -147,9 +145,10 @@ dataset103_output_new <- dataset103_output[NULL,]
 dataset202_output_new <- dataset202_output[NULL,]
 dataset391_output_new <- dataset391_output[NULL,]
 
-figure_print <- F
+figure_print <- T
+scale_log <- T
 for(i in 1:nrow(cu_list)){
-  # i <- 2
+  # i <- 8
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
   region <- cu_list$region[i]
@@ -197,7 +196,9 @@ for(i in 1:nrow(cu_list)){
   
   # percent_change
   year.span <- c(min(x[!is.na(smooth.y)]):max(x[!is.na(smooth.y)]))
-  percent_change <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1
+  # percent_change <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1
+  percent_change <- exp(lm_LT$coefficients[2]) - 1                              # to convert to % change / yr
+  percent_change_2dec <- round(percent_change * 100,2)
   percent_change <- round(percent_change * 100)
   
   # Fill dataset202_output
@@ -212,22 +213,26 @@ for(i in 1:nrow(cu_list)){
   dataset202_output_new <- rbind(dataset202_output_new,dataset202_output_here)
   
   #'* Calculate last 3 generations trends *
+  
   x3g <- tail(x, g*3)
-  lm_3g <- lm(tail(smooth.y, g*3) ~ x3g, na.action = "na.exclude")
+  x3g <- tail(x[!is.na(smooth.y)], g*3)
+  lm_3g <- lm(tail(smooth.y[!is.na(smooth.y)], g*3) ~ x3g, na.action = "na.exclude")
   
   #' Exclusion rule:
   #' If the number of NAs in x3g is > g --> we do not calculate the trend
   #' (i.e. we need at least 66.66% of data points to calculate the trend)
   cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > g
   if(grepl("Pink",species_name)){ # for pink salmon
-    cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > 3 + 1  # because g = 2 and there is 3 NAs in a complete series --> 
+    cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > 3 + 1  # because g = 2 and there is 3 NAs in a complete series
   }
   if(cond_noEnoughData){
     threegen_percent_change <- NA
     threegen_slope <- NA
     threegen_intercept <- NA
   }else{
-    threegen_percent_change <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1
+    # threegen_percent_change <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1
+    threegen_percent_change <- exp(lm_3g$coefficients[2]) - 1     # % change / yr
+    threegen_percent_change_2dec <- round(threegen_percent_change * 100, 2)
     threegen_percent_change <- round(threegen_percent_change * 100)
     threegen_slope <- lm_3g$coefficients[2]
     threegen_intercept <- lm_3g$coefficients["(Intercept)"]
@@ -247,6 +252,7 @@ for(i in 1:nrow(cu_list)){
   dataset391_output_new <- rbind( dataset391_output_new, dataset391_output_here)
   
   #'* Figure *
+  
   region_here <- region
   if(region_here ==  "Vancouver Island & Mainland Inlets"){
     region_here <- "VIMI"
@@ -261,24 +267,50 @@ for(i in 1:nrow(cu_list)){
   }
   
   main <- paste(region_here,species_name,cuid,cu_name_pse,sep = " - ")
-
-  plot(x = x, y = log.y, col = grey(0.5), lwd = 2, pch = 16, main = main, las = 1,
-       xlab = "Year", ylab = "Spawner abundance (log)")
-  lines(x[!is.na(y)],log(y)[!is.na(y)],lwd = 2, col = grey(0.5))
+  
+  y_here <- log.y
+  ylab <- "Spawner abundance (log)"
+  if(!scale_log){
+    y_here <- exp(y_here)
+    ylab <- "Spawner abundance"
+  }
+  
+  y_min <- min(y_here, na.rm = T)
+  y_max <- max(y_here, na.rm = T)
+  y_max <- y_max + (y_max - y_min) / 10 
+  
+  plot(x = x, y = y_here, col = grey(0.5), lwd = 2, pch = 16, main = main, las = 1,
+       xlab = "Year", ylab = ylab, ylim = c(y_min,y_max))
+  lines(x[!is.na(y_here)], y_here[!is.na(y_here)],lwd = 2, col = grey(0.5))
+  
   # plot smoothed line
-  lines(x, smooth.y, lwd = 2, col = "black")
+  y_here <- smooth.y
+  if(!scale_log){
+    y_here <- exp(y_here)
+  }
+  lines(x, y_here, lwd = 2, col = "black")
   # points(x[!is.na(y)], smooth.y[!is.na(y)], lwd = 2, col = "black", pch = 1)
   # plot regression line for the 3 generation:
   # - if not enough data points:
   if(cond_noEnoughData){
-    legend("topright","NOT ENOUGH DATA",text.col = "blue",bty = "n")
+    legend("top","NOT ENOUGH DATA",text.col = "blue",bty = "n")
   }else{ # if enough datapoints
-    lines(x3g, predict(lm_3g, newdata = data.frame(x3g)), lwd = 2, col = "blue")
+    y_here <- predict(lm_3g, newdata = data.frame(x3g))
+    if(!scale_log){
+      y_here <- exp(y_here)
+    }
+    lines(x3g, y_here, lwd = 2, col = "blue")
   }
   # plot regression line for LT
-  lines(x[!is.na(smooth.y)], predict(lm_LT, newdata = data.frame(x[!is.na(smooth.y)])),
-        lwd = 2, col = "red", lty = 2)
+  y_here <- predict(lm_LT, newdata = data.frame(x[!is.na(smooth.y)]))
+  if(!scale_log){
+    y_here <- exp(y_here)
+  }
+  lines(x[!is.na(smooth.y)], y_here, lwd = 2, col = "red", lty = 2)
   legend("bottomright",paste0("i = ",i),bty = "n")
+  
+  legend("topright",paste0(c(percent_change_2dec,threegen_percent_change_2dec),"% / year"), 
+         bty = "n", text.col = c("red","blue"))
   #
   if(figure_print){
     dev.off()

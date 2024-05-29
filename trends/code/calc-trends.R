@@ -145,7 +145,7 @@ dataset103_output_new <- dataset103_output[NULL,]
 dataset202_output_new <- dataset202_output[NULL,]
 dataset391_output_new <- dataset391_output[NULL,]
 
-figure_print <- T
+figure_print <- F
 scale_log <- T
 for(i in 1:nrow(cu_list)){
   # i <- 8
@@ -199,7 +199,7 @@ for(i in 1:nrow(cu_list)){
   # percent_change <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1
   percent_change <- exp(lm_LT$coefficients[2]) - 1                              # to convert to % change / yr
   percent_change_2dec <- round(percent_change * 100,2)
-  percent_change <- round(percent_change * 100)
+  percent_change <- round(percent_change * 100,1)
   
   # Fill dataset202_output
   dataset202_output_here <- dataset202_output[1,]
@@ -208,8 +208,8 @@ for(i in 1:nrow(cu_list)){
   dataset202_output_here$cuid <- cuid
   dataset202_output_here$cu_name_pse <- cu_name_pse
   dataset202_output_here$percent_change <- percent_change
-  dataset202_output_here$slope <- lm_LT$coefficients[2]
-  dataset202_output_here$intercept <- lm_LT$coefficients["(Intercept)"]
+  dataset202_output_here$slope <- round(lm_LT$coefficients[2],3)
+  dataset202_output_here$intercept <- round(lm_LT$coefficients["(Intercept)"],1)
   dataset202_output_new <- rbind(dataset202_output_new,dataset202_output_here)
   
   #'* Calculate last 3 generations trends *
@@ -233,9 +233,9 @@ for(i in 1:nrow(cu_list)){
     # threegen_percent_change <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1
     threegen_percent_change <- exp(lm_3g$coefficients[2]) - 1     # % change / yr
     threegen_percent_change_2dec <- round(threegen_percent_change * 100, 2)
-    threegen_percent_change <- round(threegen_percent_change * 100)
-    threegen_slope <- lm_3g$coefficients[2]
-    threegen_intercept <- lm_3g$coefficients["(Intercept)"]
+    threegen_percent_change <- round(threegen_percent_change * 100,1)
+    threegen_slope <- round(lm_3g$coefficients[2],3)
+    threegen_intercept <- round(lm_3g$coefficients["(Intercept)"],1)
   }
   
   # Fill dataset391_output
@@ -322,6 +322,11 @@ head(cu_list)
 head(dataset103_output_new)
 head(dataset202_output_new)
 head(dataset391_output_new)
+
+# Check that there is no duplicated rows:
+cond <- dataset391_output_new$region == "Transboundary"
+dataset391_output_new[cond,]
+
 
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]

@@ -51,6 +51,7 @@ setwd(wd_head)
 # subdirectory of the project (unless setwd() is called again).
 source("code/functions_set_wd.R")
 source("code/functions_general.R")
+source("code/colours.R")
 
 # return the name of the directories for the different projects:
 subDir_projects <- subDir_projects_fun()
@@ -88,10 +89,6 @@ species_acronym_df <- species_acronym_fun()
 # Import region names
 regions_df <- regions_fun()
 
-#------------------------------------------------------------------------------#
-# Analyses
-#------------------------------------------------------------------------------#
-
 # select all the regions
 region <- as.character(regions_df[1,])
 
@@ -104,14 +101,28 @@ species_all <- TRUE
 
 printFig <- F
 
+options(warn = 0)
 
+# Import datasets ------
+
+# Import the updated biostatus file:
 biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
                                      header = T)
 
+#' Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
 
-printFig <- F
+# Import the current biostatus from the database (dataset101_output)
+fromDatabase <- update_file_csv <- F
 
-# 3) Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------
+biological_status_old <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
+                                               fromDatabase = fromDatabase,
+                                               update_file_csv = update_file_csv,
+                                               wd = wd_pop_indic_data_input_dropbox)
+
+#
+# Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------
 #
 
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
@@ -140,7 +151,7 @@ biological_status_HBSRM_cut[condition_diff,]
 nrow(biological_status_HBSRM_cut[condition_diff,]) # 14
 
 #
-# 4) Figures comparison biological status HS abundance percentiles 0.75 vs. 0.50 -----
+# Figures comparison biological status HS abundance percentiles 0.75 vs. 0.50 -----
 #
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$sr_status) 
@@ -169,7 +180,7 @@ biological_status_percentile_cut[condition_diff,]
 nrow(biological_status_percentile_cut[condition_diff,]) # 7
 
 #
-# 4) Figure that compares biological status between HBSR and HS percentiles approach -----
+# Figure that compares biological status between HBSR and HS percentiles approach -----
 #
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$sr_status) # 107
@@ -259,7 +270,71 @@ bioStatus_merged_diff[bioStatus_merged_diff$sr_status == "red" &
                         bioStatus_merged_diff$percentile_status == "green",]
 
 #
-# 5) change of status between the old vs. new upper threshold: -----
+# Figures showing the spawner abundance time series and the benchmarks -------
+#' - make new figures show the spawner abundance time series and the thresholds
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
+
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#' Import the recruitsperspawner.csv 
+recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+
+#' Import the cuspawnerabundance.csv
+cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+
+# Import the current biostatus from the database (dataset101_output) NOT NEEDED ?
+biological_status <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+
+# biological_status <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+#                               header = T)
+
+# Import the current biostatus from the database (dataset101_output)
+benchmarks <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[19],
+                                    fromDatabase = fromDatabase,
+                                    update_file_csv = update_file_csv,
+                                    wd = wd_pop_indic_data_input_dropbox)
+
+# Import the conservationunits_decoder.csv
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+# find CUs with biostatus:
+cond <- biological_status$psf_status_code %in% 1:3
+cuid_biostat <- biological_status$cuid[cond]
+
+figure_print <- T
+percent <- 0
+for(cuid in cuid_biostat){
+  plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
+                                       cuspawnerabundance = cuspawnerabundance, 
+                                       dataset101_output = biological_status, 
+                                       dataset102_output = benchmarks, 
+                                       conservationunits_decoder = conservationunits_decoder, 
+                                       figure_print = figure_print, # figure_print, 
+                                       wd_figures = wd_figures)
+  
+  progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100
+  if(progress > percent){
+    percent <- percent + 10
+    print(paste0("Progess: ",round(progress),"%"))
+  }
+}
+
+#
+# Change of status between the old vs. new upper threshold: -----
 #
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$sr_status) # 107
@@ -318,6 +393,164 @@ hist(percent_diff)
 
 benchmarks_summary_percentile_noNA[percent_diff < -50,]
 # do those have cyclic dynamics ?
+
+# 
+# Compare biostatus old vs. new IN PROGRESS ------
+#' Goal:
+#' - flag the CUs whose status changed
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
+
+head(biological_status_old)
+nrow(biological_status_old) # 448
+
+head(biological_status_merged)
+nrow(biological_status_merged) # 466
+
+biological_status_oldNew <- merge(x = biological_status_old,
+                                  y = biological_status_new, 
+                                  by = c("region","species_name","cu_name_pse","cuid"), 
+                                  all = T)
+plot(x = biological_status_oldNew$percentile_green_prob.x, 
+     y = biological_status_oldNew$percentile_green_prob.y)
+abline(a = 0, b = 1)
+
+
+
+# Only keep the CUs with biostatus in biological_status_merged
+head(biological_status_merged)
+
+biological_status_merged$sr_status
+biological_status_merged$percentile_status
+unique(biological_status_merged$psf_status)
+unique(biological_status_merged$psf_status_code)
+unique(biological_status_merged$psf_status_type)
+
+cond <- biological_status_merged$psf_status_code %in% 1:3
+biological_status_new <- biological_status_merged[cond,]
+nrow(biological_status_new) # 184
+ 
+
+
+#' Add the fields sr_status, percentile_status and psf_status to biological_status_old:
+#' Use the colour code for that (!):
+#' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714167872794159?thread_ts=1701199596.229739&cid=CJG0SHWCW
+#' the hist_red, hist_yellow, and hist_green fields are currently used by the pse
+#' data code to determine the percentile status. 
+#' if hist_red = #CC0000 the status is poor elseif
+#' hist_yellow = #FFFF00 the status is fair elseif 
+#' hist_green = #009900 the status is good else
+#' data-deficient. 
+#' currently, in the hist_ hex fields (unlike in the sr_ hex fields) only the 
+#' outcome status color is the colored (non-#FFFFFF) code. the code is set up to
+#' report the worst status though across the three fields (so it will be fine if
+#' non-#FFFFFF hex codes are output for any non-zero percentile benchmark status
+#' outcome probabilities).
+head(biological_status_old)
+fields <- c("hist_red","hist_yellow","hist_green")
+biological_status_old$hist_status <- NA
+for(i in 1:nrow(biological_status_old)){
+  r <- biological_status_old[i,fields]
+  cond_NA <- is.na(r) 
+  if(all(cond_NA)){
+    status <- NA
+  }else{
+    cond <- r != "#FFFFFF"
+    if(all(!cond)){
+      status <- NA
+    }else{
+      col <- r[cond]
+      cond <- col == c("#CC0000","#FFFF00","#009900")
+      status <- c("poor","fair","good")[cond]
+      if(length(status) == 0){
+        print("Multiple colours so stopped")
+        break
+      }
+    }
+  }
+  biological_status_old$hist_status[i] <- status
+}
+
+unique(biological_status_old$hist_status)
+
+# Add sr_status
+fields <- c("sr_red_prob","sr_yellow_prob","sr_green_prob")
+biological_status_old$sr_status <- NA
+for(i in 1:nrow(biological_status_old)){
+  # i <- 1
+  r <- biological_status_old[i,fields]
+  cond_NA <- is.na(r) 
+  if(all(cond_NA)){
+    status <- NA
+  }else{
+    cond <- r == max(r)
+    status <- c("poor","fair","good")[cond]
+    if(length(status) == 0){
+      print("Multiple max prob so stopped")
+      break
+    }
+  }
+  biological_status_old$sr_status[i] <- status
+}
+
+unique(biological_status_old$sr_status)
+
+# Add psf_status and psf_status_type to biological_status_old
+biological_status_old$psf_status <- apply(X = biological_status_old, 1, 
+                                          FUN = function(r){
+                                            # r <- biological_status_old[1,]
+                                            if(!is.na(r[c("sr_status")])){
+                                              out <- r[c("sr_status")]
+                                            }else if(!is.na(r[c("hist_status")])){
+                                              out <- r[c("hist_status")]
+                                            }else{
+                                              out <- NA
+                                            }
+                                            return(out)
+                                          })
+
+biological_status_old$psf_status_type <- apply(X = biological_status_old, 1, 
+                                          FUN = function(r){
+                                            # r <- biological_status_old[1,]
+                                            if(!is.na(r[c("sr_status")])){
+                                              out <- "sr"
+                                            }else if(!is.na(r[c("hist_status")])){
+                                              out <- "percentile"
+                                            }else{
+                                              out <- NA
+                                            }
+                                            return(out)
+                                          })
+
+# Are there any CUs with NAs for both hist_status and sr_status --> No
+cond <- is.na(biological_status_old$sr_status) & is.na(biological_status_old$hist_status)
+biological_status_old[cond,]
+
+#'* merge the two dataframes
+colnames(biological_status_old)
+colnames(biological_status_new)
+
+biological_status_oldNew <- merge(x = biological_status_old,
+                                  y = biological_status_new, 
+                                  by = c("region","species_name","cu_name_pse","cuid"), 
+                                  all = T)
+
+#'* CUs with a new biostatus but not an old one *
+cond <- is.na(biological_status_oldNew$psf_status.x) & !is.na(biological_status_oldNew$psf_status.y) 
+data <- biological_status_oldNew[cond,c("region","species_name","cu_name_pse","cuid",
+                                "psf_status.x","psf_status.y","psf_status_code_all")]
+nrow(data)
+# 32 CUs
+
+
+
+
+
+
+#'* CUs with a new biostatus but not an old one *
+#'* CUs with a new biostatus but not an old one *
+#'* CUs with a new biostatus but not an old one *
+
+
 
 # ) TODELETE Decision rules for HBSR and percentile benchmarks -------
 #' The 5 rules to exclude data:

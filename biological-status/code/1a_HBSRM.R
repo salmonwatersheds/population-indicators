@@ -162,7 +162,7 @@ options(warn = 2)  # treat warnings as errors
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
-  # i_rg <- 3
+  # i_rg <- 1
   
   recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
   

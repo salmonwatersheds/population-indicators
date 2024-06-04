@@ -304,7 +304,8 @@ datasetsNames_database_fun <- function(){
       "appdata.vwdl_dataset1cu_output",
       "appdata.vwdl_dataset103_output",
       "appdata.vwdl_dataset202_output",
-      "appdata.vwdl_dataset390_output"
+      "appdata.vwdl_dataset390_output",
+      "appdata.vwdl_dataset102_output"
       ),
     
     name_CSV = c(
@@ -325,7 +326,8 @@ datasetsNames_database_fun <- function(){
       "dataset1cu_output.csv",              # dataset_1part1
       "dataset103_output.csv",
       "dataset202_output.csv",
-      "dataset390_output.csv"
+      "dataset390_output.csv",
+      "dataset102_output.csv"
       ))
   
   out_df$index <- 1:nrow(out_df)
@@ -902,4 +904,18 @@ angle_to_dec_fun <- function(angle){
   return(x)
 }
 
+# Function taking a vector of colours names and return a vector of the same colours
+# but with more transparency added
+colour_transparency_fun <- function(colours,alpha=0.35){
+  col.rgb <- col2rgb(colours)
+  colnames(col.rgb) <- colours
+  output <- c()
+  for(i in 1:length(col.rgb[1,])){
+    output[i] <- rgb(red = col.rgb[1,i],
+                     green = col.rgb[2,i],
+                     blue = col.rgb[3,i], 
+                     maxColorValue = 255,alpha = alpha*255)
+  }
+  return(output)
+}
 

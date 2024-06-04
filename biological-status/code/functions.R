@@ -1648,14 +1648,16 @@ cu_extinct_fun <- function(){
 #' abundance is calculated considering the end year with data as the upper range,
 #' otherwise, this upper range is set yearCurrentAbundance and years with NA
 #' are added if necessary.
-current_spawner_abundance_fun <- function(cuids,cuspawnerabundance,
+current_spawner_abundance_fun <- function(cuids,
+                                          cuspawnerabundance,
                                           yearCurrentAbundance = NA,
                                           CU_genLength){
   
   out_final <- NULL
   
-  for(cuid in cuids){
+  for(i in 1:length(cuids)){
     # cuid <- cuids[1]
+    cuid <- cuids[i]
     
     # subset cuspawnerabundance_rg_sp
     cusa <- cuspawnerabundance[cuspawnerabundance$cuid == cuid,]
@@ -1702,7 +1704,7 @@ current_spawner_abundance_fun <- function(cuids,cuspawnerabundance,
     }
     
     # calculate current spawner abundance = the geometric mean over the last generation
-    spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength)
+    spawnerAbundance_lastGen <- tail(spawnerAbundance,CU_genLength[i])
     spawnerAbundance_lastGen_m <- mean_geom_fun(x = spawnerAbundance_lastGen)
     spawnerAbundance_lastGen_dataPointNb <- sum(!is.na(spawnerAbundance_lastGen))
     
@@ -1740,6 +1742,196 @@ current_spawner_abundance_fun <- function(cuids,cuspawnerabundance,
   return(out_final)
 }
 
+#' Function to plot the spawner abundance time series of a given CU with the 
+#' benchmarks shown; 
+#' Cf. an example at:
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
+# cuid <- 171 # for SR benchmarks
+# cuid <- 175 # for percentile benchmarks
+# cuid <- 1033
+# dataset101_output <- biological_status
+# dataset102_output <- benchmarks
+# figure_print <- F
+plot_spawnerAbundance_benchmarks_fun <- function(cuid, 
+                                                 cuspawnerabundance, # spawner abundance  
+                                                 dataset101_output,  # biostatus
+                                                 dataset102_output,  # benchmark values
+                                                 conservationunits_decoder,  # for the generation length
+                                                 figure_print = F, wd_figures = NA
+){
+  # Estimated spawner abundance:
+  cond <- cuspawnerabundance$cuid == cuid
+  spawnerAbund <- cuspawnerabundance[cond,]
+  
+  x_range <- range(spawnerAbund$year[!is.na(spawnerAbund$estimated_count)])
+  x_range[1] <- x_range[1] - ((x_range[2] - x_range[1]) * .1)
+  x_range[2] <- x_range[2] + ((x_range[2] - x_range[1]) * .05)
+  y_range <- c(0,max(spawnerAbund$estimated_count, na.rm = T))
+  y_range[2] <- y_range[2] + ((y_range[2] - y_range[1]) * .1)
+  
+  # generation length and more
+  cond <- conservationunits_decoder$cuid == cuid
+  genLength <- conservationunits_decoder$gen_length[cond]
+  region <- conservationunits_decoder$region[cond]
+  if(region == "Vancouver Island & Mainland Inlets"){
+    region <- "VIMI"
+  }
+  cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
+  cu_name_pse <- gsub(" (even)","",cu_name_pse)
+  cu_name_pse <- gsub(" (odd)","",cu_name_pse)
+  if(nchar(cu_name_pse) > 25){   # the figure can't print if the number of characters is too large
+    cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = 25) 
+  }
+  species_abbr <- conservationunits_decoder$species_abbr[cond]
+  
+  cu_file_name <- paste0(c(region,species_abbr,cu_name_pse),collapse = " - ")
+  cu_file_name <- gsub("/",".",cu_file_name)
+  
+  # Biostatus
+  cond <- dataset101_output$cuid == cuid
+  biostatus <- dataset101_output[cond,]
+  
+  # Benchmarks
+  cond <- dataset102_output$cuid == cuid
+  benchmarks <- dataset102_output[cond,]
+  
+  # Find the benchmark values
+  polygons_show <- T
+  if(biostatus$psf_status_type == "sr"){
+    benchmarl_low <- benchmarks$sgen
+    benchmarl_low_025 <- benchmarks$sgen_lower
+    benchmarl_low_975 <- benchmarks$sgen_upper
+    benchmarl_up <- benchmarks$smsy80
+    benchmarl_up_025 <- benchmarks$smsy80_lower
+    benchmarl_up_975 <- benchmarks$smsy80_upper
+    method <- "HBSR"
+    
+  }else if(biostatus$psf_status_type == "percentile"){
+    benchmarl_low <- benchmarks$X25._spw             # `25%_spw`
+    benchmarl_low_025 <- benchmarks$X25._spw_lower   # `25%_spw_lower`
+    benchmarl_low_975 <- benchmarks$X25._spw_upper   # `25%_spw_upper`
+    benchmarl_up <- benchmarks$X75._spw              # `75%_spw`
+    benchmarl_up_025 <- benchmarks$X75._spw_lower    # `75%_spw_lower`
+    benchmarl_up_975 <- benchmarks$X75._spw_upper    # `75%_spw_upper`
+    method <- "Percentiles"
+    
+    # COMMENT:
+    # This is ineeded the 50% percentile and not the 75, despite the name being "75%_spw"
+    # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
+    
+  }else{ # there is no benchmark values
+    print("There are no benchmark values for this CU.")
+    polygons_show <- F
+  }
+  
+  # adjust y_range eventually if values are below thresholds
+  if(any(max(y_range) < c(benchmarl_low_025,benchmarl_up_025))){
+    y_range[2] <- benchmarl_up_975 + benchmarl_up_975 * .2
+  }
+  
+  if(figure_print){
+    cu_file_name2 <- gsub(" - ","_",cu_file_name)
+    cu_file_name2 <- gsub(" ","_",cu_file_name2)
+    pathFile <- paste0(wd_figures,"/",cu_file_name2,"_biostatus_benchmarks.jpg")
+    jpeg(file = pathFile, width = 25, height = 14, units = "cm", res = 300)
+  }
+  
+  layout(matrix(1:2, nrow = 1), widths = c(1,.15))
+  
+  par(mar = c(5,5,3,0))
+  plot(NA, xlim = x_range, ylim = y_range, xaxs = 'i', yaxs = 'i', bty = 'l',
+       ylab = "Estimated spawwner abundance", xlab = "Years", 
+       main = paste0(cu_file_name," - ",cuid))
+  
+  # polygons
+  alpha <- 0.4
+  if(polygons_show){
+    polygon(x = c(x_range,rev(x_range)), 
+            y = c(benchmarl_up,benchmarl_up,y_range[2],y_range[2]), 
+            col = colour_transparency_fun(status_cols["green"],alpha = alpha),
+            border = F)
+    polygon(x = c(x_range,rev(x_range)), 
+            y = c(benchmarl_low,benchmarl_low,benchmarl_up,benchmarl_up), 
+            col = colour_transparency_fun(status_cols["amber"],alpha = alpha),border = F)
+    polygon(x = c(x_range,rev(x_range)), 
+            y = c(0,0,benchmarl_low,benchmarl_low), 
+            col = colour_transparency_fun(status_cols["red"],alpha = alpha),border = F)
+  }
+  
+  # grid - y
+  digits_nb <- nchar(ceiling(y_range[2]))
+  grid_max <- substr(x = ceiling(y_range[2]), start = 1, stop = 1)
+  factor <- paste(c(1,rep(0,(digits_nb - 1))), collapse = "") |> as.numeric()
+  grid_vals <- 0:as.numeric(grid_max) * factor
+  if(length(grid_vals) < 5){ # add a segment to each 1/2 intervals as well
+    grid_max <- substr(x = ceiling(y_range[2]), start = 1, stop = 2)
+    grid_vals <- 0:as.numeric(grid_max) 
+    grid_vals <- grid_vals[grid_vals %% 5 == 0]
+    grid_vals <- grid_vals * factor / 10
+  }
+  if(length(grid_vals) < 5){ # add a segment to each 1/5 intervals as well
+    grid_vals <- 0:as.numeric(grid_max) 
+    grid_vals <- grid_vals[grid_vals %% 2 == 0]
+    grid_vals <- grid_vals * factor / 10
+  }
+  segments(x0 = rep(x_range[1],length(grid_vals)),
+           x1 = rep(x_range[2],length(grid_vals)),
+           y0 = grid_vals, y1 = grid_vals,
+           lwd = 2, col = colour_transparency_fun("white",alpha = .5))
+  
+  # grid - x
+  yrs <- min(spawnerAbund$year):max(spawnerAbund$year)
+  grid_vals <- yrs[yrs %% 10 == 0]
+  if(length(grid_vals) < 3){ # add a segment to each 5 years
+    grid_vals <- yrs[yrs %% 5 == 0]
+  }
+  segments(y0 = rep(y_range[1],length(grid_vals)),
+           y1 = rep(y_range[2],length(grid_vals)),
+           x0 = grid_vals, x1 = grid_vals,
+           lwd = 2, col = colour_transparency_fun("white",alpha = .5))
+  
+  # show benchmarks
+  segments(x0 = c(x_range[1],x_range[1]), x1 = c(x_range[2],x_range[2]),
+           y0 = c(benchmarl_low,benchmarl_up), y1 = c(benchmarl_low,benchmarl_up), 
+           col = c(status_cols["red"], status_cols["green"]), lwd = 2)
+  
+  # Plot current spawner abundance
+  csa_df <- current_spawner_abundance_fun(cuids = cuid, 
+                                          cuspawnerabundance = spawnerAbund, 
+                                          yearCurrentAbundance = NA,  # so it is calculated from the most recent year of available data 
+                                          CU_genLength = genLength)
+  segments(x0 = csa_df$yr_withData_start, x1 = x_range[2], 
+           y0 = csa_df$curr_spw_abun, y1 = csa_df$curr_spw_abun, 
+           lwd = 2, col = "cornflowerblue")
+  
+  # plot estimated spawner abundance
+  points(x = spawnerAbund$year, y = spawnerAbund$estimated_count, pch = 16, 
+         type = 'o', lwd = 2)
+  
+  # Extend benchmarks and plot 95% CI and current spawner abundance
+  par(mar = c(5,0,3,0.5))
+  plot(NA, xlim = c(0,1), ylim = y_range, ylab = "", xlab = "", 
+       main = method, cex.main = .9, font.main = 1, # plain font
+       xaxt = 'n', yaxt = 'n', bty = 'n', xaxs = 'i', yaxs = 'i')
+  
+  segments(x0 = c(0,0), y0 = c(benchmarl_low,benchmarl_up),
+           x1 = c(.4,.6), y1 = c(benchmarl_low,benchmarl_up), 
+           col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+  points(x = c(.4,.6), y = c(benchmarl_low,benchmarl_up), pch = 16, 
+         col = c(status_cols["red"],status_cols["green"]))
+  segments(x0 = c(.4,.6), y0 = c(benchmarl_low - benchmarl_low_025,
+                                 benchmarl_up - benchmarl_up_025),
+           x1 = c(.4,.6), y1 = c(benchmarl_low + benchmarl_low_975,
+                                 benchmarl_up + benchmarl_up_975), 
+           col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+  segments(x0 = 0, x1 = .8, 
+           y0 = csa_df$curr_spw_abun, y1 = csa_df$curr_spw_abun, 
+           lwd = 2, col = "cornflowerblue")
+  
+  if(figure_print){
+    dev.off()
+  }
+}
 
 
 

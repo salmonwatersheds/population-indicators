@@ -43,6 +43,7 @@ setwd(wd_head)
 # subdirectory of the project (unless setwd() is called again).
 source("code/functions_set_wd.R")
 source("code/functions_general.R")
+source("code/colours.R")
 
 # return the name of the directories for the different projects:
 subDir_projects <- subDir_projects_fun()
@@ -484,7 +485,7 @@ for(r in 1:nrow(biological_status_merged)){
   # *** Percentile method ***
     
   }else if(!is.na(bs_here$percentile_red_prob) & is.na(bs_here$psf_status_code.y)){
-    #' Note that the CU with high exploitattion / low productivity are excluded
+    #' Note that the CU with high exploitation / low productivity are excluded
     #' here regardless if they have poor status or not but that's ok because
     #' their psf_status_code.y was already set to "3, 6" above. 
     
@@ -514,7 +515,7 @@ for(r in 1:nrow(biological_status_merged)){
 unique(biological_status_merged$psf_status_code_all)
 table(biological_status_merged$psf_status_code_all)
 
-#'* Create psf_status_code and psf_status * 
+#'* Create psf_status_code and psf_status *
 #'  - 1 = good
 #'  - 2 = fair
 #'  - 3 = poor
@@ -621,7 +622,7 @@ biological_status_merged$psf_status_type <- apply(X = biological_status_merged,
                                                     return(out)
                                                   })
 
-
+unique(biological_status_merged$psf_status_type)
 
 #'* Drop necessary columns *
 colToDrop <- c("psf_status_code.x","psf_status_code.y")
@@ -774,6 +775,10 @@ for(r in 1:nrow(benchmarks_merged)){
   # benchmarks_merged$`75%_spw_lower`[r] <- benchmarks_percentile$CI025[cond_cuid & cond_075]
   # benchmarks_merged$`75%_spw_upper`[r] <- benchmarks_percentile$CI975[cond_cuid & cond_075]
   
+  # COMMENT:
+  # This is ineeded the 50% percentile and not the 75, despite the name being "75%_spw"
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
+  
   benchmarks_merged$`75%_spw`[r] <- benchmarks_percentile$m[cond_cuid & cond_05]
   benchmarks_merged$`75%_spw_lower`[r] <- benchmarks_percentile$CI025[cond_cuid & cond_05]
   benchmarks_merged$`75%_spw_upper`[r] <- benchmarks_percentile$CI975[cond_cuid & cond_05]
@@ -792,9 +797,9 @@ cond <- benchmarks_merged$cuid %in% c(753,756,757)
 benchmarks_merged[cond,]
 
 #
-# Add the missing CUs to the output files ------
+# Add the missing CUs to the output files (one time fix) ------
 #' There are 18 CUs that were excluded in the biostatus analysis because there is 
-#' no spawner survery for them (not in dataset5_output (in the R code: recruitsperspawner)
+#' no spawner survey for them (not in dataset5_output (in the R code: recruitsperspawner)
 #' nor in dataset1cu_output (in the R code: cuspawnerabundance)).
 #' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714665184357159?thread_ts=1701199596.229739&cid=CJG0SHWCW
 
@@ -807,6 +812,7 @@ benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.
 # find their cuid:
 cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid
 cuidMissing <- conservationunits_decoder$cuid[cond]
+
 cuidMissing
 length(cuidMissing)
 
@@ -823,6 +829,8 @@ biological_status_add$cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
 cond_col <- ! colnames(biological_status_add) %in% c("region","cuid","species_abbr",
                                                      "species_name","cu_name_pse")
 biological_status_add[,cond_col] <- NA
+
+biological_status_add$psf_status <- "data-deficient"
 biological_status_add$psf_status_code <- 8
 biological_status_add$psf_status_code_all <- "8, 9" 
 
@@ -847,12 +855,14 @@ benchmarks_add[,cond_col] <- NA
 benchmarks_merged <- rbind(benchmarks_merged,
                            benchmarks_add)
 
-
 write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
           row.names = F)
 
 write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
           row.names = F)
+
+
+
 
 
 

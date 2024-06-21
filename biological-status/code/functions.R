@@ -1748,26 +1748,37 @@ current_spawner_abundance_fun <- function(cuids,
 #' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
 # cuid <- 171 # for SR benchmarks
 # cuid <- 175 # for percentile benchmarks
-# cuid <- 1033
-# dataset101_output <- biological_status
-# dataset102_output <- benchmarks
+# cuid <- 812 # pink
+# cuid <- 597
+# dataset101_output <- biological_status_cu
+# dataset102_output <- benchmarks_cu
+# cuspawnerabundance <- spawnerabundance_cu
+# # dataset103_output <- cuspawnerabund_smooth
 # figure_print <- F
 plot_spawnerAbundance_benchmarks_fun <- function(cuid, 
                                                  cuspawnerabundance, # spawner abundance  
                                                  dataset101_output,  # biostatus
                                                  dataset102_output,  # benchmark values
+                                                 #dataset103_output,  # smooth spawner abundance NOT UPDATED so calculated in the function
                                                  conservationunits_decoder,  # for the generation length
                                                  figure_print = F, wd_figures = NA
 ){
+  
+  require(zoo) # to use rollapply()
+  
   # Estimated spawner abundance:
   cond <- cuspawnerabundance$cuid == cuid
   spawnerAbund <- cuspawnerabundance[cond,]
   
   x_range <- range(spawnerAbund$year[!is.na(spawnerAbund$estimated_count)])
-  x_range[1] <- x_range[1] - ((x_range[2] - x_range[1]) * .1)
-  x_range[2] <- x_range[2] + ((x_range[2] - x_range[1]) * .05)
+  x_range[1] <- x_range[1] - ((x_range[2] - x_range[1]) * .1) |> floor()
+  x_range[2] <- x_range[2] + ((x_range[2] - x_range[1]) * .05) |> ceiling()
   y_range <- c(0,max(spawnerAbund$estimated_count, na.rm = T))
   y_range[2] <- y_range[2] + ((y_range[2] - y_range[1]) * .1)
+  
+  # Smoothed spawner abundance
+  # cond <- dataset103_output$cuid == cuid
+  # spawnerAbund_smooth <- dataset103_output[cond,]
   
   # generation length and more
   cond <- conservationunits_decoder$cuid == cuid
@@ -1798,22 +1809,24 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   # Find the benchmark values
   polygons_show <- T
   if(biostatus$psf_status_type == "sr"){
-    benchmarl_low <- benchmarks$sgen
-    benchmarl_low_025 <- benchmarks$sgen_lower
-    benchmarl_low_975 <- benchmarks$sgen_upper
-    benchmarl_up <- benchmarks$smsy80
-    benchmarl_up_025 <- benchmarks$smsy80_lower
-    benchmarl_up_975 <- benchmarks$smsy80_upper
+    benchmark_low <- benchmarks$sgen
+    benchmark_low_025 <- benchmarks$sgen_lower
+    benchmark_low_975 <- benchmarks$sgen_upper
+    benchmark_up <- benchmarks$smsy80
+    benchmark_up_025 <- benchmarks$smsy80_lower
+    benchmark_up_975 <- benchmarks$smsy80_upper
     method <- "HBSR"
+    status <- biostatus$sr_status
     
   }else if(biostatus$psf_status_type == "percentile"){
-    benchmarl_low <- benchmarks$X25._spw             # `25%_spw`
-    benchmarl_low_025 <- benchmarks$X25._spw_lower   # `25%_spw_lower`
-    benchmarl_low_975 <- benchmarks$X25._spw_upper   # `25%_spw_upper`
-    benchmarl_up <- benchmarks$X75._spw              # `75%_spw`
-    benchmarl_up_025 <- benchmarks$X75._spw_lower    # `75%_spw_lower`
-    benchmarl_up_975 <- benchmarks$X75._spw_upper    # `75%_spw_upper`
+    benchmark_low <- benchmarks$X25._spw             # `25%_spw`
+    benchmark_low_025 <- benchmarks$X25._spw_lower   # `25%_spw_lower`
+    benchmark_low_975 <- benchmarks$X25._spw_upper   # `25%_spw_upper`
+    benchmark_up <- benchmarks$X75._spw              # `75%_spw`
+    benchmark_up_025 <- benchmarks$X75._spw_lower    # `75%_spw_lower`
+    benchmark_up_975 <- benchmarks$X75._spw_upper    # `75%_spw_upper`
     method <- "Percentiles"
+    status <- biostatus$percentile_status
     
     # COMMENT:
     # This is ineeded the 50% percentile and not the 75, despite the name being "75%_spw"
@@ -1825,8 +1838,8 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   }
   
   # adjust y_range eventually if values are below thresholds
-  if(any(max(y_range) < c(benchmarl_low_025,benchmarl_up_025))){
-    y_range[2] <- benchmarl_up_975 + benchmarl_up_975 * .2
+  if(any(max(y_range) < c(benchmark_low_025,benchmark_up_025))){
+    y_range[2] <- benchmark_up_975 + benchmark_up_975 * .2
   }
   
   if(figure_print){
@@ -1847,14 +1860,14 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   alpha <- 0.4
   if(polygons_show){
     polygon(x = c(x_range,rev(x_range)), 
-            y = c(benchmarl_up,benchmarl_up,y_range[2],y_range[2]), 
+            y = c(benchmark_up,benchmark_up,y_range[2],y_range[2]), 
             col = colour_transparency_fun(status_cols["green"],alpha = alpha),
             border = F)
     polygon(x = c(x_range,rev(x_range)), 
-            y = c(benchmarl_low,benchmarl_low,benchmarl_up,benchmarl_up), 
+            y = c(benchmark_low,benchmark_low,benchmark_up,benchmark_up), 
             col = colour_transparency_fun(status_cols["amber"],alpha = alpha),border = F)
     polygon(x = c(x_range,rev(x_range)), 
-            y = c(0,0,benchmarl_low,benchmarl_low), 
+            y = c(0,0,benchmark_low,benchmark_low), 
             col = colour_transparency_fun(status_cols["red"],alpha = alpha),border = F)
   }
   
@@ -1890,23 +1903,75 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
            x0 = grid_vals, x1 = grid_vals,
            lwd = 2, col = colour_transparency_fun("white",alpha = .5))
   
-  # show benchmarks
-  segments(x0 = c(x_range[1],x_range[1]), x1 = c(x_range[2],x_range[2]),
-           y0 = c(benchmarl_low,benchmarl_up), y1 = c(benchmarl_low,benchmarl_up), 
-           col = c(status_cols["red"], status_cols["green"]), lwd = 2)
-  
   # Plot current spawner abundance
   csa_df <- current_spawner_abundance_fun(cuids = cuid, 
                                           cuspawnerabundance = spawnerAbund, 
                                           yearCurrentAbundance = NA,  # so it is calculated from the most recent year of available data 
                                           CU_genLength = genLength)
+  
+  cond <- status == c("good","fair","poor","hfjfk","djahdjk")
+  col_csa <- status_cols[cond]
+  
   segments(x0 = csa_df$yr_withData_start, x1 = x_range[2], 
            y0 = csa_df$curr_spw_abun, y1 = csa_df$curr_spw_abun, 
-           lwd = 2, col = "cornflowerblue")
+           lwd = 3, col = col_csa)
+  
+  # show benchmarks
+  segments(x0 = c(x_range[1],x_range[1]), x1 = c(x_range[2],x_range[2]),
+           y0 = c(benchmark_low,benchmark_up), y1 = c(benchmark_low,benchmark_up), 
+           col = c(status_cols["red"], status_cols["green"]), lwd = 2)
   
   # plot estimated spawner abundance
-  points(x = spawnerAbund$year, y = spawnerAbund$estimated_count, pch = 16, 
-         type = 'o', lwd = 2)
+  # remove odd and even years for PKO and PKE, respectively so the dots are 
+  # connected.
+  if(species_abbr == "PKO"){
+    cond_to_keep <- spawnerAbund$year %% 2 == 1
+  }else if(species_abbr == "PKE"){
+    cond_to_keep <- spawnerAbund$year %% 2 == 0
+  }else{
+    cond_to_keep <- rep(T,length(spawnerAbund$year))
+  }
+  x <- spawnerAbund$year[cond_to_keep]
+  y <- spawnerAbund$estimated_count[cond_to_keep]
+  points(x = x, y = y, pch = 16, type = 'o', lwd = 2, 
+         col = colour_transparency_fun("black",alpha = alpha))
+  
+  # Add smoothed spawner abundance:
+  # Smooth spawner abundance using running mean
+  # log transform (and deal with 0s)
+  
+  # - remove the NAs at the tail of spawnerAbund$estimated_count
+  x <- spawnerAbund$year
+  y <- spawnerAbund$estimated_count
+  while(is.na(tail(y,1))){
+    y <- y[-length(y)]
+    x <- x[-length(x)]
+  }
+  # - remove NAs at the head of spawnerAbund$estimated_count
+  while(is.na(head(y,1))){
+    y <- y[-1]
+    x <- x[-1]
+  }
+  
+  y[y == 0 & !is.na(y)] <- 0.01 # replace 0s by 0.01
+  smooth.y <- rollapply(
+    data = log(y), 
+    FUN = mean, 
+    width = genLength,
+    # na.pad = TRUE, # deprecated. Use fill = NA instead of na.pad = TRUE
+    na.rm = T, 
+    fill = NA,
+    align = "right") #
+  
+  # y <- exp(spawnerAbund_smooth$avg_escape_log)
+  # points(x = spawnerAbund_smooth$year, y = y, type = 'l', lwd = 2.5, col = "red")
+  y <- exp(smooth.y)
+  points(x = x, y = y, type = 'o', lwd = 2.5, pch = 16, cex = .7)
+  
+  # display issue
+  if(benchmark_low > benchmark_up){
+    legend("top","BENCHMARK ISSUE",bty = 'n', text.col = "red")
+  }
   
   # Extend benchmarks and plot 95% CI and current spawner abundance
   par(mar = c(5,0,3,0.5))
@@ -1914,20 +1979,23 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
        main = method, cex.main = .9, font.main = 1, # plain font
        xaxt = 'n', yaxt = 'n', bty = 'n', xaxs = 'i', yaxs = 'i')
   
-  segments(x0 = c(0,0), y0 = c(benchmarl_low,benchmarl_up),
-           x1 = c(.4,.6), y1 = c(benchmarl_low,benchmarl_up), 
-           col = c(status_cols["red"],status_cols["green"]), lwd = 2)
-  points(x = c(.4,.6), y = c(benchmarl_low,benchmarl_up), pch = 16, 
-         col = c(status_cols["red"],status_cols["green"]))
-  segments(x0 = c(.4,.6), y0 = c(benchmarl_low - benchmarl_low_025,
-                                 benchmarl_up - benchmarl_up_025),
-           x1 = c(.4,.6), y1 = c(benchmarl_low + benchmarl_low_975,
-                                 benchmarl_up + benchmarl_up_975), 
-           col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+  # plot the current spawner abundance
   segments(x0 = 0, x1 = .8, 
            y0 = csa_df$curr_spw_abun, y1 = csa_df$curr_spw_abun, 
-           lwd = 2, col = "cornflowerblue")
+           lwd = 3, col = col_csa)
   
+  # benchmarks
+  segments(x0 = c(0,0), y0 = c(benchmark_low,benchmark_up),
+           x1 = c(.4,.6), y1 = c(benchmark_low,benchmark_up), 
+           col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+  points(x = c(.4,.6), y = c(benchmark_low,benchmark_up), pch = 16, 
+         col = c(status_cols["red"],status_cols["green"]))
+  segments(x0 = c(.4,.6), y0 = c(benchmark_low_025,
+                                 benchmark_up_025),
+           x1 = c(.4,.6), y1 = c(benchmark_low_975,
+                                 benchmark_up_975), 
+           col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+
   if(figure_print){
     dev.off()
   }

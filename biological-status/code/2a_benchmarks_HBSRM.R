@@ -65,7 +65,7 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # option to export the figures
-print_fig <- T
+print_fig <- F
 
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
@@ -105,7 +105,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 # multiple regions to be passed on.
 region <- regions_df$Fraser
 region <- regions_df$Yukon
-region <- regions_df$Nass
+region <- regions_df$Haida_Gwaii
 
 # multiple regions:
 region <- c(
@@ -128,10 +128,12 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "PK"])
+
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- TRUE
+species_all <- T
 
 #' Last year to calculate current spawner abundance.
 #' If NA then the current spawner abundance is calculated considering the range 
@@ -165,8 +167,17 @@ for(i_rg in 1:length(region)){
     files_list <- list.files(wd_data_input)
     files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
     files_s <- files_s[grepl(pattern = regionName,files_s)]
-    species <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
-    species <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species)
+    species_acro <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
+    species_acro <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species_acro)
+    
+    species <- sapply(X = species_acro,FUN = function(sp){
+      species_acronym_df$species_name[species_acronym_df$species_acro == sp][1]
+    })
+    
+  }else{
+    species_acro <- sapply(X = species,FUN = function(sp){
+      species_acronym_df$species_acro[species_acronym_df$species_name == sp][1]
+    }) |> unique()
   }
   
   if(length(species) == 0){
@@ -175,10 +186,10 @@ for(i_rg in 1:length(region)){
     
   }else{
     
-    for(i_sp in 1:length(species)){
+    for(i_sp in 1:length(species_acro)){
+      # i_sp <- 1
       
-      # i_sp <- 5
-      cond <- species_acronym_df$species_acro == species[i_sp]
+      cond <- species_acronym_df$species_acro == species_acro[i_sp]
       speciesHere <- species_acronym_df$species_name[cond]
       
       cond <- cuspawnerabundance$region == region_i &
@@ -193,13 +204,13 @@ for(i_rg in 1:length(region)){
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
       # - with bi the CU-level density dependence parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
       # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
-      post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],
+      post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species_acro[i_sp],
                              "_HBSRM_posteriors_priorShift.rds"))
       
       # Import the S and R matrices used for fitting the HBSR model:
       # BSC: the wd here will eventually have to be set to the final repo for the 
       # exported datasets.
-      SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],
+      SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species_acro[i_sp],
                             "_SR_matrices.rds"))
       
       # Find the nb of CUs
@@ -360,7 +371,7 @@ for(i_rg in 1:length(region)){
       # layout(matrix(data = 1:(nCUs * 2), nrow = nCUs, byrow = T))
       for(i in 1:nCUs){
         
-        # i <- 6
+        # i <- 1
         
         #----------------------
         #' biological status probability with the average spawner abundance over
@@ -564,7 +575,7 @@ for(i_rg in 1:length(region)){
             CUhere <- substr(x = CUhere,start =  1,stop = 25) 
           }
           
-          pathFile <- paste0(wd_figures,"/",regionName,"_",species[i_sp],"_",CUhere,
+          pathFile <- paste0(wd_figures,"/",regionName,"_",species_acro[i_sp],"_",CUhere,
                              "_benchmark_posteriors.jpeg")
           
           # pdf(file = pathFile, width = 8.5, height = 11)
@@ -709,14 +720,14 @@ for(i_rg in 1:length(region)){
 
       } # end of for each CU
       
-      print(paste0("*** ",region[i_rg],"_",species[i_sp]," done ***"))
+      print(paste0("*** ",region[i_rg],"_",species_acro[i_sp]," done ***"))
       
       write.csv(x = benchSummary_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_benchmarks_summary_HBSRM.csv"),
+                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_benchmarks_summary_HBSRM.csv"),
                 row.names = F,)
       
       write.csv(x = biologicalStatus_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species[i_sp],"_biological_status_HBSRM.csv"),
+                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_biological_status_HBSRM.csv"),
                 row.names = F)
 
     } # end of for each species

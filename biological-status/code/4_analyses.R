@@ -279,19 +279,19 @@ datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
 
 #' Import the recruitsperspawner.csv 
-recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
+# recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
+#                                             fromDatabase = fromDatabase,
+#                                             update_file_csv = update_file_csv,
+#                                             wd = wd_pop_indic_data_input_dropbox)
 
 #' Import the cuspawnerabundance.csv
-cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+spawnerabundance_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
 # Import the current biostatus from the database (dataset101_output) NOT NEEDED ?
-biological_status <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
+biological_status_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
@@ -300,7 +300,7 @@ biological_status <- datasets_database_fun(nameDataSet = datasetsNames_database$
 #                               header = T)
 
 # Import the current biostatus from the database (dataset101_output)
-benchmarks <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[19],
+benchmarks_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[19],
                                     fromDatabase = fromDatabase,
                                     update_file_csv = update_file_csv,
                                     wd = wd_pop_indic_data_input_dropbox)
@@ -311,17 +311,25 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
+# Import dataset103_output for the smooth spawner abundance:
+# cuspawnerabund_smooth <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
+#                                                fromDatabase = fromDatabase,
+#                                                update_file_csv = update_file_csv,
+#                                                wd = wd_pop_indic_data_input_dropbox)
+
+
 # find CUs with biostatus:
-cond <- biological_status$psf_status_code %in% 1:3
-cuid_biostat <- biological_status$cuid[cond]
+cond <- biological_status_cu$psf_status_code %in% 1:3
+cuid_biostat <- biological_status_cu$cuid[cond]
 
 figure_print <- T
 percent <- 0
 for(cuid in cuid_biostat){
   plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
-                                       cuspawnerabundance = cuspawnerabundance, 
-                                       dataset101_output = biological_status, 
-                                       dataset102_output = benchmarks, 
+                                       cuspawnerabundance = spawnerabundance_cu, 
+                                       dataset101_output = biological_status_cu, 
+                                       dataset102_output = benchmarks_cu, 
+                                       #dataset103_output = cuspawnerabund_smooth,
                                        conservationunits_decoder = conservationunits_decoder, 
                                        figure_print = figure_print, # figure_print, 
                                        wd_figures = wd_figures)

@@ -875,7 +875,7 @@ compare_series_fun <- function(series_focal,series_compare,percentage = F){
 #' conservation_unit_system_sites that are associated to unique IndexId and GFE_ID,
 #' to both and to none. The assumption is based on if single or multiple values
 #' of a given field is returned for each IndexId or GDE_ID.
-fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds,
+fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
                                       conservation_unit_system_sites,
                                       runProcess = F,                # takes a while
                                       newFieldsIncluded = T){

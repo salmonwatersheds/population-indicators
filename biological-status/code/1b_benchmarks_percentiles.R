@@ -35,6 +35,7 @@ setwd(wd_head)
 # subdirectory of the project (unless setwd() is called again).
 source("code/functions_set_wd.R")
 source("code/functions_general.R")
+source("code/colours.R")
 
 # return the name of the directories for the different projects:
 subDir_projects <- subDir_projects_fun()
@@ -80,7 +81,7 @@ regions_df <- regions_fun()
 # multiple regions to be passed on.
 region <- regions_df$Fraser
 region <- regions_df$Yukon
-region <- regions_df$Nass
+region <- regions_df$Transboundary
 
 # multiple regions:
 region <- c(
@@ -92,7 +93,7 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Central_coast)
 
-region <- regions_df$Transboundary
+region <- regions_df$Central_coast
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -105,12 +106,12 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
-species <- species_acronym_df$species_name[species_acronym_df$species_acro == "SX"]
+species <- species_acronym_df$species_name[species_acronym_df$species_acro == "CO"]
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- T
+species_all <- F
 
 #' Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
@@ -158,10 +159,12 @@ yearCurrentAbundance <- NA # was 2021
 # Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
+print_fig <- F
+
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 7
+  # i_rg <- 1
   
   region_i <- gsub("_"," ",region[i_rg])
   if(region_i == "Central coast"){
@@ -178,7 +181,6 @@ for(i_rg in 1:length(region)){
   
   if(species_all){
     species <- unique(cuspawnerabundance_rg$species_name)
-    
   }
   
   # remove Steelhead
@@ -186,9 +188,7 @@ for(i_rg in 1:length(region)){
 
   species_acro <- sapply(X = species,FUN = function(sp){
     species_acronym_df$species_acro[species_acronym_df$species_name == sp]
-  })
-  
-  species_acro <- unique(species_acro)
+  }) |> unique()
   
   if(sum(!is.na(cuspawnerabundance_rg$estimated_count)) == 0){
     
@@ -198,11 +198,12 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(unique(species_acro))){
       
-      # i_sp <- 3
+      # i_sp <- 1
       
       speciesAcroHere <- unique(species_acro)[i_sp]
       cond <- species_acronym_df$species_acro %in% speciesAcroHere
       species_i <- species_acronym_df$species_name[cond]
+      species_qualify_i <- species_acronym_df$species_acro2_details[cond] |> unique()
       
       cond <- cuspawnerabundance_rg$species_name %in% species_i
       cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[cond,]
@@ -248,7 +249,7 @@ for(i_rg in 1:length(region)){
         
         for(i_cu in 1:length(CUs)){
           
-          # i_cu <- 4
+          # i_cu <- 1
           
           # subset cuspawnerabundance_rg_sp
           cuspawnerabundance_rg_sp_cu <- cuspawnerabundance_rg_sp[cuspawnerabundance_rg_sp$cu_name_pse == CUs[i_cu],]
@@ -395,7 +396,7 @@ for(i_rg in 1:length(region)){
                   status_percent_075 <- c(status_percent_075,'green')
                   status_percent_05 <- c(status_percent_05,'green')
                 }
-              }else{
+              }else{ # not needed I think
                 status_percent_075 <- c(status_percent_075,NA)
                 status_percent_05 <- c(status_percent_05,NA)
               }
@@ -410,6 +411,51 @@ for(i_rg in 1:length(region)){
                                                            levels = c("red","amber","green")))/length(status_percent_075)*100,4)
             
             comment <- ""
+            
+            # Figure
+            if(print_fig){
+              CUhere <- gsub(pattern = "/",'-',CUs[i_cu])  # in case "/" is in the CU's name
+              CUhere <- gsub(pattern = "\\(","",CUhere)
+              CUhere <- gsub(pattern = "\\)","",CUhere)
+              
+              if(nchar(CUhere) > 25){   # the figure can't print if the number of characters is too large
+                CUhere <- substr(x = CUhere,start =  1,stop = 25) 
+              }
+              
+              pathFile <- paste0(wd_figures,"/",regionName,"_",species_qualify_i,"_",CUhere,
+                                 "_benchmark_percentiles_hist.jpeg")
+              
+              jpeg(file = pathFile, width = 18, height = 14, units = "cm", res = 300)
+            }
+            maxS <- max(modelCI$benchmarkBoot[,"benchmark_0.5"], na.rm = T)
+            
+            hl <- hist(x = modelCI$benchmarkBoot[,"benchmark_0.25"], 
+                       col = paste0(status_cols['red'], 50), border = NA,
+                       breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), 
+                       main = paste0(regionName," ",species_qualify_i," (",cuids[i_cu],")"), 
+                       freq = FALSE, xlab = "Number of fish")
+            
+            hu_05 <- hist(x = modelCI$benchmarkBoot[,"benchmark_0.5"], 
+                          col = paste0(status_cols['green'], 50), border = NA, 
+                          breaks = seq(0, maxS, maxS/50), add = TRUE, 
+                          freq = FALSE)
+            
+            segments(x0 = benchSummary_df$m[benchSummary_df$benchmark == 'benchmark_0.25'], 
+                     x1 = benchSummary_df$m[benchSummary_df$benchmark == 'benchmark_0.25'], 
+                     y0 = 0, y1 = 1^10, lwd = 2, col = status_cols['red'])
+            segments(x0 = benchSummary_df$m[benchSummary_df$benchmark == 'benchmark_0.5'], 
+                     x1 = benchSummary_df$m[benchSummary_df$benchmark == 'benchmark_0.5'], 
+                     y0 = 0, y1 = 1^10, lwd = 2, col = status_cols['green'])
+            segments(x0 = spawnerAbundance_lastGen_m, x1 = spawnerAbundance_lastGen_m, 
+                     y0 = 0, y1 = 1^10, lwd = 2)
+            
+            cond_leg <- status_percent_prob_05 == max(status_percent_prob_05)
+            legend("topright", bty = 'n',
+                   paste0(names(status_percent_prob_05)[cond_leg]," (",max(status_percent_prob_05),"%)"))
+            
+            if(print_fig){
+              dev.off()
+            }
             
           }else{
             

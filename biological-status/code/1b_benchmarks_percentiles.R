@@ -8,7 +8,7 @@
 #' - conservationunits_decoder (from database)
 #' 
 #' Files produced: 
-#' - output/REGION_SPECIES_benchmarks_percentiles_summary.csv
+#' - output/REGION_SPECIES_benchmarks_summary_percentiles.csv
 #' - output/REGION_SPECIES_biological_status_percentiles.csv
 #' 
 #'******************************************************************************

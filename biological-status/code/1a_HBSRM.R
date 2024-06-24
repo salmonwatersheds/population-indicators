@@ -14,7 +14,7 @@
 #' 
 #' Files produced: 
 #' - output/REGION_SPECIES_SR_matrices.rds
-#' - output/REGION_SPECIES_priorShift.rds
+#' - output/REGION_SPECIES_HBSRM_posteriors_priorShift.rds
 #' 
 #'******************************************************************************
 

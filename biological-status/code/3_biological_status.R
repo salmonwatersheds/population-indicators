@@ -10,8 +10,8 @@
 #' - dataset390_output.csv (from database)
 #' 
 #' Files produced: 
-#' - output/Biological_status_HBSR_Percentile_all.csv    # should become dataset_101
-#' - 
+#' - Biological_status_HBSR_Percentile_all.csv    # should become dataset_101
+#' - Benchmarks_HBSR_Percentile_all.csv           # 
 #' - data/code_PSF_Status.csv
 #' - population-indicators/data-input/CUs_highExploitation_lowProductivity.csv
 #' 

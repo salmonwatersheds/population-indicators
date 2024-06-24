@@ -12,7 +12,7 @@
 #' 
 #' Files produced: 
 #' - figures/REGION_SPECIES_CU_benchmark_posteriors.jpeg
-#' - output/REGION_SPECIES_benchmarks_summary.csv
+#' - output/REGION_SPECIES_benchmarks_summary_HBSRM.csv
 #' - output/REGION_SPECIES_biological_status_HBSRM.csv
 #'
 #' Notes:

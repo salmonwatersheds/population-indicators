@@ -6,11 +6,9 @@
 #' 
 #' Files imported (from ):
 #' - region_species_biological_status.csv (created in benchmarks_HBSRM.R)
+#' - Biological_status_HBSR_Percentile_all.csv
 #' 
 #' Files produced: 
-#' - Biological_status_HBSR_Percentile_all.csv
-
-
 #' - Biological_status_diff_SMsySmsy80_percent05075.csv (biological_status_merge_diff)
 #' - comparison_bioStatusPercentiles_75_50_region.jpeg
 #' - comparison_bioStatusPercentiles_75_50_species.jpeg

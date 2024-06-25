@@ -1377,7 +1377,8 @@ sensitivity_nbYear_HSPercentBM_fun <- function(region,species,CU,
 #' and with argument pattern = "biological_status" or "biological_status_SH_percentiles".
 #' -  
 # wd <- wd_figures
-# group_var <- "species"
+# biological_status_df <- biological_status_merged[condition_HBSRM,]
+# group_var <- c("species","region")[2]
 biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
                                           group_var = c("region","species")){
   
@@ -1410,7 +1411,8 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
                                          FUN = function(r){
                                            # r <- 1
                                            slice <- biological_status_df[r,status1]
-                                           out <- c("red","amber","green")[slice == max(slice)]
+                                           # out <- c("red","amber","green")[slice == max(slice)]
+                                           out <- c("poor","fair","good")[slice == max(slice)]
                                            return(out)
                                          })
   
@@ -1418,7 +1420,8 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
                                          FUN = function(r){
                                            # r <- 1
                                            slice <- biological_status_df[r,status2]
-                                           out <- c("red","amber","green")[slice == max(slice)]
+                                           #out <- c("red","amber","green")[slice == max(slice)]
+                                           out <- c("poor","fair","good")[slice == max(slice)]
                                            return(out)
                                          })
   
@@ -1748,8 +1751,8 @@ current_spawner_abundance_fun <- function(cuids,
 #' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
 # cuid <- 171 # for SR benchmarks
 # cuid <- 175 # for percentile benchmarks
-# cuid <- 812 # pink
-# cuid <- 597
+# cuid <- 599 # 
+# cuid <- 811 # issue with Sgen > Ssmy ; 1004 : issue with biostatus percentile not match
 # dataset101_output <- biological_status_cu
 # dataset102_output <- benchmarks_cu
 # cuspawnerabundance <- spawnerabundance_cu
@@ -1812,9 +1815,12 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     benchmark_low <- benchmarks$sgen
     benchmark_low_025 <- benchmarks$sgen_lower
     benchmark_low_975 <- benchmarks$sgen_upper
-    benchmark_up <- benchmarks$smsy80
-    benchmark_up_025 <- benchmarks$smsy80_lower
-    benchmark_up_975 <- benchmarks$smsy80_upper
+    # benchmark_up <- benchmarks$smsy80
+    # benchmark_up_025 <- benchmarks$smsy80_lower
+    # benchmark_up_975 <- benchmarks$smsy80_upper
+    benchmark_up <- benchmarks$smsy
+    benchmark_up_025 <- benchmarks$smsy_lower
+    benchmark_up_975 <- benchmarks$smsy_upper
     method <- "HBSR"
     status <- biostatus$sr_status
     
@@ -2001,6 +2007,6 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   }
 }
 
-
+# 
 
 

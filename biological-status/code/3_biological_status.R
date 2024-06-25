@@ -10,7 +10,7 @@
 #' - dataset390_output.csv (from database)
 #' 
 #' Files produced: 
-#' - Biological_status_HBSR_Percentile_all.csv    # should become dataset_101
+#' - Biological_status_HBSR_Percentile_all.csv    # should become dataset_101_output I think
 #' - Benchmarks_HBSR_Percentile_all.csv           # 
 #' - data/code_PSF_Status.csv
 #' - population-indicators/data-input/CUs_highExploitation_lowProductivity.csv
@@ -74,8 +74,6 @@ wd_data_input <- wd_output
 
 # Import functions for this specific project
 source("Code/functions.R")
-
-printFig <- F
 
 #
 # Import Datasets -----

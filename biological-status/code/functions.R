@@ -1593,7 +1593,7 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
     status <- biological_status_percentileHere$status_percent075
     highExploit_lowProd$biostatus_percentile[i] <- status
     if(!is.na(status)){
-      if(status == "red"){ #' New rule from Claire:
+      if(status %in% c("red","poor")){ #' New rule from Claire:
         highExploit_lowProd$toRemove[i] <- F
       }
     }

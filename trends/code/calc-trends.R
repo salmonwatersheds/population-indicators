@@ -1,8 +1,16 @@
 ###############################################################################
 # Calculation of long-term and 3-generation trends in CU-level spawner abundance
 # 
-# inputs: spawner abundance from the database
-# outputs: dataset202 and dataset 391
+#' Inputs: 
+#' - dataset1cu_output.csv    # = dataset_1part1_DATE.csv
+#' - dataset103_output.csv    # just to access the format
+#' - dataset202_output.csv    # just to access the format
+#' - dataset391_output.csv    # just to access the format
+#' 
+#' Outputs: 
+#' - dataset103_output_DATE.csv    
+#' - dataset202_output_DATE.csv    
+#' - dataset391_output_DATE.csv    
 #
 # Related Tech-Report documentation:
 # https://bookdown.org/salmonwatersheds/state-of-salmon/methods-results.html#25_Quantifying_change
@@ -58,20 +66,21 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
 library(dplyr)
 library(zoo) # for rollmean function
 
-# source("code/functions.R")
+# source("code/functions.R") # note used
 
+#
+# Import datasets -------- 
+#
 
-###############################################################################
-# Load input data from database
-###############################################################################
-
-#' Import the name of the different datasets in the PSF database and their 
+# Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
 
-# CU-level spawner abundance data (dataset1cu_output.csv):
+
+#'* Import dataset1cu_output.csv:  CU-level spawner abundance data *
+#' = dataset_1part2_DATE.csv
 # spawners <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset1cu_output")
 spawners <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[15],
                                   fromDatabase = fromDatabase,
@@ -83,6 +92,8 @@ spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
 # Filter out no estimated spawner abundance
 spawners <- spawners %>% filter(!is.na(estimated_count))
 
+
+#'* Import conservationunits_decoder.csv *
 # CU list (includes gen length info for running avg) (conservationunits_decoder.csv)
 # cu_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
 #   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
@@ -94,32 +105,40 @@ cu_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CS
 cu_decoder <- cu_decoder  %>%
   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
 
-# Import the dataste to export to access structure:
-# Dataset 202, 391, 103
-# vwdl_dataset103_output: Average Spawners per Generation for Salmon and Steelhead Conservation Units
+
+#'* Import dataset103_output.csv *
+#' To access structure
+#' Average Spawners per Generation for Salmon and Steelhead Conservation Units
 dataset103_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
 head(dataset103_output)
 
-# vwdl_dataset202_output: Trends in Spawner Abundance (All Generations) for Salmon and Steelhead Conservation Units
+
+#'* Import dataset202_output.csv *
+#' To access structure 
+#' Trends in Spawner Abundance (All Generations) for Salmon and Steelhead Conservation Units
 dataset202_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[17],
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
 head(dataset202_output)
 
-# vwdl_dataset391_output: Trends in Spawner Abundance (Three Generations) for Salmon and Steelhead Conservation Units
+
+#'* Import dataset391_output.csv *
+#' To access structure 
+#' Trends in Spawner Abundance (Three Generations) for Salmon and Steelhead Conservation Units
 dataset391_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[10],
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
 head(dataset391_output)
 
-###############################################################################
-# Fill datasets and produce figures
-###############################################################################
+
+#
+# Fill datasets and produce figures ------------
+#
 
 cuid <- unique(spawners$cuid)
 

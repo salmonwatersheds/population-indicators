@@ -3,7 +3,15 @@
 # 1. Include more data compiled by Sam Wilson;
 # 2. Introduce a data quality score for run timing for each CU;
 # 3. Allow for skewed distributions or other non-normal distributions.
-#
+#' 
+#' Files imported:
+#' - conservationunits_decoder.csv
+#' - 3Life_cycle_timing_by_CU.csv
+#' 
+#' Files exported:
+#' - timing_DATE.csv
+#' - run-timing-data-quality_DATE.csv
+#' 
 # Steph Peacock
 # Mar 6, 2024
 ###############################################################################

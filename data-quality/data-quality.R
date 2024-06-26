@@ -43,6 +43,18 @@
 # survey_execution and catch_quality for application in the legacy site.
 # In PSE 2.0, CU-level DQ scores will be the average of relevant criteria.
 
+#' Files imported:
+#' - dataset390_DATE.csv                     # the file to update
+#' - juvenilesurveys.csv
+#' - streamspawnersurveys_output.csv
+#' - conservationunits_decoder.csv
+#' - Fraser Catch and StockID quality.xlsx
+#' - run-timing-data-quality_2024-03-08.csv
+#' 
+#' Files exported:
+#' - dataset390_DATE.csv
+
+
 library(tidyverse)
 source("code/functions_general.R")
 
@@ -92,7 +104,8 @@ unique(tapply(cu_list$cuid, cu_list$cuid, length))
 # cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") 
 # write.csv(cu_list, file= paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) # Update in Dropbox
 
-dataset390 <- cu_list %>% select(region, species_name,cu_name_pse, pooledcuid) %>%
+dataset390 <- cu_list %>% 
+  select(region, species_name,cu_name_pse, pooledcuid) %>%
   rename(species = "species_name", regionname = "region", cuid = "pooledcuid") %>%
   relocate(regionname, species, cuid, cu_name_pse)
   
@@ -172,9 +185,10 @@ head(dataset390)
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#spawner-survey-coverage
 
-dataset390 <- dataset390 %>% left_join(stream_summary %>%
-                                        group_by(cuid) %>%
-                                        summarise(survey_coverage = (sum(prop_spawners[indicator=='Y']))))
+dataset390 <- dataset390 %>% 
+  left_join(stream_summary %>%
+              group_by(cuid) %>%
+              summarise(survey_coverage = (sum(prop_spawners[indicator=='Y']))))
 
 dataset390 <- dataset390 %>%
   mutate(survey_coverage = case_when(survey_coverage >= 0.9 ~ 5,
@@ -225,10 +239,11 @@ dataset390 <- dataset390 %>%
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#catch-estimates
 
 # No change from existing?
-dataset390 <- dataset390 %>% left_join(dataset390_old %>% 
-                           filter(parameter == "catch_quality") %>%
-                           select(cuid, datavalue) %>% 
-                           rename(catch_quality = "datavalue")
+dataset390 <- dataset390 %>% 
+  left_join(dataset390_old %>% 
+              filter(parameter == "catch_quality") %>%
+              select(cuid, datavalue) %>% 
+              rename(catch_quality = "datavalue")
 )
 
 head(dataset390)

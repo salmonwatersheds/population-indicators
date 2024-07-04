@@ -284,7 +284,6 @@ datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv
 #' https://www.dropbox.com/scl/fi/fdkzawgh1s2805gzb009l/accessing-swp-database.pdf?rlkey=2shj9aginlg06jvw29csmxg7t&dl=0
 datasetsNames_database_fun <- function(){
   
-  
   out_df <- data.frame(
     name_DB = c(
       "appdata.vwdl_conservationunits_decoder",
@@ -770,7 +769,6 @@ import_mostRecent_file_fun <- function(wd,pattern){
     print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
     out <- read.csv(paste(wd,file,sep = "/"),header = T)
   }
-  
   return(out)
 }
 

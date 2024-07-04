@@ -310,7 +310,7 @@ code_PSF_Status <- data.frame(psf_status_code = 1:9,
 # write.csv(code_PSF_Status,paste0(wd_data_dropbox,"/code_PSF_Status.csv"),
 #           row.names = F)
 
-# A. add column psf_status_code to each dataset:
+#'* Create column psf_status_code *
 biological_status_HBSRM$psf_status_code <- NA
 biological_status_percentile$psf_status_code <- NA
 
@@ -348,7 +348,7 @@ for(r in 1:nrow(highExploit_lowProd)){
   val_toUpdate <- biological_status_percentile$psf_status_code[cond]
   val_new <- paste(val_toUpdate,6, sep = ", ")
   
-  #' Rule: show the biostus if it is 'red'
+  #' Rule: show the biostatus if it is 'red'
   if(!is.na(highExploit_lowProd$biostatus_percentile[r]) &
      highExploit_lowProd$biostatus_percentile[r] %in% c("red","poor")){
     
@@ -402,13 +402,15 @@ biological_status_percentile$psf_status_code <- gsub("NA, ","",biological_status
 unique(biological_status_HBSRM$psf_status_code)
 unique(biological_status_percentile$psf_status_code)
 
-# B. Combine the two datasets:
-
+# Combine the two datasets:
 colCommon <- c("region","species","cuid","CU_pse","current_spawner_abundance",
                "psf_status_code")
               # "year_last","year_first","genLength")
 
-# According to the last PSAC meeting:
+#' NOTE:
+#' According to the last PSAC meeting:, we should use the 80% Smsy (vs 100% ) and 
+#' 50% percentile (vs. 75%) for the upper benchmarks.
+
 # colHBSR <- c("status_Smsy_red","status_Smsy_amber","status_Smsy_green",
 #              "status_Smsy")
 colHBSR <- c("status_Smsy80_red","status_Smsy80_amber","status_Smsy80_green",
@@ -485,14 +487,16 @@ length(unique(check$cuid)) # 5
 #
 for(r in 1:nrow(biological_status_merged)){
   # r <- 170
+  r <- which(biological_status_merged$cuid == 522)
   bs_here <- biological_status_merged[r,]
   
   # *** HBSRM method ***
   
-  # Are the probabilities available and the status_code is NA (i.e. not 4, ...9)
+  #' Condition 1: Are the probabilities available and the status_code is NA 
+  #' (i.e. not 4, ...9)
   cond_HBRSM <- !is.na(bs_here$sr_red_prob) & is.na(bs_here$psf_status_code.x) # is.na(bs_here$psf_status_code.x) might not be necessary but does not hurt
   
-  #' Rule 2: Is there a SR relationship with CU-level catch estimates >= medium-low
+  #' Condition 2: Is there a SR relationship with CU-level catch estimates >= medium-low
   # survey_quality 
   # In data-quality.R: 
   # "Low" ~ 1
@@ -509,7 +513,7 @@ for(r in 1:nrow(biological_status_merged)){
   cond_HBRSM_2 <- is.na(dataset390_output$catch_method[cond]) | dataset390_output$catch_method[cond] != 1
   
 
-  #' Rule 3: Sgen < Smsy
+  #' Condition 3: Sgen < Smsy
   cond_cuid <- benchmarks_HBSRM$cuid == biological_status_merged$cuid[r]
   if(any(cond_cuid)){
     Sgen <- benchmarks_HBSRM$m[cond_cuid & cond_HPD & cond_Sgen]
@@ -901,8 +905,15 @@ write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.cs
 
 # END
 
+benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+                              header = T)
 
+biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+                                     header = T)
 
+cond <- biological_status_merged$psf_status_type == "percentile" & !is.na(biological_status_merged$psf_status_type)
+cond2 <- !is.na(biological_status_merged$sr_yellow_prob)
+View(biological_status_merged[cond & cond2,])
 
 
 

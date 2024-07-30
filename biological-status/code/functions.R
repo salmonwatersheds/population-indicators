@@ -1756,7 +1756,7 @@ current_spawner_abundance_fun <- function(cuids,
 # dataset101_output <- biological_status_cu
 # dataset102_output <- benchmarks_cu
 # cuspawnerabundance <- spawnerabundance_cu
-# # dataset103_output <- cuspawnerabund_smooth
+# dataset103_output <- cuspawnerabund_smooth
 # figure_print <- F
 plot_spawnerAbundance_benchmarks_fun <- function(cuid, 
                                                  cuspawnerabundance, # spawner abundance  
@@ -1835,7 +1835,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     status <- biostatus$percentile_status
     
     # COMMENT:
-    # This is ineeded the 50% percentile and not the 75, despite the name being "75%_spw"
+    # This is indeed the 50% percentile and not the 75, despite the name being "75%_spw"
     # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
     
   }else{ # there is no benchmark values

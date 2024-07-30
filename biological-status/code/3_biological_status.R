@@ -487,7 +487,7 @@ length(unique(check$cuid)) # 5
 #
 for(r in 1:nrow(biological_status_merged)){
   # r <- 170
-  r <- which(biological_status_merged$cuid == 522)
+  # r <- which(biological_status_merged$cuid == 516)
   bs_here <- biological_status_merged[r,]
   
   # *** HBSRM method ***
@@ -542,10 +542,32 @@ for(r in 1:nrow(biological_status_merged)){
     #' grepl("3, 6",bs_here$psf_status_code.y) is for the CUs with high exploitation 
     #' / low productivity with poor status.
 
-    # psf_status_here <- c("poor","fair","good")[bs_here[,col_percent_prob] == max(bs_here[,col_percent_prob])]
-    # psf_status_code_all_here <- c(3:1)[psf_status_here == c("poor","fair","good")]
-    psf_status_code_all_here <- c(3:1)[bs_here[,col_percent_prob] == max(bs_here[,col_percent_prob])]
+    # NOT USED: using the probabilities to determine the status
+    #psf_status_code_all_here <- c(3:1)[bs_here[,col_percent_prob] == max(bs_here[,col_percent_prob])]
+    
+    # Get the percentile benchmark values:
+    cond_cuid <- benchmarks_percentile$cuid == biological_status_merged$cuid[r]
+    cond <- benchmarks_percentile$benchmark == "benchmark_0.25"
+    bench_low <- benchmarks_percentile[cond_cuid & cond,"m"]
+    cond <- benchmarks_percentile$benchmark == "benchmark_0.5"
+    bench_up <- benchmarks_percentile[cond_cuid & cond,"m"]
+
+    # compare to current spawner abundance
+    csa <- biological_status_merged$current_spawner_abundance[r]
+    if(csa <= bench_low){
+      psf_status_code_all_here <- 3
+    }else if(csa <= bench_up){
+      psf_status_code_all_here <- 2
+    }else{
+      psf_status_code_all_here <- 1
+    }
+    
+    #
     psf_status_type_here <- "percentile"
+    
+    # if(psf_status_code_all_here != psf_status_code_all_here_2){
+    #   print(paste("Difference:",biological_status_merged$cuid[r]))
+    # }
   
   }else{ # biostatus is not available
     
@@ -896,6 +918,7 @@ benchmarks_add[,cond_col] <- NA
 benchmarks_merged <- rbind(benchmarks_merged,
                            benchmarks_add)
 
+
 write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
           row.names = F)
 
@@ -914,6 +937,59 @@ biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_P
 cond <- biological_status_merged$psf_status_type == "percentile" & !is.na(biological_status_merged$psf_status_type)
 cond2 <- !is.na(biological_status_merged$sr_yellow_prob)
 View(biological_status_merged[cond & cond2,])
+
+# Export files for Katy -------
+# This is just to edit the file name
+# https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1721074762139209?thread_ts=1701199596.229739&cid=CJG0SHWCW
+biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+                                     header = T)
+
+benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+                              header = T)
+
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+
+
+write.csv(biological_status_merged,
+          paste0(wd_output,"/dataset101_biological_status_HBSR_Percentile_all_",date,".csv"),
+          row.names = F)
+
+write.csv(benchmarks_merged,
+          paste0(wd_output,"/dataset102_benchmarks_HBSR_Percentile_all_",date,".csv"),
+          row.names = F)
+
+
+
+
+
+cond1 <- biological_status_merged$psf_status_type == "percentile" &
+  !is.na(biological_status_merged$psf_status_type)
+
+cond2 <- !is.na(biological_status_merged$percentile_status)
+
+cond3 <- biological_status_merged$percentile_status != biological_status_merged$psf_status &
+  !is.na(biological_status_merged$psf_status) &
+  !is.na( biological_status_merged$percentile_status)
+
+
+biological_status_merged[cond1 & cond2 & cond3,]
+#                    region cuid species_abbr species_name                            cu_name_pse sr_red_prob sr_yellow_prob sr_green_prob percentile_red_prob percentile_yellow_prob percentile_green_prob hist_red hist_yellow hist_green sr_status percentile_status psf_status_code_all psf_status_type psf_status_code psf_status
+# 17                       Central Coast  516           CO         Coho                            Smith Inlet          NA             NA            NA                1.88                  49.64                 48.48  #FFFFFF     #FFFFFF    #009900      <NA>              good                   2      percentile               2       fair
+# 19                       Central Coast  518           CO         Coho                Bella Coola-Dean Rivers      0.3095        68.1429       31.5476               49.54                  50.46                  0.00  #CC0000     #FFFFFF    #FFFFFF      fair              poor                   2      percentile               2       fair
+# 128                             Fraser  308           CK      Chinook  Fraser Canyon-Nahatlatch (Spring 5-2)          NA             NA            NA               49.48                  50.42                  0.10  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
+# 137                             Fraser  317           CK      Chinook      Lower Thompson River (Spring 4-2)          NA             NA            NA               32.40                  67.58                  0.02  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
+# 203                        Haida Gwaii  813          PKO   Pink (odd)                 East Haida Gwaii (odd)      0.0000         0.1270       99.8730                3.00                  47.10                 49.90  #FFFFFF     #FFFF00    #FFFFFF      good              fair                   1      percentile               1       good
+# 256                             Skeena  220           CM         Chum                         Skeena Estuary          NA             NA            NA               79.60                  20.36                  0.04  #FFFFFF     #FFFF00    #FFFFFF      <NA>              fair                   3      percentile               3       poor
+# 309                      Transboundary 1004           CK      Chinook                                  Alsek          NA             NA            NA               40.34                  54.34                  5.32  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
+# 343 Vancouver Island & Mainland Inlets  327           CK      Chinook East Vancouver Island-North (Fall x-1)          NA             NA            NA               11.42                  86.34                  2.24  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
+
+
+
+
+
+
 
 
 

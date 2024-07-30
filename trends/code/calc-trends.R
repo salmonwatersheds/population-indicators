@@ -170,6 +170,7 @@ for(i in 1:nrow(cu_list)){
   # i <- 8
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
+  # i <- which(cu_list$species_abbr == "CO" & cu_list$cu_name_pse == "North Thompson")
   region <- cu_list$region[i]
   species_name <- cu_list$species_name[i]
   cuid <- cu_list$cuid[i]
@@ -211,7 +212,9 @@ for(i in 1:nrow(cu_list)){
   dataset103_output_new <- rbind(dataset103_output_new,dataset103_output_here)
   
   # Fit linear model
-  lm_LT <- lm(smooth.y[!is.na(smooth.y)] ~ x[!is.na(smooth.y)])
+  y_LT <- smooth.y[!is.na(smooth.y)] # to trouble shoot lm_LT
+  x_LT <- x[!is.na(smooth.y)]
+  lm_LT <- lm(y_LT ~ x_LT)
   
   # percent_change
   year.span <- c(min(x[!is.na(smooth.y)]):max(x[!is.na(smooth.y)]))
@@ -309,6 +312,7 @@ for(i in 1:nrow(cu_list)){
   }
   lines(x, y_here, lwd = 2, col = "black")
   # points(x[!is.na(y)], smooth.y[!is.na(y)], lwd = 2, col = "black", pch = 1)
+  
   # plot regression line for the 3 generation:
   # - if not enough data points:
   if(cond_noEnoughData){
@@ -320,6 +324,7 @@ for(i in 1:nrow(cu_list)){
     }
     lines(x3g, y_here, lwd = 2, col = "blue")
   }
+  
   # plot regression line for LT
   y_here <- predict(lm_LT, newdata = data.frame(x[!is.na(smooth.y)]))
   if(!scale_log){
@@ -371,3 +376,38 @@ write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output_",date,".cs
 # https://stackoverflow.com/questions/18695335/replacing-all-nas-with-smoothing-spline
 # If not, may be just use it for Pink only? I am not sure what is done originally
 # (the code in the Rmd script is unclear (731 and after)).
+
+# Checks related to this thread:
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1722278192424409?thread_ts=1719268108.787009&cid=C03LB7KM6JK
+
+
+threegen_slope
+threegen_intercept
+
+threegen_slope <- round(lm_3g$coefficients[2],3)
+threegen_intercept <- round(lm_3g$coefficients["(Intercept)"],1)
+
+slope <- round(lm_LT$coefficients[2],3)
+intercept <- round(lm_LT$coefficients["(Intercept)"],1)
+
+predict(lm_3g, newdata = data.frame(x3g))
+
+lines(x = x, y = exp(intercept + slope * x), col = "green")
+lines(x = x, y = exp(intercept + slope * x), col = "green")
+
+lines(x = x, y = exp(predict(lm_3g, newdata = data.frame(x3g = x))), 
+      col = "red")
+lines(x = x, y = exp(predict(lm_LT, newdata = data.frame(x_LT = x))), 
+      col = "red")
+
+
+lines(x = x, y = (predict(lm_3g, newdata = data.frame(x3g = x))), 
+      col = "purple")
+lines(x = x, y = (predict(lm_LT, newdata = data.frame(x_LT = x))), 
+      col = "purple")
+
+predict(lm_LT, newdata = data.frame(x))
+
+
+
+

@@ -15,6 +15,8 @@
 #' 
 #'******************************************************************************
 
+NOTE: THE REYNOLD LAB DATA HAS NOT BEEN ADDED YET AS WE WAIT FOR AFTER THE PSE 2.0 LAUNCH 1ST
+
 # 
 rm(list = ls())
 graphics.off()
@@ -292,6 +294,10 @@ for(i in 1:length(GFE_IDs)){
 }
 
 
+WAIT UNTIL AFTER PSE 2.0 RELEASE
+
+
+
 #
 # Generate dataset_1part2 --------
 # example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
@@ -343,7 +349,7 @@ dataset_1part2 <- dataset_1part2[!is.na(dataset_1part2$stream_observed_count),]
 colToKeep <- c("region","species_name","species_abbr","cuid","cu_name_pse",
                "pointid","GFE_ID","streamid",
                "stream_name_pse","indicator","latitude_final","longitude_final","year",
-               "stream_observed_count","survey_method","survey_quality")
+               "stream_observed_count","survey_method","survey_quality","survey_score")
 
 dataset_1part2 <- dataset_1part2[,colToKeep]
 
@@ -366,6 +372,10 @@ head(dataset_1part2)
 sum(is.na(dataset_1part2$streamid)) # 0
 sum(is.na(dataset_1part2$cuid)) # 0
 sum(is.na(dataset_1part2$pointid)) # 5117
+
+
+dim(dataset_1part2) 
+# 149828     17
 
 #
 # Save dataset_1part2_DATE.csv -----

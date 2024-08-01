@@ -303,7 +303,7 @@ for(r in 1:nrow(CU_name_species)){
     }
   }
   
-  # still no match --> try match with CU_NAME with cu_name_dfo and cu_name_dfo
+  # still no match --> try match with CU_NAME with cu_name_dfo and cu_name_pse
   if(sum(cond) == 0){ 
     
     CU_NAME_here_modif <- CU_name_species$CU_NAME_modif[r]
@@ -319,7 +319,7 @@ for(r in 1:nrow(CU_name_species)){
     
   }
   
-  # still no match, no nothing for now
+  # still no match, do nothing for now
   if(sum(cond) == 0){
     
     if(message_show){
@@ -982,6 +982,47 @@ nrow(coord_duplicated) # 0
 
 # How many point
 (length(unique(nuseds$pointid)) - 1)/length(unique(nuseds$sys_nm_final)) * 100
+
+#
+# Add the survey_score field -------
+#' cf. Table 4.5 in section 4.1.3 of the Tech Report
+nuseds <- import_mostRecent_file_fun(wd = wd_output,pattern = "nuseds_cuid_streamid_")
+
+estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
+estim_class_nuseds
+
+nuseds$survey_score <- NA
+for(ecn in estim_class_nuseds){
+  # ecn <- estim_class_nuseds[1]
+  cond_nuseds <- nuseds$ESTIMATE_CLASSIFICATION == ecn
+  
+  if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
+    out <- "1"
+  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
+    out <- "2"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
+    out <- "3"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-4)"){
+    out <- "4"
+  }else if(ecn %in% c("RELATIVE ABUNDANCE (TYPE-5)",
+                      "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
+    out <- "5"
+  }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
+                      "PRESENCE-ABSENCE (TYPE-6)",
+                      "RELATIVE: VARYING MULTI-YEAR METHODS")){
+    out <- "6"
+  }else if(ecn == "UNKNOWN"){
+    out <- "Unknown"
+  }else if(ecn %in% c("","NO SURVEY THIS YEAR","NO SURVEY")){
+    out <- NA
+  }else{
+    print(ecn)
+  }
+  #print(out)
+  nuseds$survey_score[cond_nuseds] <- out
+}
+
+nuseds$survey_score |> unique()
 
 #
 # Export nuseds_cuid_streamid_DATE.csv -------- 

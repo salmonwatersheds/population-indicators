@@ -159,10 +159,7 @@ cu_list <- cu_list %>% left_join(
     summarise(first_year = min(year), last_year = max(year))
 )
 
-
-dataset103_output_new <- dataset103_output[NULL,]
-dataset202_output_new <- dataset202_output[NULL,]
-dataset391_output_new <- dataset391_output[NULL,]
+dataset103_output_new <- dataset202_output_new <- dataset391_output_new <- NULL
 
 figure_print <- F
 scale_log <- T
@@ -171,6 +168,7 @@ for(i in 1:nrow(cu_list)){
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
   # i <- which(cu_list$species_abbr == "CO" & cu_list$cu_name_pse == "North Thompson")
+  # i <- which(cu_list$cuid == 709)
   region <- cu_list$region[i]
   species_name <- cu_list$species_name[i]
   cuid <- cu_list$cuid[i]
@@ -187,81 +185,92 @@ for(i in 1:nrow(cu_list)){
   
   # log transform (and deal with 0s)
   y[y == 0 & !is.na(y)] <- 0.01
-  # log.y <- log(y + 0.01)
-  log.y <- log(y)
+  # y_log <- log(y + 0.01)
+  y_log <- log(y)
   
   # get generation length
   g <- cu_decoder$gen_length[cu_decoder$cuid == cuid]
   
   # Smooth spawner abundance using running mean
-  smooth.y <- rollapply(
-    data = log.y, FUN = mean, width = g,
+  y_log_smooth <- rollapply(
+    data = y_log, FUN = mean, width = g,
     # na.pad = TRUE, # deprecated. Use fill = NA instead of na.pad = TRUE
     na.rm = T, 
     fill = NA,
     align = "right") #
   
-  # Fill  dataset103_output 
-  dataset103_output_here <- dataset103_output[1:length(x),]
-  dataset103_output_here$region <- region
+  # Fill  dataset103_output
+  dataset103_output_here <- data.frame(region = rep(region,length(x)))
   dataset103_output_here$species_name <- species_name
   dataset103_output_here$cuid <- cuid
   dataset103_output_here$cu_name_pse <- cu_name_pse
   dataset103_output_here$year <- x
-  dataset103_output_here$avg_escape_log <- smooth.y
-  dataset103_output_new <- rbind(dataset103_output_new,dataset103_output_here)
+  dataset103_output_here$avg_escape_log <- y_log_smooth
+  
+  if(is.null(dataset103_output_new)){
+    dataset103_output_new <- dataset103_output_here
+  }else{
+    dataset103_output_new <- rbind(dataset103_output_new,dataset103_output_here)
+  }
   
   # Fit linear model
-  y_LT <- smooth.y[!is.na(smooth.y)] # to trouble shoot lm_LT
-  x_LT <- x[!is.na(smooth.y)]
+  y_LT <- y_log_smooth[!is.na(y_log_smooth)] # to trouble shoot lm_LT
+  x_LT <- x[!is.na(y_log_smooth)]
   lm_LT <- lm(y_LT ~ x_LT)
   
   # percent_change
-  year.span <- c(min(x[!is.na(smooth.y)]):max(x[!is.na(smooth.y)]))
+  year.span <- c(min(x[!is.na(y_log_smooth)]):max(x[!is.na(y_log_smooth)]))
   # percent_change <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1
   percent_change <- exp(lm_LT$coefficients[2]) - 1                              # to convert to % change / yr
   percent_change_2dec <- round(percent_change * 100,2)
   percent_change <- round(percent_change * 100,1)
   
   # Fill dataset202_output
-  dataset202_output_here <- dataset202_output[1,]
-  dataset202_output_here$region <- region
+  dataset202_output_here <- data.frame(region = region)
   dataset202_output_here$species_name <- species_name
   dataset202_output_here$cuid <- cuid
   dataset202_output_here$cu_name_pse <- cu_name_pse
   dataset202_output_here$percent_change <- percent_change
-  dataset202_output_here$slope <- round(lm_LT$coefficients[2],3)
-  dataset202_output_here$intercept <- round(lm_LT$coefficients["(Intercept)"],1)
-  dataset202_output_new <- rbind(dataset202_output_new,dataset202_output_here)
+  dataset202_output_here$slope <- round(lm_LT$coefficients[2],6)
+  dataset202_output_here$intercept <- round(lm_LT$coefficients["(Intercept)"],3)
+  dataset202_output_here$intercept_start_yr <- predict(lm_LT,newdata = data.frame(x_LT = x_LT[1])) |> round(3) # 1st year of the smoothed data
+  
+  if(is.null(dataset202_output_new)){
+    dataset202_output_new <- dataset202_output_here
+  }else{
+    dataset202_output_new <- rbind(dataset202_output_new,dataset202_output_here)
+  }
   
   #'* Calculate last 3 generations trends *
   
   x3g <- tail(x, g*3)
-  x3g <- tail(x[!is.na(smooth.y)], g*3)
-  lm_3g <- lm(tail(smooth.y[!is.na(smooth.y)], g*3) ~ x3g, na.action = "na.exclude")
+  x3g <- tail(x[!is.na(y_log_smooth)], g*3)
+  lm_3g <- lm(tail(y_log_smooth[!is.na(y_log_smooth)], g*3) ~ x3g, na.action = "na.exclude")
   
   #' Exclusion rule:
   #' If the number of NAs in x3g is > g --> we do not calculate the trend
   #' (i.e. we need at least 66.66% of data points to calculate the trend)
-  cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > g
+  cond_noEnoughData <- sum(is.na(tail(y_log, g*3))) > g
   if(grepl("Pink",species_name)){ # for pink salmon
-    cond_noEnoughData <- sum(is.na(tail(log.y, g*3))) > 3 + 1  # because g = 2 and there is 3 NAs in a complete series
+    cond_noEnoughData <- sum(is.na(tail(y_log, g*3))) > 3 + 1  # because g = 2 and there is 3 NAs in a complete series
   }
   if(cond_noEnoughData){
     threegen_percent_change <- NA
     threegen_slope <- NA
     threegen_intercept <- NA
+    threegen_intercept_start_yr <- NA
   }else{
     # threegen_percent_change <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1
     threegen_percent_change <- exp(lm_3g$coefficients[2]) - 1     # % change / yr
     threegen_percent_change_2dec <- round(threegen_percent_change * 100, 2)
     threegen_percent_change <- round(threegen_percent_change * 100,1)
-    threegen_slope <- round(lm_3g$coefficients[2],3)
-    threegen_intercept <- round(lm_3g$coefficients["(Intercept)"],1)
+    threegen_slope <- round(lm_3g$coefficients[2],6)
+    threegen_intercept <- round(lm_3g$coefficients["(Intercept)"],3)
+    threegen_intercept_start_yr <- predict(lm_3g, newdata = data.frame(x3g = x3g[1])) |> round(3)
   }
   
   # Fill dataset391_output
-  dataset391_output_here <-  dataset391_output[1,]
+  dataset391_output_here <- data.frame(region = region)
   dataset391_output_here$region <- region
   dataset391_output_here$species_name <- species_name
   dataset391_output_here$cuid <- cuid
@@ -269,9 +278,15 @@ for(i in 1:nrow(cu_list)){
   dataset391_output_here$threegen_percent_change <- threegen_percent_change
   dataset391_output_here$threegen_slope <- threegen_slope
   dataset391_output_here$threegen_intercept <- threegen_intercept
+  dataset391_output_here$threegen_intercept_start_yr <- threegen_intercept_start_yr
   dataset391_output_here$threegen_start_year <- x3g[1]
   dataset391_output_here$uploadid <- NA   # QUESTION: to remove?
-  dataset391_output_new <- rbind( dataset391_output_new, dataset391_output_here)
+  
+  if(is.null(dataset391_output_new)){
+    dataset391_output_new <- dataset391_output_here
+  }else{
+    dataset391_output_new <- rbind(dataset391_output_new, dataset391_output_here)
+  }
   
   #'* Figure *
   
@@ -290,7 +305,7 @@ for(i in 1:nrow(cu_list)){
   
   main <- paste(region_here,species_name,cuid,cu_name_pse,sep = " - ")
   
-  y_here <- log.y
+  y_here <- y_log
   ylab <- "Spawner abundance (log)"
   if(!scale_log){
     y_here <- exp(y_here)
@@ -306,12 +321,12 @@ for(i in 1:nrow(cu_list)){
   lines(x[!is.na(y_here)], y_here[!is.na(y_here)],lwd = 2, col = grey(0.5))
   
   # plot smoothed line
-  y_here <- smooth.y
+  y_here <- y_log_smooth
   if(!scale_log){
     y_here <- exp(y_here)
   }
   lines(x, y_here, lwd = 2, col = "black")
-  # points(x[!is.na(y)], smooth.y[!is.na(y)], lwd = 2, col = "black", pch = 1)
+  # points(x[!is.na(y)], y_log_smooth[!is.na(y)], lwd = 2, col = "black", pch = 1)
   
   # plot regression line for the 3 generation:
   # - if not enough data points:
@@ -326,11 +341,11 @@ for(i in 1:nrow(cu_list)){
   }
   
   # plot regression line for LT
-  y_here <- predict(lm_LT, newdata = data.frame(x[!is.na(smooth.y)]))
+  y_here <- predict(lm_LT, newdata = data.frame(x[!is.na(y_log_smooth)]))
   if(!scale_log){
     y_here <- exp(y_here)
   }
-  lines(x[!is.na(smooth.y)], y_here, lwd = 2, col = "red", lty = 2)
+  lines(x[!is.na(y_log_smooth)], y_here, lwd = 2, col = "red", lty = 2)
   legend("bottomright",paste0("i = ",i),bty = "n")
   
   legend("topright",paste0(c(percent_change_2dec,threegen_percent_change_2dec),"% / year"), 
@@ -408,6 +423,70 @@ lines(x = x, y = (predict(lm_LT, newdata = data.frame(x_LT = x))),
 
 predict(lm_LT, newdata = data.frame(x))
 
+# Check issue with PSE displaying trend lines too low ------
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1722908866770829?thread_ts=1719268108.787009&cid=C03LB7KM6JK
+
+cuid <- 709
+
+pattern <- "dataset103_output"
+dataset103_output <- import_mostRecent_file_fun(wd = wd_output, pattern = pattern)
+
+pattern <- "dataset202_output"
+dataset202_output <- import_mostRecent_file_fun(wd = wd_output, pattern = pattern)
+
+pattern <- "dataset391_output"
+dataset391_output <- import_mostRecent_file_fun(wd = wd_output, pattern = pattern)
+
+# plot spawner data on log scale
+cond_cuid <- spawners$cuid == cuid
+y <- spawners$estimated_count[cond_cuid]
+x <- spawners$year[cond_cuid]
+
+plot(x = x, y = log(y), pch = 16, col = "grey50")
+lines(x = x, y = log(y), lwd = 1.5, col = "grey50")
+
+# plot smoothed trend
+cond_cuid <- dataset103_output$cuid == cuid
+y <- dataset103_output$avg_escape_log[cond_cuid]
+x <- dataset103_output$year[cond_cuid]
+lines(x = x, y = y, lwd = 2, col = "black")
+
+# plot LT trend
+years <- dataset103_output$year[cond_cuid]
+years <- years[!is.na(dataset103_output$avg_escape_log[cond_cuid])]
+cond_cuid <- dataset202_output$cuid == cuid
+x <- min(years):max(years)
+y <- dataset202_output$slope[cond_cuid] * x + dataset202_output$intercept[cond_cuid]
+lines(x = x, y = y, lwd = 2, col = "red", lty = 2)
+
+# Plot 3 gen trend
+cond_cuid <- dataset391_output$cuid == cuid
+years <- dataset391_output$threegen_start_year[cond_cuid]:max(years)
+x <- min(years):max(years)
+y <- dataset391_output$threegen_slope[cond_cuid] * x + dataset391_output$threegen_intercept[cond_cuid] 
+lines(x = x, y = y, lwd = 2, col = "blue", lty = 2)
+
+lines(x3g, lm_3g$coefficients[2] * x3g + (lm_3g$coefficients["(Intercept)"] |> round(1)),
+      lwd = 2, col = "purple", lty = 2)
 
 
+lm_3g$coefficients[2] * x3g + (lm_3g$coefficients["(Intercept)"] |> round(1))
+lm_3g$coefficients[2] * x3g + lm_3g$coefficients["(Intercept)"]
+0.1462081 * x + -285.6122
+
+
+dataset391_output$threegen_slope[cond_cuid] * x + dataset391_output$threegen_intercept[cond_cuid] 
+
+
+0.1462081 * x -285.6122
+0.1462081 * x -285.6
+0.146 * x -285.6122
+0.146 * x + -285.6
+
+
+0.1462081 * x -285.6
+0.146 * x -285.6
+
+0.1462081 * x -285.6
+0.146208 * x -285.6
 

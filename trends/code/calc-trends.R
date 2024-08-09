@@ -220,7 +220,8 @@ for(i in 1:nrow(cu_list)){
   
   # percent_change
   year.span <- c(min(x[!is.na(y_log_smooth)]):max(x[!is.na(y_log_smooth)]))
-  # percent_change <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1
+  percent_change_total <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1  # total % change in time period
+  percent_change_total <- round(percent_change_total * 100,1)
   percent_change <- exp(lm_LT$coefficients[2]) - 1                              # to convert to % change / yr
   percent_change_2dec <- round(percent_change * 100,2)
   percent_change <- round(percent_change * 100,1)
@@ -230,7 +231,8 @@ for(i in 1:nrow(cu_list)){
   dataset202_output_here$species_name <- species_name
   dataset202_output_here$cuid <- cuid
   dataset202_output_here$cu_name_pse <- cu_name_pse
-  dataset202_output_here$percent_change <- percent_change
+  dataset202_output_here$percent_change <- percent_change              # CHANGE TO rate_change ?
+  dataset202_output_here$percent_change_total <- percent_change_total
   dataset202_output_here$slope <- round(lm_LT$coefficients[2],6)
   dataset202_output_here$intercept <- round(lm_LT$coefficients["(Intercept)"],3)
   dataset202_output_here$intercept_start_yr <- predict(lm_LT,newdata = data.frame(x_LT = x_LT[1])) |> round(3) # 1st year of the smoothed data
@@ -260,7 +262,8 @@ for(i in 1:nrow(cu_list)){
     threegen_intercept <- NA
     threegen_intercept_start_yr <- NA
   }else{
-    # threegen_percent_change <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1
+    threegen_percent_change_total <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1 # total change
+    threegen_percent_change_total <- round(threegen_percent_change_total * 100,1)
     threegen_percent_change <- exp(lm_3g$coefficients[2]) - 1     # % change / yr
     threegen_percent_change_2dec <- round(threegen_percent_change * 100, 2)
     threegen_percent_change <- round(threegen_percent_change * 100,1)
@@ -275,7 +278,8 @@ for(i in 1:nrow(cu_list)){
   dataset391_output_here$species_name <- species_name
   dataset391_output_here$cuid <- cuid
   dataset391_output_here$cu_name_pse <- cu_name_pse
-  dataset391_output_here$threegen_percent_change <- threegen_percent_change
+  dataset391_output_here$threegen_percent_change <- threegen_percent_change             # CHANGE TO threegen_rate_change ?
+  dataset391_output_here$threegen_percent_change_total <- threegen_percent_change_total
   dataset391_output_here$threegen_slope <- threegen_slope
   dataset391_output_here$threegen_intercept <- threegen_intercept
   dataset391_output_here$threegen_intercept_start_yr <- threegen_intercept_start_yr

@@ -117,7 +117,7 @@ biological_status_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       species_all = species_all)
 head(biological_status_HBSRM)
 colnames(biological_status_HBSRM)
-nrow(biological_status_HBSRM) # 137
+nrow(biological_status_HBSRM) # 143 ;  137
 unique(biological_status_HBSRM$comment)
 
 # add column biostatus for both thresholds (Smsy and 80% Smsy)
@@ -252,6 +252,28 @@ dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_nam
 # cond <- dataset390_output_old$cuid %in% c(729,752)
 # dataset390_output_old[cond,]
 
+#'* Import code_PSF_Status from database *
+#'related slack threads:
+#' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723143369148479
+#' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1715065514795349?thread_ts=1701199596.229739&cid=CJG0SHWCW
+
+# code_PSF_Status <- data.frame(psf_status_code = 1:9,
+#                               psf_status = c("good","fair","poor","extinct",
+#                                              "not-assessed","not-assessed",
+#                                              "data-deficient","data-deficient",
+#                                              "data-deficient"),
+#                               comment = c(rep("",4),
+#                                           "cyclic dominance",
+#                                           "low productivity or high exploitation",
+#                                           "insufficient time series length",
+#                                           "no estimates of spawner abundance in the most recent generation",
+#                                           "no spawner estimates available"))
+
+code_PSF_Status <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[20],
+                                         fromDatabase = fromDatabase,
+                                         update_file_csv = update_file_csv,
+                                         wd = wd_pop_indic_data_input_dropbox)
+
 
 #'* Import list of CUs with high exploitation and/or low productivity *
 # Return list of CUs that have high exploitation rate or low production rates,
@@ -294,18 +316,7 @@ highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_percentile =
 #'  - 8 = data-deficient (no estimates of spawner abundance in the most recent generation)
 #'  - 9 = data-deficient (no spawner estimates available)
 
-# Make this list into a dataframe that can be communicated
-code_PSF_Status <- data.frame(psf_status_code = 1:9,
-                              psf_status = c("good","fair","poor","extinct",
-                                             "not-assessed","not-assessed",
-                                             "data-deficient","data-deficient",
-                                             "data-deficient"),
-                              comment = c(rep("",4),
-                                          "cyclic dominance",
-                                          "low productivity or high exploitation",
-                                          "insufficient time series length",
-                                          "no estimates of spawner abundance in the most recent generation",
-                                          "no spawner estimates available"))
+
 # 
 # write.csv(code_PSF_Status,paste0(wd_data_dropbox,"/code_PSF_Status.csv"),
 #           row.names = F)

@@ -233,6 +233,12 @@ biological_status_old <- datasets_database_fun(nameDataSet = datasetsNames_datab
                                                update_file_csv = update_file_csv,
                                                wd = wd_pop_indic_data_input_dropbox)
 
+#'* Import the conservationunits_decoder.csv *
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
 #
 # Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------
 #
@@ -459,9 +465,10 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 cond <- biological_status_cu$psf_status_code %in% 1:3
 cuid_biostat <- biological_status_cu$cuid[cond]
 
-figure_print <- T
+figure_print <- F
 percent <- 0
 for(cuid in cuid_biostat){
+  # cuid <- 516
   plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
                                        cuspawnerabundance = spawnerabundance_cu, 
                                        dataset101_output = biological_status_cu, 
@@ -506,6 +513,90 @@ for(r in 1:nrow(bs_check)){
 
 cond <- bs_check$sr_status != bs_check$sr_status_2
 bs_check[cond,]
+
+#
+# Same figure as above but for cyclic CUs (TEMPORARY - until these benchmarks are accepted) -----
+# These CUs will have their figure produced in the above section in future so 
+# no need to keep this section then.
+#
+
+# IMPORT FILES RUNING CODE FROM SECTION ABOVE
+
+cond_cuid <- grepl("cyclic",conservationunits_decoder$cu_name_pse)
+cuid_cyclic <- conservationunits_decoder$cuid[cond_cuid]
+
+#'* fill biological_status_cu for these CUs because it was not done in 3_biological_status.R *
+
+
+biological_status_cyclic <- biological_status_cu[biological_status_cu$cuid %in% cuid_cyclic,]
+
+biological_status_cyclic$sr_red_prob <- sapply(cuid_cyclic,function(cuid){
+  cond <- biological_status_HBSRM$cuid == cuid
+  return(biological_status_HBSRM$status_Smsy80_red[cond])
+})
+biological_status_cyclic$sr_yellow_prob <- sapply(cuid_cyclic,function(cuid){
+  cond <- biological_status_HBSRM$cuid == cuid
+  return(biological_status_HBSRM$status_Smsy80_amber[cond])
+})
+biological_status_cyclic$sr_green_prob <- sapply(cuid_cyclic,function(cuid){
+  cond <- biological_status_HBSRM$cuid == cuid
+  return(biological_status_HBSRM$status_Smsy80_green[cond])
+})
+
+col_sr_prob <- c("sr_red_prob","sr_yellow_prob","sr_green_prob")
+biological_status_cyclic$sr_status <- sapply(cuid_cyclic,function(cuid){
+  cond <- biological_status_cyclic$cuid == cuid
+  cond_prob <- biological_status_cyclic[cond,col_sr_prob] == max(biological_status_cyclic[cond,col_sr_prob])
+  return(c("poor","fair","good")[cond_prob])
+})
+
+biological_status_cyclic$psf_status_code <- sapply(cuid_cyclic,function(cuid){
+  cond <- biological_status_cyclic$cuid == cuid
+  out <- 1
+  if(biological_status_cyclic$sr_status[cond] == "fair"){
+    out <- 2
+  }else if(biological_status_cyclic$sr_status[cond] == "poor"){
+    out <- 3
+  }
+  return(out)
+})
+biological_status_cyclic$psf_status_code_all <- biological_status_cyclic$psf_status_code
+
+biological_status_cyclic$psf_status_type <- "sr"
+
+#'* fill biological_status_cu for these CUs because it was not done in 3_biological_status.R *
+
+benchmarks_cyclic <- benchmarks_cu[benchmarks_cu$cuid %in% cuid_cyclic,]
+
+for(r in 1:nrow(benchmarks_cyclic)){
+  # r <- 1
+  cuid <- benchmarks_cyclic$cuid[r]
+  cond <- benchmarks_HBSRM$cuid == cuid
+  cond_method <- benchmarks_HBSRM$method == "HPD"
+  cond_bench <- benchmarks_HBSRM$benchmark == "Sgen"
+  benchmarks_cyclic$sgen[r] <- benchmarks_HBSRM$m[cond & cond_method & cond_bench]
+  benchmarks_cyclic$sgen_lower[r] <- benchmarks_HBSRM$CI025[cond & cond_method & cond_bench]
+  benchmarks_cyclic$sgen_upper[r] <- benchmarks_HBSRM$CI975[cond & cond_method & cond_bench]
+  
+  cond_bench <- benchmarks_HBSRM$benchmark == "Smsy"
+  benchmarks_cyclic$smsy[r] <- benchmarks_HBSRM$m[cond & cond_method & cond_bench] * .8
+  benchmarks_cyclic$smsy_lower[r] <- benchmarks_HBSRM$CI025[cond & cond_method & cond_bench] * .8
+  benchmarks_cyclic$smsy_upper[r] <- benchmarks_HBSRM$CI975[cond & cond_method & cond_bench] * .8
+}
+
+figure_print <- T
+for(cuid in cuid_cyclic){
+  # cuid <- cuid_cyclic[1]
+  plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
+                                       cuspawnerabundance = spawnerabundance_cu, 
+                                       dataset101_output = biological_status_cyclic, # biological_status_cu, 
+                                       dataset102_output = benchmarks_cyclic, # benchmarks_cu, 
+                                       #dataset103_output = cuspawnerabund_smooth,
+                                       conservationunits_decoder = conservationunits_decoder, 
+                                       figure_print = figure_print, # figure_print, 
+                                       wd_figures = wd_figures, 
+                                       file_name_nchar = 50)
+}
 
 
 #

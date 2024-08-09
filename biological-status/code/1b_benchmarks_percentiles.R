@@ -164,7 +164,7 @@ print_fig <- F
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
+  # i_rg <- 7
   
   region_i <- gsub("_"," ",region[i_rg])
   if(region_i == "Central coast"){

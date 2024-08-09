@@ -1764,8 +1764,9 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
                                                  dataset102_output,  # benchmark values
                                                  #dataset103_output,  # smooth spawner abundance NOT UPDATED so calculated in the function
                                                  conservationunits_decoder,  # for the generation length
-                                                 figure_print = F, wd_figures = NA
-){
+                                                 figure_print = F,
+                                                 wd_figures = NA,
+                                                 file_name_nchar = 25){
   
   require(zoo) # to use rollapply()
   
@@ -1793,7 +1794,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
   cu_name_pse <- gsub(" (even)","",cu_name_pse)
   cu_name_pse <- gsub(" (odd)","",cu_name_pse)
-  if(nchar(cu_name_pse) > 25){   # the figure can't print if the number of characters is too large
+  if(nchar(cu_name_pse) > file_name_nchar){   # the figure can't print if the number of characters is too large
     cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = 25) 
   }
   species_abbr <- conservationunits_decoder$species_abbr[cond]
@@ -2007,6 +2008,348 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   }
 }
 
-# 
+#' Function to run the HBSRM models with JAGS. Possibility to run the Ricker model 
+#' or the Larking model (for CUs with cyclic dynamics) with all the possible 
+#' combination of predicting variables (as in Grant et al. 2020. The 2017 Fraser
+#' sockeye...)
+HBSRM_JAGS_fun <- function(model_name = c("Ricker",
+                                          "Larkin_123",
+                                          "Larkin_1","Larkin_2","Larkin_3",
+                                          "Larkin_12","Larkin_13","Larkin_23"), 
+                           modelFilename = NA,
+                           jags.data,
+                           jags.parms,
+                           n.iter = 10000,
+                           n.thin = 10,
+                           n.burnin = 3000,
+                           n.chains = 6){
+  
+  require(R2jags)
+  
+  if(is.na(modelFilename)){
+    modelFilename <- paste0("HBSRM_",model_name,".txt")
+    
+  }else if(!grepl(".txt",modelFilename)){
+    modelFilename <- paste0(modelFilename,".txt")
+  }
+  
+  if(model_name == "Ricker"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 1:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_123"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b1[i] ~ dunif(0,100)
+        		b2[i] ~ dunif(0,100)
+        		b3[i] ~ dunif(0,100)
+        		
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 4:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b1[i] * S[j - 1, i] - b2[i] * S[j - 2, i] - b3[i] * S[j - 3, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_1"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b1[i] ~ dunif(0,100)
+
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 2:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b1[i] * S[j - 1, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_2"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b2[i] ~ dunif(0,100)
+
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 3:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b2[i] * S[j - 2, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_3"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b3[i] ~ dunif(0,100)
+
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 4:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b3[i] * S[j - 3, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_12"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b1[i] ~ dunif(0,100)
+        		b2[i] ~ dunif(0,100)
+        		
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 3:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b1[i] * S[j - 1, i] - b2[i] * S[j - 2, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_13"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b1[i] ~ dunif(0,100)
+        		b3[i] ~ dunif(0,100)
+        		
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 4:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b1[i] * S[j - 1, i] - b3[i] * S[j - 3, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+    
+  }else if(model_name == "Larkin_23"){
+    cat("
+        model{
+        
+        	# Hyper priors
+        	
+        	log_mu_a ~ dnorm(0.5, 1.0E-6)
+        	mu_a <- exp(log_mu_a)
+        	tau_a ~ dgamma(0.5, 0.5) 
+        	sd_a <- pow(tau_a, -0.5)
+        	
+        	for(i in 1:nCUs) {	                  # For each CU, draw estimates from hyperdistribution
+        	
+        		a[i] ~ dnorm(mu_a, tau_a)
+        		
+        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
+        		
+        		b2[i] ~ dunif(0,100)
+        		b3[i] ~ dunif(0,100)
+        		
+         		# sigma for the model likelihood estimation
+        		sd[i] ~ dunif(0.05, 10)
+        		tau[i] <- pow(sd[i], -2)	
+        	}
+        	
+        	for(i in 1:nCUs){
+        		for(j in 4:nYrs){
+        		
+        		 	# Model prediction for log R/S based on estimated parameters
+        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i] - b2[i] * S[j - 2, i] - b3[i] * S[j - 3, i]
+        		 	
+        		 	# Likelihood
+        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
+        		}
+        	}
+        }", fill = TRUE, file = modelFilename)
+  }
+  
+  # Run Model
+  print("Running Parallel")
+  # **SP: Why have this message when it's not actually running in parallel?
+  # **BSC: TODO: get the parallele to work on windows, MAC and Linuxf
+  # https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
+  
+  ptm = proc.time()
+  
+  jagsfit.p <- jags(data = jags.data,  
+                    parameters.to.save = jags.parms,
+                    n.thin = n.thin,                     # thinning rate
+                    n.iter = n.iter,  # n.iter 100000
+                    model.file = modelFilename, 
+                    n.burnin = n.burnin, # 5000
+                    n.chains = n.chains) # 6
+  
+  endtime <- proc.time()-ptm
+  endtime[3]/60
+  
+  post <- as.mcmc(jagsfit.p)
+  
+  out <- list(jagsfit.p,post)
+  names(out) <- c("jagsfit.p","post")
+  return(out)
+}
+
 
 

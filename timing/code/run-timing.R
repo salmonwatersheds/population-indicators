@@ -48,7 +48,7 @@ dat <- dat[!is.na(dat$cuid), ]
 dat <- dat[which(apply(is.na(dat[, c("rt_start", "rt_peak", "rt_end")]), 1, sum) != 3), ]
 
 # How many CUs do we hav run timing for?
-dim(dat) # 337!
+dim(dat) # 335!
 
 sum(is.na(dat$rt_peak))
 sum(is.na(dat$rt_start)) # all have at least a start
@@ -76,6 +76,7 @@ speciesCodes <- c("CK", "CM", "CO", "PK", "SEL", "SER", "SH")
 timing.sd <- expand.grid(speciesCodes, regions) %>%
   rename(species = "Var1", region = "Var2")
 timing.sd$sd <- NA
+
 
 for(s in 1:length(speciesCodes)){
   for(r in 1:length(regions)){
@@ -208,7 +209,7 @@ for(i in 1:n.cuid){
   rm(dum)
 }
 
-dat.out$run_timing_ppn <- round(dat.out$run_timing_ppn, digits = 3)
+dat.out$run_timing_ppn <- signif(dat.out$run_timing_ppn, digits = 3)
 
 write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
 

@@ -61,7 +61,7 @@ Dropbox_directory <- "/Users/stephaniepeacock/Salmon Watersheds Dropbox/Stephani
 # Load database data **Do this at the top so the rest of the script can be easily run
 #------------------------------------------------------------------------------
 
-# Current DQ data
+# Current live DQ data in Legacy site
 dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/dataset390_2023-05-20.csv"))
 
 # Juvenile survey data
@@ -86,7 +86,7 @@ spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawners
 # Load cu list
 cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
   distinct(pooledcuid, .keep_all = TRUE) %>% # there are duplicates for pooledcuid
-  filter(cu_type != "Bin")
+  filter(cu_name_pse != "Swan/Club") # Remove Swan/Club (binned)
   
 unique(tapply(cu_list$cuid, cu_list$cuid, length))
 # cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") 

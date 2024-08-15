@@ -209,7 +209,18 @@ for(i in 1:n.cuid){
   rm(dum)
 }
 
+# Round proportions to three significant figures
 dat.out$run_timing_ppn <- signif(dat.out$run_timing_ppn, digits = 3)
+
+# Set proportions < 0.01 quantile to zero (to avoid large very small numbers taking up space in database)
+for(i in 1:n.cuid){
+  if(sum(!is.na(dat.out$run_timing_ppn[dat.out$cuid == cuid[i]])) > 10){
+    q <- quantile(dat.out$run_timing_ppn[dat.out$cuid == cuid[i]], 0.01)
+  ind.q <- which(dat.out$run_timing_ppn[dat.out$cuid == cuid[i]] < q)
+  if(length(ind.q) > 0){
+  dat.out$run_timing_ppn[dat.out$cuid == cuid[i]][ind.q] <- 0
+  }
+}}
 
 write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
 

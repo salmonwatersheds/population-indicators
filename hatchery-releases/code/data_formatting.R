@@ -5,19 +5,20 @@
 #' SWP_hatchery_data_template.xlsx.
 #' 
 #' #' Files imported:
-#' - PSF_modified_SEP_releases_2023.xlsx (from DFO)
-#' - conservationunits_decoder (from database)
-#' - SWP_hatchery_data_template.xlsx # use for formating the output dataset
-#' - 
+#' 
+#' - PSF_modified_SEP_releases_2023.xlsx    # (from DFO)
+#' - conservationunits_decoder.csv          # (from PSE database)
+#' - SWP_hatchery_data_template.xlsx        # use for formatting the output dataset
 #' 
 #' Files exported:
-#' - cuid_broodstock_multi.csv  # case where there are multiple cuid_broodstock 
-#' for a same release_site_name-release_stage-release_site_CUID-release_date
-#' combination.
+#' 
+#' - SWP_hatchery_data_DATE.xlsx #
+#' - cuid_broodstock_multi.csv   # to check cases where there are multiple cuid_broodstock
+#'                               # for a same release_site_name-release_stage-release_site_CUID-release_date
+#'                               # combination.
 #' 
 #' 
-#' Files produced: 
-#' - 
+#' 
 #'******************************************************************************
 
 # 
@@ -76,7 +77,7 @@ source(paste(wd_code,"functions.R",sep = "/"))
 #
 # Import datasets --------
 
-#'** Import conservation-units.csv from wd_spawner_surveys_data **
+#'* Import conservation-units.csv from wd_spawner_surveys_data *
 #' This file comes from the PSF database all allows to match the DFO STOCK_CU_INDEX
 #' with the PSF 'cuid' (or 'CUID') with the field 'cu_index' (= STOCK_CU_INDEX)
 #' Import the name of the different datasets in the PSF database and their 
@@ -88,7 +89,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = F,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-#'** Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data **
+#'* Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data *
 DFO_df_all <- return_file_lastVersion_fun(wd_data = wd_data,
                                           pattern = "PSF_modified_SEP_releases")
 
@@ -130,12 +131,13 @@ DFO_df <- DFO_df[! DFO_df$STOCK_CU_INDEX %in% CUToRemove,]
 DFO_df <- DFO_df[! DFO_df$REL_CU_INDEX %in% CUToRemove,]
 nrow(DFO_df) # 31830
 
-#' ** Import the hatchery template from wd_data as a list **
+
+#' * Import the hatchery template from wd_data as a list *
 filePSF_l <- hatchery_template_fun(wd_data = wd_data,
-                                      filePSFname = "SWP_hatchery_data_template.xlsx")
+                                   filePSFname = "SWP_hatchery_data_template.xlsx")
 
 #
-# Create  ----------
+# Create SWP_hatchery_data_DATE.xlsx  ----------
 #' Create a dataframe with the name of the columns in PSF_modified_SEP_releases_DATE.xlsx
 #' and corresponding column names and sheets in the survey file SWP_hatchery_data_...xlsx
 matchCol_df <- matching_columns_fun(wd_data = wd_data,
@@ -504,6 +506,7 @@ for(sh_i in 1:length(names(filePSFnew_l))){
 # - 6) In sheet DataEntry_facilitiescuids, I removed the facilites (i.e., facilityID) that do not have coordinate in sheet DataEntry_facilities and placed these in a new additional sheet called DataEntry_facilitiescuids_NAcoord
 # - 7) I cannot do anything about the 1st sheet ??? progratically, it has to be copy pasted by hand from the template and then filled by hand
 
+#
 # Edit release_type_pse for Transboundary and steelhead (ONE TIME FIX?) -----------
 
 #' #'Import the name of the different datasets in the PSF database and their 
@@ -578,7 +581,7 @@ unique(dataset384_output_rest$release_stage)
 unique(dataset384_output_SH$release_type_pse)
 unique(dataset384_output_TB$release_type_pse)
 
-#' * Correction *
+#' * Corrections *
 #' Remove the following two data points from dataset384_output_SH
 cond <- dataset384_output_SH$release_stage %in% c("Catchable","2 years") # get ride of them PLUS they don't match the value in the PSE
 dataset384_output_SH[cond,]
@@ -587,131 +590,93 @@ dataset384_output_SH <- dataset384_output_SH[!cond,]
 # export the file
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
-date <- "20240404"
+#date <- "20240404"
 write.csv(dataset384_output_SH,paste0(wd_output,"/dataset384_output_SH_",date,".csv"),
           row.names = F)
 write.csv(dataset384_output_TB,paste0(wd_output,"/dataset384_output_TB_",date,".csv"),
           row.names = F)
 
 #
-#' Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx (ONE TIME FIX?) -----
+# Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx (ONE TIME FIX?) -----
 #' 
 DataEntry_relase <- read.xlsx(file = paste0(wd_output,"/SWP_hatchery_data_20240404.xlsx"),
                               sheetName = "DataEntry_releases")
 
 DataEntry_relase$location_name_pse <- DataEntry_relase$release_site_name
 
-cond <- grepl(" [R|r]",DataEntry_relase$location_name_pse) & !grepl(" RIVER",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" R"," River",DataEntry_relase$location_name_pse[cond])
+# Replace "/" by " " (it is important to do it 1st)
+DataEntry_relase$location_name_pse <- gsub("/"," ",DataEntry_relase$location_name_pse)
 
-cond <- grepl(" Lk",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Lk"," Lake",DataEntry_relase$location_name_pse[cond])
+# Replace "+" by " + " (it is important to do it 1st)
+DataEntry_relase$location_name_pse <- gsub("+"," + ",DataEntry_relase$location_name_pse, 
+                                           fixed = T)
 
-cond <- grepl(" Cr",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Cr"," Creek",DataEntry_relase$location_name_pse[cond])
+# Remove the double spaces
+DataEntry_relase$location_name_pse <- gsub("  "," ",DataEntry_relase$location_name_pse)
 
-cond <- grepl(" Cv",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Cv"," Cove",DataEntry_relase$location_name_pse[cond])
+# replace the abbreviations by their full name
+abbreviations_df # in functions_general.R
 
-cond <- grepl(" Pd",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Pd"," Pond",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Ch",DataEntry_relase$location_name_pse)
-for(l in letters){
-  cond <- cond & !grepl(paste0(" Ch",l),DataEntry_relase$location_name_pse)
+for(r in 1:nrow(abbreviations_df)){
+  # r <- 1
+  full_name <- character_replace_fun(charToChange = abbreviations_df$abbrevation[r],
+                                     charNew = abbreviations_df$word_full[r], 
+                                     name_vector = DataEntry_relase$location_name_pse,
+                                     print = F)
+  
+  DataEntry_relase$location_name_pse <- full_name$name_vector_new
 }
-unique(DataEntry_relase$location_name_pse[cond])
 
-cond <- grepl(" In",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" In"," Inlet",DataEntry_relase$location_name_pse[cond])
+unique(DataEntry_relase$location_name_pse)
 
-cond <- grepl(" Sl",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Sl"," Slough",DataEntry_relase$location_name_pse[cond])
+# Change the Acronyms:
+# https://www.marinescience.psf.ca/wp-content/uploads/2023/05/LFR_ReleaseStrategyEvaluationBC_16July2021-Cover-Screen.pdf
+# https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40594361.pdf
+acronyms_df # in functions_general.R
 
-cond <- grepl(" Is",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Is"," Island",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Strm",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Strm"," Stream",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Pk",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Pk"," Peak",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Sp",DataEntry_relase$location_name_pse) & !grepl(" Spit",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Sp"," Spawning",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Cst",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Cst"," Coast",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Val",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Val"," Valley",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Sd",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Sd"," Sound",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Est",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Est"," Estuary",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Wtshd",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Wtshd"," Watershed",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Tribs",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Tribs"," Tributaries",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Trib",DataEntry_relase$location_name_pse) & !grepl(" Tributaries",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Trib"," Tributary",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Div",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Div"," Division",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Hb",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Hb"," Harbour",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Fwy",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Fwy"," Freeway",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" Msh",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" Msh"," Marsh",DataEntry_relase$location_name_pse[cond])
- 
-cond <- grepl(" N",DataEntry_relase$location_name_pse) & !grepl(" No",DataEntry_relase$location_name_pse) & !grepl(" Na",DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" N"," North",DataEntry_relase$location_name_pse[cond])
-
-cond <- grepl(" S",DataEntry_relase$location_name_pse)
-for(l in letters){
-  cond <- cond & !grepl(paste0(" S",l),DataEntry_relase$location_name_pse)
+for(r in 1:nrow(acronyms_df)){
+  # r <- 1
+  char <- acronyms_df$acronym[r]
+  cond <- grepl(char,DataEntry_relase$location_name_pse)
+  unique(DataEntry_relase$location_name_pse[cond])
+  char_new <- paste0("(",acronyms_df$word_full[r],")")
+  DataEntry_relase$location_name_pse[cond] <- gsub(char,char_new,DataEntry_relase$location_name_pse[cond])
 }
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" S"," South",DataEntry_relase$location_name_pse[cond])
 
-cond <- grepl(" E",DataEntry_relase$location_name_pse)
-for(l in letters){
-  cond <- cond & !grepl(paste0(" E",l),DataEntry_relase$location_name_pse)
-}
+# Extra corrections:
+char <- "@Duncan"  # 
+cond <- grepl(char,DataEntry_relase$location_name_pse)
 unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(" E"," East",DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Duncan)",DataEntry_relase$location_name_pse[cond])
+
+char <- "-use6501"  #
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char,"",DataEntry_relase$location_name_pse[cond])
+
+char <- "Culvert 150 Creek"
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char,"Culvert Creek",DataEntry_relase$location_name_pse[cond])
+
+
+# Check 
+View(unique(data.frame(DataEntry_relase$location_name_pse)))
+
+# QUESTION: what to do with these ones?
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1714522371999499?thread_ts=1712267027.385489&cid=C03LB7KM6JK
+#' - Three B Channel --> ???
+#' - Br 100 Swamp  --> Bridge 100 Swamp???
+#' - 28 Mile Creek --> CORRECT
+#' - Branch 10 Creek --> CORRECT
+#' - Ed Leon Slough --> CORRECT
+#' - Ink Lake --> CORRECT
+
+pattern <- "Cowichan R (Duncan)"
+cond <- grepl(pattern,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+unique(DataEntry_relase[cond,c("location_name_pse","release_site_latitude","release_site_longitude")])
+
 
 # remove Transboundary data
 cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
@@ -720,7 +685,7 @@ DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cui
 #
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
-# date <- "20240404"
+date <- "20240404"
 write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTB_",date,".csv"),
           row.names = F)
 
@@ -868,4 +833,189 @@ sum(is.na(DFO_df$START_DATE)) # 0
 sum(is.na(DFO_df$FACILITY_LATITUDE)) #  2043
 sum(is.na(DFO_df$FACILITY_LONGITUDE)) #  2043
 unique(DFO_df$FACILITY_NAME[is.na(DFO_df$FACILITY_LATITUDE)]) # facilities withuot GIS coordinates
+
+# OLDER CODE -----
+
+# cond <- grepl(" [R|r]",DataEntry_relase$location_name_pse) & !grepl(" RIVER",DataEntry_relase$location_name_pse)
+cond <- grepl(" [R|r]",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" [R|r]",l),DataEntry_relase$location_name_pse)
+}
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" R"," River",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Lk",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Lk"," Lake",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Cr",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Cr"," Creek",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Cv",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Cv"," Cove",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Pd",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Pd"," Pond",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Ch",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" Ch",l),DataEntry_relase$location_name_pse)
+}
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Ch"," Channel",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" In",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" In"," Inlet",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Sl",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Sl"," Slough",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Is",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Is"," Island",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Strm",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Strm"," Stream",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Pk",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Pk"," Peak",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Sp",DataEntry_relase$location_name_pse) & !grepl(" Spit",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Sp"," Spawning",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Cst",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Cst"," Coast",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Val",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Val"," Valley",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Sd",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Sd"," Sound",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Est",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Est"," Estuary",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Wtshd",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Wtshd"," Watershed",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Tribs",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Tribs"," Tributaries",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Trib",DataEntry_relase$location_name_pse) & !grepl(" Tributaries",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Trib"," Tributary",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Div",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Div"," Division",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Hb",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Hb"," Harbour",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Fwy",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Fwy"," Freeway",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" Msh",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" Msh"," Marsh",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" N",DataEntry_relase$location_name_pse) & !grepl(" No",DataEntry_relase$location_name_pse) & !grepl(" Na",DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" N"," North",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" S",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" S",l),DataEntry_relase$location_name_pse)
+}
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" S"," South",DataEntry_relase$location_name_pse[cond])
+
+cond <- grepl(" E",DataEntry_relase$location_name_pse)
+for(l in letters){
+  cond <- cond & !grepl(paste0(" E",l),DataEntry_relase$location_name_pse)
+}
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(" E"," East",DataEntry_relase$location_name_pse[cond])
+
+
+char <- "UPFR"
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Upper Fraser)",DataEntry_relase$location_name_pse[cond])
+
+char <- "LWFR"
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Lower Fraser)",DataEntry_relase$location_name_pse[cond])
+
+char <- "JNST"
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Johnstone Strait)",DataEntry_relase$location_name_pse[cond])
+
+char <- "TOMF"  # Upper Thompson ?!
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Upper Thompson)",DataEntry_relase$location_name_pse[cond])
+
+char <- "TOMM"  #= Lower Thompson ?!
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Lower Thompson)",DataEntry_relase$location_name_pse[cond])
+
+char <- "CCST"  # 
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Central Coast)",DataEntry_relase$location_name_pse[cond])
+
+char <- "SKNA"  # 
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Skeena River)",DataEntry_relase$location_name_pse[cond])
+
+char <- "SWVI"  # 
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Southwest Vancouver Island)",DataEntry_relase$location_name_pse[cond])
+
+char <- "NWVI"  #
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Northwest Vancouver Island)",DataEntry_relase$location_name_pse[cond])
+
+char <- "GSMN"  # 
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Strait of Georgia Mainland)",DataEntry_relase$location_name_pse[cond])
+
+char <- "GSVI"  # 
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Strait of Georgia Vancouver Island)",DataEntry_relase$location_name_pse[cond])
+
+char <- "QCI"  # "Queen Charlotte Islands", which is now Haida Gwaii
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (Haida Gwaii)",DataEntry_relase$location_name_pse[cond])
+
+char <- "NCST"  #
+cond <- grepl(char,DataEntry_relase$location_name_pse)
+unique(DataEntry_relase$location_name_pse[cond])
+DataEntry_relase$location_name_pse[cond] <- gsub(char," (North Coast)",DataEntry_relase$location_name_pse[cond])
 

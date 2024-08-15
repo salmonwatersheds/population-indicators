@@ -1,7 +1,18 @@
 ###############################################################################
 # Code to produce draft visuals of life-history timing to inform development
 # of PSE 2.0
-#
+#'
+#' Imported datasets:
+#' - conservationunits.csv
+#' - spawner_abundance.csv
+#' - fry_and_smolt_mig_20231003.csv
+#' - timing_CUs.csv
+#' - migration_timing.csv
+#' 
+#' Exported datasets: none
+#' - 
+#'
+#'
 # Cct 5, 2023
 # Steph Peacock
 ###############################################################################

@@ -66,7 +66,7 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # option to export the figures
-print_fig <- F
+print_fig <- T
 
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
@@ -145,6 +145,16 @@ species_all <- T
 #' data available in more recent years.
 yearCurrentAbundance <- NA # was 2021
 
+#'* Select the cyclic CUs *
+
+cond_cycl <- grepl("cyclic",conservationunits_decoder$cu_name_pse)
+cuid_cycl <- conservationunits_decoder$cuid[cond_cycl]
+conservationunits_decoder[cond_cycl,]
+
+region <- unique(conservationunits_decoder$region[cond_cycl])
+species <- unique(conservationunits_decoder$species_name[cond_cycl])
+
+
 options(warn = 0)  # warnings are stored until the top level function returns (default)
 
 # 
@@ -166,9 +176,9 @@ for(i_rg in 1:length(region)){
   # Get all the species for which _posteriors_priorShift datasets are available
   if(species_all){
     files_list <- list.files(wd_data_input)
-    files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
+    files_s <- files_list[grepl(pattern = "cyclic_Larkin_DIC_HBSRM_posteriors_priorShift",files_list)]
     files_s <- files_s[grepl(pattern = regionName,files_s)]
-    species_acro <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
+    species_acro <- unique(sub("_cyclic_Larkin_DIC_HBSRM_posteriors_priorShift.*", "", files_s))
     species_acro <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species_acro)
     
     species <- sapply(X = species_acro,FUN = function(sp){
@@ -206,13 +216,20 @@ for(i_rg in 1:length(region)){
       # - with bi the CU-level density dependence parameter bi ~ logN(log(1/Smaxi),sigma_bi), with Smaxi being the max(S) of that CU i
       # in the datasets "ma_a" = "ma_a", "sigma_a" = "sd_a", "sigma_bi" = "sd[i]"
       post <- readRDS(paste0(wd_data_input,"/",regionName,"_",species_acro[i_sp],
-                             "_HBSRM_posteriors_priorShift.rds"))
+                             "_cyclic_Larkin_DIC_HBSRM_posteriors_priorShift.rds"))
+      
+      # There are potentially mulitple best models for cyclic CUs, select the one
+      # with delta DIC = 0
+      #' TODO: what else to do? Compare the benchmark stability between the best model
+      #' as in Grant et al 2017 ?
+      m_best <- post$DICs$models[post$DICs$delta == 0]
+      post <- post[[m_best]]
       
       # Import the S and R matrices used for fitting the HBSR model:
       # BSC: the wd here will eventually have to be set to the final repo for the 
       # exported datasets.
       SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species_acro[i_sp],
-                            "_SR_matrices.rds"))
+                            "_cyclic_SR_matrices.rds"))
       
       # Find the nb of CUs
       # CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"),
@@ -282,11 +299,15 @@ for(i_rg in 1:length(region)){
       
       # Calculate benchmarks for all mcmc draws to account for correlation between a and b
       # nb CUs x nb different parameters (i.e., 5) x nb chains x nb iterations
+      dimnames <- post[[1]] |> colnames()
+      b_Larkin <- gsub("Larkin_","",m_best) |> strsplit(split = "") |> unlist()
+      b_Larkin <- paste0("b",b_Larkin)
+      
       SR_bench <- array(
         data = NA,
-        dim = c(nCUs, 5, length(post), nrow(post[[1]])),
+        dim = c(nCUs, 5 + length(b_Larkin), length(post), nrow(post[[1]])),
         dimnames = list(CUs, 
-                        c("a", "b", "sig", "Smsy", "Sgen"), 
+                        c("a", "b", b_Larkin, "sig", "Smsy", "Sgen"), 
                         paste0("chain", 1:length(post)), 
                         NULL))
       
@@ -295,10 +316,28 @@ for(i_rg in 1:length(region)){
           SR_bench[i, "a", , ] <- post.arr[, , which(pnames == "a")]      # matrix nb chains x nb mcmc draws --> all the values for that parameter
           SR_bench[i, "b", , ] <- post.arr[, , which(pnames == "b")]
           SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == "sd")]   # sigma_bi
+          if("b1" %in% b_Larkin){
+            SR_bench[i, "b1", , ] <- post.arr[, , which(pnames == "b1")]
+          }
+          if("b2" %in% b_Larkin){
+            SR_bench[i, "b2", , ] <- post.arr[, , which(pnames == "b2")]
+          }
+          if("b3" %in% b_Larkin){
+            SR_bench[i, "b3", , ] <- post.arr[, , which(pnames == "b3")]
+          }
         }else{
           SR_bench[i, "a", , ] <- post.arr[, , which(pnames == paste0("a[", i, "]"))]
           SR_bench[i, "b", , ] <- post.arr[, , which(pnames == paste0("b[", i, "]"))]
           SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == paste0("sd[", i, "]"))]
+          if("b1" %in% b_Larkin){
+            SR_bench[i, "b1", , ] <- post.arr[, , which(pnames == paste0("b1[", i, "]"))]
+          }
+          if("b2" %in% b_Larkin){
+            SR_bench[i, "b2", , ] <- post.arr[, , which(pnames == paste0("b2[", i, "]"))]
+          }
+          if("b3" %in% b_Larkin){
+            SR_bench[i, "b3", , ] <- post.arr[, , which(pnames == paste0("b3[", i, "]"))]
+          }
         }
       }
       
@@ -307,11 +346,33 @@ for(i_rg in 1:length(region)){
       # directly using the methods of Scheuerell (2016).
       for(i in 1:nCUs){
         # i <- 1
-        # i <- 3   # issue with Sgen in Fraser CO CU nb 3
+
+        # Return values for S_t-1, S_t-2 and S_t-3 
+        S_lastCycle <- SRm$S[,i]
+        while(is.na(tail(S_lastCycle,1))){   # remove the NAs from the tail
+          S_lastCycle <- S_lastCycle[-length(S_lastCycle)]
+        }
+        St1 <- S_lastCycle[length(S_lastCycle) - 1]
+        St2 <- S_lastCycle[length(S_lastCycle) - 2]
+        St3 <- S_lastCycle[length(S_lastCycle) - 3]
+        
         for(j in 1:length(post)){ # for each chain
           # j <- 1
           # Smsy (function can handle vectors)
-          SR_bench[i, "Smsy", j, ] <- calcSmsy(a = SR_bench[i, "a", j, ], 
+          
+          # Calculate alpha = a - b1*St-1 - b2*St-2 - b3*St-3 (as in p. 8 of Grant et al. 2020)
+          alpha_j <-  SR_bench[i, "a", j, ] # - b1*St1 - b2*St2 - b3*St3
+          if("b1" %in% b_Larkin){
+            alpha_j <- alpha_j -   SR_bench[i, "b1", j, ]*St1
+          }
+          if("b2" %in% b_Larkin){
+            alpha_j <- alpha_j -   SR_bench[i, "b2", j, ]*St2
+          }
+          if("b3" %in% b_Larkin){
+            alpha_j <- alpha_j -   SR_bench[i, "b3", j, ]*St3
+          }
+          
+          SR_bench[i, "Smsy", j, ] <- calcSmsy(a = alpha_j,               # SR_bench[i, "a", j, ], 
                                                b = SR_bench[i, "b", j, ])
           
           # Sgen (function not currently set up to handle vectors..think of updating this)
@@ -320,7 +381,7 @@ for(i_rg in 1:length(region)){
             SR_bench[i, "Sgen", j, k] <- calcSgen(
               Sgen.hat = 0.5 * SR_bench[i, "Smsy", j, k], 
               theta = c(
-                a = SR_bench[i, "a", j, k], 
+                a = alpha_j[k] ,                # SR_bench[i, "a", j, k], 
                 b = SR_bench[i, "b", j, k],
                 sig = SR_bench[i, "sig", j, k]),
               Smsy = SR_bench[i, "Smsy", j, k])
@@ -368,6 +429,7 @@ for(i_rg in 1:length(region)){
       benchSummary_region_species_df <- NULL
       
       # statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F") 
+      
       # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
       # layout(matrix(data = 1:(nCUs * 2), nrow = nCUs, byrow = T))
       for(i in 1:nCUs){
@@ -379,23 +441,23 @@ for(i_rg in 1:length(region)){
         #' the last generation
         #----------------------
         
-        CUname <- gsub(pattern = "_",replacement = " ",x = CUs[i])   # DFO Cu name --> not anymore it is pse naw and gsub might not be needed anymore
+        # CUname <- gsub(pattern = "_",replacement = " ",x = CUs[i])   # DFO Cu name --> not anymore it is pse now and gsub might not be needed anymore
         
-        cond <- cuspawnerabundance_rg_sp$cu_name_pse == CUname
+        cond <- cuspawnerabundance_rg_sp$cu_name_pse == CUs[i]
         spawnerAbundance <- cuspawnerabundance_rg_sp$estimated_count[cond]
         names(spawnerAbundance) <- cuspawnerabundance_rg_sp$year[cond]
         
-        cond <- conservationunits_decoder_rg_sp$cu_name_pse %in% CUname
+        cond <- conservationunits_decoder_rg_sp$cu_name_pse %in% CUs[i]
         conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp[cond,]
         
         if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
           print("This CUS is not found in conservationunits_decoder:")
-          print(paste(region[i_rg],species[i_sp],CUname))
+          print(paste(region[i_rg],species[i_sp],CUs[i]))
           cat("\n")
         }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1){
           if(length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
             print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
-            print(paste(region[i_rg],species[i_sp],CUname))
+            print(paste(region[i_rg],species[i_sp],CUs[i]))
             print(conservationunits_decoder_rg_sp_cu)
             cat("\n")
           }
@@ -428,7 +490,7 @@ for(i_rg in 1:length(region)){
           cond <- generationLengthEstiamte_df$species %in% speciesName # generationLengthEstiamte_df is created in functions_general.R
           CU_genLength <- generationLengthEstiamte_df$genLength[cond]
           CU_genLength_available <- FALSE
-          print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))
+          print(paste("No generation length for:",region[i_rg],species[i_sp],CUs[i]))
         }
         
         # Calculate current spawner abundance:
@@ -518,6 +580,7 @@ for(i_rg in 1:length(region)){
                                           status_Smsy80_red   = status_Smsy80_prob["red"],
                                           status_Smsy80_amber = status_Smsy80_prob["amber"],
                                           status_Smsy80_green = status_Smsy80_prob["green"],
+                                          # model = m_best,
                                           comment = comment)
         
         
@@ -553,6 +616,7 @@ for(i_rg in 1:length(region)){
         benchSummary_df$m <- c(benchSummary$Sgen[,"m"],benchSummary$Smsy[,"m"])
         benchSummary_df$CI025 <- c(benchSummary$Sgen[,2],benchSummary$Smsy[,2])
         benchSummary_df$CI975 <- c(benchSummary$Sgen[,3],benchSummary$Smsy[,3])
+        # benchSummary_df$model <- m_best
         
         # add it to benchSummary_region_species_df
         if(is.null(benchSummary_region_species_df)){
@@ -577,7 +641,7 @@ for(i_rg in 1:length(region)){
           }
           
           pathFile <- paste0(wd_figures,"/",regionName,"_",species_acro[i_sp],"_",CUhere,
-                             "_benchmark_posteriors.jpeg")
+                             "_cyclic_benchmark_posteriors.jpeg")
           
           # pdf(file = pathFile, width = 8.5, height = 11)
           # pdf(file = pathFile, width = 15, height = 7.5)
@@ -724,11 +788,11 @@ for(i_rg in 1:length(region)){
       print(paste0("*** ",region[i_rg],"_",species_acro[i_sp]," done ***"))
       
       write.csv(x = benchSummary_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_benchmarks_summary_HBSRM.csv"),
+                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_cyclic_benchmarks_summary_HBSRM.csv"),
                 row.names = F,)
       
       write.csv(x = biologicalStatus_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_biological_status_HBSRM.csv"),
+                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_cyclic_biological_status_HBSRM.csv"),
                 row.names = F)
 
     } # end of for each species

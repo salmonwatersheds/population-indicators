@@ -133,7 +133,7 @@ species_acronym_fun <- function(){
     species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"),
     species_acro_details = c("CK","CM","CO","SX","LSX","RSX","PK","PKE","PKO","SH","CT"),
     species_acro2 = c("CK","CM","CO","SE","SE","SE","PK","PK","PK","SH","CT"),
-    species_acro2_details = c("CK","CM","CO","SE","SEL","SER","PK","PKE","PKO","SH","CT"))
+    species_acro2_details = c("CN","CM","CO","SE","SEL","SER","PK","PKE","PKO","SH","CT"))
     
   return(species_acronym)
 }
@@ -283,7 +283,6 @@ datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv
 #' downloaded. 
 #' https://www.dropbox.com/scl/fi/fdkzawgh1s2805gzb009l/accessing-swp-database.pdf?rlkey=2shj9aginlg06jvw29csmxg7t&dl=0
 datasetsNames_database_fun <- function(){
-  
   
   out_df <- data.frame(
     name_DB = c(
@@ -770,7 +769,6 @@ import_mostRecent_file_fun <- function(wd,pattern){
     print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
     out <- read.csv(paste(wd,file,sep = "/"),header = T)
   }
-  
   return(out)
 }
 

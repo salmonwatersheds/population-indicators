@@ -7,12 +7,14 @@
 #' Previous script: Fraser_salmon_CU_updates.Rmd
 #' 
 #' 
-#' 
 #' Files imported (from dropbox):
-#' - 
-#' 
+#' - streamlocationids.csv
+#' - conservationunits_decoder.csv
+#' - streamspawnersurveys_output.csv
+#' - NuSEDS_escapement_data_collated_DATE.csv
+#'
 #' Files produced: 
-#' - 
+#' - nuseds_cuid_streamid_DATE.csv
 #' 
 
 #'******************************************************************************
@@ -122,10 +124,10 @@ streamspawnersurveys_output <- datasets_database_fun(nameDataSet = datasetsNames
                                                    wd = wd_pop_indic_data_input_dropbox)
 
 #' Import 
-surveystreams <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[9],
-                                                     fromDatabase = fromDatabase,
-                                                     update_file_csv = update_file_csv,
-                                                     wd = wd_pop_indic_data_input_dropbox)
+# surveystreams <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[9],
+#                                                      fromDatabase = fromDatabase,
+#                                                      update_file_csv = update_file_csv,
+#                                                      wd = wd_pop_indic_data_input_dropbox)
 
 head(streamspawnersurveys_output)
 
@@ -301,7 +303,7 @@ for(r in 1:nrow(CU_name_species)){
     }
   }
   
-  # still no match --> try match with CU_NAME with cu_name_dfo and cu_name_dfo
+  # still no match --> try match with CU_NAME with cu_name_dfo and cu_name_pse
   if(sum(cond) == 0){ 
     
     CU_NAME_here_modif <- CU_name_species$CU_NAME_modif[r]
@@ -317,7 +319,7 @@ for(r in 1:nrow(CU_name_species)){
     
   }
   
-  # still no match, no nothing for now
+  # still no match, do nothing for now
   if(sum(cond) == 0){
     
     if(message_show){
@@ -982,6 +984,47 @@ nrow(coord_duplicated) # 0
 (length(unique(nuseds$pointid)) - 1)/length(unique(nuseds$sys_nm_final)) * 100
 
 #
+# Add the survey_score field -------
+#' cf. Table 4.5 in section 4.1.3 of the Tech Report
+nuseds <- import_mostRecent_file_fun(wd = wd_output,pattern = "nuseds_cuid_streamid_")
+
+estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
+estim_class_nuseds
+
+nuseds$survey_score <- NA
+for(ecn in estim_class_nuseds){
+  # ecn <- estim_class_nuseds[1]
+  cond_nuseds <- nuseds$ESTIMATE_CLASSIFICATION == ecn
+  
+  if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
+    out <- "1"
+  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
+    out <- "2"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
+    out <- "3"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-4)"){
+    out <- "4"
+  }else if(ecn %in% c("RELATIVE ABUNDANCE (TYPE-5)",
+                      "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
+    out <- "5"
+  }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
+                      "PRESENCE-ABSENCE (TYPE-6)",
+                      "RELATIVE: VARYING MULTI-YEAR METHODS")){
+    out <- "6"
+  }else if(ecn == "UNKNOWN"){
+    out <- "Unknown"
+  }else if(ecn %in% c("","NO SURVEY THIS YEAR","NO SURVEY")){
+    out <- NA
+  }else{
+    print(ecn)
+  }
+  #print(out)
+  nuseds$survey_score[cond_nuseds] <- out
+}
+
+nuseds$survey_score |> unique()
+
+#
 # Export nuseds_cuid_streamid_DATE.csv -------- 
 #
 date <- as.character(Sys.time())
@@ -991,184 +1034,13 @@ write.csv(nuseds,paste0(wd_output,"/nuseds_cuid_streamid_",date,".csv"),
           row.names = F)
 
 #
-# Generate dataset_1part2 --------
-# example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
-# https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
 
-# previous slack thread:
-# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1712944527551599?thread_ts=1712252256.802999&cid=C03LB7KM6JK
-
-# Google doc meeting Katy, Steph and Bruno
-# https://docs.google.com/document/d/1Fmsjtb_f9yOaoQ3b1sZUXxCumdO70YuUnMdXjoFY8Xo/edit?usp=sharing
-
-nuseds_final <- import_mostRecent_file_fun(wd = wd_output,
-                                           pattern = "nuseds_cuid_streamid")
-
-cond_cuid_na <- is.na(nuseds_final$cuid)
-sum(cond_cuid_na) # 1998
-cond_pointid_na <- is.na(nuseds_final$pointid)
-sum(cond_pointid_na) # 2726
-cond_gfe_id_na <- is.na(nuseds_final$GFE_ID)    # 0
-sum(cond_gfe_id_na) # 0
-cond_streamid_na <- is.na(nuseds_final$streamid)
-sum(cond_streamid_na) # 1998
-# cond_noNa <- !cond_cuid_na & !cond_pointid_na & !cond_streamid_na
-cond_noNa <- cond_cuid_na
-dataset_1part2 <- nuseds_final[!cond_noNa,]
-
-#' Remove Steelhead --> already removed in nuseds_data.collation.R
-
-# rename sys_nm to stream_name_pse
-colnames(dataset_1part2)[colnames(dataset_1part2) == "sys_nm_final"] <- "stream_name_pse"
-
-# edit column names
-field_toChange <- c("SPECIES","SPECIES_QUALIFIED","IS_INDICATOR","Year",
-                    "MAX_ESTIMATE","ESTIMATE_METHOD","stream_survey_quality")
-
-fields_new <- c("species_name","species_abbr","indicator","year",
-                "stream_observed_count","survey_method","survey_quality")
-
-for(i in 1:length(field_toChange)){
-  colnames(dataset_1part2)[colnames(dataset_1part2) == field_toChange[i]] <- fields_new[i]
-}
-
-# remove NAs
-dataset_1part2 <- dataset_1part2[!is.na(dataset_1part2$stream_observed_count),]
-
-
-# select columns
-
-colToKeep <- c("region","species_name","species_abbr","cuid","cu_name_pse",
-               "pointid","GFE_ID","streamid",
-               "stream_name_pse","indicator","latitude_final","longitude_final","year",
-               "stream_observed_count","survey_method","survey_quality")
-
-dataset_1part2 <- dataset_1part2[,colToKeep]
-
-colnames(dataset_1part2)[colnames(dataset_1part2) == "latitude_final"] <- "latitude"
-colnames(dataset_1part2)[colnames(dataset_1part2) == "longitude_final"] <- "longitude"
-
-# order fields:
-dataset_1part2 <- dataset_1part2 %>% 
-  arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
-                                    "Skeena","Central Coast",
-                                    "Vancouver Island & Mainland Inlets",
-                                    "Fraser","Columbia")),
-          species_name,
-          cu_name_pse,
-          factor(indicator, levels = c("Y","N","",NA)),
-          stream_name_pse,
-          year)
-
-head(dataset_1part2)
-sum(is.na(dataset_1part2$streamid)) # 0
-sum(is.na(dataset_1part2$cuid)) # 0
-sum(is.na(dataset_1part2$pointid)) # 5117
-
-#
-# Save dataset_1part2_DATE.csv -----
-
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
-write.csv(dataset_1part2,paste0(wd_output,"/dataset_1part2_",date,".csv"),
-          row.names = F)
-
-dataset_1part2 <- import_mostRecent_file_fun(wd = wd_output,
-                                             pattern = "dataset_1part2")
-cond <- dataset_1part2$species_name == "Coho"
-sites_Coho <- unique(dataset_1part2$GFE_ID[cond])
-length(sites_Coho) # 1705
-
-#
-# Check if multiple series appear for a same cuid - streamid combination -----------
-#' There WERE several instances were there were multiple locations associated to
-#' a same sys_nm for a same cuid
-#' where generate multiple instances where several time series have the same streamid and cuid and point id.
-
-nrow(dataset_1part2) # 149828
-
-d1 <- dataset_1part2 %>%
-  # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
-  group_by(region,species_name,species_abbr,cuid,cu_name_pse,pointid,streamid,
-           stream_name_pse,year,survey_method,survey_quality) %>%
-  summarise(stream_observed_count_2 = sum(stream_observed_count))
-
-nrow(d1) # 149828
-
-nrow(dataset_1part2) - nrow(d1) # 0 --> all good
-
-series <- unique(dataset_1part2[,c("region","cuid","pointid","streamid")])
-for(r in 1:nrow(series)){
-  # r <- 1
-  region <- series$region[r]
-  cuid <- series$cuid[r]
-  pointid <- series$pointid[r]
-  streamid <- series$streamid[r]
-  
-  cond <- dataset_1part2$region == region &
-    dataset_1part2$cuid == cuid &
-    dataset_1part2$streamid == streamid
-  
-  yrs <- dataset_1part2[cond,]$year
-  
-  if(any(duplicated(yrs))){
-    break
-    dataset_1part2_cut <- dataset_1part2[cond,]
-    
-    # years with conflicting survey_method and survey_quality
-    yrs_dupli <- yrs[duplicated(yrs)]
-    
-    dataset_1part2_cut[dataset_1part2_cut$year %in% yrs_dupli,]
-    
-    cond_method_diff <- cond & dataset_1part2$year %in% yrs_dupli 
-    
-    # check if the survey_method are the same for each duplicated year:
-    survey_method_yr_diff <- sapply(X = yrs_dupli, FUN = function(yr){
-      cond_yr <- cond & dataset_1part2$year == yr
-      survey_method <- unique(dataset_1part2$survey_method[cond_yr])
-      out <- length(survey_method) > 1
-      return(out)
-    })
-    
-    # check if the survey_quality are the same for each duplicated year:
-    survey_quality_yr_diff <- sapply(X = yrs_dupli, FUN = function(yr){
-      cond_yr <- cond & dataset_1part2$year == yr
-      survey_quality <- unique(dataset_1part2$survey_quality[cond_yr])
-      out <- length(survey_quality) > 1
-      return(out)
-    })
-    
-    # no different in the survey methods and quality in duplicated years
-    if(!any(survey_method_yr_diff) & !any(survey_quality_yr_diff)){
-      
-      d_new <- dataset_1part2_cut %>%
-        # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
-        group_by(region,species_name,species_abbr,cuid,cu_name_pse,pointid,streamid,
-                 stream_name_pse,indicator,longitude,latitude,year,
-                 survey_method,survey_quality) %>%
-        summarise(stream_observed_count = sum(stream_observed_count))
-      
-      
-    }else{
-      break
-      
-      
-    }
-    # dataset_1part2 <- dataset_1part2[!cond,]
-    # dataset_1part2 <- rbind(dataset_1part2,d_new)
-  }
-}
-
-
-
-dataset_1part2$streamid
 
 
 
 
 #
-# FUTURE THINGS TO DO ------
+# FUTURE THINGS TO DO (still relevant ?) ------
 
 #'* Rename fields *
 # Older file for comparison:

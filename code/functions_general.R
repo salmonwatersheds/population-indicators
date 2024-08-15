@@ -284,6 +284,16 @@ datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv
 #' https://www.dropbox.com/scl/fi/fdkzawgh1s2805gzb009l/accessing-swp-database.pdf?rlkey=2shj9aginlg06jvw29csmxg7t&dl=0
 datasetsNames_database_fun <- function(){
   
+  # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723147261751779?thread_ts=1723143369.148479&cid=C03LB7KM6JK
+  #' Katy's comment about prefixes:
+  #' - "ssp" is a relic of our old program name "skeena salmon program" and is 
+  #'   where the main, non-spatial database tables are stored. 
+  #' - "appdata" is "application data". these are tables or views with specific 
+  #'   uses by applications (e.g. PSE, data library, your population code). 
+  #' - "vwdl_" is a prefix I give to the views which were created for the data 
+  #'   library (but are also now used by the population team). "vw" = "view",
+  #'   "dl" = "data library".
+  
   out_df <- data.frame(
     name_DB = c(
       "appdata.vwdl_conservationunits_decoder",
@@ -304,7 +314,8 @@ datasetsNames_database_fun <- function(){
       "appdata.vwdl_dataset103_output",
       "appdata.vwdl_dataset202_output",
       "appdata.vwdl_dataset390_output",
-      "appdata.vwdl_dataset102_output"
+      "appdata.vwdl_dataset102_output",
+      "ssp.biologicalstatuscodes"
       ),
     
     name_CSV = c(
@@ -326,7 +337,8 @@ datasetsNames_database_fun <- function(){
       "dataset103_output.csv",
       "dataset202_output.csv",
       "dataset390_output.csv",
-      "dataset102_output.csv"
+      "dataset102_output.csv",
+      "ssp.biologicalstatuscodes.csv"
       ))
   
   out_df$index <- 1:nrow(out_df)
@@ -818,31 +830,71 @@ centroid_2D_fun <- function(x,y){
 #' same vector but corrected. It also returns a boolean vector of the locations
 #' in the vector of string characters that were changed. 
 #' To use with abbreviations_df.
-character_replace_fun <- function(charToChange, charNew, name_vector, print = F){
+# charToChange = acronyms_df$acronym[r]
+# charNew = acronyms_df$word_full[r]
+# name_vector =  filePSFnew_l[[s]][,f]
+# char_sep = c(" ","/")
+character_replace_fun <- function(charToChange, charNew, name_vector, 
+                                  char_sep = "",                      # the character that separates words
+                                  print = F){
   
+  # char_sep <- c(" ","/")
   # charToChange <- "R"
   # charNew <- "River"
-  # name_vector <- c("Simpson Cr","Nechako R","Tseax R","West Road R")
+  # name_vector <- c("Simpson Cr","Nechako R","Tseax R","West Road R/Bob")
   
-  name_vector_split <- strsplit(x = name_vector, split = " ")
-  
-  name_vector_new <- lapply(X = name_vector_split, FUN = function(chr){
-    # chr <- name_vector_split[[2]]
-    chr[chr == charToChange] <- charNew
-    out <- paste(chr,collapse = " ")
-    return(out)
-  })
-  name_vector_new <- unlist(name_vector_new)
-  
-  cond <- grepl(charNew,name_vector_new)
-  
-  if(print){
-    print("Words concerned before the change:")
-    print(unique(name_vector[cond]))
-    
-    print("Words concerned after the change:")
-    print(unique(name_vector_new[cond]))
+  char_sep_split <- char_sep
+  if(length(char_sep) > 1){
+    char_sep_split <- paste(char_sep_split,collapse = "|")
   }
+  
+  # Split name_vector with characters in char_sep
+  name_vector_split <- strsplit(x = name_vector, split = char_sep_split)
+  
+  # replace the abbreviation of acronym by its full expression 
+  name_vector_new <- lapply(X = name_vector_split, FUN = function(chr){
+    # chr <- name_vector_split[[1]]
+    chr[chr == charToChange] <- charNew
+    # out <- paste(chr,collapse = " ")
+    return(chr)
+  })
+  
+  # paste the characters back with the corresponding character used for splitting
+  #' For each string in name_vector:
+  #' 1) get a vector of the splitting characters orders as they occurred in name_vector
+  #' 2) 
+  for(i in 1:length(name_vector)){
+    # i <- 2
+    str <- name_vector[i]
+    name_vector_position <- lapply(X = char_sep, FUN = function(c){
+      # c <- char_sep[2]
+      out <- gregexpr(pattern = c, text = str)[[1]] |> as.numeric()
+      names(out) <- rep(c,length(out))
+      return(out)
+    })
+    
+    name_vector_position <- unlist(name_vector_position)
+    name_vector_position <- name_vector_position[order(name_vector_position)]
+    name_vector_position <- name_vector_position[name_vector_position > 0]
+    name_vector_position <- names(name_vector_position)
+    
+    if(length(name_vector_position) == 0 | is.na(str)){ # if there is only one word without acronym or abbreviations OR if the string character is NA
+      name_vector_new_pasted <- name_vector[i]
+      
+    }else{
+      # paste the words in 
+      name_vector_new_pasted <- name_vector_new[[i]][1]
+      for(j in 1:length(name_vector_position)){
+        # j <- 3
+        name_vector_new_pasted <- paste(name_vector_new_pasted,name_vector_new[[i]][j+1],
+                                        sep = name_vector_position[j])
+      }
+    }
+    name_vector_new[[i]] <- name_vector_new_pasted
+  }
+
+  #
+  name_vector_new <- unlist(name_vector_new)
   
   out <- list(name_vector_new,name_vector)
   names(out) <- c("name_vector_new","name_vector_old")
@@ -853,28 +905,35 @@ character_replace_fun <- function(charToChange, charNew, name_vector, print = F)
 #' Abbreviations found in locations (specifically for the hatchery data; to complete
 #' eventually). To use with character_replace_fun().
 abbreviations_df <- data.frame(
-  abbrevation = c("R","Lk","Cr","Cv","Pd","Pds","Ch","In","Sl",
-                  "Is","Strm","Strms","Pk","Sp","Cst","Val","Sd",
+  abbrevation = c("R","Lk","Lks","Cr","Cv","Pd","Pds","Ch","In","Sl",
+                  "Is","Isl","Strm","Strms","Pk","Sp","Cst","Val","Sd","Snd",
                   "Est","Wtshd","Tribs","Trib","Div",
                   "Hb","Fwy","Msh","N","S","E",
-                  "Brk","Hd","L", "Pt","Rd"),
-  word_full = c("River","Lake","Creek","Cove","Pond","Ponds","Channel","Inlet","Slough",
-                "Island","Stream","Streams","Peak","Spwaning","Coast","Valley","Sound",
+                  "Brk","Hd","L", "Pt","Rd","Vanc","Van","Enh",
+                  "Soc","Sch","Term","Pr","Up","Low","Abv","Blw",
+                  "Ldg","Coll","Res","Wldlf","Ass","Assoc",
+                  "Inc","H","Mtn"),
+  word_full = c("River","Lake","Lakes","Creek","Cove","Pond","Ponds","Channel","Inlet","Slough",
+                "Island","Island","Stream","Streams","Peak","Spwaning","Coast","Valley","Sound","Sound",
                 "Estuary","Watershed","Tributaries","Tributary","Division",
                 "Harbour","Freeway","Marsh","North","South","East",
-                "Brook","Head","Little","Point","Road")
+                "Brook","Head","Little","Point","Road","Vancouver","Vancouver","Enhancement",
+                "Society","school","Terminal","Prince","Upper","Lower","Above","Below",
+                "Lodge","College","Reservoir","Wildlife","Association","Association",
+                "Incubation","Hatchery","Mountain")
 )
 
 #' Acronyms found in locations (specifically for the hatchery data; to complete
 #' eventually). To use with character_replace_fun().
 # https://www.marinescience.psf.ca/wp-content/uploads/2023/05/LFR_ReleaseStrategyEvaluationBC_16July2021-Cover-Screen.pdf
 # https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40594361.pdf
+# https://publications.gc.ca/collections/collection_2024/mpo-dfo/Fs97-13-1399-eng.pdf --> Table 8A
 acronyms_df <- data.frame(
   acronym = c("UPFR","LWFR","JNST",
               "TOMF","TOMM",
               "CCST","SKNA",
               "SWVI","NWVI",
-              "GSMN","GSVI",
+              "GSMN","GSVI","GSMS",
               "QCI",
               "NCST",
               "YUKN"),
@@ -882,7 +941,7 @@ acronyms_df <- data.frame(
                 "Upper Thompson","Lower Thompson",               # ?!
                 "Central Coast","Skeena River",
                 "Southwest Vancouver Island","Northwest Vancouver Island",
-                "Strait of Georgia Mainland","Strait of Georgia Vancouver Island",
+                "Strait of Georgia Mainland","Strait of Georgia Vancouver Island","Strait of Georgia Mainland South",
                 "Haida Gwaii",  # QCI stands for "Queen Charlotte Islands", which is now Haida Gwaii
                 "North Coast",
                 "Yukon")

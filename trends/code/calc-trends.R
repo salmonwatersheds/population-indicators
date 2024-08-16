@@ -161,7 +161,7 @@ cu_list <- cu_list %>% left_join(
 
 dataset103_output_new <- dataset202_output_new <- dataset391_output_new <- NULL
 
-figure_print <- F
+figure_print <- T
 scale_log <- T
 for(i in 1:nrow(cu_list)){
   # i <- 8
@@ -169,6 +169,8 @@ for(i in 1:nrow(cu_list)){
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
   # i <- which(cu_list$species_abbr == "CO" & cu_list$cu_name_pse == "North Thompson")
   # i <- which(cu_list$cuid == 709)
+  # i <- which(grepl("Pink",cu_list$species_name))[1]
+  
   region <- cu_list$region[i]
   species_name <- cu_list$species_name[i]
   cuid <- cu_list$cuid[i]
@@ -199,13 +201,28 @@ for(i in 1:nrow(cu_list)){
     fill = NA,
     align = "right") #
   
+  #' For pink salmon only, prevent the 1st value in the time series to be NA when 
+  #' the 1st year is odd for PKO and even for PKE to avoid a bug with the PSE (it
+  #'is alway NA in the 1st year of the series, which is and odd year for PKE and 
+  #' even for PKO)
+  #' cf. PSE Data Check-In Meeting Notes - August 15 2024
+  #' https://docs.google.com/document/d/12viWlyqX1FfJewUgbPAZOGrwoUT15cIN0WMt2pBOyx0/edit?usp=sharing
+  #' https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1723671105718289
+  #' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723830003333579
+  y_log_smooth_103 <- y_log_smooth
+  cond_odd <- grepl("Pink \\(odd\\)",species_name) & is.na(y_log_smooth_103[1]) & x[1] %% 2 == 1
+  cond_even <- grepl("Pink \\(even\\)",species_name) & is.na(y_log_smooth_103[1]) & x[1] %% 2 == 0
+  if(cond_odd | cond_even){
+    y_log_smooth_103[1] <- y_log_smooth_103[2]
+  }
+  
   # Fill  dataset103_output
   dataset103_output_here <- data.frame(region = rep(region,length(x)))
   dataset103_output_here$species_name <- species_name
   dataset103_output_here$cuid <- cuid
   dataset103_output_here$cu_name_pse <- cu_name_pse
   dataset103_output_here$year <- x
-  dataset103_output_here$avg_escape_log <- y_log_smooth
+  dataset103_output_here$avg_escape_log <- y_log_smooth_103 # y_log_smooth
   
   if(is.null(dataset103_output_new)){
     dataset103_output_new <- dataset103_output_here
@@ -235,7 +252,9 @@ for(i in 1:nrow(cu_list)){
   dataset202_output_here$percent_change_total <- percent_change_total
   dataset202_output_here$slope <- round(lm_LT$coefficients[2],6)
   dataset202_output_here$intercept <- round(lm_LT$coefficients["(Intercept)"],3)
-  dataset202_output_here$intercept_start_yr <- predict(lm_LT,newdata = data.frame(x_LT = x_LT[1])) |> round(3) # 1st year of the smoothed data
+  dataset202_output_here$intercept_start_yr <- predict(lm_LT,newdata = data.frame(x_LT = x_LT[1])) |> round(3) # intercept 1st year of the smoothed data
+  dataset202_output_here$start_year <- min(x_LT)
+  dataset202_output_here$end_year <- max(x_LT)
   
   if(is.null(dataset202_output_new)){
     dataset202_output_new <- dataset202_output_here
@@ -283,7 +302,8 @@ for(i in 1:nrow(cu_list)){
   dataset391_output_here$threegen_slope <- threegen_slope
   dataset391_output_here$threegen_intercept <- threegen_intercept
   dataset391_output_here$threegen_intercept_start_yr <- threegen_intercept_start_yr
-  dataset391_output_here$threegen_start_year <- x3g[1]
+  dataset391_output_here$threegen_start_year <- min(x3g)
+  dataset391_output_here$threegen_end_year <- max(x3g)
   dataset391_output_here$uploadid <- NA   # QUESTION: to remove?
   
   if(is.null(dataset391_output_new)){

@@ -183,7 +183,13 @@ for(i in 1:nrow(cu_list)){
   y <- rep(NA, length(x))
   y[match(spawners.i$year, x)] <- spawners.i$estimated_count
   
-  #** Calculate long-term trends *
+  #'* Remove NAs that are the head of the time series * # this is just in case
+  while(is.na(y[1])){
+    y <- y[-1]
+    x <- x[-1]
+  }
+  
+  #'* Calculate long-term trends *
   
   # log transform (and deal with 0s)
   y[y == 0 & !is.na(y)] <- 0.01
@@ -209,11 +215,10 @@ for(i in 1:nrow(cu_list)){
   #' https://docs.google.com/document/d/12viWlyqX1FfJewUgbPAZOGrwoUT15cIN0WMt2pBOyx0/edit?usp=sharing
   #' https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1723671105718289
   #' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723830003333579
-  y_log_smooth_103 <- y_log_smooth
-  cond_odd <- grepl("Pink \\(odd\\)",species_name) & is.na(y_log_smooth_103[1]) & x[1] %% 2 == 1
-  cond_even <- grepl("Pink \\(even\\)",species_name) & is.na(y_log_smooth_103[1]) & x[1] %% 2 == 0
-  if(cond_odd | cond_even){
-    y_log_smooth_103[1] <- y_log_smooth_103[2]
+  # For pink we do not use smooth line
+  cond_pink <- grepl("Pink",species_name)
+  if(cond_pink){
+    y_log_smooth <- y_log
   }
   
   # Fill  dataset103_output
@@ -222,7 +227,7 @@ for(i in 1:nrow(cu_list)){
   dataset103_output_here$cuid <- cuid
   dataset103_output_here$cu_name_pse <- cu_name_pse
   dataset103_output_here$year <- x
-  dataset103_output_here$avg_escape_log <- y_log_smooth_103 # y_log_smooth
+  dataset103_output_here$avg_escape_log <- y_log_smooth
   
   if(is.null(dataset103_output_new)){
     dataset103_output_new <- dataset103_output_here
@@ -265,8 +270,20 @@ for(i in 1:nrow(cu_list)){
   #'* Calculate last 3 generations trends *
   
   x3g <- tail(x, g*3)
-  x3g <- tail(x[!is.na(y_log_smooth)], g*3)
-  lm_3g <- lm(tail(y_log_smooth[!is.na(y_log_smooth)], g*3) ~ x3g, na.action = "na.exclude")
+  # x3g <- tail(x[!is.na(y_log_smooth)], g*3)
+  # x3g <- x3g[!is.na(y_log_smooth[x %in% x3g])]
+  # lm_3g <- lm(tail(y_log_smooth[!is.na(y_log_smooth)], g*3) ~ x3g, na.action = "na.exclude") WRONG
+  lm_3g <- lm(tail(y_log_smooth, g*3) ~ x3g, na.action = "na.exclude")
+  
+  if(cond_pink){
+    if(grepl("odd",species_name)){
+      cond_keep <- x3g %% 2 == 1
+    }else{
+      cond_keep <- x3g %% 2 == 0
+    }
+    x3g <- x3g[cond_keep]
+    lm_3g <- lm(tail(y_log_smooth, g*3)[cond_keep] ~ x3g, na.action = "na.exclude")
+  }
   
   #' Exclusion rule:
   #' If the number of NAs in x3g is > g --> we do not calculate the trend
@@ -349,7 +366,10 @@ for(i in 1:nrow(cu_list)){
   if(!scale_log){
     y_here <- exp(y_here)
   }
-  lines(x, y_here, lwd = 2, col = "black")
+  if(!cond_pink){
+    lines(x, y_here, lwd = 2, col = "black")
+  }
+  
   # points(x[!is.na(y)], y_log_smooth[!is.na(y)], lwd = 2, col = "black", pch = 1)
   
   # plot regression line for the 3 generation:
@@ -370,7 +390,7 @@ for(i in 1:nrow(cu_list)){
     y_here <- exp(y_here)
   }
   lines(x[!is.na(y_log_smooth)], y_here, lwd = 2, col = "red", lty = 2)
-  legend("bottomright",paste0("i = ",i),bty = "n")
+  # legend("bottomright",paste0("i = ",i),bty = "n")
   
   legend("topright",paste0(c(percent_change_2dec,threegen_percent_change_2dec),"% / year"), 
          bty = "n", text.col = c("red","blue"))

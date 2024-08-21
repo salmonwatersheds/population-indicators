@@ -92,6 +92,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 #'* Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data *
 DFO_df_all <- return_file_lastVersion_fun(wd_data = wd_data,
                                           pattern = "PSF_modified_SEP_releases")
+head(DFO_df_all)
 
 #' 1) Deal with NAs in STOCK_CU_INDEX
 #' FOR NOW: --> remove the rows without values for STOCK_CU_INDEX 
@@ -134,7 +135,8 @@ nrow(DFO_df) # 31830
 
 #' * Import the hatchery template from wd_data as a list *
 filePSF_l <- hatchery_template_fun(wd_data = wd_data,
-                                   filePSFname = "SWP_hatchery_data_template.xlsx")
+                                   filePSFname = "SWP_hatchery_data_template.xlsx",
+                                   asDataFrame = T)
 
 #
 # Create SWP_hatchery_data_DATE.xlsx  ----------
@@ -147,12 +149,12 @@ matchCol_df <- matching_columns_fun(wd_data = wd_data,
 # make a copy of filePSF_l that is going to be filled
 filePSFnew_l <- filePSF_l
 
-#' Make a dataframe to report the case where there are multiple cuid_broodstock 
-#' for a same release_site_name-release_stage-release_site_CUID-release_date
+#' Make a dataframe to report the cases where there are multiple cuid_broodstock 
+#' for a same release_site_name - release_stage - release_site_CUID - release_date
 #' combination --> to send to Katy,
 cuid_broodstock_multi <- NULL
 
-# Fill filePSF_l with new data
+# Fill filePSF_l with new data (takes a couple minutes)
 for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by hand or not at all (QUESTION)
   
   # sheet_i <- 2
@@ -330,6 +332,12 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # }
     # more columns must be removed to reach the 134 number of duplicated rows...
     
+    # There are two locations with longitude > 0 which is a mistake in DFO_df
+    # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723519875081859?thread_ts=1723514711.630399&cid=C03LB7KM6JK
+    #' TODO: check where the error is coming from above (the source file seems to be correct)
+    cond <- sheetNew$release_site_longitude > 0 & !is.na(sheetNew$release_site_longitude)
+    sheetNew[cond,]$release_site_longitude <- -1 * sheetNew[cond,]$release_site_longitude
+    
     # replace the program acronyms by their names
     sheetNew$program <- program_acronym_fun(prog_acro =  sheetNew$program)
     
@@ -421,9 +429,10 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
     # names(release_site_abbrev) <- c("Creek","River","Upper","Lower","Slough","North","South","East","West","Lake")
     
   }
-  filePSFnew_l[[sheet_i]] <- sheetNew
+  filePSFnew_l[[sheet_i]] <- as.data.frame(sheetNew)
 }
 
+filePSFnew_l$DataEntry_facilities
 
 #' 
 colOrder <- c("species","release_site_latitude","release_site_longitude","facilityID",
@@ -432,6 +441,160 @@ colOrder <- c("species","release_site_latitude","release_site_longitude","facili
 
 # write.csv(cuid_broodstock_multi[,colOrder],paste0(wd_output,"/cuid_broodstock_multi.csv"),
 #           row.names = F)
+
+# Correct name locations -------
+#
+
+fields_toCorrect <- data.frame(sheet = c(rep("DataEntry_facilities",2),"DataEntry_releases"),
+                               field = c('project',"facilityname","release_site_name"))
+
+for(s in unique(fields_toCorrect$sheet)){
+  # s <-  unique(fields_toCorrect$sheet)[2]
+  cond <- fields_toCorrect$sheet == s
+  for(f in fields_toCorrect$field[cond]){
+    # f <- fields_toCorrect$field[cond][1]
+    # filePSFnew_l[[s]][,f]
+    
+    # cond <- grepl("/",filePSFnew_l[[s]][,f])
+    # filePSFnew_l[[s]][,f][cond] <- gsub("/",", ",filePSFnew_l[[s]][,f][cond])
+    
+    # cond <- grepl("Woss Comm",filePSFnew_l[[s]][,f])
+    # filePSFnew_l[[s]][,f][cond]
+    
+    cond <- grepl("Comm H",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Comm H","Community Hall",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("\\+",filePSFnew_l[[s]][,f]) & !grepl(" \\+ ",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("\\+"," \\+ ",filePSFnew_l[[s]][,f][cond])
+    
+    for(r in 1:nrow(abbreviations_df)){
+      # r <- 1
+      
+      # abbreviations_df and character_replace_fun() are in functions_general.R
+      full_name <- character_replace_fun(charToChange = abbreviations_df$abbrevation[r],
+                                         charNew = abbreviations_df$word_full[r], 
+                                         name_vector =  filePSFnew_l[[s]][,f],
+                                         char_sep = c(" ","/"),
+                                         print = F)
+      
+      filePSFnew_l[[s]][,f] <- full_name$name_vector_new
+    }
+    
+    # Same but for acronymes
+    for(r in 1:nrow(acronyms_df)){
+      # r <- 10
+      
+      # Abbreviations_df and character_replace_fun() are in functions_general.R
+      full_name <- character_replace_fun(charToChange = acronyms_df$acronym[r],
+                                         charNew = acronyms_df$word_full[r], 
+                                         name_vector =  filePSFnew_l[[s]][,f],
+                                         char_sep = c(" ","/"),
+                                         print = F)
+      
+      filePSFnew_l[[s]][,f] <- full_name$name_vector_new
+    }
+    
+    # Extra corrections
+    cond <- grepl("Burns L",filePSFnew_l[[s]][,f]) & ! grepl("Burns Lake",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Burns L","Burns Lake",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Cr,",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Cr,","Creek,",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("R,",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("R,","River,",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("P Hardy",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("P Hardy","Port Hardy",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl(" R)",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub(" R)"," River),",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Vanderh",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Vanderh","Vanderhoof",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Salm Rest So",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Salm Rest So","Salmon Restortation Society",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Spruce C",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Spruce C","Spruce City",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Chamber of Commer",filePSFnew_l[[s]][,f]) & ! grepl("Chamber of Commerce",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Chamber of Commer","Chamber of Commerce",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("  ",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("  "," ",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("R@",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("R@","River, ",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Lost Little",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Lost Little","Lost Lake",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("-use6501",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("-use6501","",filePSFnew_l[[s]][,f][cond])
+
+    cond <- grepl("SES",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("SES","Salmonid Enhancement Society",filePSFnew_l[[s]][,f][cond])
+    
+    # "Stave Valley Salmonio Enhancement Society --> it says "salmonio" on the internet but probably a typo?
+    
+    cond <- grepl("ES",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("ES","Enhancement Society",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Barkley Sound Rndtbl S1 Sbct",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Barkley Sound Rndtbl S1 Sbct","Barkley Sound Roundtable Smolt1+ Subcontractor",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Houston Channel of Comm",filePSFnew_l[[s]][,f])  # correction for the correction "Ch" --> "channel"
+    filePSFnew_l[[s]][,f][cond] <- gsub("Channel of Comm","Chamber of Commerce",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Vol",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Vol","Volunteer",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Br 100 Swamp",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Br","Bridge",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("Edith Lake C",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Lake C","Lake Channel",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("\\(Up\\)",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Up","Upper",filePSFnew_l[[s]][,f][cond])
+    
+    cond <- grepl("\\(Low\\)",filePSFnew_l[[s]][,f])
+    filePSFnew_l[[s]][,f][cond] <- gsub("Low","Lower",filePSFnew_l[[s]][,f][cond])
+    
+    # filePSFnew_l[[s]][,f] |> unique()
+  }
+}
+
+# 
+
+# Remaining potential acronym/abbreviations to change:
+
+# Check slack thread:
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1723737506824409?thread_ts=1723131586.527919&cid=CJ5RVHVCG
+
+# ANSWERS from email from Brock Ramshaw (DFO) from 15/08/2024 (all the changes to do below have been done)
+# For PROJ_NAME
+# - Sproat Lake ES  - enhancement society
+# - Barkley Sound Rndtbl S1 Sbct – the Barkley Sound Roundtable Smolt1+ Subcontractor which was the Omega Pacific Hatchery
+# - Stave Valley SES – salmon enhancement society
+# - Houston Channel of Comm – The Houston Chamber of Commerce
+# - Thornton Creek Vols – volunteers (not entirely confident in this. It was end dated in 2002 so there’s nobody around to confirm)
+
+# For FACILITY_NAME
+# - "Inc" (e.g. Cougar Canyon Creek Inc) – Inc refers to instream incubation --> BSC: only "Incumbation" for us
+# - "H" (e.g. Ayum Creek H) – H is for hatchery
+
+# For RELEASE_SITE_NAME"
+# - Br 100 Swamp – Shows up in the Salmon River Estuary (-50.378061, -125.944523) in JSt. The lat/longs are not always exact locations where the fish are released. It looks like it was only used for 1999 Salmon R coho. It could be a bridge?
+# - Little Edith Lake C – no lat/long exists in EPAD for this. Looks like it was only used for 1996 Quatse R coho. I want to say it’s a Channel off of the lake? It is connected to the Little Edith Lake geofeature_ID.
+
+
+
+#
+# Place release sites and facilities without coordinates in new sheets  ------
+#
 
 #' In sheet DataEntry_releases, remove the row with NA values for release_site_latitude
 #' and release_site_longitude and places these in a new additional sheet
@@ -445,8 +608,7 @@ filePSFnew_l$DataEntry_releases_NAcoord <- DataEntry_releases_NA
 
 #' In sheet DataEntry_facilitiescuids, remove the facilites (i.e., facilityID) 
 #' that do not have coordinate in sheet DataEntry_facilities and places these in 
-#' a new additional sheet
-
+#' a new additional sheet called "DataEntry_facilitiescuids_NAcoord"
 cond <- !is.na(filePSFnew_l$DataEntry_facilities$facility_latitude) &
   !is.na(filePSFnew_l$DataEntry_facilities$facility_longitude)
 facilityIDtoKeep <- filePSFnew_l$DataEntry_facilities$facilityid[cond]
@@ -474,8 +636,110 @@ for(i in 1:nrow(release_type_df)){
   filePSFnew_l$DataEntry_releases$release_type_pse[cond] <- rss
 }
 
+#
+# Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx -----
+#' 
 
-# export the file
+# DataEntry_relase <- read.xlsx(file = paste0(wd_output,"/SWP_hatchery_data_20240404.xlsx"),
+#                               sheetName = "DataEntry_releases")
+
+DataEntry_relase <- filePSFnew_l$DataEntry_releases
+
+DataEntry_relase$location_name_pse <- DataEntry_relase$release_site_name
+
+# # Replace "/" by " " (it is important to do it 1st)  TODO? I asked Katy here: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1723747384743129?thread_ts=1723131586.527919&cid=CJ5RVHVCG
+# cond <- grepl("/",DataEntry_relase$location_name_pse)
+# DataEntry_relase$location_name_pse[cond] <- gsub("/"," ",DataEntry_relase$location_name_pse[cond])
+# 
+# # Replace "+" by " + " (it is important to do it 1st)
+# cond <- grepl("\\+",DataEntry_relase$location_name_pse) & !grepl(" \\+ ",DataEntry_relase$location_name_pse)
+# DataEntry_relase$location_name_pse[cond] <- gsub("+"," + ",DataEntry_relase$location_name_pse, 
+#                                            fixed = T)
+
+# Remove the double spaces
+# cond <- grepl("  ",DataEntry_relase$location_name_pse)
+# DataEntry_relase$location_name_pse[cond]
+# DataEntry_relase$location_name_pse <- gsub("  "," ",DataEntry_relase$location_name_pse)
+
+# replace the abbreviations by their full name
+# abbreviations_df # in functions_general.R
+# 
+# for(r in 1:nrow(abbreviations_df)){
+#   # r <- 1
+#   full_name <- character_replace_fun(charToChange = abbreviations_df$abbrevation[r],
+#                                      charNew = abbreviations_df$word_full[r], 
+#                                      name_vector = DataEntry_relase$location_name_pse,
+#                                      print = F)
+#   
+#   DataEntry_relase$location_name_pse <- full_name$name_vector_new
+# }
+
+unique(DataEntry_relase$location_name_pse)
+
+# # Change the Acronyms:
+# # https://www.marinescience.psf.ca/wp-content/uploads/2023/05/LFR_ReleaseStrategyEvaluationBC_16July2021-Cover-Screen.pdf
+# # https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40594361.pdf
+# acronyms_df # in functions_general.R
+# 
+# for(r in 1:nrow(acronyms_df)){
+#   # r <- 1
+#   char <- acronyms_df$acronym[r]
+#   cond <- grepl(char,DataEntry_relase$location_name_pse)
+#   unique(DataEntry_relase$location_name_pse[cond])
+#   char_new <- paste0("(",acronyms_df$word_full[r],")")
+#   DataEntry_relase$location_name_pse[cond] <- gsub(char,char_new,DataEntry_relase$location_name_pse[cond])
+# }
+
+# Extra corrections:
+# char <- "@Duncan"  # 
+# cond <- grepl(char,DataEntry_relase$location_name_pse)
+# unique(DataEntry_relase$location_name_pse[cond])
+# DataEntry_relase$location_name_pse[cond] <- gsub(char," (Duncan)",DataEntry_relase$location_name_pse[cond])
+# 
+# char <- "-use6501"  #
+# cond <- grepl(char,DataEntry_relase$location_name_pse)
+# unique(DataEntry_relase$location_name_pse[cond])
+# DataEntry_relase$location_name_pse[cond] <- gsub(char,"",DataEntry_relase$location_name_pse[cond])
+# 
+# char <- "Culvert 150 Creek"
+# cond <- grepl(char,DataEntry_relase$location_name_pse)
+# unique(DataEntry_relase$location_name_pse[cond])
+# DataEntry_relase$location_name_pse[cond] <- gsub(char,"Culvert Creek",DataEntry_relase$location_name_pse[cond])
+
+
+# Check 
+View(unique(data.frame(DataEntry_relase$location_name_pse)))
+
+# QUESTION: what to do with these ones?
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1714522371999499?thread_ts=1712267027.385489&cid=C03LB7KM6JK
+#' - Three B Channel --> ???
+#' - Br 100 Swamp  --> Bridge 100 Swamp???
+#' - 28 Mile Creek --> CORRECT
+#' - Branch 10 Creek --> CORRECT
+#' - Ed Leon Slough --> CORRECT
+#' - Ink Lake --> CORRECT
+
+# pattern <- "Cowichan R (Duncan)"
+# cond <- grepl(pattern,DataEntry_relase$location_name_pse)
+# unique(DataEntry_relase$location_name_pse[cond])
+# unique(DataEntry_relase[cond,c("location_name_pse","release_site_latitude","release_site_longitude")])
+
+#
+# Export remove DataEntry_relase_noTBR_DATE.csv -------- 
+#
+cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
+DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cuid_toRemove,]
+
+#
+date <- Sys.Date()
+date <- gsub(pattern = "-",replacement = "",x = date)
+write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTBR_",date,".csv"),
+          row.names = F)
+
+#
+#
+# Export the file ------
+#
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
 
@@ -507,7 +771,20 @@ for(sh_i in 1:length(names(filePSFnew_l))){
 # - 7) I cannot do anything about the 1st sheet ??? progratically, it has to be copy pasted by hand from the template and then filled by hand
 
 #
-# Edit release_type_pse for Transboundary and steelhead (ONE TIME FIX?) -----------
+# Edit dataset dataset384_output release_type_pse for Transboundary and steelhead (ONE TIME FIX) -----------
+#
+#' The hatchery data for SH and TBR do not coming from this DFO file but from other
+#' sources (ask Eric more about it). This data is processed in the following 
+#' respective folder:
+#' - Hatchery data from TBR:
+#'    - ...X Drive\1_PROJECTS\1_Active\Transboundary\Data & Assessments\transboundary-data 
+#'    - Steph's message about it: https://salmonwatersheds.slack.com/archives/C0196AAR3UZ/p1723737033009499
+#' Hatchery data from SH:
+#'    - ...\X Drive\1_PROJECTS\1_Active\Steelhead\3_Data_Analysis   ??? I sm not sure
+
+#' The goal will eventually be to combine the DFO data and these other sources 
+#' into one datasets that will be sent to Katy.
+
 
 #' #'Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
@@ -521,52 +798,106 @@ dataset384_output <- datasets_database_fun(nameDataSet = datasetsNames_database$
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
 
-nrow(dataset384_output) # 1480
+nrow(dataset384_output) # 20347, 1480
 head(dataset384_output)
 unique(dataset384_output$species_name)
 unique(dataset384_output$region)
-
-#'* create location_name_pse *
-dataset384_output$location_name_pse <- dataset384_output$locationname
-
-cond <- grepl(" [R|r]",dataset384_output$location_name_pse) & !grepl(" RIVER",dataset384_output$location_name_pse)
-dataset384_output$location_name_pse[cond]
-dataset384_output$location_name_pse[cond] <- gsub(" R"," River",dataset384_output$location_name_pse[cond])
-
-cond <- grepl(" Lk",dataset384_output$location_name_pse)
-dataset384_output$location_name_pse[cond]
-dataset384_output$location_name_pse[cond] <- gsub(" Lk"," Lake",dataset384_output$location_name_pse[cond])
-
-cond <- grepl(" Cr",dataset384_output$location_name_pse)
-dataset384_output$location_name_pse[cond]
-dataset384_output$location_name_pse[cond] <- gsub(" Cr"," Creek",dataset384_output$location_name_pse[cond])
-
-cond <- grepl(" Pd",dataset384_output$location_name_pse)
-dataset384_output$location_name_pse[cond]
-
-cond <- grepl(" In",dataset384_output$location_name_pse)
-dataset384_output$location_name_pse[cond]
-
-cond <- grepl(" Ch",dataset384_output$location_name_pse)
-dataset384_output$location_name_pse[cond]
+unique(dataset384_output$location_name_pse)
+unique(dataset384_output$release_type_pse)
 
 
-#'* Add release_type_pse *
-release_type_df <- release_type_pse_fun()
+#'* edit location_name_pse *
 
-dataset384_output$release_type_pse <- NA
+for(f in c("location_name_pse")){
+  # f <- "location_name_pse"
 
-for(i in 1:nrow(release_type_df)){
-  rs <- release_type_df$release_stage[i]
-  rss <- release_type_df$release_type_pse[i]
-  cond <- dataset384_output$release_stage == rs
-  dataset384_output$release_type_pse[cond] <- rss
+  cond <- grepl("\\+",dataset384_output[,f]) & !grepl(" \\+ ",dataset384_output[,f])
+  dataset384_output[,f][cond] <- gsub("\\+"," \\+ ",dataset384_output[,f][cond])
+  
+  cond <- grepl("/ ",dataset384_output[,f])
+  dataset384_output[,f][cond]
+  
+  for(r in 1:nrow(abbreviations_df)){
+    # r <- 1
+    
+    # abbreviations_df and character_replace_fun() are in functions_general.R
+    full_name <- character_replace_fun(charToChange = abbreviations_df$abbrevation[r],
+                                       charNew = abbreviations_df$word_full[r], 
+                                       name_vector =  dataset384_output[,f],
+                                       char_sep = c(" ","/"),
+                                       print = F)
+    
+    dataset384_output[,f] <- full_name$name_vector_new
+  }
+  
+  # Same but for acronymes
+  for(r in 1:nrow(acronyms_df)){
+    # r <- 10
+    
+    # Abbreviations_df and character_replace_fun() are in functions_general.R
+    full_name <- character_replace_fun(charToChange = acronyms_df$acronym[r],
+                                       charNew = acronyms_df$word_full[r], 
+                                       name_vector =  dataset384_output[,f],
+                                       char_sep = c(" ","/"),
+                                       print = F)
+    
+    dataset384_output[,f] <- full_name$name_vector_new
+  }
 }
+
+cond <- grepl("\\(Up\\)",dataset384_output[,f])
+dataset384_output[,f][cond] <- gsub("Up","Upper",dataset384_output[,f][cond])
+
+cond <- grepl("\\(Low\\)",dataset384_output[,f])
+dataset384_output[,f][cond] <- gsub("Low","Lower",dataset384_output[,f][cond])
+
+cond <- grepl("\\(Up\\)",dataset384_output[,f])
+dataset384_output[,f][cond] |> unique() # <- gsub("\\+"," \\+ ",dataset384_output[,f][cond])
+
+unique(dataset384_output$location_name_pse) |> as.data.frame() |> View()
+
+
+# OLDER CODE - keep for now just in case
+#' dataset384_output$location_name_pse <- dataset384_output$locationnam
+#' 
+#' cond <- grepl(" [R|r]",dataset384_output$location_name_pse) & !grepl(" RIVER",dataset384_output$location_name_pse)
+#' dataset384_output$location_name_pse[cond]
+#' dataset384_output$location_name_pse[cond] <- gsub(" R"," River",dataset384_output$location_name_pse[cond])
+#' 
+#' cond <- grepl(" Lk",dataset384_output$location_name_pse)
+#' dataset384_output$location_name_pse[cond]
+#' dataset384_output$location_name_pse[cond] <- gsub(" Lk"," Lake",dataset384_output$location_name_pse[cond])
+#' 
+#' cond <- grepl(" Cr",dataset384_output$location_name_pse)
+#' dataset384_output$location_name_pse[cond]
+#' dataset384_output$location_name_pse[cond] <- gsub(" Cr"," Creek",dataset384_output$location_name_pse[cond])
+#' 
+#' cond <- grepl(" Pd",dataset384_output$location_name_pse)
+#' dataset384_output$location_name_pse[cond]
+#' 
+#' cond <- grepl(" In",dataset384_output$location_name_pse)
+#' dataset384_output$location_name_pse[cond]
+#' 
+#' cond <- grepl(" Ch",dataset384_output$location_name_pse)
+#' dataset384_output$location_name_pse[cond]
+#' 
+#' 
+#' #'* Add release_type_pse *
+#' release_type_df <- release_type_pse_fun()
+#' 
+#' dataset384_output$release_type_pse <- NA
+#' 
+#' for(i in 1:nrow(release_type_df)){
+#'   rs <- release_type_df$release_stage[i]
+#'   rss <- release_type_df$release_type_pse[i]
+#'   cond <- dataset384_output$release_stage == rs
+#'   dataset384_output$release_type_pse[cond] <- rss
+#' }
 
 
 #'* create the different datasets *
 dataset384_output_SH <- dataset384_output[dataset384_output$species_name == "Steelhead",]
-nrow(dataset384_output_SH) # 1369
+nrow(dataset384_output_SH) # 1367 1369
 
 dataset384_output_TB <- dataset384_output[dataset384_output$region == "Transboundary",]
 nrow(dataset384_output_TB) # 111
@@ -593,104 +924,8 @@ date <- gsub(pattern = "-",replacement = "",x = date)
 #date <- "20240404"
 write.csv(dataset384_output_SH,paste0(wd_output,"/dataset384_output_SH_",date,".csv"),
           row.names = F)
-write.csv(dataset384_output_TB,paste0(wd_output,"/dataset384_output_TB_",date,".csv"),
+write.csv(dataset384_output_TB,paste0(wd_output,"/dataset384_output_TBR_",date,".csv"),
           row.names = F)
-
-#
-# Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx (ONE TIME FIX?) -----
-#' 
-DataEntry_relase <- read.xlsx(file = paste0(wd_output,"/SWP_hatchery_data_20240404.xlsx"),
-                              sheetName = "DataEntry_releases")
-
-DataEntry_relase$location_name_pse <- DataEntry_relase$release_site_name
-
-# Replace "/" by " " (it is important to do it 1st)
-DataEntry_relase$location_name_pse <- gsub("/"," ",DataEntry_relase$location_name_pse)
-
-# Replace "+" by " + " (it is important to do it 1st)
-DataEntry_relase$location_name_pse <- gsub("+"," + ",DataEntry_relase$location_name_pse, 
-                                           fixed = T)
-
-# Remove the double spaces
-DataEntry_relase$location_name_pse <- gsub("  "," ",DataEntry_relase$location_name_pse)
-
-# replace the abbreviations by their full name
-abbreviations_df # in functions_general.R
-
-for(r in 1:nrow(abbreviations_df)){
-  # r <- 1
-  full_name <- character_replace_fun(charToChange = abbreviations_df$abbrevation[r],
-                                     charNew = abbreviations_df$word_full[r], 
-                                     name_vector = DataEntry_relase$location_name_pse,
-                                     print = F)
-  
-  DataEntry_relase$location_name_pse <- full_name$name_vector_new
-}
-
-unique(DataEntry_relase$location_name_pse)
-
-# Change the Acronyms:
-# https://www.marinescience.psf.ca/wp-content/uploads/2023/05/LFR_ReleaseStrategyEvaluationBC_16July2021-Cover-Screen.pdf
-# https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40594361.pdf
-acronyms_df # in functions_general.R
-
-for(r in 1:nrow(acronyms_df)){
-  # r <- 1
-  char <- acronyms_df$acronym[r]
-  cond <- grepl(char,DataEntry_relase$location_name_pse)
-  unique(DataEntry_relase$location_name_pse[cond])
-  char_new <- paste0("(",acronyms_df$word_full[r],")")
-  DataEntry_relase$location_name_pse[cond] <- gsub(char,char_new,DataEntry_relase$location_name_pse[cond])
-}
-
-# Extra corrections:
-char <- "@Duncan"  # 
-cond <- grepl(char,DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(char," (Duncan)",DataEntry_relase$location_name_pse[cond])
-
-char <- "-use6501"  #
-cond <- grepl(char,DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(char,"",DataEntry_relase$location_name_pse[cond])
-
-char <- "Culvert 150 Creek"
-cond <- grepl(char,DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-DataEntry_relase$location_name_pse[cond] <- gsub(char,"Culvert Creek",DataEntry_relase$location_name_pse[cond])
-
-
-# Check 
-View(unique(data.frame(DataEntry_relase$location_name_pse)))
-
-# QUESTION: what to do with these ones?
-# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1714522371999499?thread_ts=1712267027.385489&cid=C03LB7KM6JK
-#' - Three B Channel --> ???
-#' - Br 100 Swamp  --> Bridge 100 Swamp???
-#' - 28 Mile Creek --> CORRECT
-#' - Branch 10 Creek --> CORRECT
-#' - Ed Leon Slough --> CORRECT
-#' - Ink Lake --> CORRECT
-
-pattern <- "Cowichan R (Duncan)"
-cond <- grepl(pattern,DataEntry_relase$location_name_pse)
-unique(DataEntry_relase$location_name_pse[cond])
-unique(DataEntry_relase[cond,c("location_name_pse","release_site_latitude","release_site_longitude")])
-
-
-# remove Transboundary data
-cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
-DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cuid_toRemove,]
-
-#
-date <- Sys.Date()
-date <- gsub(pattern = "-",replacement = "",x = date)
-date <- "20240404"
-write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTB_",date,".csv"),
-          row.names = F)
-
-# related slack thread:
-# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1713375227574009?thread_ts=1712267027.385489&cid=C03LB7KM6JK
 
 #
 # CHECK: Compare dataset384_output_TB to the TB in SWP_hatchery_data_20240404.xlsx -----

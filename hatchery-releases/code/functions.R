@@ -188,7 +188,8 @@ return_file_lastVersion_fun <- function(wd_data,pattern){
 #' Function returning a list of the sheets (as data frames) of the PSF hatchery 
 #' template .xlsx file (the default file is SWP_hatchery_data_template.xlsx).
 hatchery_template_fun <- function(wd_data,
-                                  filePSFname = "SWP_hatchery_data_template.xlsx"){
+                                  filePSFname = "SWP_hatchery_data_template.xlsx",
+                                  asDataFrame = F){
   
   filePSF_l <- list()
   sheetsNames <- c(
@@ -201,6 +202,9 @@ hatchery_template_fun <- function(wd_data,
   for(i in 1:length(sheetsNames)){
     filePSF_l[[i]] <- read_excel(paste(wd_data,filePSFname,sep = "/"),
                                     sheet = sheetsNames[i])
+    if(asDataFrame){
+      filePSF_l[[i]]<- as.data.frame(filePSF_l[[i]])
+    }
   }
   names(filePSF_l) <- sheetsNames
   return(filePSF_l)

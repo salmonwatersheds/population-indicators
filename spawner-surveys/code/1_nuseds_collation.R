@@ -3454,4 +3454,7 @@ added_all <- added_all[,c("IndexId","POP_ID","species_acro","CU_NAME","GFE_ID","
 write.csv(added_all,paste0(wd_output,"/series_added_",date,".csv"),row.names = F)
 
 
+#
+
+
 

@@ -283,7 +283,7 @@ datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv
 #' downloaded. 
 #' https://www.dropbox.com/scl/fi/fdkzawgh1s2805gzb009l/accessing-swp-database.pdf?rlkey=2shj9aginlg06jvw29csmxg7t&dl=0
 datasetsNames_database_fun <- function(){
-  
+  # cf. SalmonDB_PSEdatasets_20240409.xlsx in population-indicators/data-input
   # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723147261751779?thread_ts=1723143369.148479&cid=C03LB7KM6JK
   #' Katy's comment about prefixes:
   #' - "ssp" is a relic of our old program name "skeena salmon program" and is 
@@ -315,7 +315,9 @@ datasetsNames_database_fun <- function(){
       "appdata.vwdl_dataset202_output",
       "appdata.vwdl_dataset390_output",
       "appdata.vwdl_dataset102_output",
-      "ssp.biologicalstatuscodes"
+      "ssp.biologicalstatuscodes",
+      "appdata.vwdl_dataset384_output",
+      "appdata.vwdl_dataset386_output"
       ),
     
     name_CSV = c(
@@ -338,7 +340,9 @@ datasetsNames_database_fun <- function(){
       "dataset202_output.csv",
       "dataset390_output.csv",
       "dataset102_output.csv",
-      "ssp.biologicalstatuscodes.csv"
+      "ssp.biologicalstatuscodes.csv",
+      "dataset384_output",                 # Hatchery Releases for Salmon and Steelhead Conservation Units
+      "dataset386_output"                  # Stream Level Data Quality
       ))
   
   out_df$index <- 1:nrow(out_df)

@@ -81,6 +81,11 @@ wd_data_input <- wd_output
 # Import functions for this specific project
 source("Code/functions.R")
 
+library(tidyr)
+library(dplyr)
+library(xlsx)
+
+
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
 
@@ -97,15 +102,22 @@ species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == 
 # note that species_all take precedence over species in SRdata_path_species_fun()
 species_all <- TRUE
 
-printFig <- T
+printFig <- F
 
 options(warn = 0)
 
-# Import datasets ------
+# Import datasets TO CLEAN ------
 
-#'* Import the updated biostatus file *
-biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-                                     header = T)
+#'* Import the updated biostatus file for both HBSR and percentile *
+pattern <- "Biological_status_HBSR_Percentile_all"
+biological_status_merged <- import_mostRecent_file_fun(wd = wd_output, 
+                                                       pattern = pattern)
+
+
+#'* Import the updated benchmark file for both HBSR and percentile *
+pattern <- "Benchmarks_HBSR_Percentile_all"
+benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output, 
+                                                pattern = pattern)
 
 
 #'* Import benchmark values for the HBSRM method *
@@ -240,6 +252,94 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    wd = wd_pop_indic_data_input_dropbox)
 
 #
+#
+# Summary table of biostatus in BC (for Leah) ---------
+#' @Bruno do you have an update on the total number of CUs in BC (including 
+#' steelhead) that are red, amber, green, data deficient, and not assessed for 
+#' biological status? The total count should be 446 CUs.
+#' Can you also break this down by Region as the number of CUs (and %) in each 
+#' category? As well as the number of CUs in each category by species?
+#' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1723581683183409?thread_ts=1723566844.000599&cid=CJG0SHWCW
+biological_status_merged
+benchmarks_merged
+
+biological_status_merged$species_name |> unique()
+biological_status_merged$psf_status |> unique()
+
+unique(biological_status_merged[,c("psf_status","psf_status_code")])
+
+
+# Find total number of CUs for each 
+
+# Per region and species
+data_summary_rg_sp <- biological_status_merged %>%
+  filter(region != "Yukon") %>%
+  group_by(region,species_name,psf_status) %>%
+  summarise(count = n()) %>%
+  as.data.frame() %>%
+  arrange(region,species_name,
+          factor(psf_status, levels = c("good","fair","poor","extinct","not-assessed","data-deficient")))
+
+# data_summary_rg_sp |> View()
+
+# Per regions
+data_summary_rg <- biological_status_merged %>%
+  filter(region != "Yukon") %>%
+  group_by(region,psf_status) %>%
+  summarise(count = n()) %>%
+  as.data.frame() %>%
+  arrange(region,
+          factor(psf_status, levels = c("good","fair","poor","extinct","not-assessed","data-deficient")))
+
+# data_summary_rg |> View()
+
+# Per species
+data_summary_sp <- biological_status_merged %>%
+  filter(region != "Yukon") %>%
+  group_by(species_name,psf_status) %>%
+  summarise(count = n()) %>%
+  as.data.frame() %>%
+  arrange(species_name,
+          factor(psf_status, levels = c("good","fair","poor","extinct","not-assessed","data-deficient")))
+
+# data_summary_sp |> View()
+
+# For all BC:
+data_summary_BC <- biological_status_merged %>%
+  filter(region != "Yukon") %>%
+  group_by(psf_status) %>%
+  summarise(count = n()) %>%
+  as.data.frame() %>%
+  arrange(factor(psf_status, levels = c("good","fair","poor","extinct","not-assessed","data-deficient")))
+
+sum(data_summary_BC$count)
+
+# make a list
+list <- list(data_summary_BC,data_summary_rg,data_summary_sp,data_summary_rg_sp)
+
+names(list) <- c("all BC","Per regions","Per species","Per regions and species")
+
+# export an excel file
+date <- Sys.Date()
+
+for(sh_i in 1:length(names(list))){
+  # sh_i <- 1
+  if(sh_i == 1){
+    append <- F
+  }else{
+    append <- T
+  }
+  sheetName <- names(list)[sh_i]
+  sheet <- as.data.frame(list[[sheetName]])
+  write.xlsx(sheet, 
+             file = paste0(wd_output,"/Biostatus_BC_summary_",date,".xlsx"),
+             sheetName = sheetName, 
+             row.names = FALSE,
+             append = append,
+             showNA = T)
+  print(sh_i)
+}
+
 # Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------
 #
 

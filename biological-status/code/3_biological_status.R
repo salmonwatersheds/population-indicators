@@ -100,7 +100,10 @@ benchmarks_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                   wd_output = wd_output,
                                                   region = region,
                                                   species_all = species_all)
-
+#' remove the cyclic  CUs for now because their HBSRM analysis has not been incomporated in the workflow yet
+cond <- grepl("cyclic",benchmarks_HBSRM$CU)
+benchmarks_HBSRM[cond,]
+benchmarks_HBSRM <- benchmarks_HBSRM[!cond,]
 
 #'* Import benchmark values for the percentile method *
 pattern <- "benchmarks_summary_percentiles"
@@ -119,6 +122,13 @@ head(biological_status_HBSRM)
 colnames(biological_status_HBSRM)
 nrow(biological_status_HBSRM) # 143 ;  137
 unique(biological_status_HBSRM$comment)
+
+
+#' remove the cyclic  CUs for now because their HBSRM analysis has not been incomporated in the workflow yet
+cond <- grepl("cyclic",biological_status_HBSRM$CU_pse)
+biological_status_HBSRM[cond,]
+biological_status_HBSRM <- biological_status_HBSRM[!cond,]
+
 
 # add column biostatus for both thresholds (Smsy and 80% Smsy)
 colProb <- colnames(biological_status_HBSRM)[grepl("Smsy_",colnames(biological_status_HBSRM))]
@@ -148,7 +158,7 @@ biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       region = region,
                                                       species_all = species_all)
 
-nrow(biological_status_percentile) # 448
+nrow(biological_status_percentile) # 452 448
 
 # Add final biostatus for both thresholds (i.e., 0.75 and 0.5 upper threshold)
 #' NOTE: the percentile biostatus is obtain used the benchmarks are current spawner
@@ -442,17 +452,19 @@ head(biological_status_merged)
 CUs_comm <- biological_status_HBSRM$cuid[biological_status_HBSRM$cuid %in% 
                                           biological_status_percentile$cuid]
 length(CUs_comm) # 137
+
 CUs_HBSRM_only <- biological_status_HBSRM$cuid[!biological_status_HBSRM$cuid %in% 
                                                biological_status_percentile$cuid]
 length(CUs_HBSRM_only) # 0
 
 CUs_Percent_only <- biological_status_percentile$cuid[!biological_status_percentile$cuid %in% 
                                                        biological_status_HBSRM$cuid]
-length(CUs_Percent_only) # 311
+length(CUs_Percent_only) # 315 311
 
 # Expected number of rows in biological_status_merged:
-length(CUs_comm) + length(CUs_HBSRM_only) + length(CUs_Percent_only) # 448
-nrow(biological_status_merged) # 448 --> ALL GOOD
+length(CUs_comm) + length(CUs_HBSRM_only) + length(CUs_Percent_only) # 452 448
+nrow(biological_status_merged) # 452 --> ALL GOOD
+
 
 # Renames columns
 colnames(biological_status_merged) <- gsub("red","red_prob",colnames(biological_status_merged))
@@ -718,12 +730,13 @@ cond <- is.na(biological_status_merged$current_spawner_abundance)
 unique(biological_status_merged[,c("psf_status_code","psf_status_code_all")][cond,])
 
 # Check that the CUs with status code 6 (high exploitation rate or production rates)
-# with red status are still available:
+# with red status are still available: --> is not any
 cond <- grepl("6",biological_status_merged$psf_status_code_all) &
   biological_status_merged$percentile_status == 'poor' &
   !is.na(biological_status_merged$percentile_status)
 
 biological_status_merged[cond,]
+biological_status_merged$psf_status[cond] |> unique()
 
 # Re-arrange columns and drop current_spawner_abundance
 col_prob <- colnames(biological_status_merged)[grepl("_prob",colnames(biological_status_merged))]
@@ -741,11 +754,11 @@ biological_status_merged[grepl("cyclic",biological_status_merged$cu_name_pse),]
 biological_status_merged[grepl("5",biological_status_merged$psf_status_code_all),]
 
 # Number CUs total:
-nrow(biological_status_merged) # 448
+nrow(biological_status_merged) # 452 448
 
 # Number CUs with biostatus assessed over both methods
 condition <- biological_status_merged$psf_status_code %in% 1:3
-sum(condition) # 194
+sum(condition) # 195
 
 # CUs not assessed because cyclic dynamics, low productivity/high mortality or data deficient
 condition_5 <- grepl(pattern = "5",biological_status_merged$psf_status_code)
@@ -758,31 +771,87 @@ sum(condition_5_6_7) # 38
 # Number CUs with biostatus assessed with HBSRM:
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$psf_status_type) & biological_status_merged$psf_status_type == "sr"
-sum(condition_HBSRM)                   # 125
-sum(condition_1_2_3 & condition_HBSRM) # 125
+sum(condition_HBSRM)                   # 124 125
+sum(condition_1_2_3 & condition_HBSRM) # 124 125
 
 # Number CUs with biostatus assessed with percentile method: 
 condition_Percent <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "percentile"
-sum(condition_Percent)                       # 69
-sum(condition_1_2_3 & condition_Percent)     # 69
+sum(condition_Percent)                       # 71 69
+sum(condition_1_2_3 & condition_Percent)     # 71 69
 sum(condition_HBSRM) + sum(condition_Percent) == sum(condition) # should be TRUE
+
+
+#'* Check *
+# 
+# # find CUs that are new to the new biological_status_merged
+# bio_status_previous <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),header = T)
+# cond <- !bio_status_previous$cuid %in% biological_status_merged$cuid
+# bio_status_previous[cond,c("region","species_abbr","cu_name_pse","cuid","psf_status_code")]
+# cuid_new <- bio_status_previous$cuid[cond]
+# 
+# # find CUs that were SR before and not any more
+# cond_sr <- !is.na(bio_status_previous$psf_status_type) & 
+#   bio_status_previous$psf_status_type == "sr" &
+#   bio_status_previous$psf_status_code %in% 1:3 &
+#   !bio_status_previous$cuid %in% cuid_new
+# cuid_prev <- bio_status_previous$cuid[cond_sr]
+# cuid_prev
+# 
+# cond <- !cuid_prev %in% biological_status_merged$cuid[condition_HBSRM]
+# cuid_prev[cond]
+# biological_status_merged[biological_status_merged$cuid %in% cuid_prev[cond],]
+# 
+# bio_status_previous[bio_status_previous$cuid %in% cuid_prev[cond],]
+# 
+# # Question to Eric and Katy: why are those two CUs data deficient now? --> normal
+# # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723584891946199
+# #
+# 
+# # find CUs that were percentile before but not amymore --> none
+# cond_sr <- !is.na(bio_status_previous$psf_status_type) & 
+#   bio_status_previous$psf_status_type == "percentile" &
+#   bio_status_previous$psf_status_code %in% 1:3 &
+#   !bio_status_previous$cuid %in% cuid_new
+# cuid_prev <- bio_status_previous$cuid[cond_sr]
+# cuid_prev
+# 
+# cond <- !cuid_prev %in% biological_status_merged$cuid[condition_Percent]
+# cuid_prev[cond]
+# biological_status_merged[biological_status_merged$cuid %in% cuid_prev[cond],]
+# 
+# bio_status_previous[bio_status_previous$cuid %in% cuid_prev[cond],]
+# 
+# # CUs that is no SR and was not before
+# cond_sr <- !is.na(bio_status_previous$psf_status_type) & 
+#   bio_status_previous$psf_status_type == "sr" &
+#   bio_status_previous$psf_status_code %in% 1:3
+# cuid_prev <- bio_status_previous$cuid[!cond_sr & !bio_status_previous$cuid %in% cuid_new]
+# 
+# cond <- cuid_prev %in% biological_status_merged$cuid[condition_HBSRM]
+# cuid_prev[cond]
+# biological_status_merged[biological_status_merged$cuid %in% cuid_prev[cond],]
+# bio_status_previous[bio_status_previous$cuid %in% cuid_prev[cond],]
+
 
 # Write the file Biological_status_HBSR_Percentile_all.csv (future dataset_101) -----
 #
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
 
-write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
           row.names = F)
 
-biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-                                     header = T)
+biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                       pattern = "Biological_status_HBSR_Percentile_all_")
 
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
 
 # Import Biological_status_HBSR_Percentile_all.csv create just before
-biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-                                     header = T)
+biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                       pattern = "Biological_status_HBSR_Percentile_all_")
 
 benchmarks_merged <- biological_status_merged[,c("region","cuid","species_abbr",
                                                  "species_name","cu_name_pse")]
@@ -861,11 +930,15 @@ for(r in 1:nrow(benchmarks_merged)){
 #
 # write Benchmarks_HBSR_Percentile_all.csv -----
 
-write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+
+write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
           row.names = F)
 
-benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
-                                     header = T)
+benchmarks_merged <-import_mostRecent_file_fun(wd = wd_output,
+                                               pattern = "Benchmarks_HBSR_Percentile_all_")
 
 cond <- benchmarks_merged$cuid %in% c(753,756,757)
 benchmarks_merged[cond,]
@@ -877,18 +950,18 @@ benchmarks_merged[cond,]
 #' nor in dataset1cu_output (in the R code: cuspawnerabundance)).
 #' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714665184357159?thread_ts=1701199596.229739&cid=CJG0SHWCW
 
-biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-                                     header = T)
+biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                       pattern = "Biological_status_HBSR_Percentile_all_")
 
-benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
-                              header = T)
+benchmarks_merged <- import_mostRecent_file_fun(wd_output,
+                                                pattern = "Benchmarks_HBSR_Percentile_all_")
 
 # find their cuid:
 cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid
 cuidMissing <- conservationunits_decoder$cuid[cond]
 
 cuidMissing
-length(cuidMissing)
+length(cuidMissing) # 14
 
 #'* Add to biological_status_merged * 
 head(biological_status_merged)
@@ -930,20 +1003,24 @@ benchmarks_merged <- rbind(benchmarks_merged,
                            benchmarks_add)
 
 
-write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+date <- as.character(Sys.time())
+date <- strsplit(x = date, split = " ")[[1]][1]
+date <- gsub("-","",date)
+
+
+write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
           row.names = F)
 
-write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
           row.names = F)
-
 
 # END
 
-benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
-                              header = T)
+benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                pattern = "Benchmarks_HBSR_Percentile_all_")
 
-biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-                                     header = T)
+biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                       pattern = "Biological_status_HBSR_Percentile_all_")
 
 cond <- biological_status_merged$psf_status_type == "percentile" & !is.na(biological_status_merged$psf_status_type)
 cond2 <- !is.na(biological_status_merged$sr_yellow_prob)
@@ -952,11 +1029,11 @@ View(biological_status_merged[cond & cond2,])
 # Export files for Katy -------
 # This is just to edit the file name
 # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1721074762139209?thread_ts=1701199596.229739&cid=CJG0SHWCW
-biological_status_merged <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-                                     header = T)
+benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                pattern = "Benchmarks_HBSR_Percentile_all_")
 
-benchmarks_merged <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
-                              header = T)
+biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+                                                       pattern = "Biological_status_HBSR_Percentile_all_")
 
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
@@ -973,32 +1050,14 @@ write.csv(benchmarks_merged,
 
 
 
+# check the CUs with different biostatus between SR and percentile
 
-
-cond1 <- biological_status_merged$psf_status_type == "percentile" &
-  !is.na(biological_status_merged$psf_status_type)
-
-cond2 <- !is.na(biological_status_merged$percentile_status)
-
-cond3 <- biological_status_merged$percentile_status != biological_status_merged$psf_status &
-  !is.na(biological_status_merged$psf_status) &
+cond <- biological_status_merged$sr_status != biological_status_merged$percentile_status &
+  !is.na(biological_status_merged$sr_status) &
   !is.na( biological_status_merged$percentile_status)
 
-
-biological_status_merged[cond1 & cond2 & cond3,]
-#                    region cuid species_abbr species_name                            cu_name_pse sr_red_prob sr_yellow_prob sr_green_prob percentile_red_prob percentile_yellow_prob percentile_green_prob hist_red hist_yellow hist_green sr_status percentile_status psf_status_code_all psf_status_type psf_status_code psf_status
-# 17                       Central Coast  516           CO         Coho                            Smith Inlet          NA             NA            NA                1.88                  49.64                 48.48  #FFFFFF     #FFFFFF    #009900      <NA>              good                   2      percentile               2       fair
-# 19                       Central Coast  518           CO         Coho                Bella Coola-Dean Rivers      0.3095        68.1429       31.5476               49.54                  50.46                  0.00  #CC0000     #FFFFFF    #FFFFFF      fair              poor                   2      percentile               2       fair
-# 128                             Fraser  308           CK      Chinook  Fraser Canyon-Nahatlatch (Spring 5-2)          NA             NA            NA               49.48                  50.42                  0.10  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
-# 137                             Fraser  317           CK      Chinook      Lower Thompson River (Spring 4-2)          NA             NA            NA               32.40                  67.58                  0.02  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
-# 203                        Haida Gwaii  813          PKO   Pink (odd)                 East Haida Gwaii (odd)      0.0000         0.1270       99.8730                3.00                  47.10                 49.90  #FFFFFF     #FFFF00    #FFFFFF      good              fair                   1      percentile               1       good
-# 256                             Skeena  220           CM         Chum                         Skeena Estuary          NA             NA            NA               79.60                  20.36                  0.04  #FFFFFF     #FFFF00    #FFFFFF      <NA>              fair                   3      percentile               3       poor
-# 309                      Transboundary 1004           CK      Chinook                                  Alsek          NA             NA            NA               40.34                  54.34                  5.32  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
-# 343 Vancouver Island & Mainland Inlets  327           CK      Chinook East Vancouver Island-North (Fall x-1)          NA             NA            NA               11.42                  86.34                  2.24  #CC0000     #FFFFFF    #FFFFFF      <NA>              poor                   2      percentile               2       fair
-
-
-
-
+biological_status_merged[cond,]
+biological_status_merged[cond,] |> nrow()
 
 
 

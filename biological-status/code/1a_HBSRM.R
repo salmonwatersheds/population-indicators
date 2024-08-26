@@ -162,12 +162,12 @@ options(warn = 2)  # treat warnings as errors
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
-  # i_rg <- 1
+  # i_rg <- 9
   
   recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
   
   if(species_all){
-    species <- unique(cuspawnerabundance_rg$species_name)
+    species <- unique(recruitsperspawner_rg$species_name)
   }
   
   species <- species[species != "Steelhead"] # QUESTION: is it still relevant?

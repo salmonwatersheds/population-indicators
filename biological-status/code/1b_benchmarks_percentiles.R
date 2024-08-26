@@ -111,7 +111,7 @@ species <- species_acronym_df$species_name[species_acronym_df$species_acro == "C
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- F
+species_all <- T
 
 #' Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
@@ -120,8 +120,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 #' Import the cuspawnerabundance.csv from population-indicators/data_input or 
 #' download it from the PSF database.
 #' To calculating current spawner abundance for biostatus assessment
-fromDatabase <- F
-update_file_csv <- F
+fromDatabase <- update_file_csv <- F
 
 cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
                                             fromDatabase = fromDatabase,
@@ -136,7 +135,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 467
+nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 466 467
 
 # Import the spawner_abundance.csv, downloaded from SPS work. OLDER CODE
 # spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/data")
@@ -159,7 +158,7 @@ yearCurrentAbundance <- NA # was 2021
 # Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
-print_fig <- F
+print_fig <- T
 
 #
 for(i_rg in 1:length(region)){

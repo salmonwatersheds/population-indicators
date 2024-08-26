@@ -66,7 +66,7 @@ library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in 
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
 
 # option to export the figures
-print_fig <- F
+print_fig <- T
 
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
@@ -168,6 +168,11 @@ for(i_rg in 1:length(region)){
     files_list <- list.files(wd_data_input)
     files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
     files_s <- files_s[grepl(pattern = regionName,files_s)]
+    
+    # Remove the "cyclic" pattern for now because cyclic CUs have not been integrated to this main workflow yet 
+    cond <- grepl("cyclic",files_s)
+    files_s <- files_s[!cond]
+    
     species_acro <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
     species_acro <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species_acro)
     
@@ -500,7 +505,7 @@ for(i_rg in 1:length(region)){
         
         # Record the probabilities:
         biologicalStatus_df <- data.frame(region = region[i_rg],
-                                          species = species[i_sp],
+                                          species = species_acro[i_sp], # species[i_sp],
                                           cuid = cuids[i],
                                           CU = CUs[i],
                                           CU_pse = CUname_pse,
@@ -543,7 +548,7 @@ for(i_rg in 1:length(region)){
         
         # Report the benchmark values and CI
         benchSummary_df <- data.frame(region = rep(region[i_rg],4),
-                                      species = rep(species[i_sp],4),
+                                      species =  rep(species_acro[i_sp],4), # rep(species[i_sp],4),
                                       cuid = rep(cuids[i],4),
                                       CU = rep(CUs[i],4),
                                       benchmark = c(rep(names(benchSummary)[1],2),

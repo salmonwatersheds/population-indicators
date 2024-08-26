@@ -279,6 +279,8 @@ count <- 1
 message_show <- T
 for(r in 1:nrow(CU_name_species)){
   # r <- 6
+  # r <- which(CU_name_species$SPECIES_QUALIFIED == "CO" &
+  #              CU_name_species$CU_NAME == "TAKU-LATE TIMING")
   CU_NAME_here <- tolower(CU_name_species$CU_NAME[r])
   SPECIES_QUALIFIED_here <- CU_name_species$SPECIES_QUALIFIED[r]         # "CM"  "CK"  "CO"  "PKE" "PKO" "SER" "SEL"
   CU_TYPE_here <- CU_name_species$CU_TYPE[r]
@@ -286,10 +288,27 @@ for(r in 1:nrow(CU_name_species)){
   FULL_CU_IN_here <- CU_name_species$FULL_CU_IN[r]
   FULL_CU_IN_PSF_here <- CU_name_species$FULL_CU_IN_PSF[r]
   
-  # try match with FULL_CU_IN_PSF
+  #' # try match with FULL_CU_IN_PSF
   cond <- conservationunits_decoder$cu_index == FULL_CU_IN_PSF_here &
     !is.na(conservationunits_decoder$cu_index)
   
+  #' #' TODO: issue with CO-42 vs. 41 vs. 43 in TBR: cf. PSE Data Check in August 08th 2023:
+  #' #' https://docs.google.com/document/d/12viWlyqX1FfJewUgbPAZOGrwoUT15cIN0WMt2pBOyx0/edit?usp=sharing
+  #' NOT AN ISSUE FOR NOW: it is a TBR CU, which are delt with in anothe folder
+  #' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1724344898166039?thread_ts=1723054968.210969&cid=CJ5RVHVCG
+  #' 
+  #' cond <- conservationunits_decoder$cu_name_pse %in% c("Taku-Late Timing","Taku-Early Timing") &
+  #'   conservationunits_decoder$species_abbr == "CO"
+  #' conservationunits_decoder[cond,c("region","species_name","cuid","cu_name_pse","cu_index")]
+  #' 
+  #' cond <- nuseds$SPECIES == "Coho" & nuseds$CU_NAME %in% c(toupper("Taku-Late Timing"),
+  #'                                                          toupper("Taku-Early Timing"))
+  #' nuseds[cond,c("SPECIES","CU_NAME","FULL_CU_IN")] |> unique()
+  #' 
+  #' 
+  #' cond <- nuseds$SPECIES == "Coho" & nuseds$FULL_CU_IN %in% c(" CO-41"," CO-42")
+  #' nuseds[cond,c("SPECIES","CU_NAME","FULL_CU_IN")] |> unique()
+
   # try with FULL_CU_IN
   if(sum(cond) == 0){ 
     
@@ -424,7 +443,7 @@ fields_nuseds_location <- c("SYSTEM_SITE","WATERBODY","GAZETTED_NAME",  # region
                             "LOCAL_NAME_1","LOCAL_NAME_2",
                             "GFE_ID","X_LONGT","Y_LAT")
 
-nuseds_location <- unique(nuseds[,fields_nuseds_location]) # inclide GFE_ID because there can be multiple SYSTEM_SITEs for a same CU
+nuseds_location <- unique(nuseds[,fields_nuseds_location]) # include GFE_ID because there can be multiple SYSTEM_SITEs for a same CU
 nrow(nuseds_location) # 2312
 
 # Manual fix 1st:
@@ -906,7 +925,7 @@ sum(!nuseds$location_new)/nrow(nuseds) * 100  # 99.11
 #' It was decided to not try to match the existing streamid but instead to redefine
 #' them.
 
-#'* streamid *
+#'* streamid = unique cuid & GFE_ID combination *
 
 nuseds$streamid <- NA
 
@@ -925,6 +944,12 @@ for(r in 1:nrow(cuid_GFE_ID)){
 # only the row without a cuid should also not have a streamid:
 sum(is.na(nuseds$cuid))     # 1998
 sum(is.na(nuseds$streamid)) # 1998
+
+
+cond <- grepl("OKANAGAN RIVER",nuseds$sys_nm)
+sum(cond)
+unique(nuseds[cond,c("streamid","GFE_ID","cuid")])
+
 
 
 #'* coordinates & sys_nm*
@@ -1034,10 +1059,31 @@ write.csv(nuseds,paste0(wd_output,"/nuseds_cuid_streamid_",date,".csv"),
           row.names = F)
 
 #
+# Request from Eric to produce NuSEDS_sites.csv ------
+# https://salmonwatersheds.slack.com/archives/D05EZ10DS9E/p1723141379840509
 
+pattern <- "nuseds_cuid_streamid_"
+nuseds <- import_mostRecent_file_fun(wd = wd_output, pattern = pattern)
 
+sum(is.na(nuseds$cuid))
+sum(is.na(nuseds$streamid))
 
+NuSEDS_sites <- nuseds[,c("FULL_CU_IN","streamid")] |> unique()
+nrow(NuSEDS_sites) # 6788
 
+# NuSEDS_sites <- nuseds[,c("FULL_CU_IN","streamid","cuid")] |> unique()
+# nrow(NuSEDS_sites) # 6788
+
+NuSEDS_sites <- NuSEDS_sites %>%
+  group_by(FULL_CU_IN) %>%
+  summarise(n = n())
+
+NuSEDS_sites |> nrow() # 410
+
+cond <- NuSEDS_sites$FULL_CU_IN == "CK-10"
+NuSEDS_sites[cond,]
+
+write.csv(NuSEDS_sites,paste0(wd_output,"/NuSEDS_cleaned_FULL_CU_IN_streamid_TEMPORARY.csv"),row.names = F)
 
 #
 # FUTURE THINGS TO DO (still relevant ?) ------

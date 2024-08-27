@@ -213,7 +213,7 @@ hatchery_template_fun <- function(wd_data,
 
 #' Function that takes a vector of 'cu_index' values (or the corresponding DFO 
 #' "STOCK_CU_INDEX' and "REL_CU_INDEX") and return the corresponding PSF "cuid"
-#' and vice versa. The function requires to supply the conservation_units.csv
+#' and vice versa. The function requires to supply the conservationunits_decoder.csv
 #' which comes from the PSF database.
 # cu_index <- DFO_df$REL_CU_INDEX
 # cuid <- NA
@@ -235,9 +235,11 @@ cui_cu_index_conservation_units_fun <- function(cuid = NA, cu_index = NA,
   
   for(i in 1:length(unique(input))){
     # i <- 1
+    # i <- which(grepl("PK",unique(input)))[1]
     val <- unique(input)[i]
-    newVal <- conservation_units[,colOutput][conservation_units[,colInput] == val]
-    newVal <- newVal[!is.na(newVal)]
+    cond <- conservation_units[,colInput] == val & !is.na(conservation_units[,colInput])
+    newVal <- conservation_units[,colOutput][cond]
+    # newVal <- newVal[!is.na(newVal)]
     if(length(newVal) == 0){ # there is not corresponding value
       print(paste0("The value '",val,"' does not have a match so NA is given instead."))
       newVal <- NA

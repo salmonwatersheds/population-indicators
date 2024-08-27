@@ -157,9 +157,13 @@ cuid_broodstock_multi <- NULL
 # Fill filePSF_l with new data (takes a couple minutes)
 for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by hand or not at all (QUESTION)
   
-  # sheet_i <- 2
+  # sheet_i <- 4
   sheetName <- names(filePSF_l)[sheet_i]
   sheetNew <- filePSF_l[[sheet_i]]
+  
+  if(sheet_i == 4){
+    break
+  }
   
   # subset matchCol_df for the current sheet
   # matchCol_df_cut <- matchCol_df[matchCol_df$PSF_sheet == sheetName,]
@@ -725,16 +729,16 @@ View(unique(data.frame(DataEntry_relase$location_name_pse)))
 # unique(DataEntry_relase[cond,c("location_name_pse","release_site_latitude","release_site_longitude")])
 
 #
-# Export remove DataEntry_relase_noTBR_DATE.csv -------- 
+# Export remove DataEntry_relase_noTBR_DATE.csv NOT NEEDED (cf. Data PSE Check in August 22 2024) -------- 
 #
 cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
 DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cuid_toRemove,]
 
 #
-date <- Sys.Date()
-date <- gsub(pattern = "-",replacement = "",x = date)
-write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTBR_",date,".csv"),
-          row.names = F)
+# date <- Sys.Date()
+# date <- gsub(pattern = "-",replacement = "",x = date)
+# write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTBR_",date,".csv"),
+#           row.names = F)
 
 #
 #
@@ -1023,6 +1027,59 @@ cond <- DataEntry_relase_TB$release_date == 2015 &
 DataEntry_relase_TB[cond,]
 
 # 
+#
+# CHECK: Pink odd vs. even year release issue -------
+# https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1723670303736409
+
+conservationunits_decoder
+
+hatchery_data <- import_mostRecent_file_fun(wd = wd_output, pattern = "SWP_hatchery_data_")
+
+hatchery_data$DataEntry_releases$cu_name_pse <- sapply(X = hatchery_data$DataEntry_releases$cuid_broodstock, 
+                                                       FUN = function(cuid){
+                                                         cond <- conservationunits_decoder$cuid == cuid
+                                                         return(conservationunits_decoder$cu_name_pse[cond])
+                                                       })
+cond <- hatchery_data$DataEntry_releases$species == "Pink"
+Data_releases_pink <- hatchery_data$DataEntry_releases[cond,]
+
+cond_odd <- grepl("odd",Data_releases_pink$cu_name_pse)
+Data_releases_pink[cond_odd,c("cu_name_pse","release_date")] |> unique() |> View()
+
+cond_even <- grepl("even",Data_releases_pink$cu_name_pse)
+Data_releases_pink[cond_even,c("cu_name_pse","release_date")] |> unique() |> View()
+
+
+DFO_df_all <- return_file_lastVersion_fun(wd_data = wd_data,
+                                          pattern = "PSF_modified_SEP_releases")
+
+cond_odd <- grepl("PKO",DFO_df_all$STOCK_CU_INDEX)
+DFO_df_all[cond_odd,c("STOCK_CU_INDEX","BROOD_YEAR","RELEASE_YEAR")] |> unique()
+
+cond_even <- grepl("PKE",DFO_df_all$STOCK_CU_INDEX)
+DFO_df_all[cond_even,c("STOCK_CU_INDEX","BROOD_YEAR","RELEASE_YEAR")] |> unique()
+
+
+DFO_df_all$BROOD_YEAR
+
+
+#
+hatchery_data$DataEntry_releases$region <- sapply(X = hatchery_data$DataEntry_releases$cuid_broodstock, 
+                                                       FUN = function(cuid){
+                                                         cond <- conservationunits_decoder$cuid == cuid
+                                                         return(conservationunits_decoder$region[cond])
+                                                       })
+nrow(hatchery_data$DataEntry_releases) # 18895
+cond_TBR <- hatchery_data$DataEntry_releases$region == "Transboundary"
+sum(cond_TBR) # 26
+nrow(hatchery_data$DataEntry_releases) - sum(cond_TBR) # 18869
+
+DataEntry_relase_noTB <- read.csv(paste0(wd_output,"/DataEntry_relase_noTB_20240404.csv"),header = T)
+nrow(DataEntry_relase_noTB) # 18869
+
+
+
+#
 # OLD NOTES: -------
 # - Eric: the only trick will be translating the "STOCK_CU_INDEX" field into 
 # "cuid_broodstock" AND CUID of the release site. Will have to use one of the tables in the decoder repo. 
@@ -1034,7 +1091,7 @@ DataEntry_relase_TB[cond,]
 # C:\Users\bcarturan\Salmon Watersheds Dropbox\Bruno Carturan\X Drive\1_PROJECTS\1_Active\Population Methods and Analysis\decoders
     
 
-# QA/QC database relationship related ------
+# QA/QC database relationship related (OLD) ------
 printDF <- T
 relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROGRAM_CODE", printDF = printDF) # many to many
 relationships_twoCol_df_fn(df = DFO_df,col1 = "FACILITY_NAME",col2 = "PROJ_NAME", printDF = printDF) # many to many

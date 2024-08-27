@@ -769,7 +769,7 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
 }
 
 #' Function to return the last version of a file whose name contains the given
-#' pattern.
+#' pattern. Works with .csv and .xlsx formats.
 import_mostRecent_file_fun <- function(wd,pattern){
   
   files_c <- list.files(wd)
@@ -783,7 +783,23 @@ import_mostRecent_file_fun <- function(wd,pattern){
     file.mtime <- file.mtime(paste(wd,files_c,sep="/"))
     file <- files_c[file.mtime == max(file.mtime)]
     print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
-    out <- read.csv(paste(wd,file,sep = "/"),header = T)
+    
+    if(grepl(".xlsx",file)){
+      require(readxl)
+      sheets_n <- excel_sheets(paste(wd,file,sep = "/"))
+      out <- list()
+      for(s in sheets_n){
+        out[[which(s == sheets_n)]] <- read_excel(path = paste(wd,file,sep = "/"),
+                                                  sheet = s)
+      }
+      names(out) <- sheets_n
+      
+    }else if(grepl(".csv",file)){
+      out <- read.csv(paste(wd,file,sep = "/"),header = T)
+      
+    }else{
+      Print("File format to implement.")
+    }
   }
   return(out)
 }

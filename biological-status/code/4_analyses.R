@@ -340,6 +340,136 @@ for(sh_i in 1:length(names(list))){
   print(sh_i)
 }
 
+#
+# Compare old vs. new biostatus -------
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717565600400059?thread_ts=1717434872.482819&cid=CJ5RVHVCG
+
+# Query the data from the the database at appdata.vwdl_setr_appendix4
+
+biostatus_old <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_setr_appendix4")
+head(biostatus_old)
+
+# add psf_status_type to biostatus_old
+biostatus_old$psf_status_type <- NA
+cond <- !is.na(biostatus_old$sr_status)     # I assumed that is not NA then it is "sr"
+biostatus_old$psf_status_type[cond] <- "sr"
+cond <- is.na(biostatus_old$sr_status) & !is.na(biostatus_old$percentile_status)
+biostatus_old$psf_status_type[cond] <- "percentile"
+
+biostatus_new <- import_mostRecent_file_fun(wd = wd_output, 
+                                            pattern = "dataset101_biological_status")
+head(biostatus_new)
+
+benchmarks_new <- import_mostRecent_file_fun(wd = wd_output, 
+                                            pattern = "dataset102_benchmarks")
+head(benchmarks_new)
+
+# add curr_spw_end_year to biostatus_new
+biostatus_new$curr_spw_end_year <- sapply(biostatus_new$cuid,function(cuid){
+  cond <- benchmarks_new$cuid == cuid
+  return(benchmarks_new$curr_spw_end_year[cond])
+})
+
+
+#'* merge biostatus *
+biostatus_merge <- merge(x = biostatus_old[,c("region","species_name","cuid",
+                                              "cu_name_pse","psf_status","psf_status_type",
+                                              "curr_spw_end_year")],
+                    y = biostatus_new[,c("region","species_name","cuid",
+                                         "cu_name_pse","psf_status","psf_status_type",
+                                         "curr_spw_end_year")],
+                    by = c("region","species_name","cuid","cu_name_pse"))
+
+head(biostatus_merge)
+
+cond_x <- grepl("\\.x",colnames(biostatus_merge))
+colnames(biostatus_merge)[cond_x] <- gsub("\\.x","_old",colnames(biostatus_merge)[cond_x])
+
+cond_y <- grepl("\\.y",colnames(biostatus_merge))
+colnames(biostatus_merge)[cond_y] <- gsub("\\.y","_new",colnames(biostatus_merge)[cond_y])
+
+# order columns
+biostatus_merge <- biostatus_merge[,c("region","species_name","cuid","cu_name_pse",
+                                      "psf_status_old","psf_status_new",
+                                      "psf_status_type_old","psf_status_type_new",
+                                      "curr_spw_end_year_old","curr_spw_end_year_new")]
+
+biostatus_merge$psf_status_code_all <- sapply(biostatus_merge$cuid,function(cuid){
+  cond <- biostatus_new$cuid == cuid
+  return(biostatus_new$psf_status_code_all[cond])
+})
+
+
+#'* condition same status *
+cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
+sum(cond_same) # 412
+
+#'* Different status *
+cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
+sum(cond_diff) # 53
+
+cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
+cases
+
+biostatus_merge[cond_diff,]
+
+#'* biostatus improved *
+cond <- (biostatus_merge$psf_status_old == "poor" & 
+           biostatus_merge$psf_status_new %in% c("fair","good")) |
+  (biostatus_merge$psf_status_old == "fair" & 
+     biostatus_merge$psf_status_new == "good")
+sum(cond) # 3
+biostatus_merge[cond,]
+# TOCHECK:
+#- cuid 405: same end year: from sr to percentile
+cuid <- 405
+cond_cuid <- biostatus_old$cuid == cuid
+biostatus_old[cond_cuid,c("cuid","25%_spw","75%_spw","sgen","smsy80")]
+cond_cuid <- benchmarks_new$cuid == cuid
+benchmarks_new[cond_cuid,c("cuid","X25._spw","X75._spw","sgen","smsy")]
+
+#'* biostatus worthened  *
+#' when same end year --> sr to percentile
+cond <- (biostatus_merge$psf_status_new == "poor" & 
+           biostatus_merge$psf_status_old %in% c("fair","good")) |
+  (biostatus_merge$psf_status_new == "fair" & 
+     biostatus_merge$psf_status_old == "good")
+sum(cond) # 4
+biostatus_merge[cond,]
+
+#'* data-deficient --> non- data-deficient *
+cond <- biostatus_merge$psf_status_old == "data-deficient" & 
+  biostatus_merge$psf_status_new != "data-deficient"
+sum(cond) # 7
+biostatus_merge[cond,]
+
+#'* non data-deficient --> data-deficient *
+cond <- biostatus_merge$psf_status_old != "data-deficient" & 
+  biostatus_merge$psf_status_new == "data-deficient"
+sum(cond) # 12
+biostatus_merge[cond,]
+# because of new rules? 7 
+
+
+#'* assessed --> not assessed *
+cond <- biostatus_merge$psf_status_old != "not-assessed" & biostatus_merge$psf_status_new == "not-assessed"
+sum(cond) # 27
+biostatus_merge[cond,]
+#' --> cyclic or high exploit/low prod
+
+7+12+3+4+27
+
+#'  - 1 = good
+#'  - 2 = fair
+#'  - 3 = poor
+#'  - 4 = extinct
+#'  - 5 = not-assessed (cyclic dominance)
+#'  - 6 = not-assessed (low productivity or high exploitation)
+#'  - 7 = data-deficient (insufficient time series length)
+#'  - 8 = data-deficient (no estimates of spawner abundance in the most recent generation)
+#'  - 9 = data-deficient (no spawner estimates available)
+
+#
 # Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------
 #
 

@@ -68,6 +68,8 @@ library(zoo) # for rollmean function
 
 # source("code/functions.R") # note used
 
+figure_print <- F
+
 #
 # Import datasets -------- 
 #
@@ -161,14 +163,14 @@ cu_list <- cu_list %>% left_join(
 
 dataset103_output_new <- dataset202_output_new <- dataset391_output_new <- NULL
 
-figure_print <- T
+
 scale_log <- T
 for(i in 1:nrow(cu_list)){
   # i <- 8
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
   # i <- which(cu_list$species_abbr == "CO" & cu_list$cu_name_pse == "North Thompson")
-  # i <- which(cu_list$cuid == 709)
+  # i <- which(cu_list$cuid == 573)
   # i <- which(grepl("Pink",cu_list$species_name))[1]
   
   region <- cu_list$region[i]
@@ -221,7 +223,7 @@ for(i in 1:nrow(cu_list)){
     y_log_smooth <- y_log
   }
   
-  # Fill  dataset103_output
+  # Fill  dataset103_output (the smoothed log time series)
   dataset103_output_here <- data.frame(region = rep(region,length(x)))
   dataset103_output_here$species_name <- species_name
   dataset103_output_here$cuid <- cuid
@@ -245,10 +247,10 @@ for(i in 1:nrow(cu_list)){
   percent_change_total <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1  # total % change in time period
   percent_change_total <- round(percent_change_total * 100,1)
   percent_change <- exp(lm_LT$coefficients[2]) - 1                              # to convert to % change / yr
-  percent_change_2dec <- round(percent_change * 100,2)
+  percent_change_2dec <- round(percent_change * 100,2)   # for the figure
   percent_change <- round(percent_change * 100,1)
   
-  # Fill dataset202_output
+  # Fill dataset202_output (LT trend dataset)
   dataset202_output_here <- data.frame(region = region)
   dataset202_output_here$species_name <- species_name
   dataset202_output_here$cuid <- cuid
@@ -294,6 +296,7 @@ for(i in 1:nrow(cu_list)){
   }
   if(cond_noEnoughData){
     threegen_percent_change <- NA
+    threegen_percent_change_total <- NA
     threegen_slope <- NA
     threegen_intercept <- NA
     threegen_intercept_start_yr <- NA
@@ -301,7 +304,7 @@ for(i in 1:nrow(cu_list)){
     threegen_percent_change_total <- exp(lm_3g$coefficients[2] * (3 * g - 1)) - 1 # total change
     threegen_percent_change_total <- round(threegen_percent_change_total * 100,1)
     threegen_percent_change <- exp(lm_3g$coefficients[2]) - 1     # % change / yr
-    threegen_percent_change_2dec <- round(threegen_percent_change * 100, 2)
+    threegen_percent_change_2dec <- round(threegen_percent_change * 100, 2)    # for the figure
     threegen_percent_change <- round(threegen_percent_change * 100,1)
     threegen_slope <- round(lm_3g$coefficients[2],6)
     threegen_intercept <- round(lm_3g$coefficients["(Intercept)"],3)
@@ -415,13 +418,29 @@ date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)
 
-write.csv(dataset103_output_new,paste0(wd_output,"/dataset103_output_",date,".csv"),
+# Export in /output/archive folder on dropbox
+write.csv(dataset103_output_new,paste0(wd_output,"/archive/dataset103_output_",date,".csv"),
           row.names = F)
-write.csv(dataset202_output_new,paste0(wd_output,"/dataset202_output_",date,".csv"),
+write.csv(dataset202_output_new,paste0(wd_output,"/archive/dataset202_output_",date,".csv"),
           row.names = F)
-write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output_",date,".csv"),
+write.csv(dataset391_output_new,paste0(wd_output,"/archive/dataset391_output_",date,".csv"),
           row.names = F)
 
+# Export in /output/archive folder on dropbox
+write.csv(dataset103_output_new,paste0(wd_output,"/dataset103_output.csv"),
+          row.names = F)
+write.csv(dataset202_output_new,paste0(wd_output,"/dataset202_output.csv"),
+          row.names = F)
+write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output.csv"),
+          row.names = F)
+
+# Export in /output locally to push to github 
+write.csv(dataset103_output_new,paste0(getwd(),"/output/dataset103_output.csv"),
+          row.names = F)
+write.csv(dataset202_output_new,paste0(getwd(),"/output/dataset202_output.csv"),
+          row.names = F)
+write.csv(dataset391_output_new,paste0(getwd(),"/output/dataset391_output.csv"),
+          row.names = F)
 
 # QUESTION:
 # cases with the 3 gen length regression line > total length: i = 233

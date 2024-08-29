@@ -116,20 +116,12 @@ head(dataset390)
 ###############################################################################
 
 #------------------------------------------------------------------------------
-# survey_quality - Eric to review and ensure the approach is correct
+# survey_quality 
 #------------------------------------------------------------------------------
 
 # To determine CU-level Spawner Survey Method data quality scores, we calculate 
 # a weighted average of the stream-level survey method data quality scores 
 # across all indicator streams over the most recent generation within the CU
-
-
-# # read in spawner survey data
-# spawner_surveys <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_streamspawnersurveys_output") %>%
-#   filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) %>% # Remove survey years when spawner survey methods were Unknown
-#   filter(indicator == "Y") # Use only indicator streams
-# 
-# head(spawner_surveys)
 
 # add gen_length for calculating most recent generation
 spawner_surveys <- spawner_surveys %>% 
@@ -179,6 +171,7 @@ dataset390 <- dataset390 %>% left_join(stream_summary %>%
 )
 
 head(dataset390)
+
 #------------------------------------------------------------------------------
 # survey_coverage 
 #------------------------------------------------------------------------------
@@ -238,7 +231,7 @@ dataset390 <- dataset390 %>%
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#catch-estimates
 
-# No change from existing?
+# No change from existing
 dataset390 <- dataset390 %>% 
   left_join(dataset390_old %>% 
               filter(parameter == "catch_quality") %>%
@@ -322,7 +315,7 @@ head(dataset390)
 #------------------------------------------------------------------------------
 
 # Based on run timing data quality scores compile in run-timing folder
-rt_dq <- read.csv(paste0(Dropbox_directory, "timing/output/run-timing-data-quality_2024-03-08.csv"))
+rt_dq <- read.csv(paste0(Dropbox_directory, "timing/output/run-timing-data-quality_2024-08-15.csv"))
 
 # Orignial run timing score is on a scale of 1 = good to 6 = poor
 # Re-scale
@@ -352,6 +345,9 @@ head(dataset390)
 # apply. StockID is NA for all CUs except Fraser sockeye, so should be ignored
 # if NA.
 
+# To ensure this works, we need to set data quality scores that were zero in the 
+# old data to NA
+dataset390[which(dataset390 == 0, arr.ind = TRUE)] <- NA
 #------------------------------------------------------------------------------
 # dq_score ** Included for legacy site
 #------------------------------------------------------------------------------

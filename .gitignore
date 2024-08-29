@@ -51,6 +51,9 @@ ignore/
 # Any folders called archive will be ignored, regardless of where they are
 archive/
 
+# Any fodlers called figures will be ignored
+figures/
+
 #biological-status/data/
 biological-status/figures/
 biological-status/output_OLD/

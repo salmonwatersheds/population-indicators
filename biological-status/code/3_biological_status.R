@@ -1030,17 +1030,9 @@ cond <- biological_status_merged$psf_status_type == "percentile" & !is.na(biolog
 cond2 <- !is.na(biological_status_merged$sr_yellow_prob)
 # View(biological_status_merged[cond & cond2,])
 
-# Export files /dataset101_biological_status and dataset102_benchmarks -------
-# This is just to edit the file name
-# https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1721074762139209?thread_ts=1701199596.229739&cid=CJG0SHWCW
-# benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
-#                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
-# 
-# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
-
-
-# round fish count to closest integer
+#
+# round fish count to closest integer in benchmarks_merged ------
+#
 head(benchmarks_merged)
 head(biological_status_merged)
 
@@ -1053,6 +1045,16 @@ fields <- c("curr_spw",
 for(f in fields){
   benchmarks_merged[,f] <- round(benchmarks_merged[,f])
 }
+
+#
+# Export files /dataset101_biological_status and dataset102_benchmarks -------
+# This is just to edit the file name
+# https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1721074762139209?thread_ts=1701199596.229739&cid=CJG0SHWCW
+# benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
+# 
+# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
 # write files in /output/archive
 date <- as.character(Sys.time())
@@ -1067,17 +1069,14 @@ write.csv(benchmarks_merged,
           paste0(wd_output,"/archive/dataset102_benchmarks_",date,".csv"),
           row.names = F)
 
-# write files in /output in dropbox
+# write files in /output locally to push to github
 write.csv(biological_status_merged,
-          paste0(wd_output,"/dataset101_biological_status.csv"),
+          paste0(getwd(),"/output/dataset101_biological_status.csv"),
           row.names = F)
 
 write.csv(benchmarks_merged,
-          paste0(wd_output,"/dataset102_benchmarks.csv"),
+          paste0(getwd(),"/output/dataset102_benchmarks.csv"),
           row.names = F)
-
-# write in local /output to push on github
-
 
 
 # check the CUs with different biostatus between SR and percentile

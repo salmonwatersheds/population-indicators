@@ -43,7 +43,7 @@ data-input/
 
 #biological-status/data/
 biological-status/figures/
-biological-status/output/
+biological-status/output/archive
 biological-status/output_OLD/
 
 #hatchery-release/data/
@@ -55,4 +55,8 @@ spawner-surveys/output/
 spawner-surveys/code/ignore 
 
 spawner-abundance/output/
+
+
+# trends
+trends/output/archive
 

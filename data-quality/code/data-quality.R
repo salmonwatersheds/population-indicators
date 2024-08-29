@@ -56,40 +56,55 @@
 
 
 library(tidyverse)
+library(dplyr)
+
 source("code/functions_general.R")
 
-# recent_year <- 2022 # What is the most recent year of spawner abundance data??
 
-#############################################################################################
+#------------------------------------------------------------------------------
+# Set Dropbox directory depending on user
+#------------------------------------------------------------------------------
+
+# return the name of the directories for the different projects:
+Dropbox_root <- read.delim("wd_X_Drive1_PROJECTS.txt", header = FALSE)[1,1]
+Dropbox_directory <- paste0(Dropbox_root, "/1_Active/Population Methods and Analysis/population-indicators/")
+
+################################################################################
 # Set up dataframe
 ###############################################################################
-
-# Set Dropbox directory depending on user
-Dropbox_directory <- "/Users/erichertz/Salmon Watersheds Dropbox/Eric Hertz/X Drive/1_PROJECTS/1_Active/Population Methods and Analysis/population-indicators/"
-
-Dropbox_directory <- "/Users/stephaniepeacock/Salmon Watersheds Dropbox/Stephanie Peacock/X Drive/1_PROJECTS/1_Active/Population Methods and Analysis/population-indicators/"
 
 #------------------------------------------------------------------------------
 # Load database data **Do this at the top so the rest of the script can be easily run
 #------------------------------------------------------------------------------
 
 # Current live DQ data in Legacy site
-dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/dataset390_2023-05-20.csv"))
+dataset390_filename <- list.files(path = paste0(Dropbox_directory, "data-quality/output/archive"), 
+                               pattern = "dataset390") %>%
+  sort() %>%
+  tail(1)
+
+dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/archive/", dataset390_filename))
 
 # Juvenile survey data
-# js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_output") # Read direct from database if needs updating
-# write.csv(js, file= paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Update in Dropbox
-js <- read.csv(paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Read from Dropbox so script can be sourced
+js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_output") # Read direct from database if needs updating
+# # write.csv(js, file= paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Update in Dropbox
+# js <- read.csv(paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Read from Dropbox so script can be sourced
 
-# Spawner survey data
-# spawner_surveys <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_streamspawnersurveys_output") %>%
-#   filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) %>% # Remove survey years when spawner survey methods were Unknown
-#   filter(indicator == "Y") # Use only indicator streams
+# # Spawner survey data
+spawner_surveys0 <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_streamspawnersurveys_output") %>% 
+  filter(stream_observed_count != -989898)
 
-# Read from Dropbox so script can be sourced
-spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawnersurveys_output.csv")) %>%
-  filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) # Remove survey years when spawner survey methods were Unknown
+# # Read from Dropbox so script can be sourced
+# spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawnersurveys_output.csv")) %>%
+#   filter(stream_survey_quality %in% c("Unknown", "-989898") == FALSE) # Remove survey years when spawner survey methods were Unknown
 
+# Most recent year of data (for calculating average abundance over the most recent generation) depends on region
+# 2021, 2022, or 2023
+spawner_surveys <- spawner_surveys0 %>%
+  group_by(region) %>%
+  mutate(most_recent_year = max(year))
+
+sort(unique(spawner_surveys$most_recent_year))
 
 #------------------------------------------------------------------------------
 # Create empty dataframe:
@@ -97,12 +112,9 @@ spawner_surveys <- read.csv(paste0(Dropbox_directory, "data-input/streamspawners
 
 # Load cu list
 cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
-  distinct(pooledcuid, .keep_all = TRUE) %>% # there are duplicates for pooledcuid
-  filter(cu_name_pse != "Swan/Club") # Remove Swan/Club (binned)
-  
+  distinct(pooledcuid, .keep_all = TRUE) # there are duplicates for pooledcuid
+
 unique(tapply(cu_list$cuid, cu_list$cuid, length))
-# cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") 
-# write.csv(cu_list, file= paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) # Update in Dropbox
 
 dataset390 <- cu_list %>% 
   select(region, species_name,cu_name_pse, pooledcuid) %>%
@@ -140,28 +152,29 @@ spawner_surveys$quality_num <- case_when(
   spawner_surveys$stream_survey_quality == "Medium" ~ 3,
   spawner_surveys$stream_survey_quality == "Medium-High" ~ 4,
   spawner_surveys$stream_survey_quality == "High" ~ 5,
+  spawner_surveys$stream_survey_quality == "Unknown" ~ NA
 )
 
 # Calculate mean Q by streamid
 # Question: Are these scores weighted by current spawner abundance?? -> Yes
 stream_summary <- spawner_surveys %>%
-  filter(year > 2023 - gen_length + 1) %>% # Look over the most recent generation
+  filter(year > most_recent_year - gen_length + 1) %>% # Look over the most recent generation
   group_by(streamid) %>%
   summarise(dq = mean(quality_num, na.rm = TRUE), # Mean data quality score for the stream over the most recent gen
-            current_spawners = exp(mean(log(stream_observed_count + 0.01), na.rm = TRUE)), # geometric mean spawner abundance over most recent gen
+            current_spawners = exp(mean(log(stream_observed_count + 0.01), na.rm = TRUE)) # geometric mean spawner abundance over most recent gen
   ) %>%
   left_join(spawner_surveys %>% # Add in cuid
               distinct(streamid, .keep_all = TRUE) %>%
-              select(streamid, cuid,indicator)
+              select(streamid, cuid, indicator)
   ) 
 
 # add in summed CU spawners
 stream_summary <- stream_summary %>% 
   left_join(stream_summary %>% # Calculate observed spawners in most recent gen
               group_by(cuid) %>%
-              summarise(cu_summed_spawners = sum(current_spawners))
+              summarise(cu_summed_spawners = sum(current_spawners, na.rm = TRUE))
   ) %>%
-  mutate(prop_spawners = current_spawners/cu_summed_spawners) # Claculate the proportion of observed spawners for each streamid
+  mutate(prop_spawners = current_spawners/cu_summed_spawners) # Calculate the proportion of observed spawners for each streamid
 
 # Sum stream quality across indicator streams, weighted by proportion of observed spawners in that stream 
 dataset390 <- dataset390 %>% left_join(stream_summary %>%

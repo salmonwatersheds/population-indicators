@@ -14,6 +14,10 @@
 #' - Benchmarks_HBSR_Percentile_all.csv           # 
 #' - data/code_PSF_Status.csv
 #' - population-indicators/data-input/CUs_highExploitation_lowProductivity.csv
+#' - output/dataset101_biological_status.csv #
+#' - output/dataset102_benchmarks.csv        # 
+#' - output/archive/dataset101_biological_status_YYYY-MM-DD.csv #
+#' - output/archive/dataset102_benchmarks_YYYY-MM-DD.csv        # 
 #' 
 #' Resources/Notes:
 #' - Steph's diagram for decision rules
@@ -834,24 +838,24 @@ sum(condition_HBSRM) + sum(condition_Percent) == sum(condition) # should be TRUE
 # bio_status_previous[bio_status_previous$cuid %in% cuid_prev[cond],]
 
 
-# Write the file Biological_status_HBSR_Percentile_all.csv (future dataset_101) -----
+# Write the file Biological_status_HBSR_Percentile_all.csv (future dataset_101) REMOVE -----
 #
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
-
-write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
-          row.names = F)
-
-biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                       pattern = "Biological_status_HBSR_Percentile_all_")
+# date <- as.character(Sys.time())
+# date <- strsplit(x = date, split = " ")[[1]][1]
+# date <- gsub("-","",date)
+# 
+# write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
+#           row.names = F)
+# 
+# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
 
 # Import Biological_status_HBSR_Percentile_all.csv create just before
-biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                       pattern = "Biological_status_HBSR_Percentile_all_")
+# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
 benchmarks_merged <- biological_status_merged[,c("region","cuid","species_abbr",
                                                  "species_name","cu_name_pse")]
@@ -928,20 +932,20 @@ for(r in 1:nrow(benchmarks_merged)){
 }
 
 #
-# write Benchmarks_HBSR_Percentile_all.csv -----
+# write Benchmarks_HBSR_Percentile_all.csv REMOVE -----
 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
-
-write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
-          row.names = F)
-
-benchmarks_merged <-import_mostRecent_file_fun(wd = wd_output,
-                                               pattern = "Benchmarks_HBSR_Percentile_all_")
-
-cond <- benchmarks_merged$cuid %in% c(753,756,757)
-benchmarks_merged[cond,]
+# date <- as.character(Sys.time())
+# date <- strsplit(x = date, split = " ")[[1]][1]
+# date <- gsub("-","",date)
+# 
+# write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
+#           row.names = F)
+# 
+# benchmarks_merged <-import_mostRecent_file_fun(wd = wd_output,
+#                                                pattern = "Benchmarks_HBSR_Percentile_all_")
+# 
+# cond <- benchmarks_merged$cuid %in% c(753,756,757)
+# benchmarks_merged[cond,]
 
 #
 # Add the missing CUs to the output files (one time fix) ------
@@ -950,11 +954,11 @@ benchmarks_merged[cond,]
 #' nor in dataset1cu_output (in the R code: cuspawnerabundance)).
 #' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714665184357159?thread_ts=1701199596.229739&cid=CJG0SHWCW
 
-biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                       pattern = "Biological_status_HBSR_Percentile_all_")
-
-benchmarks_merged <- import_mostRecent_file_fun(wd_output,
-                                                pattern = "Benchmarks_HBSR_Percentile_all_")
+# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
+# 
+# benchmarks_merged <- import_mostRecent_file_fun(wd_output,
+#                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
 
 # find their cuid:
 cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid
@@ -1003,50 +1007,76 @@ benchmarks_merged <- rbind(benchmarks_merged,
                            benchmarks_add)
 
 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
-
-
-write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
-          row.names = F)
-
-write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
-          row.names = F)
-
-# END
-
-benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                pattern = "Benchmarks_HBSR_Percentile_all_")
-
-biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                       pattern = "Biological_status_HBSR_Percentile_all_")
+# date <- as.character(Sys.time())
+# date <- strsplit(x = date, split = " ")[[1]][1]
+# date <- gsub("-","",date)
+# 
+# 
+# write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
+#           row.names = F)
+# 
+# write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
+#           row.names = F)
+# 
+# # END
+# 
+# benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
+# 
+# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
 cond <- biological_status_merged$psf_status_type == "percentile" & !is.na(biological_status_merged$psf_status_type)
 cond2 <- !is.na(biological_status_merged$sr_yellow_prob)
-View(biological_status_merged[cond & cond2,])
+# View(biological_status_merged[cond & cond2,])
 
-# Export files for Katy -------
+# Export files /dataset101_biological_status and dataset102_benchmarks -------
 # This is just to edit the file name
 # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1721074762139209?thread_ts=1701199596.229739&cid=CJG0SHWCW
-benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                pattern = "Benchmarks_HBSR_Percentile_all_")
+# benchmarks_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
+# 
+# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
+#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
-biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-                                                       pattern = "Biological_status_HBSR_Percentile_all_")
 
+# round fish count to closest integer
+head(benchmarks_merged)
+head(biological_status_merged)
+
+fields <- c("curr_spw",
+            "sgen","sgen_lower","sgen_upper",
+            "smsy","smsy_lower","smsy_upper",
+            "25%_spw","25%_spw_lower","25%_spw_upper",
+            "75%_spw","75%_spw_lower","75%_spw_upper")
+
+for(f in fields){
+  benchmarks_merged[,f] <- round(benchmarks_merged[,f])
+}
+
+# write files in /output/archive
 date <- as.character(Sys.time())
 date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
 
-
+# write in the /output/archive in dropbox
 write.csv(biological_status_merged,
-          paste0(wd_output,"/dataset101_biological_status_HBSR_Percentile_all_",date,".csv"),
+          paste0(wd_output,"/archive/dataset101_biological_status_",date,".csv"),
           row.names = F)
 
 write.csv(benchmarks_merged,
-          paste0(wd_output,"/dataset102_benchmarks_HBSR_Percentile_all_",date,".csv"),
+          paste0(wd_output,"/archive/dataset102_benchmarks_",date,".csv"),
           row.names = F)
+
+# write files in /output in dropbox
+write.csv(biological_status_merged,
+          paste0(wd_output,"/dataset101_biological_status.csv"),
+          row.names = F)
+
+write.csv(benchmarks_merged,
+          paste0(wd_output,"/dataset102_benchmarks.csv"),
+          row.names = F)
+
+# write in local /output to push on github
 
 
 

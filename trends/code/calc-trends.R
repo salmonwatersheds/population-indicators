@@ -419,27 +419,30 @@ date <- strsplit(x = date, split = " ")[[1]][1]
 date <- gsub("-","",date)
 
 # Export in /output/archive folder on dropbox
-write.csv(dataset103_output_new,paste0(wd_output,"/archive/dataset103_output_",date,".csv"),
+write.csv(dataset103_output_new,paste0(wd_output,"/archive/dataset103_log_smoothed_spawners_",date,".csv"),
           row.names = F)
-write.csv(dataset202_output_new,paste0(wd_output,"/archive/dataset202_output_",date,".csv"),
+write.csv(dataset202_output_new,paste0(wd_output,"/archive/dataset202_allgen_trends_",date,".csv"),
           row.names = F)
-write.csv(dataset391_output_new,paste0(wd_output,"/archive/dataset391_output_",date,".csv"),
+write.csv(dataset391_output_new,paste0(wd_output,"/archive/dataset391_threegen_trends_",date,".csv"),
           row.names = F)
 
-# Export in /output/archive folder on dropbox
-write.csv(dataset103_output_new,paste0(wd_output,"/dataset103_output.csv"),
-          row.names = F)
-write.csv(dataset202_output_new,paste0(wd_output,"/dataset202_output.csv"),
-          row.names = F)
-write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output.csv"),
-          row.names = F)
+# Export in /output folder on dropbox NOT NEEDED
+# write.csv(dataset103_output_new,paste0(wd_output,"/dataset103_output.csv"),
+#           row.names = F)
+# write.csv(dataset202_output_new,paste0(wd_output,"/dataset202_output.csv"),
+#           row.names = F)
+# write.csv(dataset391_output_new,paste0(wd_output,"/dataset391_output.csv"),
+#           row.names = F)
 
 # Export in /output locally to push to github 
-write.csv(dataset103_output_new,paste0(getwd(),"/output/dataset103_output.csv"),
+write.csv(dataset103_output_new,
+          paste0(getwd(),"/output/dataset103_log_smoothed_spawners.csv"),
           row.names = F)
-write.csv(dataset202_output_new,paste0(getwd(),"/output/dataset202_output.csv"),
+write.csv(dataset202_output_new,
+          paste0(getwd(),"/output/dataset202_allgen_trends.csv"),
           row.names = F)
-write.csv(dataset391_output_new,paste0(getwd(),"/output/dataset391_output.csv"),
+write.csv(dataset391_output_new,
+          paste0(getwd(),"/output/dataset391_threegen_trends.csv"),
           row.names = F)
 
 # QUESTION:

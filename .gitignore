@@ -41,6 +41,13 @@ rsconnect/
 # The input files that we do not push to github for now
 data-input/
 
+# https://stackoverflow.com/questions/1470572/ignoring-any-bin-directory-on-a-git-project 
+# Any folders called ignore will be ignored, regardless of where they are
+ignore/
+
+# Any folders called archive will be ignored, regardless of where they are
+archive/
+
 #biological-status/data/
 biological-status/figures/
 biological-status/output/
@@ -55,5 +62,3 @@ spawner-surveys/output/
 spawner-surveys/code/ignore 
 
 spawner-abundance/output/
-
-timing/code/ignore

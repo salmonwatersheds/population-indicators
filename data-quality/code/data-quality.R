@@ -106,6 +106,9 @@ spawner_surveys <- spawner_surveys0 %>%
 
 sort(unique(spawner_surveys$most_recent_year))
 
+# Catch data
+catch <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset3_output")
+
 #------------------------------------------------------------------------------
 # Create empty dataframe:
 #------------------------------------------------------------------------------
@@ -203,7 +206,9 @@ dataset390 <- dataset390 %>%
                               survey_coverage < 0.5 & survey_coverage >= 0.3 ~ 2,
                               survey_coverage < 0.3 & survey_coverage >= 0 ~ 1,
                               ))
-  
+
+head(dataset390)
+
 #------------------------------------------------------------------------------
 # survey_execution 
 #------------------------------------------------------------------------------
@@ -212,7 +217,7 @@ dataset390 <- dataset390 %>%
 
 spawner_surveys_ex <- spawner_surveys %>%
   filter(indicator == "Y") %>% # Use only indicator streams
-  filter(year > 2023 - gen_length + 1)%>%  # Look over the most recent generation
+  filter(year > most_recent_year - gen_length + 1)%>%  # Look over the most recent generation
   group_by(cuid) %>%
   summarise(n=n(),
     streams=n_distinct(streamid))
@@ -238,6 +243,8 @@ dataset390 <- dataset390 %>%
                                       survey_execution < 0.2 & survey_execution >= 0 ~ 1,
   ))
 
+head(dataset390)
+
 #------------------------------------------------------------------------------
 # catch_quality
 #------------------------------------------------------------------------------
@@ -245,12 +252,10 @@ dataset390 <- dataset390 %>%
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#catch-estimates
 
 # No change from existing
+# Note that we did not update catch quality using scores provided by the PSC for Fraser sockeye because those scores were on a different scale and not comparable to other regions or species.
 dataset390 <- dataset390 %>% 
   left_join(dataset390_old %>% 
-              filter(parameter == "catch_quality") %>%
-              select(cuid, datavalue) %>% 
-              rename(catch_quality = "datavalue")
-)
+              select(cuid, catch_quality))
 
 head(dataset390)
 
@@ -276,11 +281,8 @@ head(dataset390)
 # juvenile_quality
 #------------------------------------------------------------------------------
 
-# Based on juveniele survey method
-# Read in dataset88
-# read in juvenile survey (js) data (moved to top)
-# js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_output") 
-# head(js)
+# Based on juvenile survey method from dataset88_juvenile_surveys
+# Dataset sourced in header code from database
 
 # add gen_length for calculating most recent generation
 js <- js %>% 
@@ -314,9 +316,20 @@ js$Q <- case_when(
 
 unique(js$Q)
 
+# Use the same most_recent_year as spawner surveys, although juvenile surveys
+# have not been kept as up-to-date this is the most reasonable approach?
+js <- js %>% left_join(spawner_surveys %>% 
+                         group_by(region) %>% 
+                         select(region, most_recent_year) %>% 
+                         distinct()
+                       )
+
+unique(js$most_recent_year)
+sum(is.na(js$most_recent_year))
+
 # Calculate mean Q by cuid and join
 dataset390 <- dataset390 %>% left_join(js %>%
-  filter(year > 2022 - gen_length + 1) %>% # Look over the most recent generation
+  filter(year > most_recent_year - gen_length + 1) %>% # Look over the most recent generation
   group_by(cuid) %>%
   summarise(juvenile_quality = round(mean(Q, na.rm = TRUE)))
 )
@@ -328,9 +341,9 @@ head(dataset390)
 #------------------------------------------------------------------------------
 
 # Based on run timing data quality scores compile in run-timing folder
-rt_dq <- read.csv(paste0(Dropbox_directory, "timing/output/run-timing-data-quality_2024-08-15.csv"))
+rt_dq <- read.csv(paste0(Dropbox_directory, "timing/output/run-timing-data-quality.csv"))
 
-# Orignial run timing score is on a scale of 1 = good to 6 = poor
+# Original run timing score is on a scale of 1 = good to 6 = poor
 # Re-scale
 sort(unique(rt_dq$rt_dat_qual))
 rt_dq$runtiming_quality <- case_when(
@@ -411,6 +424,7 @@ dataset390 <- dataset390 %>%
 # catch_run_size
 #------------------------------------------------------------------------------
 
+# Import catch data 
 dataset390 <- dataset390 %>% 
   left_join(dataset390 %>% 
               group_by(cuid) %>%
@@ -453,5 +467,34 @@ dataset390 <- dataset390 %>%
 # Replace NAs with DQ score of zero
 dataset390[which(is.na(dataset390), arr.ind = TRUE)] <- 0
 
-write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/dataset390_", Sys.Date(), ".csv"), row.names = FALSE)
+# Write tracked copy
+write.csv(dataset390, file = "data-quality/output/dataset390_data_quality.csv", row.names = FALSE)
+# Write archive cope
+write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/archive/dataset390_data_quality", Sys.Date(), ".csv"), row.names = FALSE)
 
+###############################################################################
+# Compare to old dataset390
+###############################################################################
+
+cbind(names(dataset390), names(dataset390_old))
+dim(dataset390)
+dim(dataset390_old)
+
+# For each parameter, list which rows changed
+change_rows <- list()
+J <- 0
+for(j in 1:length(names(dataset390))){
+  n_changes <- 466 - sum(dataset390[,j] == dataset390_old[,j])
+  print(paste0("Parameter ", names(dataset390)[j]," : ", n_changes, " changes"))
+  if(n_changes > 0){
+    J <- J + 1
+    change_rows[[J]] <- which(dataset390[,j] != dataset390_old[,j])
+    names(change_rows)[J] <- names(dataset390)[j]
+  }
+}
+
+# Which catch & run size changed?
+dataset390[change_rows$catch_run_size, c(1:4, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
+
+dataset390_old[change_rows$catch_run_size, c(1:3, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
+# catch_run_size - previously the mean seemed to use catch_quality == 0 when it should have been NA?

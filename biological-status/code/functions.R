@@ -1608,8 +1608,12 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
 #' Function to return the a dataframe of the extinct CUs.
 # See Population Analysis running notes Google Doc from Dec 12 2023 for list 
 # given by Eric.
-# https://docs.google.com/document/d/1gNmJxA4Us90W8DBf-QS6KfkjnOE71FMZUhFSPo7posg/edit?usp=sharing
-cu_extinct_fun <- function(){
+# https://docs.google.com/document/d/1gNmJxA4Us90W8DBf-QS6KfkjnOE71FMZUhFSPo7posg/edit?usp=sharing --> WHAT IS THAT?
+# https://docs.google.com/document/d/1gNmJxA4Us90W8DBf-QS6KfkjnOE71FMZUhFSPo7posg/edit#heading=h.7jm714ax41xs
+#' TODO: this list should be provided by pulling from another dataset (380?)
+#' cf. PSE Data Update 2024-09-05 meeting
+#' --> have a csv file 
+cu_extinct_fun <- function(write_file = F, wd = NA){
   
   # To find the corresponding regions from conservationunits_decoder
   # sapply(X = cuid, FUN = function(cu){
@@ -1633,14 +1637,45 @@ cu_extinct_fun <- function(){
     cuid = c(760,756,757,753,758,761,763,759,936),
     cu_name_pse = c("Adams-Early Summer","Alouette-Early Summer","Coquitlam-Early Summer",
                     "Fraser-Early Summer","Kawkawa-Late","Momich-Early Summer",
-                    "North Barriere-Early Summer","Seton-Summer",NA))
+                    "North Barriere-Early Summer","Seton-Summer","Village Bay"))
   
-  # Updates:
+  cu_extinct$source <- cu_extinct$comment <- NA
+  cu_extinct$keep <- T
+  
+  # Updates: 2024-03-19
   # cuids 753, 756 and 757 are no longer extinct.
   # https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1710887067544039
   cuid_toRemove <- c(753,756,757)
-  cu_extinct <- cu_extinct[!cu_extinct$cuid %in% cuid_toRemove,]
+  # cu_extinct <- cu_extinct[!cu_extinct$cuid %in% cuid_toRemove,]
+  cond <- cu_extinct$cuid %in% cuid_toRemove
+  cu_extinct$comment[cond] <- "no longer extinct due to updated COSEWIC status"
+  cu_extinct$keep[cond] <- F
+  cu_extinct$source[cond] <- "https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1710887067544039"
   
+  # Update 2024-09-05
+  # add cuid 936 to list (Village Bay (extirpated)
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1600364418002800
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1725559923069129
+  # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1725564232280239?thread_ts=1725559923.069129&cid=CJ5RVHVCG
+  # --> already in the list. BUT not in the decoder, normal? --> it was binned.
+  # cond <- conservationunits_decoder$cuid == 936
+  # conservationunits_decoder[cond,c("region","species_name","species_abbr","cuid","cu_name_pse")]
+  cuid_toRemove <- c(936)
+  # cu_extinct <- cu_extinct[!cu_extinct$cuid %in% cuid_toRemove,]
+  cond <- cu_extinct$cuid %in% cuid_toRemove
+  cu_extinct$comment[cond] <- "binned as feedback from the PSAC (Carrie Holt)"
+  cu_extinct$keep[cond] <- T     # we keep it because it is still extinct, it will be removed in the workflow
+  # because it is not in conservation_units_decoder.csv
+  cu_extinct$source[cond] <- "https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1710887067544039"
+  
+  if(write_file){
+    if(is.na(wd)){
+      print("File not written, please provide working directory (wd)")
+    }else{
+      date <- Sys.Date()
+      write.csv(cu_extinct,paste0(wd,"/CUs_extinct_list_",date,".csv"),row.names = F)
+    }
+  }
   return(cu_extinct)
 }
 
@@ -1816,12 +1851,16 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     benchmark_low <- benchmarks$sgen
     benchmark_low_025 <- benchmarks$sgen_lower
     benchmark_low_975 <- benchmarks$sgen_upper
-    # benchmark_up <- benchmarks$smsy80
-    # benchmark_up_025 <- benchmarks$smsy80_lower
-    # benchmark_up_975 <- benchmarks$smsy80_upper
-    benchmark_up <- benchmarks$smsy
-    benchmark_up_025 <- benchmarks$smsy_lower
-    benchmark_up_975 <- benchmarks$smsy_upper
+    
+    if(any(grepl("smsy80",colnames(benchmarks)))){
+      benchmark_up <- benchmarks$smsy80
+      benchmark_up_025 <- benchmarks$smsy80_lower
+      benchmark_up_975 <- benchmarks$smsy80_upper
+    }else{
+      benchmark_up <- benchmarks$smsy
+      benchmark_up_025 <- benchmarks$smsy_lower
+      benchmark_up_975 <- benchmarks$smsy_upper
+    }
     method <- "HBSR"
     status <- biostatus$sr_status
     

@@ -57,7 +57,6 @@ wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
 wd_head <- wds_l$wd_head
 wd_code <- wds_l$wd_code
 wd_data <- wds_l$wd_data
-wd_data_dropbox_dropbox <- wds_l$wd_X_Drive1_PROJECTS
 wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
@@ -340,7 +339,13 @@ biological_status_HBSRM$psf_status_code <- NA
 biological_status_percentile$psf_status_code <- NA
 
 #'* 4 = extinct *
-cu_extinct <- cu_extinct_fun()
+#' TODO: this list should be provided by pulling from another dataset (380?)
+#' cf. PSE Data Update 2024-09-05 meeting
+#' For now import it from the code and generate a dated csv file
+cu_extinct <- cu_extinct_fun(write_file = T, 
+                             wd = wd_pop_indic_data_input_dropbox)
+
+cu_extinct <- cu_extinct[cu_extinct$keep,]
 
 row_toUpdate <- biological_status_HBSRM$cuid %in% cu_extinct$cuid
 val_toUpdate <- biological_status_HBSRM$psf_status_code[row_toUpdate]

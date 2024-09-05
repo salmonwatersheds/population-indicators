@@ -26,7 +26,7 @@ rm(list = ls())
 graphics.off()
 
 options(java.parameters = "- Xmx1024m") # to be able to export a large excel file
-
+#options(java.parameters = "- Xmx2G") # to be able to export a large excel file
 
 # reset the wd to head using the location of the current script
 path <- rstudioapi::getActiveDocumentContext()$path
@@ -768,6 +768,7 @@ filePSFnew_l <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
 # a location vert close to the gogle maps's pin.
 cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bentinck Arm North"
 long_new <- filePSFnew_l$DataEntry_releases$release_site_longitude[cond] + 2
+long_new
 # -126.97
 filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -126.97
 
@@ -779,6 +780,7 @@ filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -126.97
 # very well.
 cond <- grepl("Bedwell Bay",filePSFnew_l$DataEntry_facilities$facilityname)
 long_new <- filePSFnew_l$DataEntry_facilities$facility_longitude[cond]
+long_new
 # -122.9113
 cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bedwell Bay"
 filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -122.9113
@@ -787,34 +789,56 @@ filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -122.9113
 #
 # Export the file ------
 #
-date <- Sys.Date()
-date <- gsub(pattern = "-",replacement = "",x = date)
 
-for(wd in c(wd_output,paste0(getwd(),"/output"))){
-  for(sh_i in 1:length(names(filePSFnew_l))){
-    # sh_i <- 1
-    if(sh_i == 1){
-      append <- F
-    }else{
-      append <- T
-    }
-    sheetName <- names(filePSFnew_l)[sh_i]
-    sheet <- as.data.frame(filePSFnew_l[[sheetName]])
-    
-    if(grepl("X Drive",wd)){
-      file <- paste0(wd,"/archive/SWP_hatchery_data_",date,".xlsx")
-    }else{
-      file <- paste0(wd,"/SWP_hatchery_data.xlsx")
-    }
-    
-    write.xlsx(sheet, 
-               file = file,
-               sheetName = sheetName, 
-               row.names = FALSE,
-               append = append,
-               showNA = T)
-    print(sh_i)
+date <- Sys.Date()
+
+# Export to the archive dropbox subfolder
+for(sh_i in 1:length(names(filePSFnew_l))){
+  # sh_i <- 1
+  if(sh_i == 1){
+    append <- F
+  }else{
+    append <- T
   }
+  sheetName <- names(filePSFnew_l)[sh_i]
+  sheet <- as.data.frame(filePSFnew_l[[sheetName]])
+  
+  #
+  file <- paste0(wd_output,"/archive/SWP_hatchery_data_",date,".xlsx")
+  
+  write.xlsx(sheet, 
+             file = file,
+             sheetName = sheetName, 
+             row.names = FALSE,
+             append = append,
+             showNA = T)
+  
+  print(sh_i)
+}
+
+
+# Export locally to push to github (if not too large)
+for(sh_i in 1:length(names(filePSFnew_l))){
+  # sh_i <- 1
+  if(sh_i == 1){
+    append <- F
+  }else{
+    append <- T
+  }
+  sheetName <- names(filePSFnew_l)[sh_i]
+  sheet <- as.data.frame(filePSFnew_l[[sheetName]])
+  
+  #
+  file <- paste0(paste0(getwd(),"/output"),"/SWP_hatchery_data.xlsx")
+  
+  write.xlsx(sheet, 
+             file = file,
+             sheetName = sheetName, 
+             row.names = FALSE,
+             append = append,
+             showNA = T)
+  
+  print(sh_i)
 }
 
 

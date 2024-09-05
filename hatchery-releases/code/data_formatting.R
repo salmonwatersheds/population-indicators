@@ -90,6 +90,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    wd = wd_pop_indic_data_input_dropbox)
 
 #'* Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data *
+#' The is the file from DFO
 DFO_df_all <- return_file_lastVersion_fun(wd_data = wd_data,
                                           pattern = "PSF_modified_SEP_releases")
 head(DFO_df_all)
@@ -139,6 +140,7 @@ filePSF_l <- hatchery_template_fun(wd_data = wd_data,
                                    asDataFrame = T)
 
 #
+#
 # Create SWP_hatchery_data_DATE.xlsx  ----------
 #' Create a dataframe with the name of the columns in PSF_modified_SEP_releases_DATE.xlsx
 #' and corresponding column names and sheets in the survey file SWP_hatchery_data_...xlsx
@@ -161,9 +163,9 @@ for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by
   sheetName <- names(filePSF_l)[sheet_i]
   sheetNew <- filePSF_l[[sheet_i]]
   
-  if(sheet_i == 4){
-    break
-  }
+  # if(sheet_i == 4){
+  #   break
+  # }
   
   # subset matchCol_df for the current sheet
   # matchCol_df_cut <- matchCol_df[matchCol_df$PSF_sheet == sheetName,]
@@ -741,29 +743,81 @@ DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cui
 #           row.names = F)
 
 #
+# Correct coordinates for two locations (Katy) -----
+# details in PSE Data Check-In Meeting Notes ; 2024-09-05
+#
+
+filePSFnew_l <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                           pattern = "SWP_hatchery_data")
+
+# release_site_name  release_site_latitude	release_site_longitude
+# Bentinck Arm North                  52.3                 -128.97
+ 
+# project	                   facilityname	facility_latitude	facility_longitude
+# Snootli Creek	Bentinck Arm North Seapen	             #N/A             	#N/A
+
+# release_site_name  release_site_latitude	release_site_longitude
+#       Bedwell Bay                  49.32	               -126.97
+
+# project	facilityname	facility_latitude	facility_longitude
+# Bedwell Bay	Bedwell Bay Seapen	49.31983	-122.91132
+
+#'* Manual fix for Bentinck Arm North *
+# - the change was made by locating "Bentinck Arm North" in Google Map and 
+# minimising the number of digit to modify: adding +2 to the longitude provided
+# a location vert close to the gogle maps's pin.
+cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bentinck Arm North"
+long_new <- filePSFnew_l$DataEntry_releases$release_site_longitude[cond] + 2
+# -126.97
+filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -126.97
+
+
+#'* Manual fix for Bedwell Bay *
+# - the change was made by locating "BBedwell Bay" in Google Map and 
+# minimising the number of digit to modify. Here it seems that the 
+# filePSFnew_l$DataEntry_facilities$facility_longitude value match the location 
+# very well.
+cond <- grepl("Bedwell Bay",filePSFnew_l$DataEntry_facilities$facilityname)
+long_new <- filePSFnew_l$DataEntry_facilities$facility_longitude[cond]
+# -122.9113
+cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bedwell Bay"
+filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -122.9113
+
+
 #
 # Export the file ------
 #
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
 
-for(sh_i in 1:length(names(filePSFnew_l))){
-  # sh_i <- 1
-  if(sh_i == 1){
-    append <- F
-  }else{
-    append <- T
+for(wd in c(wd_output,paste0(getwd(),"/output"))){
+  for(sh_i in 1:length(names(filePSFnew_l))){
+    # sh_i <- 1
+    if(sh_i == 1){
+      append <- F
+    }else{
+      append <- T
+    }
+    sheetName <- names(filePSFnew_l)[sh_i]
+    sheet <- as.data.frame(filePSFnew_l[[sheetName]])
+    
+    if(grepl("X Drive",wd)){
+      file <- paste0(wd,"/archive/SWP_hatchery_data_",date,".xlsx")
+    }else{
+      file <- paste0(wd,"/SWP_hatchery_data.xlsx")
+    }
+    
+    write.xlsx(sheet, 
+               file = file,
+               sheetName = sheetName, 
+               row.names = FALSE,
+               append = append,
+               showNA = T)
+    print(sh_i)
   }
-  sheetName <- names(filePSFnew_l)[sh_i]
-  sheet <- as.data.frame(filePSFnew_l[[sheetName]])
-  write.xlsx(sheet, 
-             file = paste0(wd_output,"/SWP_hatchery_data_",date,".xlsx"),
-             sheetName = sheetName, 
-             row.names = FALSE,
-             append = append,
-             showNA = T)
-  print(sh_i)
 }
+
+
 
 # Notes for Katy
 # - 1) I implemented a CHECK to check that facilityname have a unique combination of facility_latitude and facility_longitude --> they do
@@ -922,13 +976,19 @@ cond <- dataset384_output_SH$release_stage %in% c("Catchable","2 years") # get r
 dataset384_output_SH[cond,]
 dataset384_output_SH <- dataset384_output_SH[!cond,]
 
-# export the file
+# Export the file to the /archive in dropbox
 date <- Sys.Date()
 date <- gsub(pattern = "-",replacement = "",x = date)
 #date <- "20240404"
 write.csv(dataset384_output_SH,paste0(wd_output,"/dataset384_output_SH_",date,".csv"),
           row.names = F)
 write.csv(dataset384_output_TB,paste0(wd_output,"/dataset384_output_TBR_",date,".csv"),
+          row.names = F)
+
+# Export locally to push to github 
+write.csv(dataset384_output_SH,paste0(paste0(getwd(),"/output"),"/dataset384_output_SH.csv"),
+          row.names = F)
+write.csv(dataset384_output_TB,paste0(paste0(getwd(),"/output"),"/dataset384_output_TBR_csv"),
           row.names = F)
 
 #

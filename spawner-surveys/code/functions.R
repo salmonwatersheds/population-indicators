@@ -43,19 +43,23 @@ datasets_NuSEDS_fun <- function(name_dataSet, from_NuSEDS_website = F, wd){
       nusedsFileName <- paste0(wd,"/",name_dataSet,"_", strftime(Sys.Date(), format = "%Y%m%d"), ".csv")
       download.file(url = url, destfile = nusedsFileName)
       
+      output <- read.csv(nusedsFileName, header = T)
+      
     }else{
       
-      pattern <- paste0(name_dataSet,"_")
-      listFiles <- list.files(path = wd)
-      listFiles <- listFiles[grep(pattern = pattern, listFiles)]
-      files_dates <- unlist(lapply(strsplit(listFiles, split = ".csv"), strsplit, split = pattern))
-      files_dates <- as.Date(files_dates[which(files_dates != "")], format = "%Y%m%d")
+      # pattern <- paste0(name_dataSet,"_")
+      # listFiles <- list.files(path = wd)
+      # listFiles <- listFiles[grep(pattern = pattern, listFiles)]
+      # files_dates <- unlist(lapply(strsplit(listFiles, split = ".csv"), strsplit, split = pattern))
+      # files_dates <- as.Date(files_dates[which(files_dates != "")], format = "%Y%m%d")
+      # 
+      # nusedsFileName <- listFiles[which(order(files_dates, decreasing = TRUE) == 1)]
+      # nusedsFileName <- paste(wd,nusedsFileName,sep="/")
       
-      nusedsFileName <- listFiles[which(order(files_dates, decreasing = TRUE) == 1)]
-      nusedsFileName <- paste(wd,nusedsFileName,sep="/")
+      output <- import_mostRecent_file_fun(wd = wd, pattern = name_dataSet)
     }
     
-    output <- read.csv(nusedsFileName, header = T)
+    # output <- read.csv(nusedsFileName, header = T)
   }
   
   return(output)

@@ -50,18 +50,24 @@ ignore/
 
 # Any folders called archive will be ignored, regardless of where they are
 archive/
+intermediate/
+
+# Any fodlers called figures will be ignored
+figures/
+
 
 #biological-status/data/
+biological-status/Bayes_SR_model.txt
+
 biological-status/figures/
 biological-status/output_OLD/
 
-#hatchery-release/data/
-hatchery-release/output/
+hatchery-releases/data/
+hatchery-releases/output/
 
-spawner-surveys/data/
-spawner-surveys/references/
-spawner-surveys/output/
-spawner-surveys/code/ignore 
+spawner-surveys/data
+spawner-surveys/references
+spawner-surveys/output
 
 spawner-abundance/output/
 

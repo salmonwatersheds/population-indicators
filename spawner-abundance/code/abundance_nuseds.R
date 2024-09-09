@@ -146,11 +146,11 @@ head(dataset_1part1)
 
 # Export to /archive folder on dropbox:
 date <- as.character(Sys.Date())
-write.csv(dataset_1part1,paste0(wd_output,"/archive/dataset_1part1_",date,".csv"),
+write.csv(dataset_1part1,paste0(wd_output,"/archive/dataset1_spawner_abundance_",date,".csv"), # dataset_1part1_ previously
           row.names = F)
 
 # Export to /output locally to push to github
-write.csv(dataset_1part1,paste0(paste0(getwd(),"/output"),"/dataset_1part1.csv"),
+write.csv(dataset_1part1,paste0(paste0(getwd(),"/output"),"/dataset1_spawner_abundance.csv"), # dataset_1part1_ previously
           row.names = F)
 
 

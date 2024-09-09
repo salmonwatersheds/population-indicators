@@ -693,6 +693,10 @@ nrow(coord_duplicated) # 0
 #
 #' * 1) Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s*
 
+
+#' TODO in future: keep the time series in CUSS that have only NAs/0s (e.g. Skeena
+#' CK Sicinthine River) - eventually - cf. Population meeting 2024-09-04.
+
 # Use package parallel To optimize the (take up to 20 minutes otherwise)
 detectCores()
 detectCores(logical = FALSE)

@@ -144,12 +144,16 @@ dataset_1part1 <- dataset_1part1[,colnames(dataset_1part1_old)]
 
 head(dataset_1part1)
 
-date <- ""
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
-write.csv(dataset_1part1,paste0(wd_output,"/dataset_1part1_",date,".csv"),
+# Export to /archive folder on dropbox:
+date <- as.character(Sys.Date())
+write.csv(dataset_1part1,paste0(wd_output,"/archive/dataset_1part1_",date,".csv"),
           row.names = F)
+
+# Export to /output locally to push to github
+write.csv(dataset_1part1,paste0(paste0(getwd(),"/output"),"/dataset_1part1.csv"),
+          row.names = F)
+
+
 #
 # Compare dataset_1part2 from database vs. dropbox repo -----
 #' The datasets should be the same except that the database version should have 

@@ -107,7 +107,8 @@ catch <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset
 #------------------------------------------------------------------------------
 
 # Load cu list
-cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
+# cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
+cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
   distinct(pooledcuid, .keep_all = TRUE) # there are duplicates for pooledcuid
 
 unique(tapply(cu_list$cuid, cu_list$cuid, length))
@@ -348,6 +349,9 @@ rt_dq$runtiming_quality <- case_when(
   rt_dq$rt_dat_qual %in% c(4, 4.5) ~ 2,
   rt_dq$rt_dat_qual >= 5 ~ 1
 )
+
+# Temp fix: adjust run timing dq for Skeena Chinook CUs from Winther et al. (2024)
+
 
 # Join to dataset
 dataset390 <- dataset390 %>% left_join(rt_dq %>%

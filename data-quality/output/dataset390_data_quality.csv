@@ -4,11 +4,11 @@
 "Skeena","Lake sockeye",175,"Johnston",0,1,0,5,0,0,1,6,1,0,1,1,5,3,1,3
 "Skeena","Lake sockeye",176,"Kitsumkalum",3,4,4,5,0,0,1,16,4,0,4,1,5,4,4,4
 "Skeena","Lake sockeye",177,"Lakelse",2,5,3,5,0,0,1,15,3,0,3,1,5,4,3,4
-"Skeena","Lake sockeye",178,"Mcdonell/Dennis/Aldrich",0,0,0,5,0,0,1,5,0,0,0,1,5,5,0,5
+"Skeena","Lake sockeye",178,"Mcdonell/Dennis/Aldrich",0,0,0,5,0,0,0,5,0,0,0,0,5,5,0,5
 "Skeena","Lake sockeye",180,"Babine/Onerka",0,1,4,5,0,4,1,10,2,4,2,1,5,3,2,3
 "Skeena","Lake sockeye",181,"Bulkley/Maxan",0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0
 "Skeena","Lake sockeye",183,"Gitanyow (Kitwanga/Kitwancool)",2,5,4,5,0,5,1,16,4,5,4,1,5,4,4,4
-"Skeena","Lake sockeye",185,"Morice/Atna",0,0,0,5,0,0,1,5,0,0,0,1,5,5,0,5
+"Skeena","Lake sockeye",185,"Morice/Atna",0,0,0,5,0,0,0,5,0,0,0,0,5,5,0,5
 "Skeena","Lake sockeye",186,"Nilkitkwa",3,5,5,5,0,4,1,18,4,4,4,1,5,4,4,4
 "Skeena","Lake sockeye",187,"Stephens",3,5,4,5,0,0,1,17,4,0,4,1,5,4,4,4
 "Skeena","Lake sockeye",189,"Tahlo/Morrison",0,1,0,5,0,4,1,6,1,4,1,1,5,3,1,3
@@ -24,7 +24,7 @@
 "Skeena","Lake sockeye",199,"Slamgeesh",0,0,0,0,0,3,1,0,0,3,0,1,0,0,0,0
 "Skeena","Lake sockeye",200,"Spawning",0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0
 "Skeena","Lake sockeye",201,"Sustut",0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0
-"Skeena","Lake sockeye",203,"Babine (enhanced)",0,0,0,5,0,4,1,5,0,4,0,1,5,5,0,5
+"Skeena","Lake sockeye",203,"Babine (enhanced)",0,0,0,5,0,4,0,5,0,4,0,0,5,5,0,5
 "Skeena","Lake sockeye",230,"Footsore/Hodder",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 "Skeena","Lake sockeye",291,"Prudhomme",0,1,2,0,0,0,0,3,2,0,2,0,0,2,2,2
 "Skeena","Lake sockeye",292,"Shawatlan",1,5,3,0,0,0,0,9,3,0,3,0,0,3,3,3
@@ -37,15 +37,15 @@
 "Skeena","Pink (even)",219,"Nass-Skeena Estuary (even)",3,5,3,3,0,0,1,14,4,0,4,1,3,4,4,4
 "Skeena","Chinook",205,"Ecstall",0,1,1,2,0,0,1,4,1,0,1,1,2,1,1,1
 "Skeena","Chinook",206,"Kalum-Early",0,0,0,2,0,0,1,2,0,0,0,1,2,2,0,2
-"Skeena","Chinook",207,"Kalum-Late",2,5,2,5,0,0,1,14,3,0,3,1,5,4,3,4
-"Skeena","Chinook",210,"Lower Skeena",1,3,2,5,0,0,1,11,2,0,2,1,5,3,2,3
-"Skeena","Chinook",212,"Upper Skeena",0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0
-"Skeena","Chinook",217,"Middle Skeena-Mainstem Tributaries",3,5,3,5,0,0,1,16,4,0,4,1,5,4,4,4
+"Skeena","Chinook",207,"Kalum-Late",2,5,2,5,0,0,5,14,3,0,3,5,5,4,3,4
+"Skeena","Chinook",210,"Lower Skeena",1,3,2,5,0,0,5,11,2,0,2,5,5,3,2,3
+"Skeena","Chinook",212,"Upper Skeena",0,0,0,0,0,0,5,0,0,0,0,5,0,0,0,0
+"Skeena","Chinook",217,"Middle Skeena-Mainstem Tributaries",3,5,3,5,0,0,5,16,4,0,4,5,5,4,4,4
 "Skeena","Chinook",221,"Upper Bulkley River",3,5,1,2,0,0,1,11,3,0,3,1,2,3,3,3
-"Skeena","Chinook",222,"Middle Skeena-Large Lakes",2,3,5,5,0,0,1,15,3,0,3,1,5,4,3,4
+"Skeena","Chinook",222,"Middle Skeena-Large Lakes",2,3,5,5,0,0,5,15,3,0,3,5,5,4,3,4
 "Skeena","Chinook",224,"Skeena Estuary",0,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1
 "Skeena","Chinook",227,"Lakelse",0,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1
-"Skeena","Chinook",229,"Zymoetz",0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0
+"Skeena","Chinook",229,"Zymoetz",0,0,0,0,0,0,5,0,0,0,0,5,0,0,0,0
 "Skeena","Chinook",241,"Sicintine",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 "Skeena","Coho",202,"Lower Skeena",2,5,3,2,0,0,1,12,3,0,3,1,2,3,3,3
 "Skeena","Coho",215,"Middle Skeena",0,1,2,5,0,0,1,8,2,0,2,1,5,3,2,3

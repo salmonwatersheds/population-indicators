@@ -87,6 +87,7 @@ dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/archiv
 
 # Juvenile survey data
 js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_output") # Read direct from database if needs updating
+
 # # write.csv(js, file= paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Update in Dropbox
 # js <- read.csv(paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Read from Dropbox so script can be sourced
 
@@ -251,11 +252,24 @@ head(dataset390)
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#catch-estimates
 
-# No change from existing
-# Note that we did not update catch quality using scores provided by the PSC for Fraser sockeye because those scores were on a different scale and not comparable to other regions or species.
+# Read in catch_quality revisions from Legacy site
+catch_quality_dq <- readxl::read_xlsx("data-quality/data/catch-quality_2024-09-04.xlsx")
+
+# Change quality score of zero to NA for average calculations at indicator score step
+catch_quality_dq$catch_quality_revised[catch_quality_dq$catch_quality_revised == 0] <- NA
+
+# Check that no CUs with data are being assigned NA
+if(sum(unique(catch$cuid[which(catch$cdn_catch != -989898 | catch$combined_catch != -989898)]) %in% catch_quality_dq$cuid[is.na(catch_quality_dq$catch_quality_revised)]) > 0) {
+  cuid.x <- unique(catch$cuid[which(catch$cdn_catch != -989898 | catch$combined_catch != -989898)])
+  print(paste("cuid:", cuid.x[which(cuid.x %in% catch_quality_dq$cuid[is.na(catch_quality_dq$catch_quality_revised)] == TRUE)], collapse = ", "))
+  stop("CU with catch data has a catch_quality of zero. Need to assign non-zero catch quality.")
+}
+
+# Join to dataset390
 dataset390 <- dataset390 %>% 
-  left_join(dataset390_old %>% 
-              select(cuid, catch_quality))
+  left_join(catch_quality_dq %>% 
+              select(cuid, catch_quality_revised)) %>%
+  rename(catch_quality = catch_quality_revised)
 
 head(dataset390)
 
@@ -316,20 +330,9 @@ js$Q <- case_when(
 
 unique(js$Q)
 
-# Use the same most_recent_year as spawner surveys, although juvenile surveys
-# have not been kept as up-to-date this is the most reasonable approach?
-js <- js %>% left_join(spawner_surveys %>% 
-                         group_by(region) %>% 
-                         select(region, most_recent_year) %>% 
-                         distinct()
-                       )
-
-unique(js$most_recent_year)
-sum(is.na(js$most_recent_year))
 
 # Calculate mean Q by cuid and join
 dataset390 <- dataset390 %>% left_join(js %>%
-  filter(year > most_recent_year - gen_length + 1) %>% # Look over the most recent generation
   group_by(cuid) %>%
   summarise(juvenile_quality = round(mean(Q, na.rm = TRUE)))
 )
@@ -374,6 +377,7 @@ head(dataset390)
 # To ensure this works, we need to set data quality scores that were zero in the 
 # old data to NA
 dataset390[which(dataset390 == 0, arr.ind = TRUE)] <- NA
+
 #------------------------------------------------------------------------------
 # dq_score ** Included for legacy site
 #------------------------------------------------------------------------------
@@ -469,6 +473,7 @@ dataset390[which(is.na(dataset390), arr.ind = TRUE)] <- 0
 
 # Write tracked copy
 write.csv(dataset390, file = "data-quality/output/dataset390_data_quality.csv", row.names = FALSE)
+
 # Write archive cope
 write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/archive/dataset390_data_quality", Sys.Date(), ".csv"), row.names = FALSE)
 

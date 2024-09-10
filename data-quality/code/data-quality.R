@@ -77,14 +77,6 @@ Dropbox_directory <- paste0(Dropbox_root, "/1_Active/Population Methods and Anal
 # Load database data **Do this at the top so the rest of the script can be easily run
 #------------------------------------------------------------------------------
 
-# Current live DQ data in Legacy site
-dataset390_filename <- list.files(path = paste0(Dropbox_directory, "data-quality/output/archive"), 
-                               pattern = "dataset390") %>%
-  sort() %>%
-  tail(1)
-
-dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/archive/", dataset390_filename))
-
 # Juvenile survey data
 js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_output") # Read direct from database if needs updating
 
@@ -475,31 +467,40 @@ dataset390[which(is.na(dataset390), arr.ind = TRUE)] <- 0
 write.csv(dataset390, file = "data-quality/output/dataset390_data_quality.csv", row.names = FALSE)
 
 # Write archive cope
-write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/archive/dataset390_data_quality", Sys.Date(), ".csv"), row.names = FALSE)
+write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/archive/dataset390_data_quality_", Sys.Date(), ".csv"), row.names = FALSE)
 
 ###############################################################################
 # Compare to old dataset390
 ###############################################################################
 
-cbind(names(dataset390), names(dataset390_old))
-dim(dataset390)
-dim(dataset390_old)
-
-# For each parameter, list which rows changed
-change_rows <- list()
-J <- 0
-for(j in 1:length(names(dataset390))){
-  n_changes <- 466 - sum(dataset390[,j] == dataset390_old[,j])
-  print(paste0("Parameter ", names(dataset390)[j]," : ", n_changes, " changes"))
-  if(n_changes > 0){
-    J <- J + 1
-    change_rows[[J]] <- which(dataset390[,j] != dataset390_old[,j])
-    names(change_rows)[J] <- names(dataset390)[j]
-  }
-}
-
-# Which catch & run size changed?
-dataset390[change_rows$catch_run_size, c(1:4, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
-
-dataset390_old[change_rows$catch_run_size, c(1:3, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
-# catch_run_size - previously the mean seemed to use catch_quality == 0 when it should have been NA?
+# # Current live DQ data in Legacy site
+# dataset390_filename <- list.files(path = paste0(Dropbox_directory, "data-quality/output/archive"), 
+#                                   pattern = "dataset390") %>%
+#   sort() %>%
+#   tail(1)
+# 
+# dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/archive/", dataset390_filename))
+# 
+# 
+# cbind(names(dataset390), names(dataset390_old))
+# dim(dataset390)
+# dim(dataset390_old)
+# 
+# # For each parameter, list which rows changed
+# change_rows <- list()
+# J <- 0
+# for(j in 1:length(names(dataset390))){
+#   n_changes <- 466 - sum(dataset390[,j] == dataset390_old[,j])
+#   print(paste0("Parameter ", names(dataset390)[j]," : ", n_changes, " changes"))
+#   if(n_changes > 0){
+#     J <- J + 1
+#     change_rows[[J]] <- which(dataset390[,j] != dataset390_old[,j])
+#     names(change_rows)[J] <- names(dataset390)[j]
+#   }
+# }
+# 
+# # Which catch & run size changed?
+# dataset390[change_rows$catch_run_size, c(1:4, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
+# 
+# dataset390_old[change_rows$catch_run_size, c(1:3, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
+# # catch_run_size - previously the mean seemed to use catch_quality == 0 when it should have been NA?

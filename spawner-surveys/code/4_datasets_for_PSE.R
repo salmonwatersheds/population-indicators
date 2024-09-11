@@ -9,13 +9,18 @@
 #' - nuseds_cuid_streamid_nuseds_20240419.csv : the cleaned NuSEDS data with PSE cuid and streamid (and with data no in PSE)
 #' - data_extra_Reynolds_lab_DATE.csv : the cleaned  Reynolds' Lab (SFU) data (sent by  Arianne Nickels)
 #' - SFU_Escapement_issues.csv        : 
+#' - .../steelhead_dataset_1part2.DATE.csv                             : dataset generated in its own repository
+#' - data-input/columbia_dataset_1part2.DATE.csv                       : dataset generated in its own repository
+#' - data-input/yukon_dataset_1part2.DATEYukon.csv                     : dataset generated in its own repository
+#' - data-input/transboundary-data/output/dataset2_spawner_surveys.csv : dataset generated in its own repository
 #' 
 #' Files produced: 
 #' - dataset2_spawner_surveys_DATE.csv  # previously dataset_1part2_DATE.csv
 #' 
+#' 
 #'******************************************************************************
 
-NOTE: THE REYNOLD LAB DATA HAS NOT BEEN ADDED YET AS WE WAIT FOR AFTER THE PSE 2.0 LAUNCH 1ST
+# NOTE: THE REYNOLD LAB DATA HAS NOT BEEN ADDED YET AS WE WAIT FOR AFTER THE PSE 2.0 LAUNCH 1ST
 
 # 
 rm(list = ls())
@@ -413,14 +418,18 @@ head(dataset_1part2)
 #
 # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723659667266449
 
-wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Transboundary/Data & Assessments/transboundary-data/output") # not -status
-TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset_1part2")
+#' * TBR *
+# wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Transboundary/Data & Assessments/transboundary-data/output") # not -status
+# TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset_1part2")
+wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/transboundary-data/output")
+TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset2_spawner_surveys")
 colnames(TBR_data)[colnames(TBR_data) == "survey_qual"] <- "survey_quality"
 #  2024-04-19
 head(TBR_data)
 
-wd_SH <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Steelhead/3_Data_Analysis/steelhead-status/output/pse-data")
-SH_data <- import_mostRecent_file_fun(wd = wd_SH, pattern = "dataset_1part2")
+#' * SH *
+# wd_SH <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Steelhead/3_Data_Analysis/steelhead-status/output/pse-data")
+# SH_data <- import_mostRecent_file_fun(wd = wd_SH, pattern = "dataset_1part2")
 #  2024-05-02
 SH_data <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
                                       pattern = "steelhead_dataset_1part2") # TEMPORARY
@@ -430,21 +439,24 @@ SH_data$region <- sapply(SH_data$CUID,FUN = function(cuid){
   return(conservationunits_decoder$region[cond])
 })
 
-wd_columbia <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
-Columbia_data <- import_mostRecent_file_fun(wd = wd_columbia, pattern = "dataset_1part2")
-# 2024-02-12
-Columbia_data <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
+#' * Columbia *
+# wd_columbia <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Columbia/data & analysis/analysis/columbia-status/Output")
+# Columbia_data <- import_mostRecent_file_fun(wd = wd_columbia, pattern = "dataset_1part2")
+Columbia_data <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
                                             pattern = "columbia_dataset_1part2") # TEMPORARY
+# 2024-02-12
 head(Columbia_data)
 Columbia_data$region <- "Columbia"
 
-wd_yukon <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/output")
-Yukon_data <- import_mostRecent_file_fun(wd = wd_yukon, pattern = "dataset_1part2")
-# 2022-12-19 
-Yukon_data <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
+#' * Yukon *
+# wd_yukon <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/output")
+# Yukon_data <- import_mostRecent_file_fun(wd = wd_yukon, pattern = "dataset_1part2")
+# # 2022-12-19 
+Yukon_data <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
                                          pattern = "yukon_dataset_1part2") # TEMPORARY
 head(Yukon_data)
 Yukon_data$region <- "Yukon"
+
 
 #' * Import stream level data quality (dataset386_output) *
 # datasetsNames_database <- datasetsNames_database_fun()

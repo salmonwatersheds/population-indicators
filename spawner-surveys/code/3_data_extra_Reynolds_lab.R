@@ -7,7 +7,7 @@
 #' Files imported:
 #' - SFU_Escapement_PSF.xlsx       : the Reynolds's Lab main excel file 
 #' - SFU_stream_Coordinates.xlsx   : the Reynolds's Lab stream coordinates used here
-#' - nuseds_cuid_streamid_nuseds_20240419.csv : the cleaned NuSEDS data with PSE cuid and streamid (and with data no in PSE)
+#' - 2_nuseds_cuid_streamid_nuseds_20240419.csv : the cleaned NuSEDS data with PSE cuid and streamid (and with data no in PSE)
 #' - DFO_All_Streams_Segments_20240408.xlsx : the file sent by Wu Zhipeng (DFO) with stream-related information
 #' 
 #' Files produced: 

@@ -114,7 +114,6 @@ conservationunits_decoder[cond,]
 
 #' Import the streamspawnersurveys_output from population-indicators/data_input or 
 #' download it from the PSF database.
-#' # To obtain the generation length and calculate the the "current spawner abundance".
 streamspawnersurveys_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,

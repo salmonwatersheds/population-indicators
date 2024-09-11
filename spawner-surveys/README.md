@@ -9,11 +9,11 @@ Note that the data for steelhead (SH) and the regions Columbia, Transboundary (T
 and Yukon is processed by other code in their respective repositories. The reason
 being that the source of the data and its treatment is more complex and deserves 
 specific implementation. These data are integrated to the rest of the dataset
-in script *4_datasets_for_PSE.R*.
+in script **4_datasets_for_PSE.R**.
 
 Complementary data was provided by the Reynolds' Lab (SFU). It is processed in its
-own script *3_data_extra_Reynolds_lab.R* and it integrated to the rest of the 
-dataset in  script *4_datasets_for_PSE.R*.
+own script **3_data_extra_Reynolds_lab.R** and it integrated to the rest of the 
+dataset in  script **4_datasets_for_PSE.R**.
 
 Below is the list of files imported and exported in each R script with relevant 
 information. The files exported in bold are the ones imported to a script in a 
@@ -69,7 +69,7 @@ record the details of the update.
   - Fix coordinates of certain locations in CUSS (X_LONGT, Y_LAT)
   - Fix populations (IndexId - GFE_ID series)
 
-* *1_NuSEDS_escapement_data_collated_DATE.csv*
+* **1_NuSEDS_escapement_data_collated_DATE.csv**
   - Merge of 1_all_areas_nuseds_cleaned and 1_conservation_unit_system_sites_cleaned
   - Replace 0s by NAs
   - Fix when multiple POP_ID associated to the same CU are in one stream
@@ -88,7 +88,7 @@ record the details of the update.
 
 ## Files imported:
 
-* *1_NuSEDS_escapement_data_collated_DATE.csv*
+* **1_NuSEDS_escapement_data_collated_DATE.csv**
   - File produced in 1_nuseds_collation.R
 
 * conservationunits_decoder.csv
@@ -105,7 +105,7 @@ record the details of the update.
 
 ## File exported:
 
-* *2_Nuseds_cuid_streamid_DATE.csv* 
+* **2_Nuseds_cuid_streamid_DATE.csv** 
   - Attribute PSE's "cuid" to each POP_ID in 1_NuSEDS_escapement_data_collated
   - Edit FULL_CU_IN for several POP_IDs
   - Fix the CU attribution for certain time series 
@@ -125,7 +125,7 @@ record the details of the update.
 * SFU_stream_Coordinates.xlsx
   - The Reynolds's Lab stream coordinates used
 
-* *2_nuseds_cuid_streamid_nuseds_DATE.csv*
+* **2_nuseds_cuid_streamid_nuseds_DATE.csv**
   - File produced in 2_nuseds_cuid_streamid.R
   
 * DFO_All_Streams_Segments_20240408.xlsx
@@ -136,11 +136,11 @@ record the details of the update.
 
 ## File exported:
 
-* *3_data_extra_Reynolds_lab_DATE.csv*  (NOT INTEGRATED YET)
+* **3_data_extra_Reynolds_lab_DATE.csv**  (NOT INTEGRATED YET)
   - Fix certain data points of the original file
   - Structure their dataset like in 2_Nuseds_cuid_streamid. 
 
-* *SFU_Escapement_issues.csv*
+* **SFU_Escapement_issues.csv**
   - Data points in their dataset originating from NUSEDS but with a different value
 
 
@@ -148,10 +148,10 @@ record the details of the update.
 
 ## Files imported:
 
-* *2_nuseds_cuid_streamid_nuseds_DATE.csv*
+* **2_nuseds_cuid_streamid_nuseds_DATE.csv**
   - File produced in 2_nuseds_cuid_streamid.R
   
-* *3_data_extra_Reynolds_lab_DATE.csv* and *SFU_Escapement_issues.csv* (NOT INTEGRATED YET)
+* **3_data_extra_Reynolds_lab_DATE.csv** and **SFU_Escapement_issues.csv** (NOT INTEGRATED YET)
   - File produced in 3_data_extra_Reynolds_lab.R
 
 * /.../steelhead_dataset_1part2.DATE.csv                             
@@ -169,7 +169,7 @@ record the details of the update.
 
 ## File exported:
 
-*  *dataset2_spawner_surveys_DATE.csv* (previously dataset_1part2_DATE.csv)
+*  **dataset2_spawner_surveys_DATE.csv** (previously dataset_1part2_DATE.csv)
   - Remove TBR, Columbia and Yukon from 2_Nuseds_cuid_streamid_DATE
   - Add the data for SH, Columbia, TBR and Yukon to 2_Nuseds_cuid_streamid_DATE 
     from their respective alternative sources

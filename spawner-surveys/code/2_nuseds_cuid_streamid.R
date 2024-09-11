@@ -11,10 +11,10 @@
 #' - streamlocationids.csv
 #' - conservationunits_decoder.csv
 #' - streamspawnersurveys_output.csv
-#' - NuSEDS_escapement_data_collated_DATE.csv
+#' - 1_NuSEDS_escapement_data_collated_DATE.csv
 #'
 #' Files produced: 
-#' - nuseds_cuid_streamid_DATE.csv
+#' - 2_nuseds_cuid_streamid_DATE.csv
 #' 
 
 #'******************************************************************************
@@ -71,7 +71,7 @@ source("code/functions.R")
 # Import files ------
 
 #'* Import the most recent NuSEDS_escapement_data_collated file *
-nuseds <- import_mostRecent_file_fun(wd = wd_output, 
+nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
                                      pattern = "NuSEDS_escapement_data_collated")
 
 head(nuseds)
@@ -1052,14 +1052,13 @@ nuseds$survey_score |> unique()
 #
 # Export nuseds_cuid_streamid_DATE.csv -------- 
 #
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
-write.csv(nuseds,paste0(wd_output,"/nuseds_cuid_streamid_",date,".csv"),
+date <- as.character(Sys.Date())
+
+write.csv(nuseds,paste0(wd_output,"/archive/2_nuseds_cuid_streamid_",date,".csv"),
           row.names = F)
 
 #
-# Request from Eric to produce NuSEDS_sites.csv ------
+# Request from Eric to produce NuSEDS_sites.csv (TEMPORARY) ------
 # https://salmonwatersheds.slack.com/archives/D05EZ10DS9E/p1723141379840509
 
 pattern <- "nuseds_cuid_streamid_"
@@ -1083,7 +1082,7 @@ NuSEDS_sites |> nrow() # 410
 cond <- NuSEDS_sites$FULL_CU_IN == "CK-10"
 NuSEDS_sites[cond,]
 
-write.csv(NuSEDS_sites,paste0(wd_output,"/NuSEDS_cleaned_FULL_CU_IN_streamid_TEMPORARY.csv"),row.names = F)
+write.csv(NuSEDS_sites,paste0(wd_output,"/archive/NuSEDS_cleaned_FULL_CU_IN_streamid_TEMPORARY.csv"),row.names = F)
 
 #
 # FUTURE THINGS TO DO (still relevant ?) ------

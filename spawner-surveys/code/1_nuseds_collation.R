@@ -15,12 +15,12 @@
 #' - DFO_GFE_IDs_list_2.xlsx (from Wu Zhipeng, DFO)
 #' 
 #' Files produced: 
-#' - all_areas_nuseds_cleaned_DATE.csv
-#' - conservation_unit_system_sites_cleaned_DATE.csv
-#' - NuSEDS_escapement_data_collated_DATE.csv         # the merged and further corrected all_areas_nuseds and conservation_unit_system_sites
-#' - series_inNUSEDS_noInCUSS_DATE.csv                # series removed because no alternative series could be found in conservation_unit_system_sites; to investigate later may be
-#' - series_removed_DATE.csv                          # series removed from either datasets and why
-#' - series_added_DATE.csv                            # series added to either dataset and why
+#' - 1_all_areas_nuseds_cleaned_DATE.csv
+#' - 1_conservation_unit_system_sites_cleaned_DATE.csv
+#' - 1_NuSEDS_escapement_data_collated_DATE.csv         # the merged and further corrected all_areas_nuseds and conservation_unit_system_sites
+#' - 1_series_inNUSEDS_noInCUSS_DATE.csv                # series removed because no alternative series could be found in conservation_unit_system_sites; to investigate later may be
+#' - 1_series_removed_DATE.csv                          # series removed from either datasets and why
+#' - 1_series_added_DATE.csv                            # series added to either dataset and why
 
 #'******************************************************************************
 
@@ -427,6 +427,9 @@ GFE_ID_nuseds_notCuss_df <- data.frame(GFE_ID = GFE_ID_nuseds_notCuss,
 #' - google map
 #' - https://maps.gov.bc.ca/ess/hm/imap4m
 
+#' TODO: export the file manually once and then import it in future (cf. Population
+#' meeting Sep 11 2024)
+
 #' Note: the coordinates do not correspond to the survey location but the mouth
 #' or centroid of the water body. But that causes a problem for large rivers.
 fields_def$cu_system_sites$X_LONGT
@@ -757,7 +760,7 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #' one should remove series in CUSS that have only NAs and/or 0s in NUSEDS.
 
 
-#' * 2) Fix IndexId - GFE_ID series in CUSS that are not in NUSEDS  *
+#' * 2) Fix populations (IndexId - GFE_ID series) in CUSS that are not in NUSEDS  *
 #' Look for each IndexId & GFE_ID series in conservation_unit_system_sites:
 #' - 1) check if there are multiple GFE_IDs associated
 #'      if yes: trouble shoot manually because this should not happen.
@@ -768,7 +771,7 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #'      (ii) a typo in the GFE_ID. The the rest of the code looks for potential
 #'      alternative series in NUSEDS with either a different IndexId (but with 
 #'      the same species) or a different GFE_ID. Alternative series identified 
-#'      NOT present in CUSS are kept, the ones present are removed.
+#'      NOT present in CUSS are kept, the ones present are not considered.
 
 #' The function returns a simple dataframe with the IndexId and GFE_ID concerned
 #' and associated comment and eventual potential alternative series that have to 
@@ -2914,16 +2917,14 @@ sum(is.na(conservation_unit_system_sites$coordinates_changed)) # 0
 #
 # Export cleaned all_areas_nuseds and conservation_unit_system_sites -----
 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
+date <- as.character(Sys.Date())
 
-#' Export NUSEDS:
-write.csv(all_areas_nuseds,paste0(wd_output,"/all_areas_nuseds_cleaned_",date,".csv"), 
+#' Export cleaned NUSEDS to the dropbox /output/archive:
+write.csv(all_areas_nuseds,paste0(wd_output,"/archive/1_all_areas_nuseds_cleaned_",date,".csv"), 
           row.names = F)
 
-#' Export CUSS:
-write.csv(conservation_unit_system_sites,paste0(wd_output,"/conservation_unit_system_sites_cleaned_",date,".csv"), 
+#' Export cleaned CUSS to the dropbox /output/archive:
+write.csv(conservation_unit_system_sites,paste0(wd_output,"/archive/1_conservation_unit_system_sites_cleaned_",date,".csv"), 
           row.names = F)
 
 #
@@ -3389,11 +3390,9 @@ nrow(nuseds_final) # 306823
 #
 # Export CSV files: ------
 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
+date <- as.character(Sys.Date())
 
-write.csv(nuseds_final,paste0(wd_output,"/NuSEDS_escapement_data_collated_",date,".csv"),
+write.csv(nuseds_final,paste0(wd_output,"/archive/1_NuSEDS_escapement_data_collated_",date,".csv"),
           row.names = F)
 
 #' Export the series in NUSEDS with IndexIds and GFE_IDs not in CUSS with 
@@ -3430,7 +3429,7 @@ trackRecord_toExport$species_acro <- sapply(X = trackRecord_toExport$IndexId,
 trackRecord_toExport <- trackRecord_toExport[,c("IndexId","POP_ID","species_acro",
                                                 "GFE_ID","nb_dataPt","POPULATION")]
 
-write.csv(trackRecord_toExport,paste0(wd_output,"/series_inNUSEDS_noInCUSS_",date,".csv"),
+write.csv(trackRecord_toExport,paste0(wd_output,"/archive/1_series_inNUSEDS_noInCUSS_",date,".csv"),
           row.names = F)
 
 
@@ -3443,7 +3442,7 @@ removed_all$species_acro <- sapply(X = removed_all$IndexId,
  
 removed_all <- removed_all[,c("IndexId","POP_ID","species_acro","GFE_ID","dataset","comment")]
 
-write.csv(removed_all,paste0(wd_output,"/series_removed_",date,".csv"),row.names = F)
+write.csv(removed_all,paste0(wd_output,"/archive/1_series_removed_",date,".csv"),row.names = F)
 
 #
 added_all$POP_ID <- sapply(X = added_all$IndexId, 
@@ -3455,7 +3454,7 @@ added_all$species_acro <- sapply(X = added_all$IndexId,
 added_all <- added_all[,c("IndexId","POP_ID","species_acro","CU_NAME","GFE_ID","dataset","comment")]
 
 
-write.csv(added_all,paste0(wd_output,"/series_added_",date,".csv"),row.names = F)
+write.csv(added_all,paste0(wd_output,"/archive/1_series_added_",date,".csv"),row.names = F)
 
 
 #

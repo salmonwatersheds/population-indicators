@@ -11,7 +11,7 @@
 #' - DFO_All_Streams_Segments_20240408.xlsx : the file sent by Wu Zhipeng (DFO) with stream-related information
 #' 
 #' Files produced: 
-#' - data_extra_Reynolds_lab_DATE.csv    
+#' - 3_data_extra_Reynolds_lab_DATE.csv    
 #' 
 #'******************************************************************************
 
@@ -112,7 +112,7 @@ head(SFU_stream_2)
 
 
 #'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
-nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = wd_output, 
+nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
                                                    pattern = "nuseds_cuid_streamid")
 
 head(nuseds_cuid_streamid)
@@ -1112,7 +1112,7 @@ SFU_escap$ESTIMATE_METHOD |> unique()
 unique(SFU_escap$GFE_ID)
 
 # export these issues and notify Arianne
-write.csv(issues_df,paste0(wd_output,"/SFU_Escapement_issues.csv"), row.names = F)
+write.csv(issues_df,paste0(wd_output,"/archive/SFU_Escapement_issues.csv"), row.names = F)
 
 
 # Checks on the issues:
@@ -1419,11 +1419,9 @@ nuseds_cuid_streamid_add <- rbind(nuseds_cuid_streamid_add,
 
 # View(nuseds_cuid_streamid_add)
 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
+date <- Sys.Date()
 write.csv(nuseds_cuid_streamid_add,
-          paste0(wd_output,"/data_extra_Reynolds_lab_",date,".csv"),
+          paste0(wd_output,"/archive/3_data_extra_Reynolds_lab_",date,".csv"),
           row.names = F)
 
 

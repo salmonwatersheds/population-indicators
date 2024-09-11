@@ -11,7 +11,7 @@
 #' - SFU_Escapement_issues.csv        : 
 #' 
 #' Files produced: 
-#' - dataset_1part2_DATE.csv
+#' - dataset2_spawner_surveys_DATE.csv  # previously dataset_1part2_DATE.csv
 #' 
 #'******************************************************************************
 
@@ -73,12 +73,12 @@ options(digits = 9) ## 7
 # Import files -------
 
 #'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
-nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = wd_output, 
+nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
                                                    pattern = "nuseds_cuid_streamid")
 
 #'* Import the cleaned Reynolds Lab cleaned data *
-Reynolds_data <- import_mostRecent_file_fun(wd = wd_output, 
-                                                   pattern = "data_extra_Reynolds_lab")
+Reynolds_data <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                            pattern = "data_extra_Reynolds_lab")
 
 
 # check columns names:
@@ -90,8 +90,8 @@ nuseds_cuid_streamid$source <- "NuSEDS"
 Reynolds_data$source <- "Reynolds lab"
 
 #'* Import the reference to data points with issues in the Reynolds Lab dataset *
-Reynolds_issues <- import_mostRecent_file_fun(wd = wd_output, 
-                                            pattern = "SFU_Escapement_issues")
+Reynolds_issues <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
+                                              pattern = "SFU_Escapement_issues")
 
 
 #'* Import the conservationunits_decoder.csv *
@@ -109,7 +109,6 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
-
 
 #
 # Combine nuseds_cuid_streamid with data_extra_Reynolds_lab (WAIT UNTIL AFTER PSE 2.0 RELEASE) -----
@@ -316,7 +315,7 @@ WAIT UNTIL AFTER PSE 2.0 RELEASE
 
 
 #
-# Generate dataset_1part2 --------
+# Generate dataset2_spawner_surveys (previously dataset_1part2) --------
 # example dataset: spawner_surveys_dataset_1part2_2024-03-27.csv
 # https://www.dropbox.com/scl/fi/qi5f132o5qc6fzd1hkhhz/spawner_surveys_dataset_1part2_2024-03-27.csv?rlkey=9iymit683c97qew7xo0t59hg9&dl=0
 
@@ -326,7 +325,7 @@ WAIT UNTIL AFTER PSE 2.0 RELEASE
 # Google doc meeting Katy, Steph and Bruno
 # https://docs.google.com/document/d/1Fmsjtb_f9yOaoQ3b1sZUXxCumdO70YuUnMdXjoFY8Xo/edit?usp=sharing
 
-nuseds_final <- import_mostRecent_file_fun(wd = wd_output,
+nuseds_final <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                            pattern = "nuseds_cuid_streamid")
 
 cond_cuid_na <- is.na(nuseds_final$cuid)
@@ -702,19 +701,22 @@ dataset_1part2_final <- dataset_1part2_final %>%
 
 
 #
-# Save dataset_1part2_DATE.csv -----
-
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-# date <- gsub("-","",date)
-write.csv(dataset_1part2_final,paste0(wd_output,"/dataset_1part2_",date,".csv"),
+# Export dataset2_spawner_surveys_DATE.csv -----
+#
+date <- Sys.Date()
+write.csv(dataset_1part2_final,paste0(wd_output,"/dataset2_spawner_surveys",date,".csv"),
           row.names = F)
 
-dataset_1part2 <- import_mostRecent_file_fun(wd = wd_output,
-                                             pattern = "dataset_1part2")
-cond <- dataset_1part2$species_name == "Coho"
-sites_Coho <- unique(dataset_1part2$GFE_ID[cond])
-length(sites_Coho) # 1705
+# Produce a dummy datasets in the loca; /ouput repo to push to github
+write.csv(dataset_1part2[1:2,],paste0(getwd(),"/output/dataset2_spawner_surveys_dummy.csv"))
+
+# dataset_1part2 <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive/"),
+#                                              pattern = "dataset_1part2") # dataset2_spawner_surveys
+# cond <- dataset_1part2$species_name == "Coho"
+# sites_Coho <- unique(dataset_1part2$GFE_ID[cond])
+# length(sites_Coho) # 1705
+
+
 
 #
 # Check if multiple series appear for a same cuid - streamid combination -----------

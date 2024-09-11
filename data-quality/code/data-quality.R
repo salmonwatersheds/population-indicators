@@ -77,16 +77,9 @@ Dropbox_directory <- paste0(Dropbox_root, "/1_Active/Population Methods and Anal
 # Load database data **Do this at the top so the rest of the script can be easily run
 #------------------------------------------------------------------------------
 
-# Current live DQ data in Legacy site
-dataset390_filename <- list.files(path = paste0(Dropbox_directory, "data-quality/output/archive"), 
-                               pattern = "dataset390") %>%
-  sort() %>%
-  tail(1)
-
-dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/archive/", dataset390_filename))
-
 # Juvenile survey data
 js <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset88_output") # Read direct from database if needs updating
+
 # # write.csv(js, file= paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Update in Dropbox
 # js <- read.csv(paste0(Dropbox_directory, "data-input/juvenilesurveys.csv")) # Read from Dropbox so script can be sourced
 
@@ -114,7 +107,8 @@ catch <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset
 #------------------------------------------------------------------------------
 
 # Load cu list
-cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
+# cu_list <- read.csv(paste0(Dropbox_directory, "data-input/conservationunits_decoder.csv")) %>%
+cu_list <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
   distinct(pooledcuid, .keep_all = TRUE) # there are duplicates for pooledcuid
 
 unique(tapply(cu_list$cuid, cu_list$cuid, length))
@@ -251,11 +245,24 @@ head(dataset390)
 
 # https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#catch-estimates
 
-# No change from existing
-# Note that we did not update catch quality using scores provided by the PSC for Fraser sockeye because those scores were on a different scale and not comparable to other regions or species.
+# Read in catch_quality revisions from Legacy site
+catch_quality_dq <- readxl::read_xlsx("data-quality/data/catch-quality_2024-09-04.xlsx")
+
+# Change quality score of zero to NA for average calculations at indicator score step
+catch_quality_dq$catch_quality_revised[catch_quality_dq$catch_quality_revised == 0] <- NA
+
+# Check that no CUs with data are being assigned NA
+if(sum(unique(catch$cuid[which(catch$cdn_catch != -989898 | catch$combined_catch != -989898)]) %in% catch_quality_dq$cuid[is.na(catch_quality_dq$catch_quality_revised)]) > 0) {
+  cuid.x <- unique(catch$cuid[which(catch$cdn_catch != -989898 | catch$combined_catch != -989898)])
+  print(paste("cuid:", cuid.x[which(cuid.x %in% catch_quality_dq$cuid[is.na(catch_quality_dq$catch_quality_revised)] == TRUE)], collapse = ", "))
+  stop("CU with catch data has a catch_quality of zero. Need to assign non-zero catch quality.")
+}
+
+# Join to dataset390
 dataset390 <- dataset390 %>% 
-  left_join(dataset390_old %>% 
-              select(cuid, catch_quality))
+  left_join(catch_quality_dq %>% 
+              select(cuid, catch_quality_revised)) %>%
+  rename(catch_quality = catch_quality_revised)
 
 head(dataset390)
 
@@ -316,20 +323,9 @@ js$Q <- case_when(
 
 unique(js$Q)
 
-# Use the same most_recent_year as spawner surveys, although juvenile surveys
-# have not been kept as up-to-date this is the most reasonable approach?
-js <- js %>% left_join(spawner_surveys %>% 
-                         group_by(region) %>% 
-                         select(region, most_recent_year) %>% 
-                         distinct()
-                       )
-
-unique(js$most_recent_year)
-sum(is.na(js$most_recent_year))
 
 # Calculate mean Q by cuid and join
 dataset390 <- dataset390 %>% left_join(js %>%
-  filter(year > most_recent_year - gen_length + 1) %>% # Look over the most recent generation
   group_by(cuid) %>%
   summarise(juvenile_quality = round(mean(Q, na.rm = TRUE)))
 )
@@ -354,6 +350,9 @@ rt_dq$runtiming_quality <- case_when(
   rt_dq$rt_dat_qual >= 5 ~ 1
 )
 
+# Temp fix: adjust run timing dq for Skeena Chinook CUs from Winther et al. (2024)
+
+
 # Join to dataset
 dataset390 <- dataset390 %>% left_join(rt_dq %>%
                                          select(cuid, runtiming_quality))
@@ -374,6 +373,7 @@ head(dataset390)
 # To ensure this works, we need to set data quality scores that were zero in the 
 # old data to NA
 dataset390[which(dataset390 == 0, arr.ind = TRUE)] <- NA
+
 #------------------------------------------------------------------------------
 # dq_score ** Included for legacy site
 #------------------------------------------------------------------------------
@@ -469,32 +469,42 @@ dataset390[which(is.na(dataset390), arr.ind = TRUE)] <- 0
 
 # Write tracked copy
 write.csv(dataset390, file = "data-quality/output/dataset390_data_quality.csv", row.names = FALSE)
+
 # Write archive cope
-write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/archive/dataset390_data_quality", Sys.Date(), ".csv"), row.names = FALSE)
+write.csv(dataset390, file = paste0(Dropbox_directory, "data-quality/output/archive/dataset390_data_quality_", Sys.Date(), ".csv"), row.names = FALSE)
 
 ###############################################################################
 # Compare to old dataset390
 ###############################################################################
 
-cbind(names(dataset390), names(dataset390_old))
-dim(dataset390)
-dim(dataset390_old)
-
-# For each parameter, list which rows changed
-change_rows <- list()
-J <- 0
-for(j in 1:length(names(dataset390))){
-  n_changes <- 466 - sum(dataset390[,j] == dataset390_old[,j])
-  print(paste0("Parameter ", names(dataset390)[j]," : ", n_changes, " changes"))
-  if(n_changes > 0){
-    J <- J + 1
-    change_rows[[J]] <- which(dataset390[,j] != dataset390_old[,j])
-    names(change_rows)[J] <- names(dataset390)[j]
-  }
-}
-
-# Which catch & run size changed?
-dataset390[change_rows$catch_run_size, c(1:4, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
-
-dataset390_old[change_rows$catch_run_size, c(1:3, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
-# catch_run_size - previously the mean seemed to use catch_quality == 0 when it should have been NA?
+# # Current live DQ data in Legacy site
+# dataset390_filename <- list.files(path = paste0(Dropbox_directory, "data-quality/output/archive"), 
+#                                   pattern = "dataset390") %>%
+#   sort() %>%
+#   tail(1)
+# 
+# dataset390_old <- read.csv(paste0(Dropbox_directory, "data-quality/output/archive/", dataset390_filename))
+# 
+# 
+# cbind(names(dataset390), names(dataset390_old))
+# dim(dataset390)
+# dim(dataset390_old)
+# 
+# # For each parameter, list which rows changed
+# change_rows <- list()
+# J <- 0
+# for(j in 1:length(names(dataset390))){
+#   n_changes <- 466 - sum(dataset390[,j] == dataset390_old[,j])
+#   print(paste0("Parameter ", names(dataset390)[j]," : ", n_changes, " changes"))
+#   if(n_changes > 0){
+#     J <- J + 1
+#     change_rows[[J]] <- which(dataset390[,j] != dataset390_old[,j])
+#     names(change_rows)[J] <- names(dataset390)[j]
+#   }
+# }
+# 
+# # Which catch & run size changed?
+# dataset390[change_rows$catch_run_size, c(1:4, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
+# 
+# dataset390_old[change_rows$catch_run_size, c(1:3, match(c("catch_quality", "stockid_quality", "catch_run_size"), names(dataset390)))]
+# # catch_run_size - previously the mean seemed to use catch_quality == 0 when it should have been NA?

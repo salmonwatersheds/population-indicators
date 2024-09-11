@@ -26,16 +26,28 @@ source("code/colours.R")
 # Read in data
 ###############################################################################
 
-Dropbox_directory <- "/Users/stephaniepeacock/Salmon\ Watersheds\ Dropbox/Stephanie\ Peacock/X\ Drive/1_PROJECTS/1_Active/Population\ Methods\ and\ Analysis/population-indicators"
+#------------------------------------------------------------------------------
+# Set Dropbox directory depending on user
+#------------------------------------------------------------------------------
+
+# return the name of the directories for the different projects:
+Dropbox_root <- read.delim("wd_X_Drive1_PROJECTS.txt", header = FALSE)[1,1]
+Dropbox_directory <- paste0(Dropbox_root, "/1_Active/Population Methods and Analysis/population-indicators/")
+
+#------------------------------------------------------------------------------
+# Source data
+#------------------------------------------------------------------------------
 
 regions <- c("yukon", "transboundary", "haida gwaii", "nass", "skeena", "central coast", "vancouver island and mainland inlets", "fraser", "columbia")
-dat <- read.csv(paste0(Dropbox_directory, "/timing/data/3Life_cycle_timing_by_CU.csv")) %>%
+
+dat <- read.csv(paste0(Dropbox_directory, "/timing/data/3Life_cycle_timing_by_CU_SKCK_update.csv")) %>%
   select(species, culabel, region, rt_start, rt_peak, rt_end, rt_dat_qual) %>%
   arrange(factor(region, levels = regions), species, culabel)
 
-cu_decoder <- read.csv(paste0(Dropbox_directory, "/data-input/conservationunits_decoder.csv"))
+cu_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
+  distinct(pooledcuid, .keep_all = TRUE) # there are duplicates for pooledcuid
 
-dat$cuid <- cu_decoder$pooledcuid[match(paste(dat$species, dat$culabel), paste(cu_decoder$species_abbr, cu_decoder$cu_name_pse))]
+dat$cuid <- cu_decoder$cuid[match(paste(dat$species, dat$culabel), paste(cu_decoder$species_abbr, cu_decoder$cu_name_pse))]
 
 # Remove any duplicates (for some reason duplicate of TBR SER - check with sam)
 dat <- dat[-which(dat$cuid == 1023)[2], ]
@@ -222,10 +234,12 @@ for(i in 1:n.cuid){
   }
 }}
 
-write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/run-timing_", Sys.Date(), ".csv"), row.names = FALSE)
+write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = paste0(Dropbox_directory, "/timing/output/archive/dataset90_run_timing_", Sys.Date(), ".csv"), row.names = FALSE)
+
+write.csv(dat.out[!is.na(dat.out$run_timing_ppn), c("cuid", "DOY", "run_timing_ppn")], file = "timing/output/dataset90_run_timing.csv", row.names = FALSE)
 
 
-write.csv(dat[, c("cuid", "rt_dat_qual")], file = paste0(Dropbox_directory, "/timing/output/run-timing-data-quality_", Sys.Date(), ".csv"), row.names = FALSE)
+write.csv(dat[, c("cuid", "rt_dat_qual")], file = paste0(Dropbox_directory, "/timing/output/archive/run-timing-data-quality_", Sys.Date(), ".csv"), row.names = FALSE)
 
 ###############################################################################
 # Plot
@@ -252,7 +266,7 @@ xDate <- as.Date(paste(1999, DOY, sep = "-"), format = "%Y-%j")
 xDate2 <- as.Date(paste(c(rep(1999, 365), 2000), c(DOY, 1), sep = "-"), format = "%Y-%j")
 for(r in 1:9){
   n <- length(which(dat$region == regions[r]))
-  pdf(file = paste0(Dropbox_directory, "/timing/output/run-timing_", regions[r], ".pdf"), width = 8, height =  n/6+1.5, pointsize = 10)
+  pdf(file = paste0(Dropbox_directory, "/timing/output/figures/run-timing_", regions[r], ".pdf"), width = 8, height =  n/6+1.5, pointsize = 10)
   # quartz(width = 5, height =  n/6+1.5, pointsize = 10)
   par(mar = c(3,2,2,3))
   plot(range(xDate2), c(0.9, n + 1), "n", bty = "l", xlab = "Day", ylab = "", main = str_to_title(regions[r]), yaxt = "n", yaxs = "i", xaxs = "i")

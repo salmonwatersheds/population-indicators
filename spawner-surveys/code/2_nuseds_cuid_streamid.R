@@ -1,6 +1,4 @@
 
-
-
 #'******************************************************************************
 #' The goal of the script is to 
 #' 
@@ -16,7 +14,6 @@
 #' Files produced: 
 #' - 2_nuseds_cuid_streamid_DATE.csv
 #' 
-
 #'******************************************************************************
 
 rm(list = ls())
@@ -150,7 +147,7 @@ rownames(regionsid_df) <- NULL
 #
 # Edit the NUSEDS dataset for the PSE ----
 
-#'* Edite FULL_CU_IN for several POP_IDs * 
+#'* Edit FULL_CU_IN for several POP_IDs * 
 # Corrections in CU assignment for central coast chum from Carrie Holt
 # https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705426563165399?thread_ts=1705344122.088409&cid=CJ5RVHVCG

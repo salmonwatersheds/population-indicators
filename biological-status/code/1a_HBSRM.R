@@ -13,8 +13,9 @@
 #' region-specific folders in dropbox)
 #' 
 #' Files produced: 
-#' - output/REGION_SPECIES_SR_matrices.rds
-#' - output/REGION_SPECIES_HBSRM_posteriors_priorShift.rds
+#' - output/intermediate/REGION_SPECIES_SR_matrices.rds                 # SR recruits matrices data used to fit the HBSRM
+#' - output/intermediate/REGION_SPECIES_HBSRM_posteriors_priorShift.rds # Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i`
+#' - output/intermediate/REGION_SPECIES_HBSRM_convDiagnostic.csv        # Gelman and Rubin (1992)'s convergence diagnostic of the MCMC output
 #' 
 #'******************************************************************************
 
@@ -391,7 +392,7 @@ for(i_rg in 1:length(region)){
       prtaub <- prmub^2/prCV^2
       
       saveRDS(SR_l,
-              file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_SR_matrices.rds"))
+              file = paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",speciesAcroHere,"_SR_matrices.rds"))
       
       #### Estimate a and b by linreg and plot
       if(show_figures){
@@ -517,10 +518,9 @@ for(i_rg in 1:length(region)){
       
       # plot <- plot(post)
       
-      # BSC: it is exported in /Output for now but these should be exported someWhere
-      # else becaue they are probably too big for github.
+      # 
       saveRDS(post,
-              file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_posteriors_priorShift.rds"))
+              file = paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_posteriors_priorShift.rds"))
       
 
       ##### INFERENCE #####
@@ -590,7 +590,7 @@ for(i_rg in 1:length(region)){
                                           "prSmax","prCV")]
 
       write.csv(convDiagnostic,
-                file = paste0(wd_output,"/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_convDiagnostic.csv"),
+                file = paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_convDiagnostic.csv"),
                 row.names = F)
       
       

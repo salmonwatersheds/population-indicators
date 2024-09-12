@@ -100,10 +100,10 @@ species_all <- TRUE
 #'* Import benchmark values for the HBSRM method *
 pattern <- "benchmarks_summary_HBSRM"
 benchmarks_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                  wd_output = wd_output,
+                                                  wd_output = paste0(wd_output,"/intermediate"),
                                                   region = region,
                                                   species_all = species_all)
-#' remove the cyclic  CUs for now because their HBSRM analysis has not been incomporated in the workflow yet
+#' remove the cyclic  CUs for now because their HBSRM analysis has not been incorporated in the workflow yet
 cond <- grepl("cyclic",benchmarks_HBSRM$CU)
 benchmarks_HBSRM[cond,]
 benchmarks_HBSRM <- benchmarks_HBSRM[!cond,]
@@ -111,19 +111,20 @@ benchmarks_HBSRM <- benchmarks_HBSRM[!cond,]
 #'* Import benchmark values for the percentile method *
 pattern <- "benchmarks_summary_percentiles"
 benchmarks_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                       wd_output = wd_output,
+                                                       wd_output = paste0(wd_output,"/intermediate"),
                                                        region = region,
                                                        species_all = species_all)
 
 #'* Import biostatus obtained with HBSR Sgen - Smsy: *
 pattern <- "biological_status_HBSRM"
 biological_status_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                      wd_output = wd_output,
-                                                      region = region,
-                                                      species_all = species_all)
+                                                         wd_output = paste0(wd_output,"/intermediate"),
+                                                         region = region,
+                                                         species_all = species_all)
 head(biological_status_HBSRM)
 colnames(biological_status_HBSRM)
-nrow(biological_status_HBSRM) # 143 ;  137
+nrow(biological_status_HBSRM) # 144 143 ;  137
+
 unique(biological_status_HBSRM$comment)
 
 
@@ -157,11 +158,11 @@ biological_status_HBSRM$status_Smsy80 <- sapply(X = 1:nrow(biological_status_HBS
 #'* Import the biological status obtained with the percentiles method: *
 pattern <- "biological_status_percentiles"
 biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                      wd_output = wd_output,
+                                                      wd_output = paste0(wd_output,"/intermediate"),
                                                       region = region,
                                                       species_all = species_all)
 
-nrow(biological_status_percentile) # 452 448
+nrow(biological_status_percentile) # 451 452 448
 
 # Add final biostatus for both thresholds (i.e., 0.75 and 0.5 upper threshold)
 #' NOTE: the percentile biostatus is obtain used the benchmarks are current spawner
@@ -234,15 +235,24 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 466
+nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 465 466
 
-#'* Import dataset390_output for survey_quality *
+#'* Import dataset390_data_quality (dataset390_output) for survey_quality *
 dataset390_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[18],
                                     fromDatabase = fromDatabase,
                                     update_file_csv = update_file_csv,
                                     wd = wd_pop_indic_data_input_dropbox)
-head(dataset390_output)
 dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
+
+# TEMPORARY (11/09/2024)
+dataset390_output <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
+                                                pattern = "dataset390_data_quality")
+dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_quality")]
+colnames(dataset390_output)[colnames(dataset390_output) == "catch_quality"] <- "catch_method"
+head(dataset390_output)
+nrow(dataset390_output) # 465 466
+
+
 # survey_quality as in data-quality.R: 
 # "Low" ~ 1
 # "Medium-Low" ~ 2
@@ -328,7 +338,6 @@ highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_percentile =
 #'  - 7 = data-deficient (insufficient time series length)
 #'  - 8 = data-deficient (no estimates of spawner abundance in the most recent generation)
 #'  - 9 = data-deficient (no spawner estimates available)
-
 
 # 
 # write.csv(code_PSF_Status,paste0(wd_data_dropbox,"/code_PSF_Status.csv"),
@@ -679,6 +688,8 @@ biological_status_merged$psf_status <- apply(X = biological_status_merged,
 
 unique(biological_status_merged$psf_status)
 table(biological_status_merged$psf_status)
+# data-deficient        extinct           fair           good   not-assessed           poor 
+#            223              5             51             78             27             67 
 
 
 #' * Add field  hist_COLOUR * 
@@ -762,12 +773,16 @@ head(biological_status_merged)
 biological_status_merged[grepl("cyclic",biological_status_merged$cu_name_pse),]
 biological_status_merged[grepl("5",biological_status_merged$psf_status_code_all),]
 
+#
+# Counts of the CUs with sr and percentile benchmarks, no status, etc. ---- 
+#
+
 # Number CUs total:
-nrow(biological_status_merged) # 452 448
+nrow(biological_status_merged) # 451 452 448
 
 # Number CUs with biostatus assessed over both methods
 condition <- biological_status_merged$psf_status_code %in% 1:3
-sum(condition) # 195
+sum(condition) # 196 195
 
 # CUs not assessed because cyclic dynamics, low productivity/high mortality or data deficient
 condition_5 <- grepl(pattern = "5",biological_status_merged$psf_status_code)
@@ -779,16 +794,44 @@ sum(condition_5_6_7) # 38
 
 # Number CUs with biostatus assessed with HBSRM:
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
-condition_HBSRM <- !is.na(biological_status_merged$psf_status_type) & biological_status_merged$psf_status_type == "sr"
+condition_HBSRM <- !is.na(biological_status_merged$psf_status_type) & 
+  biological_status_merged$psf_status_type == "sr"
 sum(condition_HBSRM)                   # 124 125
 sum(condition_1_2_3 & condition_HBSRM) # 124 125
 
 # Number CUs with biostatus assessed with percentile method: 
 condition_Percent <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "percentile"
-sum(condition_Percent)                       # 71 69
-sum(condition_1_2_3 & condition_Percent)     # 71 69
+sum(condition_Percent)                       # 72 71 69
+sum(condition_1_2_3 & condition_Percent)     # 72 71 69
 sum(condition_HBSRM) + sum(condition_Percent) == sum(condition) # should be TRUE
+
+# Check: which CU went from not assessed to assessed with Percent:
+
+# cuid_new <- biological_status_merged[condition_Percent,]$cuid
+# 
+# biological_status_old <- import_mostRecent_file_fun(wd = paste0(wd_output),
+#                                                     pattern = "dataset101_biological_status")
+# condition_Percent <- !is.na(biological_status_old$psf_status_type) & 
+#   biological_status_old$psf_status_type == "percentile"
+# cuid_old <- biological_status_old$cuid[condition_Percent]
+# 
+# cuid_new[! cuid_new %in% cuid_old] # 510 511
+# cuid_old[! cuid_old %in% cuid_new] # 521
+# 
+# 
+#  for(cuid in c(510,511,521)){
+#    print(cuid)
+#    print("New biostatus:")
+#    cond <- biological_status_merged$cuid == cuid
+#    print(biological_status_merged[cond,c("region","species_name","cu_name_pse","cuid",
+#                                    "psf_status_type","psf_status_code","psf_status")])
+#    print("Old biostatus:")
+#    cond <- biological_status_old$cuid == cuid
+#    print(biological_status_old[cond,c("region","species_name","cu_name_pse","cuid",
+#                                          "psf_status_type","psf_status_code","psf_status")])
+#    print("   ***   ")
+#  }
 
 
 #'* Check *
@@ -1052,6 +1095,27 @@ for(f in fields){
 }
 
 #
+# Check if extinct status matches COSEWIC -----
+#
+
+dataset380 <- import_mostRecent_file_fun(wd = paste0(wd_X_Drive1_PROJECTS,
+                                                     "/1_Active/Population Methods and Analysis/New features/Integrated status and COSEWIC"),
+                                         pattern = "Dataset380")
+
+cond <- !is.na(dataset380$Sheet1$COSEWIC_status) & dataset380$Sheet1$COSEWIC_status == "Extinct"
+cuid_extinct_cosewic <- dataset380$Sheet1$cuid[cond]
+
+#
+cond <- biological_status_merged$psf_status == "extinct"
+cuid_extinct_pse <- biological_status_merged$cuid[cond]
+
+cuid_extinct_cosewic[! cuid_extinct_cosewic %in% cuid_extinct_pse] # NULL
+cuid_extinct_pse[! cuid_extinct_pse %in% cuid_extinct_cosewic]     # 758 761
+dataset380$Sheet1[dataset380$Sheet1$cuid %in% c(758,761),]
+
+
+
+#
 # Export files /dataset101_biological_status and dataset102_benchmarks -------
 # This is just to edit the file name
 # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1721074762139209?thread_ts=1701199596.229739&cid=CJG0SHWCW
@@ -1062,8 +1126,7 @@ for(f in fields){
 #                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
 # write files in /output/archive
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
+date <- as.character(Sys.Date())
 
 # write in the /output/archive in dropbox
 write.csv(biological_status_merged,

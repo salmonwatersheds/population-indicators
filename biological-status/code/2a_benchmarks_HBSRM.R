@@ -56,7 +56,7 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
 # wd_output <- gsub("/output","/output_NORMAL_DIST",wd_output)
 
 # The datasets to input were outputted by other scripts 
-wd_data_input <- wd_output
+wd_data_input <- paste0(wd_output,"/intermediate")
 
 # Import functions for this specific project
 source("Code/functions.R")
@@ -729,11 +729,11 @@ for(i_rg in 1:length(region)){
       print(paste0("*** ",region[i_rg],"_",species_acro[i_sp]," done ***"))
       
       write.csv(x = benchSummary_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_benchmarks_summary_HBSRM.csv"),
+                file = paste0(wd_output,"/intermediate/",regionName,"_",species_acro[i_sp],"_benchmarks_summary_HBSRM.csv"),
                 row.names = F,)
       
       write.csv(x = biologicalStatus_region_species_df, 
-                file = paste0(wd_output,"/",regionName,"_",species_acro[i_sp],"_biological_status_HBSRM.csv"),
+                file = paste0(wd_output,"/intermediate/",regionName,"_",species_acro[i_sp],"_biological_status_HBSRM.csv"),
                 row.names = F)
 
     } # end of for each species

@@ -4,27 +4,91 @@ July 18, 2023
 
 ## Overview
 
-
 See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#benchmarks-biostatus) for detailed methodology for biological status assessments.
+
+
+Below is the list of files imported and exported in each R script with relevant 
+information. The files exported in bold are the ones imported to a script in a 
+subsequent step of the workflow. TO EDIT
+
 
 ## Files
 
 #### `code`
 
 Contains code to
-* fit HBM spawner-recruit model
-* estimate spawner-recruit benchmarks
-* estimate percentile benchmarks
-* calculate probability of different status outcomes
-* spit out datasets 101 and 102 (biological status outcomes)
+* fit Hierarchical Bayesian spawner-recruit model (HBSRM): **1a_HBSRM.R**
+* estimate spawner-recruit benchmarks (sr) and calculate probability of different status outcomes: **2a_benchmarks_HBSRM.R**
+* estimate percentile benchmarks: **1b_benchmarks_percentiles.R**
+* determine the final biological status for all the CUs and export the two final datasets (**datasets101_biological_status.csv**, **datasets102_benchmarks.csv**): **3_biological_status.R**
 
-#### `data`
+#### `input`
+
+TO KEEP ???
 
 Contains spawner-recruit datasets and priors used in HBM fitting. The data file was historically a .txt file with initial rows detailing `#MaxStocks` and the priors on `b`: `prSmax` and `prCV`. I suggest these priors get moved to a separate file. In that case the data files for each region and species would be, e.g., `SRdata_fraser-pink.csv` or `SRdata-cc-sockeye.csv` with fields for `CUID`, `brood_year`, `spawners`, `recruits`, and `exploitation_rate`. The priors would `SRpriors_fraser-pink.csv` or `SRpriors-cc-sockeye.csv` with fields for `prSmax` and `prCV`. 
 
+
+#### **1a_HBSRM.R**:
+
+* recruitsperspawner.csv
+  - List of CUs with available estimated abundances of spawner and recruits (the data is processed elsewhere)
+  
+* conservationunits_decoder.csv
+  - List of CUs present in the PSE database
+
+* data/priors_HBSRmodel.csv 
+  - Contains the prior values for the HBSRM parameters `prSmax` and `prCV` that are used in **1a_HBSRM.R**
+  - The file is created in **checks_fixes.R**
+  - The original values of these priors come from the **SRdata.txt** files located elsewhere (in the "HBM and status" sub-folders in each region-specific folders of the PSF dropbox).
+
+
+#### **2a_benchmarks_HBSRM.R**:
+
+
+* cuspawnerabundance.csv
+  - List of CUs with estimated spawner abundance data
+  - Used to calculated `current spawner abundance`
+
+* conservationunits_decoder.csv
+  - List of CUs present in the PSE database
+
+* REGION_SPECIES_HBSRM_posteriors_priorShift.rds
+  - Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
+  - Created in **1a_HBSRM.R**
+
+* REGION_SPECIES_SR_matrices.rds (created in 1a_HBSRM.R)
+  - List of matrices containing the abundance of spawner and recruits for each CUs of each species in each region
+  - Created in **1a_HBSRM.R**
+
+
 #### `output`
 
-Place for mcmc posterior output files (as `.rds`?) of SR parameters (a and b) and benchmarks (Smsy, Sgen), and percentile benchmarks/samples, and output datasets.
+
+#### **1a_HBSRM.R**:
+
+* **REGION_SPECIES_SR_matrices.rds**
+  - List of matrices containing the abundance of spawner and recruits for each CUs of each species in each region
+
+
+* **REGION_SPECIES_HBSRM_posteriors_priorShift.rds**
+  - Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
+
+
+* REGION_SPECIES_HBSRM_convDiagnostic.csv
+  - Gelman and Rubin (1992)'s convergence diagnostic of the MCMC output
+  
+  
+#### **2a_benchmarks_HBSRM.R**:
+
+* **output/REGION_SPECIES_benchmarks_summary_HBSRM.csv**
+  - Estimated spawner-recruits benchmarks values and their confidence intervals 
+
+* **output/REGION_SPECIES_biological_status_HBSRM.csv**
+  -  Calculated probability of different status outcomes
+
+
+
 
 ## Acknowledgements
 

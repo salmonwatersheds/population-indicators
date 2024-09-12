@@ -1,3 +1,6 @@
+# spawner-survey
+
+## Overview
 
 This sub-folder concerns the integration of stream-level spawner data for the PSE.
 The goal of the scripts is to import, clean and format the spawner data from the
@@ -24,10 +27,14 @@ and contains the first two rows of the final dataset2_spawner_surveys_DATE.csv.
 The goal is to push the file to github to record the details of the updates made
 to the dataset.
 
+See the [Tech Report: 4.1.1.1. Spawner Surveys](https://bookdown.org/salmonwatersheds/tech-report-staging/analytical-approach.html#overview-population-indicators) and [Tech Report: Appendix 14](https://bookdown.org/salmonwatersheds/tech-report-staging/appendix-14.html) for detailed methodology for the spawner-survey data compilation.
 
-# 1_nuseds_collation.R
 
-## Files imported:
+## Scripts & files
+
+### 1_nuseds_collation.R
+
+#### Files imported:
 
 * all_areas_nuseds_DATE.csv
   - File downloaded from https://open.canada.ca/data
@@ -55,7 +62,7 @@ to the dataset.
   - Only used for check ups
 
 
-## File exported:
+#### Files exported:
 
 * 1_all_areas_nuseds_cleaned_DATE.csv
   - Remove rows for Atlantic, Steelhead, and Kokanee
@@ -83,9 +90,9 @@ to the dataset.
   - Series added to either dataset and why
 
 
-# 2_nuseds_cuid_streamid.R
+### 2_nuseds_cuid_streamid.R
 
-## Files imported:
+#### Files imported:
 
 * **1_NuSEDS_escapement_data_collated_DATE.csv**
   - File produced in 1_nuseds_collation.R
@@ -102,7 +109,7 @@ to the dataset.
   - Only used for check ups
 
 
-## File exported:
+#### Files exported:
 
 * **2_Nuseds_cuid_streamid_DATE.csv** 
   - Attribute PSE's "cuid" to each POP_ID in 1_NuSEDS_escapement_data_collated
@@ -114,9 +121,9 @@ to the dataset.
   - Edit location coordinates eventually to match PSE
 
 
-# 3_data_extra_Reynolds_lab.R
+### 3_data_extra_Reynolds_lab.R
 
-## Files imported:
+#### Files imported:
 
 * SFU_Escapement_PSF.xlsx
   - The Reynolds's Lab main excel file
@@ -133,7 +140,7 @@ to the dataset.
   - Same as DFO_GFE_IDs_list_1.xlsx and DFO_GFE_IDs_list_2.xlsx but with all the streams
 
 
-## File exported:
+#### Files exported:
 
 * **3_data_extra_Reynolds_lab_DATE.csv**  (NOT INTEGRATED YET)
   - Fix certain data points of the original file
@@ -143,9 +150,9 @@ to the dataset.
   - Data points in their dataset originating from NUSEDS but with a different value
 
 
-# 4_datasets_for_PSE.R
+### 4_datasets_for_PSE.R
 
-## Files imported:
+#### Files imported:
 
 * **2_nuseds_cuid_streamid_nuseds_DATE.csv**
   - File produced in 2_nuseds_cuid_streamid.R
@@ -166,7 +173,7 @@ to the dataset.
   - Dataset generated in its own repository
 
 
-## File exported:
+#### Files exported:
 
 *  **dataset2_spawner_surveys_DATE.csv** (previously dataset_1part2_DATE.csv)
   - Remove TBR, Columbia and Yukon from 2_Nuseds_cuid_streamid_DATE

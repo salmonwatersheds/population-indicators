@@ -1,29 +1,28 @@
 
 This sub-folder concerns the integration of stream-level spawner data for the PSE.
-The goal of the script is to import, clean and format the spawner data from the
+The goal of the scripts is to import, clean and format the spawner data from the
 New Salmon Escapement Database System (NuSEDS; https://open.canada.ca/data). The 
-data is contained in two datasets: all_areas_nuseds (NuSEDS) and 
-conservation_unit_system_sites (CUSS).
+data is contained in two datasets: **all_areas_nuseds** (NuSEDS) and 
+**conservation_unit_system_sites** (CUSS).
 
-Note that the data for steelhead (SH) and the regions Columbia, Transboundary (TBR)
-and Yukon is processed by other code in their respective repositories. The reason
-being that the source of the data and its treatment is more complex and deserves 
-specific implementation. These data are integrated to the rest of the dataset
-in script **4_datasets_for_PSE.R**.
+The spawner data for steelhead (SH) and the regions Columbia, Transboundary (TBR)
+and Yukon is processed outside of this github repository because the sources and
+treatment of this data is more complex. These data are integrated to the rest of 
+the dataset processed in this sub-directory in script **4_datasets_for_PSE.R**.
 
 Complementary data was provided by the Reynolds' Lab (SFU). It is processed in its
-own script **3_data_extra_Reynolds_lab.R** and it integrated to the rest of the 
+own script **3_data_extra_Reynolds_lab.R** and it is integrated to the rest of the 
 dataset in  script **4_datasets_for_PSE.R**.
 
 Below is the list of files imported and exported in each R script with relevant 
 information. The files exported in bold are the ones imported to a script in a 
 subsequent step of the workflow.
 
-All the files produced are exported in the PFS's dropbox repository 
-(except dataset2_spawner_surveys_dummy.csv). The file dataset2_spawner_surveys_dummy.csv
-is exported in the local /output; it contains the first two rows of 
-dataset2_spawner_surveys_DATE.csv. The goal is to push the file to github to 
-record the details of the update.
+All the files produced are exported in the PFS's dropbox repository, except 
+dataset2_spawner_surveys_dummy.csv. The latter is exported in the local /output
+and contains the first two rows of the final dataset2_spawner_surveys_DATE.csv.
+The goal is to push the file to github to record the details of the updates made
+to the dataset.
 
 
 # 1_nuseds_collation.R

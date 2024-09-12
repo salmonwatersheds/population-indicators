@@ -1515,6 +1515,13 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
                                                                     species_all = species_all)
   }
   
+  if(is.na(conservationunits_decoder)[1]){
+    conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                       fromDatabase = F,
+                                                       update_file_csv = F,
+                                                       wd = wd_pop_indic_data_input_dropbox)
+  }
+  
   # List CUs with high exploitation/low productivity & cyclic dominance
   # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1700673066049189?thread_ts=1700604709.505309&cid=CJ5RVHVCG
   
@@ -1533,25 +1540,17 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
   #   out <- conservationunits_decoder$cuid[conservationunits_decoder$cu_name_pse == cu]
   # })
   
-  highExploit_lowProd <- data.frame(
-    region = c(rep("Fraser",7),rep("Vancouver Island & Mainland Inlets",2)),
-    species_name = c(rep("Coho",5),rep("Chinook",4)),
-    #species_abbr = c(rep("CO",5),rep("CK",4)), 
-    cuid = c(705,749,707,709,708,303,315,322,321),
-    cu_name_pse = c("Fraser Canyon","Interior Fraser","Lower Thompson","North Thompson",
-                "South Thompson","Lower Fraser River (Fall 4-1)","Shuswap River (Summer 4-1)",
-                "East Vancouver Island-Cowichan and Koksilah (Fall x-1)",
-                "East Vancouver Island-Goldstream (Fall x-1)"))
+  # List of CU extinct
+  cuid_extinct <- c(705,749,707,709,708,303,315,322,321)
   
+  # Find relevant information in conservationunits_decoder
+  cond <- conservationunits_decoder$cuid %in% cuid_extinct
+  highExploit_lowProd <- conservationunits_decoder[cond,c("region","species_name","cuid","cu_name_pse")]
+  
+  #' Modification 1:
+  #' All Chinook in Fraser and VIMI are low productivity/high exploitation
   #' As of Population meeting of 23/04/2014
   #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
-  #' --> all Chinook in Fraser and VIMI are low productivity/high exploitation
-  if(is.na(conservationunits_decoder)[1]){
-    conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
-                                                       fromDatabase = F,
-                                                       update_file_csv = F,
-                                                       wd = wd_pop_indic_data_input_dropbox)
-  }
   cond <- conservationunits_decoder$species_name == "Chinook" &
     conservationunits_decoder$region %in% c("Vancouver Island & Mainland Inlets",
                                             "Fraser")
@@ -1613,7 +1612,9 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
 #' TODO: this list should be provided by pulling from another dataset (380?)
 #' cf. PSE Data Update 2024-09-05 meeting
 #' --> have a csv file 
-cu_extinct_fun <- function(write_file = F, wd = NA){
+cu_extinct_fun <- function(write_file = F, wd = NA, 
+                           conservationunits_decoder = NA, 
+                           wd_pop_indic_data_input_dropbox = NA){
   
   # To find the corresponding regions from conservationunits_decoder
   # sapply(X = cuid, FUN = function(cu){
@@ -1630,15 +1631,18 @@ cu_extinct_fun <- function(write_file = F, wd = NA){
   #   out <- conservationunits_decoder$cu_name_pse[conservationunits_decoder$cuid == cu]
   # })
   
-  cu_extinct <- data.frame(
-    region = c(rep("Fraser",8),rep("Vancouver Island & Mainland Inlets",1)),
-    species = c(rep("Lake sockeye",8),rep(NA,1)),
-    species_abbr = c(rep("SEL",8),rep(NA,1)), 
-    cuid = c(760,756,757,753,758,761,763,759,936),
-    cu_name_pse = c("Adams-Early Summer","Alouette-Early Summer","Coquitlam-Early Summer",
-                    "Fraser-Early Summer","Kawkawa-Late","Momich-Early Summer",
-                    "North Barriere-Early Summer","Seton-Summer","Village Bay"))
+  # 
+  if(is.na(conservationunits_decoder)[1]){
+    conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                       fromDatabase = F,
+                                                       update_file_csv = F,
+                                                       wd = wd_pop_indic_data_input_dropbox)
+  }
   
+  #
+  cuid_list <- c(760,756,757,753,758,761,763,759,936)
+  cond <- conservationunits_decoder$cuid %in% cuid_list
+  cu_extinct <- conservationunits_decoder[cond,c("region","species_name","cu_name_pse","cuid")]
   cu_extinct$source <- cu_extinct$comment <- NA
   cu_extinct$keep <- T
   
@@ -1667,6 +1671,18 @@ cu_extinct_fun <- function(write_file = F, wd = NA){
   cu_extinct$keep[cond] <- T     # we keep it because it is still extinct, it will be removed in the workflow
   # because it is not in conservation_units_decoder.csv
   cu_extinct$source[cond] <- "https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1710887067544039"
+  
+  # Update 2024-09-12
+  # cuid 761 in "Endangered" in last COSEWIC 
+  # Dataset380_Sep52024.xlsx
+  # https://www.dropbox.com/scl/fi/08xe29reciifybwpng1v9/Dataset380_Sep52024.xlsx?rlkey=r54b2mrz7rcjsh9qsnndgtngz&dl=0
+  # cf. Population Team meeting note from that date
+  cuid_toRemove <- c(761)
+  cond <- cu_extinct$cuid %in% cuid_toRemove
+  cu_extinct$comment[cond] <- "Listed as 'endangered' in COSEWIC"
+  cu_extinct$keep[cond] <- F   
+  cu_extinct$source[cond] <- "https://www.dropbox.com/scl/fi/08xe29reciifybwpng1v9/Dataset380_Sep52024.xlsx?rlkey=r54b2mrz7rcjsh9qsnndgtngz&dl=0"
+  
   
   if(write_file){
     if(is.na(wd)){

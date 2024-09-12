@@ -175,13 +175,12 @@ See the [Tech Report: 4.1.1.1. Spawner Surveys](https://bookdown.org/salmonwater
 
 #### Files exported:
 
-*  **dataset2_spawner_surveys_DATE.csv** (previously dataset_1part2_DATE.csv)
+* **dataset2_spawner_surveys_DATE.csv** (previously dataset_1part2_DATE.csv)
   - Remove TBR, Columbia and Yukon from 2_Nuseds_cuid_streamid_DATE
-  - Add the data for SH, Columbia, TBR and Yukon to 2_Nuseds_cuid_streamid_DATE 
-    from their respective alternative sources
+  - Add the data for SH, Columbia, TBR and Yukon to 2_Nuseds_cuid_streamid_DATE from their respective alternative sources
   - Combine 2_Nuseds_cuid_streamid with 3_data_extra_Reynolds_lab_DATE.csv (NOT INTEGRATED YET)
 
-*  dataset2_spawner_surveys_dummy.csv
+* dataset2_spawner_surveys_dummy.csv
   - The file contains the first two rows of dataset2_spawner_surveys_DATE.csv
 
 

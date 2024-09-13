@@ -1540,11 +1540,11 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
   #   out <- conservationunits_decoder$cuid[conservationunits_decoder$cu_name_pse == cu]
   # })
   
-  # List of CU extinct
-  cuid_extinct <- c(705,749,707,709,708,303,315,322,321)
+  # List of CU with high exploitation or low productivity
+  cuid_here <- c(705,749,707,709,708,303,315,322,321)
   
   # Find relevant information in conservationunits_decoder
-  cond <- conservationunits_decoder$cuid %in% cuid_extinct
+  cond <- conservationunits_decoder$cuid %in% cuid_here
   highExploit_lowProd <- conservationunits_decoder[cond,c("region","species_name","cuid","cu_name_pse")]
   
   #' Modification 1:

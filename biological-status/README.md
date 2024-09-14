@@ -1,35 +1,22 @@
 # biological-status
 
-July 18, 2023
-
 ## Overview
+
+
+This sub-folder concerns the calculation of the CU-level biological. The goal of the scripts is to (1) fit Hierarchical Bayesian spawner-recruit model (HBSRM) (**1a_HBSRM.R**), estimate spawner-recruit benchmarks (sr), and calculate probability of different status outcomes (**2a_benchmarks_HBSRM.R**); (2) estimate percentile benchmarks (**1b_benchmarks_percentiles.R**); (3) determine the final biological status for all the CUs and export the two final datasets **datasets101_biological_status.csv** and **datasets102_benchmarks.csv** (**3_biological_status.R**).
+
+Below is the list of files imported and exported in each R script with relevant information.
+
+All the files produced are exported in the PFS's dropbox repository. The final datasets **datasets101_biological_status.csv** and **datasets102_benchmarks.csv** are also exported locally in the /output folder and are pushed to github when updated. 
 
 See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#benchmarks-biostatus) for detailed methodology for biological status assessments.
 
 
-Below is the list of files imported and exported in each R script with relevant 
-information. The files exported in bold are the ones imported to a script in a 
-subsequent step of the workflow. TO EDIT
+## Scripts & files
 
+### 1a_HBSRM.R
 
-## Files
-
-#### `code`
-
-Contains code to
-* fit Hierarchical Bayesian spawner-recruit model (HBSRM): **1a_HBSRM.R**
-* estimate spawner-recruit benchmarks (sr) and calculate probability of different status outcomes: **2a_benchmarks_HBSRM.R**
-* estimate percentile benchmarks: **1b_benchmarks_percentiles.R**
-* determine the final biological status for all the CUs and export the two final datasets (**datasets101_biological_status.csv**, **datasets102_benchmarks.csv**): **3_biological_status.R**
-
-#### `input`
-
-TO KEEP ???
-
-Contains spawner-recruit datasets and priors used in HBM fitting. The data file was historically a .txt file with initial rows detailing `#MaxStocks` and the priors on `b`: `prSmax` and `prCV`. I suggest these priors get moved to a separate file. In that case the data files for each region and species would be, e.g., `SRdata_fraser-pink.csv` or `SRdata-cc-sockeye.csv` with fields for `CUID`, `brood_year`, `spawners`, `recruits`, and `exploitation_rate`. The priors would `SRpriors_fraser-pink.csv` or `SRpriors-cc-sockeye.csv` with fields for `prSmax` and `prCV`. 
-
-
-#### **1a_HBSRM.R**:
+#### Files imported:
 
 * recruitsperspawner.csv
   - List of CUs with available estimated abundances of spawner and recruits (the data is processed elsewhere)
@@ -42,8 +29,24 @@ Contains spawner-recruit datasets and priors used in HBM fitting. The data file 
   - The file is created in **checks_fixes.R**
   - The original values of these priors come from the **SRdata.txt** files located elsewhere (in the "HBM and status" sub-folders in each region-specific folders of the PSF dropbox).
 
+#### Files exported:
 
-#### **2a_benchmarks_HBSRM.R**:
+* REGION_SPECIES_SR_matrices.rds
+  - List of matrices containing the abundance of spawner and recruits for each CUs of each species in each region
+
+
+* REGION_SPECIES_HBSRM_posteriors_priorShift.rds
+  - Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
+
+
+* REGION_SPECIES_HBSRM_convDiagnostic.csv
+  - Gelman and Rubin (1992)'s convergence diagnostic of the MCMC output
+
+
+
+### 2a_benchmarks_HBSRM.R
+
+#### Files imported:
 
 * cuspawnerabundance.csv
   - List of CUs with estimated spawner abundance data
@@ -61,7 +64,19 @@ Contains spawner-recruit datasets and priors used in HBM fitting. The data file 
   - Created in **1a_HBSRM.R**
 
 
-#### **1b_benchmarks_percentiles.R**:
+#### Files exported:
+
+* REGION_SPECIES_benchmarks_summary_HBSRM.csv
+  - Estimated spawner-recruits benchmarks values and their confidence intervals 
+
+* REGION_SPECIES_biological_status_HBSRM.csv
+  - Calculated probability of different status outcomes
+
+
+
+### 1b_benchmarks_percentiles.R
+
+#### Files imported:
 
 * cuspawnerabundance.csv
   - List of CUs with estimated spawner abundance data
@@ -71,12 +86,20 @@ Contains spawner-recruit datasets and priors used in HBM fitting. The data file 
   - List of CUs present in the PSE database
 
 
-#### **3_biological_status.R**:
+#### Files exported:
+
+* REGION_SPECIES_benchmarks_summary_percentiles.csv
+  - Estimated percentile benchmarks values and their confidence intervals 
+
+* REGION_SPECIES_biological_status_percentiles.csv
+  - Biological status outcomes
 
 
+### 3_biological_status.R
 
+#### Files imported:
 
-#' Files imported:
+WORK IN PROGRESS
 
 * conservationunits_decoder.csv
   - List of CUs present in the PSE database
@@ -107,9 +130,7 @@ Contains spawner-recruit datasets and priors used in HBM fitting. The data file 
   - Created in **1b_benchmarks_percentiles.R**
 
 
-
-#' 
-#' Files produced: 
+#### Files exported: 
 * Biological_status_HBSR_Percentile_all.csv    # should become dataset_101_output I think
 * Benchmarks_HBSR_Percentile_all.csv           # 
 * data/code_PSF_Status.csv
@@ -120,44 +141,6 @@ Contains spawner-recruit datasets and priors used in HBM fitting. The data file 
 * output/archive/dataset102_benchmarks_YYYY-MM-DD.csv        # 
 
 CUs_highExploitation_lowProductivity.csv
-
-
-
-#### `output`
-
-
-#### **1a_HBSRM.R**:
-
-* **REGION_SPECIES_SR_matrices.rds**
-  - List of matrices containing the abundance of spawner and recruits for each CUs of each species in each region
-
-
-* **REGION_SPECIES_HBSRM_posteriors_priorShift.rds**
-  - Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
-
-
-* REGION_SPECIES_HBSRM_convDiagnostic.csv
-  - Gelman and Rubin (1992)'s convergence diagnostic of the MCMC output
-  
-  
-#### **2a_benchmarks_HBSRM.R**:
-
-* **REGION_SPECIES_benchmarks_summary_HBSRM.csv**
-  - Estimated spawner-recruits benchmarks values and their confidence intervals 
-
-* **REGION_SPECIES_biological_status_HBSRM.csv**
-  - Calculated probability of different status outcomes
-
-
-#### **1b_benchmarks_percentiles.R**:
-
-* **REGION_SPECIES_benchmarks_summary_percentiles.csv**
-  - Estimated percentile benchmarks values and their confidence intervals 
-
-* **REGION_SPECIES_biological_status_percentiles.csv**
-  - Biological status outcomes
-
-
 
 
 

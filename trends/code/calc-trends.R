@@ -2,22 +2,20 @@
 # Calculation of long-term and 3-generation trends in CU-level spawner abundance
 # 
 #' Inputs: 
-#' - dataset1cu_output.csv    # = dataset_1part1_DATE.csv
-#' - dataset103_output.csv    # just to access the format
-#' - dataset202_output.csv    # just to access the format
-#' - dataset391_output.csv    # just to access the format
+#' - cuspawnerabundance.csv                          # CU-level spawner abundance data
+#' - conservationunits_decoder.csv                   # 
 #' 
+#'  
 #' Outputs: 
-#' - dataset103_output_DATE.csv    
-#' - dataset202_output_DATE.csv    
-#' - dataset391_output_DATE.csv    
+#' - dataset103_log_smoothed_spawners_YYY-MM-DD.csv  # the smoothed log-transformed spawner abundance data
+#' - dataset202_allgen_trends_YYY-MM-DD.csv          # the trend over the entire time series
+#' - dataset391_threegen_trends_YYY-MM-DD.csv        # the trend over the last three generations
 #
 # Related Tech-Report documentation:
 # https://bookdown.org/salmonwatersheds/state-of-salmon/methods-results.html#25_Quantifying_change
 #
-# Stephanie Peacock
-# January 17, 2024
 ###############################################################################
+
 
 # Steph's notes
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1713593152783499
@@ -71,7 +69,7 @@ library(zoo) # for rollmean function
 figure_print <- F
 
 #
-# Import datasets -------- 
+# Import datasets --------
 #
 
 # Import the name of the different datasets in the PSF database and their 
@@ -81,10 +79,8 @@ datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
 
 
-#'* Import dataset1cu_output.csv:  CU-level spawner abundance data *
-#' = dataset_1part2_DATE.csv
-# spawners <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_dataset1cu_output")
-spawners <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[15],
+#'* Import cuspawnerabundance:  CU-level spawner abundance data *
+spawners <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
                                   fromDatabase = fromDatabase,
                                   update_file_csv = update_file_csv,
                                   wd = wd_pop_indic_data_input_dropbox)
@@ -106,36 +102,6 @@ cu_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CS
 
 cu_decoder <- cu_decoder  %>%
   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
-
-
-#'* Import dataset103_output.csv *
-#' To access structure
-#' Average Spawners per Generation for Salmon and Steelhead Conservation Units
-dataset103_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
-                                           fromDatabase = fromDatabase,
-                                           update_file_csv = update_file_csv,
-                                           wd = wd_pop_indic_data_input_dropbox)
-head(dataset103_output)
-
-
-#'* Import dataset202_output.csv *
-#' To access structure 
-#' Trends in Spawner Abundance (All Generations) for Salmon and Steelhead Conservation Units
-dataset202_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[17],
-                                           fromDatabase = fromDatabase,
-                                           update_file_csv = update_file_csv,
-                                           wd = wd_pop_indic_data_input_dropbox)
-head(dataset202_output)
-
-
-#'* Import dataset391_output.csv *
-#' To access structure 
-#' Trends in Spawner Abundance (Three Generations) for Salmon and Steelhead Conservation Units
-dataset391_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[10],
-                                           fromDatabase = fromDatabase,
-                                           update_file_csv = update_file_csv,
-                                           wd = wd_pop_indic_data_input_dropbox)
-head(dataset391_output)
 
 
 #
@@ -163,14 +129,14 @@ cu_list <- cu_list %>% left_join(
 
 dataset103_output_new <- dataset202_output_new <- dataset391_output_new <- NULL
 
+scale_log <- F # for the figures
 
-scale_log <- T
 for(i in 1:nrow(cu_list)){
   # i <- 8
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
   # i <- which(cu_list$species_abbr == "CO" & cu_list$cu_name_pse == "North Thompson")
-  # i <- which(cu_list$cuid == 573)
+  # i <- which(cu_list$cuid == 734)
   # i <- which(grepl("Pink",cu_list$species_name))[1]
   
   region <- cu_list$region[i]
@@ -246,7 +212,7 @@ for(i in 1:nrow(cu_list)){
   year.span <- c(min(x[!is.na(y_log_smooth)]):max(x[!is.na(y_log_smooth)]))
   percent_change_total <- exp(lm_LT$coefficients[2] * (length(year.span) - 1)) - 1  # total % change in time period
   percent_change_total <- round(percent_change_total * 100,1)
-  percent_change <- exp(lm_LT$coefficients[2]) - 1                              # to convert to % change / yr
+  percent_change <- exp(lm_LT$coefficients[2]) - 1                              # % change / yr
   percent_change_2dec <- round(percent_change * 100,2)   # for the figure
   percent_change <- round(percent_change * 100,1)
   

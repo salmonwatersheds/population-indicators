@@ -348,8 +348,8 @@ datasetsNames_database_fun <- function(){
   out_df$index <- 1:nrow(out_df)
   
   # Correction: duplicate of 2
-  cond <- out_df$index != 15
-  out_df <- out_df[cond]
+  # cond <- out_df$index != 15
+  # out_df <- out_df[cond]
   
   return(out_df)
 }

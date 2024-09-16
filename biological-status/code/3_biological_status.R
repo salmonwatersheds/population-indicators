@@ -4,21 +4,21 @@
 #' define the corresponding psf_status_code and psf_status fields.
 #' 
 #' Files imported:
-#' - REGION_SPECIES_biological_status_HBSRM.csv (created in 2a_benchmarks_HBSRM.R)
-#' - REGION_SPECIES_biological_status_percentiles.csv (created in 1b_benchmarks_percentiles.R)
-#' - conservationunits_decoder.csv (from database)
-#' - dataset390_output.csv (from database)
-#' - cuspawnerabundance.csv (from database)
+#' - REGION_SPECIES_biological_status_HBSRM.csv        (created in 2a_benchmarks_HBSRM.R)
+#' - REGION_SPECIES_benchmarks_summary_HBSRM.csv       (created in 2a_benchmarks_HBSRM.R)
+#' - REGION_SPECIES_biological_status_percentiles.csv  (created in 1b_benchmarks_percentiles.R)
+#' - REGION_SPECIES_benchmarks_summary_HBSRM.csv       (created in 1b_benchmarks_percentiles.R)
+#' - conservationunits_decoder.csv                     (from database)
+#' - dataset390_output.csv                             (from database) CU-level data quality
+#' - cuspawnerabundance.csv                            (from database) observed spawner abundance
+#' - code_PSF_Status.csv                               (from database) different biostatus values and associated code
+#' - cu_highExploit_lowProd.csv                        The CUs with high exploitation or low productivity (the dataframe is generated in function.R for now but will eventually be imported)
 #' 
 #' Files produced: 
-#' - Biological_status_HBSR_Percentile_all.csv    # should become dataset_101_output I think
-#' - Benchmarks_HBSR_Percentile_all.csv           # 
-#' - data/code_PSF_Status.csv
-#' - population-indicators/data-input/CUs_highExploitation_lowProductivity.csv
-#' - output/dataset101_biological_status.csv #
-#' - output/dataset102_benchmarks.csv        # 
 #' - output/archive/dataset101_biological_status_YYYY-MM-DD.csv #
 #' - output/archive/dataset102_benchmarks_YYYY-MM-DD.csv        # 
+#' - output/dataset101_biological_status.csv # same as above but exported locally to be pushed to github
+#' - output/dataset102_benchmarks.csv        # # same as above but exported locally to be pushed to github
 #' 
 #' Resources/Notes:
 #' - Steph's diagram for decision rules

@@ -1,22 +1,18 @@
 
 
-#' TODO FINISH CLEANING
-
 #'******************************************************************************
-#' The goal of the script is to analyse the biological status.
+#' The goal of the script is to compare the new *versus* previous biological status.
 #' 
-#' Files imported (from ):
-#' - region_species_biological_status.csv (created in benchmarks_HBSRM.R)
-#' - Biological_status_HBSR_Percentile_all.csv
+#' Files imported:
+#' - conservationunits_decoder.csv                     (from database)
+#' - dataset390_output.csv                             (from database) CU-level data quality
+#' - cuspawnerabundance.csv                            (from database) observed spawner abundance
+#' - biostatus_legacy_appendix4_2024-09-05.csv         The previous biological status values, benchmarks are other relevant information
+#' - output/archive/dataset101_biological_status_YYYY-MM-DD.csv # final biostatus values ; produced in 3_biological_status.R
+#' - output/archive/dataset102_benchmarks_YYYY-MM-DD.csv        # benchmark values  and other relevant information; produced in 3_biological_status.R
 #' 
 #' Files produced: 
-#' - Biological_status_diff_SMsySmsy80_percent05075.csv (biological_status_merge_diff)
-#' - comparison_bioStatusPercentiles_75_50_region.jpeg
-#' - comparison_bioStatusPercentiles_75_50_species.jpeg
-#' - comparison_bioStatus_Smsy_Smsy80_region.jpeg
-#' - comparison_bioStatus_Smsy_Smsy80_species.jpeg
-#' - comparison_bioStatus_HBSR_Percentiles.jpeg
-#' - data/code_PSF_Status.csv
+#' - output/archive/biostatus_new_old_differences_YYYY-MM-DD.csv  # 
 #' 
 #' Notes:
 #' - 

@@ -3,7 +3,7 @@
 ## Overview
 
 
-This sub-folder concerns the calculation of the CU-level biological. The goal of the scripts is to (1) fit Hierarchical Bayesian spawner-recruit model (HBSRM) (**1a_HBSRM.R**), estimate spawner-recruit benchmarks (sr), and calculate probability of different status outcomes (**2a_benchmarks_HBSRM.R**); (2) estimate percentile benchmarks (**1b_benchmarks_percentiles.R**); (3) determine the final biological status for all the CUs and export the two final datasets **datasets101_biological_status.csv** and **datasets102_benchmarks.csv** (**3_biological_status.R**).
+This sub-folder concerns the calculation of the CU-level biological status. The goal of the scripts is to (1) fit the Ricker's model to spawner-recruit data using a Hierarchical Bayesian framework (HBSRM) (**1a_HBSRM.R**), estimate spawner-recruit benchmarks (sr), and calculate the probabilities of different biostatus outcomes (i.e. "poor", "fair" or "good"; **2a_benchmarks_HBSRM.R**); (2) estimate percentile benchmarks (**1b_benchmarks_percentiles.R**); (3) determine the final biological status for all the CUs and export the two final datasets **datasets101_biological_status.csv** and **datasets102_benchmarks.csv** (**3_biological_status.R**); compare the new *versus* old biostatus (**4_biostatus_comparison.R**).
 
 Below is the list of files imported and exported in each R script with relevant information.
 
@@ -17,6 +17,8 @@ See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds
 ### 1a_HBSRM.R
 
 #### Files imported:
+
+The goal of the script is to fit a HBSRM to the recruit-per-spawner data to all the CUs of a species in a given region.
 
 * recruitsperspawner.csv
   - List of CUs with available estimated abundances of spawner and recruits (the data is processed elsewhere)
@@ -36,7 +38,7 @@ See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds
 
 
 * REGION_SPECIES_HBSRM_posteriors_priorShift.rds
-  - Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
+  - Posterior distributions of the HBSRM parameters `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using the Markov Chain Monte Carlo (MCMC) sampling procedure.
 
 
 * REGION_SPECIES_HBSRM_convDiagnostic.csv
@@ -45,6 +47,8 @@ See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds
 
 
 ### 2a_benchmarks_HBSRM.R
+
+The goal of the script is to determine the upper (80% S_MSY) and 
 
 #### Files imported:
 
@@ -56,7 +60,7 @@ See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds
   - List of CUs present in the PSE database
 
 * REGION_SPECIES_HBSRM_posteriors_priorShift.rds
-  - Posterior distributions of the HBSRM `a_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
+  - Posterior distributions of the HBSRM a\_i or `a\_i`, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using Markov Chain Monte Carlo (MCMC) sampling procedure.
   - Created in **1a_HBSRM.R**
 
 * REGION_SPECIES_SR_matrices.rds (created in 1a_HBSRM.R)

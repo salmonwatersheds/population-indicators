@@ -38,7 +38,7 @@ The goal of the script is to fit a HBSRM to the recruit-per-spawner data to all 
 
 
 * REGION_SPECIES_HBSRM_posteriors_priorShift.rds
-  - Posterior distributions of the HBSRM parameters $a_i$, `b_i`, `mu_a` and `sigma_b_i` obtained from fitting the model to data using the Markov Chain Monte Carlo (MCMC) sampling procedure.
+  - Posterior distributions of the HBSRM parameters $a_i$, $b_i$, $mu_a$ and $sigma_b_i$ obtained from fitting the model to data using the Markov Chain Monte Carlo (MCMC) sampling procedure.
 
 
 * REGION_SPECIES_HBSRM_convDiagnostic.csv
@@ -48,7 +48,9 @@ The goal of the script is to fit a HBSRM to the recruit-per-spawner data to all 
 
 ### 2a_benchmarks_HBSRM.R
 
-The goal of the script is to determine the upper (80% S_MSY) and 
+The goal of the script is to determine the upper (80% of $S_{MSY}$ $S_M_S_Y$) and 
+
+
 
 #### Files imported:
 

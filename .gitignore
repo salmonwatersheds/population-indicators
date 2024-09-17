@@ -58,6 +58,22 @@ figures/
 
 #biological-status/data/
 biological-status/Bayes_SR_model.txt
+biological-status/HBSRM_Ricker.txt
+biological-status/HBSRM_Larkin_1.txt
+biological-status/HBSRM_Larkin_2.txt
+biological-status/HBSRM_Larkin_3.txt
+biological-status/HBSRM_Larkin_12.txt
+biological-status/HBSRM_Larkin_13.txt
+biological-status/HBSRM_Larkin_23.txt
+biological-status/HBSRM_Larkin_123.txt
+
+biological-status/code/1a_HBSRM_cyclic.R
+biological-status/code/2a_benchmarks_HBSRM_cyclic.R
+biological-status/code/4_analyses.R
+biological-status/code/benchmarks_comparison.R
+biological-status/code/checks_fixes.R
+biological-status/code/sensitivity_analyses.R
+biological-status/code/parallel_stuff.R
 
 biological-status/figures/
 biological-status/output_OLD/

@@ -9,7 +9,7 @@ in formatting the dataset sent by DFO (**PSF_modified_SEP_releases.xlsx** file) 
 the PSE.
 
 The data for TBR and SH is created elsewhere and uploaded to the database 
-separately. However, it is imported here to edit the field "location_name_pse", 
+separately. However, it is imported here to edit the field `location_name_pse`, 
 and exported again. This convoluted workflow will eventually be removed and 
 the hatchery data will be exported in one unique (**PSF_modified_SEP_releases.xlsx**)
 file.
@@ -50,4 +50,12 @@ See the [Tech Report: 4.1.1.3 Hatchery Releases](https://bookdown.org/salmonwate
 
 * dataset384_hatchery_releases_TBR_YYYY-MM-DD.csv
   - The edited dataset384_hatchery_releases_YYYY-MM-DD.csv for TBR
+
+
+### plotting-hatchery-releases.R
+
+The goal fo the script was to produce figures for internal checks.
+
+
+
 

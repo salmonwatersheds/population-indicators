@@ -12,7 +12,7 @@ See the [Tech Report: 4.1.1.5 Run Timing](https://bookdown.org/salmonwatersheds/
 
 ### fraser-pink.R
 
-The goal of the script is estimate Fraser pink salmon mean and sd of run timing 
+The goal of the script is to estimate Fraser pink salmon mean and sd of run timing 
 from daily passage.
 
 #### Files imported:

@@ -1,23 +1,28 @@
 
 #'******************************************************************************
-#' The goal of the script is to import the PSF_modified_SEP_releases.xlsx file 
-#' from DFO and organise it to match the structure in
-#' SWP_hatchery_data_template.xlsx.
+#' The goal of the script is to update the hatchery release data for all region 
+#' and species except Transboundary (TBR) and steelhead (SH). The script consists
+#' in formatting the dataset sent by DFO (PSF_modified_SEP_releases.xlsx file) for
+#' the PSE.
 #' 
-#' #' Files imported:
+#' The data for TBR and SH is created elsewhere and uploaded to the database 
+#' separately. However, it is imported here to edit the field "location_name_pse", 
+#' and exported again. This convoluted workflow will eventually be removed and 
+#' the hatchery data will be exported in one unique (PSF_modified_SEP_releases.xlsx)
+#' file.
 #' 
-#' - PSF_modified_SEP_releases_2023.xlsx    # (from DFO)
-#' - conservationunits_decoder.csv          # (from PSE database)
-#' - SWP_hatchery_data_template.xlsx        # use for formatting the output dataset
+#' 
+#' Files imported:
+#' - conservationunits_decoder.csv               # List of CUs in the PSE
+#' - PSF_modified_SEP_releases_2023.xlsx         # Source file sent by DFO to Eric
+#' - SWP_hatchery_data_template.xlsx             # use for formatting the output dataset
+#' - dataset384_hatchery_releases_YYYY-MM-DD.csv # The hatchery release dataset downloaded from the database (previously dataset384_output.csv)
 #' 
 #' Files exported:
-#' 
-#' - SWP_hatchery_data_DATE.xlsx #
-#' - cuid_broodstock_multi.csv   # to check cases where there are multiple cuid_broodstock
-#'                               # for a same release_site_name-release_stage-release_site_CUID-release_date
-#'                               # combination.
-#' 
-#' 
+#' - SWP_hatchery_data_DATE.xlsx  # The formatted and edited hatchery release data
+#' - cuid_broodstock_multi.csv    # to check cases where there are multiple cuid_broodstock for a same release_site_name-release_stage-release_site_CUID-release_date combination.
+#' - dataset384_hatchery_releases_SH_YYYY-MM-DD.csv   # the edited dataset384_hatchery_releases_YYYY-MM-DD.csv for SH
+#' - dataset384_hatchery_releases_TBR_YYYY-MM-DD.csv  #  the edited dataset384_hatchery_releases_YYYY-MM-DD.csv for TBR
 #' 
 #'******************************************************************************
 
@@ -142,6 +147,7 @@ filePSF_l <- hatchery_template_fun(wd_data = wd_data,
 #
 #
 # Create SWP_hatchery_data_DATE.xlsx  ----------
+#
 #' Create a dataframe with the name of the columns in PSF_modified_SEP_releases_DATE.xlsx
 #' and corresponding column names and sheets in the survey file SWP_hatchery_data_...xlsx
 matchCol_df <- matching_columns_fun(wd_data = wd_data,
@@ -157,7 +163,7 @@ filePSFnew_l <- filePSF_l
 cuid_broodstock_multi <- NULL
 
 # Fill filePSF_l with new data (takes a couple minutes)
-for(sheet_i in 2:length(names(filePSF_l))){   # The 1st sheet is to be filled by hand or not at all (QUESTION)
+for(sheet_i in 2:length(names(filePSF_l))){   # Skip the 1st sheet
   
   # sheet_i <- 4
   sheetName <- names(filePSF_l)[sheet_i]
@@ -448,6 +454,7 @@ colOrder <- c("species","release_site_latitude","release_site_longitude","facili
 # write.csv(cuid_broodstock_multi[,colOrder],paste0(wd_output,"/cuid_broodstock_multi.csv"),
 #           row.names = F)
 
+#
 # Correct name locations -------
 #
 
@@ -596,8 +603,6 @@ for(s in unique(fields_toCorrect$sheet)){
 # - Br 100 Swamp – Shows up in the Salmon River Estuary (-50.378061, -125.944523) in JSt. The lat/longs are not always exact locations where the fish are released. It looks like it was only used for 1999 Salmon R coho. It could be a bridge?
 # - Little Edith Lake C – no lat/long exists in EPAD for this. Looks like it was only used for 1996 Quatse R coho. I want to say it’s a Channel off of the lake? It is connected to the Little Edith Lake geofeature_ID.
 
-
-
 #
 # Place release sites and facilities without coordinates in new sheets  ------
 #
@@ -736,7 +741,6 @@ View(unique(data.frame(DataEntry_relase$location_name_pse)))
 cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
 DataEntry_relase <- DataEntry_relase[! DataEntry_relase$cuid_broodstock %in% cuid_toRemove,]
 
-#
 # date <- Sys.Date()
 # date <- gsub(pattern = "-",replacement = "",x = date)
 # write.csv(DataEntry_relase,paste0(wd_output,"/DataEntry_relase_noTBR_",date,".csv"),
@@ -764,7 +768,7 @@ filePSFnew_l <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
 
 #'* Manual fix for Bentinck Arm North *
 # - the change was made by locating "Bentinck Arm North" in Google Map and 
-# minimising the number of digit to modify: adding +2 to the longitude provided
+# minimizing the number of digit to modify: adding +2 to the longitude provided
 # a location vert close to the gogle maps's pin.
 cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bentinck Arm North"
 long_new <- filePSFnew_l$DataEntry_releases$release_site_longitude[cond] + 2
@@ -855,14 +859,14 @@ for(sh_i in 1:length(names(filePSFnew_l))){
 #
 # Edit dataset dataset384_output release_type_pse for Transboundary and steelhead (ONE TIME FIX) -----------
 #
-#' The hatchery data for SH and TBR do not coming from this DFO file but from other
+#' The hatchery data for SH and TBR do not come from this DFO file but from other
 #' sources (ask Eric more about it). This data is processed in the following 
 #' respective folder:
 #' - Hatchery data from TBR:
 #'    - ...X Drive\1_PROJECTS\1_Active\Transboundary\Data & Assessments\transboundary-data 
 #'    - Steph's message about it: https://salmonwatersheds.slack.com/archives/C0196AAR3UZ/p1723737033009499
 #' Hatchery data from SH:
-#'    - ...\X Drive\1_PROJECTS\1_Active\Steelhead\3_Data_Analysis   ??? I sm not sure
+#'    - ...\X Drive\1_PROJECTS\1_Active\Steelhead\3_Data_Analysis   ??? I am not sure
 
 #' The goal will eventually be to combine the DFO data and these other sources 
 #' into one datasets that will be sent to Katy.

@@ -6,10 +6,10 @@
 #' 
 #' Files imported:
 #' - conservationunits_decoder.csv
-#' - 3Life_cycle_timing_by_CU.csv
+#' - 3Life_cycle_timing_by_CU_SKCK_update.csv  # TODO: complete (previously 3Life_cycle_timing_by_CU.csv) 
 #' 
 #' Files exported:
-#' - timing_DATE.csv
+#' - dataset90_run_timing_YYY-MM-DD.csv        # (previously timing_DATE.csv)
 #' - run-timing-data-quality_DATE.csv
 #' 
 # Steph Peacock

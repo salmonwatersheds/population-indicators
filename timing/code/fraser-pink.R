@@ -1,8 +1,12 @@
 ###############################################################################
-# Code to estimate Fraser pink salmon mean and sd of run timing from daily passage
-#
-# September 27, 2023
-# Steph Peacock
+#' Code to estimate Fraser pink salmon mean and sd of run timing from daily passage
+#'
+#' Files imported:
+#' - MissionDailyPassage_PinkSalmon_2009_2023.csv  # provided by Hague, Merran <hague@psc.org> on Sept 7, 2023
+#' 
+#' 
+#' September 27, 2023
+#' Steph Peacock
 ###############################################################################
 library(dplyr)
 

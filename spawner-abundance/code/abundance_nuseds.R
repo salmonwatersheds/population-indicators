@@ -1,15 +1,18 @@
 
 #'******************************************************************************
-#' The goal of the script is to 
-#' 
-#' Previous script: Fraser_salmon_CU_updates.Rmd
+#' The goal of the script is to sum the stream-level observed spawner counts 
+#' (**dataset2_spawner_surveys_YYYY-MM-DD.csv** produced in
+#' **spawner-surveys/code/4_datasets_for_PSE.R**) for each CU and to export the 
+#' results as the field `observed_count` in 
+#' **dataset1_spawner_abundance_YYYY-MM-DD.csv**.
 #' 
 #' 
 #' Files imported (from dropbox):
-#' - dataset_1part2_DATE.csv      # = streamspawnersurveys_output.csv in DB
+#' - streamspawnersurveys_output.csv  # from the database; = dataset2_spawner_surveys_YYYY-MM-DD.csv from spawner-surveys/code/4_datasets_for_PSE.R
+#' - dataset1cu_output.csv            # from the database; = dataset1_spawner_abundance_YYYY-MM-DD.csv from elsewhere
 #' 
 #' Files produced: 
-#' - dataset_1part1_DATE.csv      # = dataset1cu_output.csv in DB ; columns 'estimated_count' and 'total_run' are missing 
+#' - dataset1_spawner_abundance_YYYY-MM-DD.csv # previously - dataset1cu_output.csv; = dataset1cu_output.csv in DB but without columns 'estimated_count' and 'total_run'
 #'  
 #' Note: code taken from 
 #' Transboundary/Data & Assessments/transboundary-data/code/4_pse-spawner-abundance.R
@@ -17,6 +20,9 @@
 #' 
 #' Example of outputed dataset:
 #' https://www.dropbox.com/scl/fi/b9jkohs2wixv48ua78r1w/spawner_abundance_dataset_1part1_2024-03-20.csv?rlkey=dpz1vykjx8c2wezidhl5tkhto&dl=0
+#' 
+#' Code adapted from Previous script: Fraser_salmon_CU_updates.Rmd
+#' 
 #'******************************************************************************
 
 # reset the wd to head using the location of the current script
@@ -63,22 +69,22 @@ library(tidyr)
 # source("code/functions.R")
 
 
-# Observed spawner abundance (osa) 
-
 # Import datasets --------
+#
 
-#'* Import dataset_1part2 from the database, which is streamspawnersurveys_output *
+#'* Import streamspawnersurveys_output from the database *
+#'  dataset2_spawner_surveys_YYYY-MM-DD.csv, previously dataset_1part2.csv
 datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
-dataset_1part2 <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
-                                                     fromDatabase = fromDatabase,
-                                                     update_file_csv = update_file_csv,
-                                                     wd = wd_pop_indic_data_input_dropbox)
-head(dataset_1part2)
+spawnersurveys <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
+                                        fromDatabase = fromDatabase,
+                                        update_file_csv = update_file_csv,
+                                        wd = wd_pop_indic_data_input_dropbox)
+head(spawnersurveys)
 
 # Arrange the rows for easier comparison and check up
-dataset_1part2 <- dataset_1part2  %>% 
+spawnersurveys <- spawnersurveys  %>% 
   arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
                                     "Skeena","Central Coast",
                                     "Vancouver Island & Mainland Inlets",
@@ -87,13 +93,15 @@ dataset_1part2 <- dataset_1part2  %>%
           cu_name_pse,
           year)
 
-#' Alternatively, import the most recent dataset_1part2_DATE.csv dataset produced in 
+#' Alternatively, import the most recent dataset produced in 
 #' /spawner-surveys
-dataset_1part2 <- import_mostRecent_file_fun(wd = wd_output_sp_surveys,
-                                             pattern = "dataset_1part2")
-head(dataset_1part2)
+dataset_1part2 <- import_mostRecent_file_fun(wd = paste0(wd_output_sp_surveys,"/archive"),
+                                             pattern = "dataset_1part2")  # TODO: replace eventually by dataset2_spawner_surveys
+head(spawnersurveys)
 
-#'* Import dataset_1part1 from the database, which is dataset1cu_output *
+
+#'* Import dataset1cu_output.csv from the database *
+#' = dataset1_spawner_abundance_YYYY-MM-DD.csv, previously dataset_1part1
 #' It is imported to see the format of the dataset that need to be exported.
 dataset_1part1_old <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[15],
                                             fromDatabase = fromDatabase,
@@ -111,13 +119,13 @@ dataset_1part1_old <- dataset_1part1_old  %>%
           year)
 
 #
-# Produce dataset_1part1_DATE.csv -----
+# Produce dataset1_spawner_abundance_YYYY-MM-DD.csv (dataset_1part1_DATE.csv) -----
 #
 
-#'* Sum dataset_1part2 per cuid and year *
+#'* Sum spawnersurveys per cuid and year *
 
 # sum stream_observed_count per per year and cuid
-dataset_1part1 <- dataset_1part2 %>%
+dataset_1part1 <- spawnersurveys %>%
   # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
   group_by(region,species_name,cuid,cu_name_pse,year) %>%
   summarise(observed_spawners = sum(stream_observed_count))
@@ -153,25 +161,24 @@ write.csv(dataset_1part1,paste0(wd_output,"/archive/dataset1_spawner_abundance_"
 write.csv(dataset_1part1,paste0(paste0(getwd(),"/output"),"/dataset1_spawner_abundance.csv"), # dataset_1part1_ previously
           row.names = F)
 
-
 #
-# Compare dataset_1part2 from database vs. dropbox repo -----
+# Compare spawnersurveys from database vs. dropbox repo -----
 #' The datasets should be the same except that the database version should have 
 #' values for (1) Yukon, (2) Transboundary and (3) Columbia sockeye (cuid 1300 
-#' streamid 9703) as those were removed from dataset_1part2 in 
+#' streamid 9703) as those were removed from spawnersurveys in 
 #' spawner-surveys/2_nuseds_cuid_streamid.R.
 
-# Import dataset_1part2 from database
+# Import spawnersurveys from database
 datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
-dataset_1part2 <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
+spawnersurveys <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
                                         fromDatabase = fromDatabase,
                                         update_file_csv = update_file_csv,
                                         wd = wd_pop_indic_data_input_dropbox)
 
-# Import dataset_1part2 from dropbox
-dataset_1part2_source <- import_mostRecent_file_fun(wd = wd_output_sp_surveys,
-                                                    pattern = "dataset_1part2")
+# Import spawnersurveys from dropbox
+spawnersurveys_source <- import_mostRecent_file_fun(wd = wd_output_sp_surveys,
+                                                    pattern = "dataset2_spawner_surveys_") # dataset2_spawner_surveys_
 
 # remove Yukon, (2) Transboundary and (3) Columbia sockeye in dataset_1part2
 dataset_1part2 <- dataset_1part2[! dataset_1part2$region %in% c("Transboundary","Yukon"),]
@@ -179,36 +186,36 @@ dataset_1part2 <- dataset_1part2[! dataset_1part2$region %in% c("Transboundary",
 cond <- dataset_1part2$cuid == 1300 &
   !is.na(dataset_1part2$cuid) &
   dataset_1part2$streamid == 9703
-dataset_1part2[cond,]
-dataset_1part2 <- dataset_1part2[!cond,]
+spawnersurveys[cond,]
+spawnersurveys <- spawnersurveys[!cond,]
 
 # Compare the two datasets:
-nrow(dataset_1part2)        # 141471
-nrow(dataset_1part2_source) # 140512
-nrow(dataset_1part2)  - nrow(dataset_1part2_source) # 959
+nrow(spawnersurveys)        # 141471
+nrow(spawnersurveys_source) # 140512
+nrow(spawnersurveys)  - nrow(spawnersurveys_source) # 959
 
-sum(is.na(dataset_1part2$year))        # 548
-sum(is.na(dataset_1part2_source$year)) # 0
+sum(is.na(spawnersurveys$year))        # 548
+sum(is.na(spawnersurveys_source$year)) # 0
 
-# check dataset_1part2 where year is NA
-cond_yr_NA <- is.na(dataset_1part2$year)
-dataset_1part2[cond_yr_NA,]
-
-
+# check spawnersurveys where year is NA
+cond_yr_NA <- is.na(spawnersurveys$year)
+spawnersurveys[cond_yr_NA,]
 
 
-dataset_1part2 <- dataset_1part2[!is.na(dataset_1part2$year),]
 
-rg_cuid_yr <- unique(dataset_1part2[,c("region","cuid","year")])
+
+spawnersurveys <- spawnersurveys[!is.na(spawnersurveys$year),]
+
+rg_cuid_yr <- unique(spawnersurveys[,c("region","cuid","year")])
 nrow(rg_cuid_yr) # 18486
 
-rg_cuid_yr_source <- unique(dataset_1part2_source[,c("region","cuid","year")])
+rg_cuid_yr_source <- unique(spawnersurveys_source[,c("region","cuid","year")])
 nrow(rg_cuid_yr_source) # 18074
 
-rg_cuid <- unique(dataset_1part2[,c("region","cuid")])
+rg_cuid <- unique(spawnersurveys[,c("region","cuid")])
 nrow(rg_cuid) # 360
 
-rg_cuid_source <- unique(dataset_1part2_source[,c("region","cuid")])
+rg_cuid_source <- unique(spawnersurveys_source[,c("region","cuid")])
 nrow(rg_cuid_source) # 345
 
 rg_cuid_merged <- apply(X = rg_cuid, 1, function(r){paste(r,collapse = " - ")})
@@ -230,10 +237,10 @@ for(i in 1:nrow(rg_cuid_extra)){
 rg_cuid_extra
 
 # check if the time series match for the rest of the data
-rg_cuid_stream <- unique(dataset_1part2[,c("region","cuid","streamid")])
+rg_cuid_stream <- unique(spawnersurveys[,c("region","cuid","streamid")])
 nrow(rg_cuid_stream) # 6286
 
-rg_cuid_stream_source <- unique(dataset_1part2_source[,c("region","cuid","streamid")])
+rg_cuid_stream_source <- unique(spawnersurveys_source[,c("region","cuid","streamid")])
 nrow(rg_cuid_stream_source) # 6260
 
 rg_cuid_strean_merged <- apply(X = rg_cuid_stream, 1, function(r){paste(r,collapse = " - ")})
@@ -249,24 +256,24 @@ for(i in 1:length(commons)){
   cuid <- as.numeric(char[2])
   streamid <- as.numeric(char[3])
   
-  cond <- dataset_1part2$region == region & 
-    dataset_1part2$cuid == cuid &
-    dataset_1part2$streamid == streamid
+  cond <- spawnersurveys$region == region & 
+    spawnersurveys$cuid == cuid &
+    spawnersurveys$streamid == streamid
   
-  cond_source <- dataset_1part2_source$region == region &
-    dataset_1part2_source$cuid == cuid &
-    dataset_1part2_source$streamid == streamid
+  cond_source <- spawnersurveys_source$region == region &
+    spawnersurveys_source$cuid == cuid &
+    spawnersurveys_source$streamid == streamid
   
-  series <- dataset_1part2[cond,c("stream_observed_count","year")]
-  series_source <- dataset_1part2_source[cond_source,c("stream_observed_count","year")]
+  series <- spawnersurveys[cond,c("stream_observed_count","year")]
+  series_source <- spawnersurveys_source[cond_source,c("stream_observed_count","year")]
   rownames(series) <- rownames(series_source) <- NULL
   
   series$stream_observed_count <- round(series$stream_observed_count,1)
   series_source$stream_observed_count <- round(series_source$stream_observed_count,1)
   
-  pointids_source <- unique(dataset_1part2_source$pointid[cond_source])
-  stream_name_pse_here_source <- unique(dataset_1part2_source$stream_name_pse[cond_source])
-  # dataset_1part2_source[cond_source,]
+  pointids_source <- unique(spawnersurveys_source$pointid[cond_source])
+  stream_name_pse_here_source <- unique(spawnersurveys_source$stream_name_pse[cond_source])
+  # spawnersurveys_source[cond_source,]
   
   if(!identical(series,series_source)){
     count <- count + 1

@@ -9,16 +9,7 @@ The goal of the script is to sum the stream-level observed spawner counts
 results as the field `observed_count` in 
 **dataset1_spawner_abundance_YYYY-MM-DD.csv**.
 
-
-Files imported (from dropbox):
-- streamspawnersurveys_output.csv  # from the database; = dataset2_spawner_surveys_YYYY-MM-DD.csv from spawner-surveys/code/4_datasets_for_PSE.R
-- dataset1cu_output.csv            # from the database; = dataset1_spawner_abundance_YYYY-MM-DD.csv from elsewhere
-
-Files produced: 
-- dataset1_spawner_abundance_YYYY-MM-DD.csv # previously - dataset1cu_output.csv; = dataset1cu_output.csv in DB but without columns 'estimated_count' and 'total_run'
- 
-
-See the [Tech Report:4.1.1.4 Spawner Abundance](https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#benchmarks-biostatus) for more details.
+See the [Tech Report: 4.1.1.4 Spawner Abundance](https://bookdown.org/salmonwatersheds/tech-report/analytical-approach.html#benchmarks-biostatus) for more details.
 
 
 ## Scripts & files

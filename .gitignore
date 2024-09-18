@@ -56,7 +56,7 @@ intermediate/
 figures/
 
 
-#biological-status/data/
+# biological-status/data/
 biological-status/Bayes_SR_model.txt
 biological-status/HBSRM_Ricker.txt
 biological-status/HBSRM_Larkin_1.txt
@@ -82,8 +82,11 @@ hatchery-releases/data/
 
 spawner-surveys/data
 spawner-surveys/references
-
-
+spawner-surveys/code/nuseds_data_collation_old.R
+spawner-surveys/code/nuseds_data_collation_old2.R
+spawner-surveys/code/nuseds_data_collation_old3.R
+spawner-surveys/code/2_nuseds_cuid_streamid_old.R
+spawner-surveys/code/2_nuseds_cuid_streamid_old2.R
 
 
 

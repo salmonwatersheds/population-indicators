@@ -17,9 +17,9 @@ See the [Tech Report: Analytical Approach](https://bookdown.org/salmonwatersheds
 
 ### 1a_HBSRM.R
 
-#### Files imported:
-
 The goal of the script is to fit a HBSRM to the recruit-per-spawner data to all the CUs of a species in a given region.
+
+#### Files imported:
 
 * recruitsperspawner.csv
   - List of CUs with available estimated abundances of spawner and recruits (the data is processed elsewhere)
@@ -46,12 +46,9 @@ The goal of the script is to fit a HBSRM to the recruit-per-spawner data to all 
   - Gelman and Rubin (1992)'s convergence diagnostic of the MCMC output
 
 
-
 ### 2a_benchmarks_HBSRM.R
 
 The goal of the script is to determine the upper (80% of $S_{MSY}$) and lower ($S_{gen}$) benchmarks for each CU and to generate the corresponding probabilities of having a "poor", "fair" or "good" biostatus using current spawner abundance.
-
-
 
 #### Files imported:
 

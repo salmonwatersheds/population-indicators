@@ -66,7 +66,7 @@ library(zoo) # for rollmean function
 
 # source("code/functions.R") # note used
 
-figure_print <- F
+figure_print <- T
 
 #
 # Import datasets --------
@@ -129,7 +129,7 @@ cu_list <- cu_list %>% left_join(
 
 dataset103_output_new <- dataset202_output_new <- dataset391_output_new <- NULL
 
-scale_log <- F # for the figures
+scale_log <- T # for the figures
 
 for(i in 1:nrow(cu_list)){
   # i <- 8
@@ -380,9 +380,7 @@ cond <- dataset391_output_new$region == "Transboundary"
 dataset391_output_new[cond,]
 
 
-date <- as.character(Sys.time())
-date <- strsplit(x = date, split = " ")[[1]][1]
-date <- gsub("-","",date)
+date <- as.character(Sys.Date())
 
 # Export in /output/archive folder on dropbox
 write.csv(dataset103_output_new,paste0(wd_output,"/archive/dataset103_log_smoothed_spawners_",date,".csv"),
@@ -521,4 +519,88 @@ dataset391_output$threegen_slope[cond_cuid] * x + dataset391_output$threegen_int
 
 0.1462081 * x -285.6
 0.146208 * x -285.6
+
+#
+# Check previous vs. new trends ------
+#
+
+wd <- paste0(wd_output,"/archive")
+pattern <- "dataset202"
+
+# Most recent dataset:
+trend_allgen <- import_mostRecent_file_fun(wd = wd, pattern = pattern)
+nrow(trend_allgen) # 234
+
+# Second most recent dataset:
+files_c <- list.files(wd)
+files_c <- files_c[grepl(x = files_c, pattern = pattern)]
+file.mtime <- file.mtime(paste(wd,files_c,sep="/"))
+files_c <- files_c[order(file.mtime)] |> rev()
+file <- files_c[2]
+print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
+
+
+trend_allgen_old <- read.csv(paste0(wd_output,"/archive/",file),header = T)
+head(trend_allgen_old)
+nrow(trend_allgen_old) # 232
+
+#
+identical(trend_allgen,trend_allgen_old)
+
+data_compare <- NULL
+for(r in 1:nrow(trend_allgen)){
+  cuid <- trend_allgen$cuid[r]
+  cond_old <- trend_allgen_old$cuid == cuid
+  
+  toAdd <- F
+  
+  if(!any(cond_old)){
+    trend_allgen_old_here <- trend_allgen[r,]
+    trend_allgen_old_here$percent_change <- NA
+    trend_allgen_old_here$percent_change_total <- NA
+    trend_allgen_old_here$slope <- NA
+    trend_allgen_old_here$intercept <- NA
+    trend_allgen_old_here$intercept_start_yr <- NA
+    trend_allgen_old_here$start_year <- NA
+    trend_allgen_old_here$end_year <- NA
+    data_here <- rbind(trend_allgen[r,],trend_allgen_old_here)
+    data_here$dataset <- c("new","old")
+    toAdd <- T
+    
+  }else{
+    cond_diff <- round(trend_allgen$percent_change[r],1) != round(trend_allgen_old$percent_change[cond_old],1) |
+      round(trend_allgen$percent_change_total[r],1) != round(trend_allgen_old$percent_change_total[cond_old],1) |
+      round(trend_allgen$slope[r],6) != round(trend_allgen_old$slope[cond_old],6) |
+      round(trend_allgen$intercept[r],3) != round(trend_allgen_old$intercept[cond_old],3) |
+      trend_allgen$end_year[r] != trend_allgen_old$end_year[cond_old]
+    
+    if(cond_diff){
+      data_here <- rbind(trend_allgen[r,],trend_allgen_old[cond_old,])
+      data_here$dataset <- c("new","old")
+      toAdd <- T
+    }
+  }
+  
+  if(toAdd){
+   
+    if(is.null(data_compare)){
+      data_compare <- data_here
+    }else{
+      data_compare <- rbind(data_compare,data_here)
+    }
+  }
+}
+data_compare
+data_compare$cuid |> unique() |> length() # 47
+data_compare$region |> unique()
+
+
+
+
+
+
+
+
+
+
 

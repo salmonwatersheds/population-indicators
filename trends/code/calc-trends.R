@@ -66,7 +66,7 @@ library(zoo) # for rollmean function
 
 # source("code/functions.R") # note used
 
-figure_print <- T
+figure_print <- F
 
 #
 # Import datasets --------
@@ -379,7 +379,30 @@ head(dataset391_output_new)
 cond <- dataset391_output_new$region == "Transboundary"
 dataset391_output_new[cond,]
 
+#
+# Remove VIMI SH South Coast Winter 980 TEMPORARY --------
+#' cf. PSE Data Check-In Meeting Notes - 19-09-2024
+#' This CUs should be removed becaue the only population for which there is data
+#' is not representative of the whole CU
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1726265990287849?thread_ts=1726158954.361189&cid=CJ5RVHVCG
+#' Eric will edit the code so the estimated spawner abundance will not be calculated
+#' and so the filter will happen automatically. But for now we do it manually.
 
+cond <- dataset103_output_new$cuid == 980
+sum(cond)
+dataset103_output_new <- dataset103_output_new[!cond,]
+
+cond <- dataset202_output_new$cuid == 980
+sum(cond)
+dataset202_output_new <- dataset202_output_new[!cond,]
+
+cond <- dataset391_output_new$cuid == 980
+sum(cond)
+dataset391_output_new <- dataset391_output_new[!cond,]
+
+#
+# Export the files ------
+#
 date <- as.character(Sys.Date())
 
 # Export in /output/archive folder on dropbox
@@ -593,9 +616,10 @@ for(r in 1:nrow(trend_allgen)){
 data_compare
 data_compare$cuid |> unique() |> length() # 47
 data_compare$region |> unique()
+data_compare$species_name |> unique()
 
-
-
+cond <- is.na(data_compare$slope)
+data_compare[cond,]
 
 
 

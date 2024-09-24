@@ -14,8 +14,6 @@
 #' Files produced: 
 #' - output/archive/biostatus_new_old_differences_YYYY-MM-DD.csv  # 
 #' 
-#' Notes:
-#' - 
 #' 
 #' Resources:
 #' - Steph diagram for decision rules

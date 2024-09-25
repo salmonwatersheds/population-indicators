@@ -282,7 +282,7 @@ for(i_rg in 1:length(region)){
                                         cuid = rep(cuids[i_cu],length(benchmarks)),
                                         CU = rep(CUs[i_cu],length(benchmarks)),
                                         benchmark = paste0("benchmark_",benchmarks), # c('lower','upper'),
-                                        method = rep('HS_percentiles',length(benchmarks)))
+                                        method = rep('percentile',length(benchmarks))) # was HS_percentiles
           
           benchSummary_df$m <- c(quantile(spawnerAbundance, 0.25, na.rm = T),
                                  quantile(spawnerAbundance, 0.5, na.rm = T),
@@ -305,9 +305,7 @@ for(i_rg in 1:length(region)){
           #' biological status probability with the average current spawner 
           #' abundance over the last generation
           #------------------------------------------------------------------
-          condition <- conservationunits_decoder$region == region_i &
-            conservationunits_decoder$species_name %in% species_i &
-            conservationunits_decoder$cu_name_pse == CUs[i_cu]
+          condition <- conservationunits_decoder$cuid == cuids[i_cu]
           conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[condition,]
           
           if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
@@ -356,7 +354,7 @@ for(i_rg in 1:length(region)){
                                                   cuspawnerabundance = cuspawnerabundance_rg_sp_cu, 
                                                   yearCurrentAbundance = yearCurrentAbundance, 
                                                   CU_genLength = CU_genLength)
-          yrInitial <- csa_df$yr_withData_start
+          yrInitial <- csa_df$yr_withData_start   #TODO: rename/add "curr_spw"or something because this is confusing with the entire timeseries
           yrFinal <-  csa_df$yr_withData_end
           currentSpawnerData_available <- csa_df$curr_spw_available
           spawnerAbundance_lastGen_m <- csa_df$curr_spw_abun

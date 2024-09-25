@@ -773,6 +773,321 @@ for(cuid in unique(benchmarks_102_cyclic$cuid)){
                                        file_name_nchar = 60)
 }
 
+#
+# Compare biostatus by changing year cut off current spawner abundance ----
+#
+
+dataset101_biological_status <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
+                                                           pattern = "dataset101_biological_status")
+
+dataset102_benchmarks <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
+                                                    pattern = "dataset102_benchmarks")
+
+
+#' Import the cuspawnerabundance.csv
+datasetsNames_database <- datasetsNames_database_fun()
+fromDatabase <- update_file_csv <- F
+spawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                          fromDatabase = fromDatabase,
+                                          update_file_csv = update_file_csv,
+                                          wd = wd_pop_indic_data_input_dropbox)
+
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                          fromDatabase = fromDatabase,
+                                          update_file_csv = update_file_csv,
+                                          wd = wd_pop_indic_data_input_dropbox)
+
+# select CU with biostatus assessed
+cond <- dataset101_biological_status$psf_status_code %in% 1:3
+dataset101_biological_status <- dataset101_biological_status[cond,]
+nrow(dataset101_biological_status) # 143
+
+cond <- dataset102_benchmarks$cuid %in% dataset101_biological_status$cuid
+dataset102_benchmarks <- dataset102_benchmarks[cond,]
+nrow(dataset102_benchmarks) # 143
+
+# add currwent spawner abundance to dataset101_biological_status
+dataset101_biological_status$curr_spw <- sapply(dataset101_biological_status$cuid,
+                                                function(cuid){
+                                                  cond <- dataset102_benchmarks$cuid == cuid
+                                                  return(dataset102_benchmarks$curr_spw[cond])
+                                                })
+yr_length <- 2:7
+
+for(yr in yr_length){
+  dataset101_biological_status$X <- NA
+  cond <- colnames(dataset101_biological_status) == "X"
+  colnames(dataset101_biological_status)[cond] <- paste0("psf_status_",yr,"yr")
+}
+
+# fill the dataset per region then species because the HBSRM benchmark posterior
+# parameter distributions are grouped by region > species
+for(region in unique(dataset101_biological_status$region)){
+  # region <- unique(dataset101_biological_status$region)[2]
+  regionName <- region
+  if(region == "Vancouver Island & Mainland Inlets"){
+    regionName <- "VIMI"
+  }
+  regionName <- gsub(" ","_",regionName)
+  cond_rg <- dataset101_biological_status$region == region
+  
+  for(species_name in unique(dataset101_biological_status$species_name[cond_rg])){
+    # species_name <- unique(dataset101_biological_status$species_name[cond_rg])[1]
+    cond_rg_sp <- cond_rg & dataset101_biological_status$species_name == species_name
+    species_abbr <- dataset101_biological_status$species_abbr[cond_rg_sp] |> unique()
+    species_acro <- species_abbr
+    if(species_abbr %in% c("SEL","SER")){
+      species_acro <- "SX"
+    }else if(species_abbr %in% c("PKE","PKO")){
+      species_acro <- "PK"
+    }
+    
+    # return the posterio distribution of the HBSRM parameters if available
+    if(any(dataset101_biological_status$psf_status_type[cond_rg_sp] == "sr")){
+      
+      # Import the posterior distributions of the model parameters
+      post <- readRDS(paste0(wd_output,"/intermediate/",regionName,"_",species_acro,
+                             "_HBSRM_posteriors_priorShift.rds"))
+      
+      # Import the S and R matrices used for fitting the HBSR model (to get to order of the CUs in post)
+      SRm <- readRDS(paste0(wd_output,"/intermediate/",regionName,"_",species_acro,
+                            "_SR_matrices.rds"))
+      
+      CUs <- colnames(SRm$R)
+      nCUs <-length(CUs)
+      
+      # nb of chains
+      nchains <- length(post) # 6 chains
+      
+      # parameter names
+      pnames <- colnames(post[[1]])
+      
+      # Unlist different chains of the posterior
+      # 6 chains x nb iteration (?) x nb parameters
+      post.arr <- array(
+        data = NA, 
+        dim = c(nchains, nrow(post[[1]]), ncol(post[[1]])), 
+        dimnames = list(paste0("chain", 1:length(post)), NULL, pnames))
+      
+      for(i in 1:length(post)){  # for each chain
+        post.arr[i, , ] <- post[[i]]
+      }
+      
+      # Calculate benchmarks for all mcmc draws to account for correlation between a and b
+      # nb CUs x nb different parameters (i.e., 5) x nb chains x nb iterations
+      SR_bench <- array(
+        data = NA,
+        dim = c(nCUs, 5, length(post), nrow(post[[1]])),
+        dimnames = list(CUs, 
+                        c("a", "b", "sig", "Smsy", "Sgen"), 
+                        paste0("chain", 1:length(post)), 
+                        NULL))
+      
+      for(i in 1:nCUs){
+        if(nCUs == 1){
+          SR_bench[i, "a", , ] <- post.arr[, , which(pnames == "a")]      # matrix nb chains x nb mcmc draws --> all the values for that parameter
+          SR_bench[i, "b", , ] <- post.arr[, , which(pnames == "b")]
+          SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == "sd")]   # sigma_bi
+        }else{
+          SR_bench[i, "a", , ] <- post.arr[, , which(pnames == paste0("a[", i, "]"))]
+          SR_bench[i, "b", , ] <- post.arr[, , which(pnames == paste0("b[", i, "]"))]
+          SR_bench[i, "sig", , ] <- post.arr[, , which(pnames == paste0("sd[", i, "]"))]
+        }
+      }
+      
+      # Calculate Smsy & Sgen (this takes a few mins...think of vectorizing/parallelizing)
+      # Uses 1_functions.R which is different from previous versions by estimating Smsy
+      # directly using the methods of Scheuerell (2016).
+      for(i in 1:nCUs){
+        # i <- 1
+        # i <- 3   # issue with Sgen in Fraser CO CU nb 3
+        for(j in 1:length(post)){ # for each chain
+          # j <- 1
+          # Smsy (function can handle vectors)
+          SR_bench[i, "Smsy", j, ] <- calcSmsy(a = SR_bench[i, "a", j, ], 
+                                               b = SR_bench[i, "b", j, ])
+          
+          # Sgen (function not currently set up to handle vectors..think of updating this)
+          for(k in 1:nrow(post[[1]])){   # for each mcmc draw
+            # k <- 1
+            SR_bench[i, "Sgen", j, k] <- calcSgen(
+              Sgen.hat = 0.5 * SR_bench[i, "Smsy", j, k], 
+              theta = c(
+                a = SR_bench[i, "a", j, k], 
+                b = SR_bench[i, "b", j, k],
+                sig = SR_bench[i, "sig", j, k]),
+              Smsy = SR_bench[i, "Smsy", j, k])
+          }
+        }
+      }
+    }
+    
+    for(cuid in unique(dataset101_biological_status[cond_rg_sp,]$cuid)){
+      # cuid <- unique(dataset101_biological_status$cuid[cond_rg_sp])[1]
+      cond_rg_sp_cu <- cond_rg_sp & dataset101_biological_status$cuid == cuid
+      cu_name_pse <- dataset101_biological_status$cu_name_pse[cond_rg_sp_cu]
+      
+      # calculate the current spawner abundanc for year length in yr_length then 
+      # corresponding biostatus
+      for(yr_l in yr_length){
+        # yr_l <- yr_length[1]
+        
+        # calculate current spawner abundance 
+        csa <- current_spawner_abundance_fun(cuids = cuid, 
+                                             cuspawnerabundance = spawnerabundance, 
+                                             yearCurrentAbundance = NA, 
+                                             CU_genLength = yr_l)
+        
+        if(dataset101_biological_status$psf_status_type[cond_rg_sp_cu] == "percentile"){
+          
+          cond_cuid <- dataset102_benchmarks$cuid == dataset101_biological_status$cuid[cond_rg_sp_cu]
+          
+          bench_up <- dataset102_benchmarks$X75._spw[cond_cuid]  # this is 50% upper bench
+          bench_low <- dataset102_benchmarks$X25._spw[cond_cuid]
+          
+          if(csa$curr_spw_abun <= bench_low){
+            psf_status_here <- "poor"
+          }else if(csa$curr_spw_abun <= bench_up){
+            psf_status_here <- "fair"
+          }else{
+            psf_status_here <- "good"
+          }
+          
+        }else if(dataset101_biological_status$psf_status_type[cond_rg_sp_cu] == "sr"){
+          
+          i <- which(cu_name_pse == colnames(SRm$R))
+          
+          status_Smsy <- status_Smsy80 <- c()
+          for(j in 1:length(post)){ # for each chain
+            # j <- 1
+            for(k in 1:nrow(post[[1]])){   # for each mcmc draw
+              # k <- 1
+              LB_Sgen <- SR_bench[i, "Sgen", j, k]    # i corresponds to the CU
+              UB_Smsy <- SR_bench[i, "Smsy", j, k]
+              UB_Smsy80 <- UB_Smsy * .8
+              
+              if(!is.na(LB_Sgen) & !is.na(UB_Smsy)){
+                if(csa$curr_spw_abun <= LB_Sgen){
+                  #status_Smsy <- c(status_Smsy,'red')
+                  status_Smsy80 <- c(status_Smsy80,"red")
+                }else if(csa$curr_spw_abun <= UB_Smsy80){
+                  #status_Smsy <- c(status_Smsy,'amber')
+                  status_Smsy80 <- c(status_Smsy80,"amber")
+                }else if(csa$curr_spw_abun <= UB_Smsy){
+                  #status_Smsy <- c(status_Smsy,'amber')
+                  status_Smsy80 <- c(status_Smsy80,"green")
+                }else{
+                  #status_Smsy <- c(status_Smsy,'green')
+                  status_Smsy80 <- c(status_Smsy80,"green")
+                }
+              }else{
+                #status_Smsy <- c(status_Smsy,NA)
+                status_Smsy80 <- c(status_Smsy80,NA)
+              }
+            }
+          }
+          #status_Smsy <- status_Smsy[!is.na(status_Smsy)]
+          status_Smsy80 <- status_Smsy80[!is.na(status_Smsy80)]
+          
+          #status_Smsy_prob <- round(table(factor(status_Smsy,levels = c("red","amber","green")))/length(status_Smsy)*100,4)
+          status_Smsy80_prob <- round(table(factor(status_Smsy80,levels = c("red","amber","green")))/length(status_Smsy80)*100,4)
+          
+          psf_status_here <- c("poor","fair","good")[status_Smsy80_prob == max(status_Smsy80_prob)]
+          
+        }
+        col_here <- paste0("psf_status_",yr_l,"yr")
+        dataset101_biological_status[cond_rg_sp_cu,col_here] <- psf_status_here
+      }
+    }
+  }
+  print(paste("Region",region,"is done."))
+}
+
+View(dataset101_biological_status)
+
+dataset101_biological_status
+
+write.csv(dataset101_biological_status,
+          paste0(wd_output,"/archive/dataset101_biological_status_compare_curr_spawn_lengths_",Sys.Date(),".csv"),
+          row.names = F)
+
+dataset101_biological_status <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                           pattern = "dataset101_biological_status_compare_curr_spawn_lengths")
+
+# Proportion of CUs with a different biostatus for each yr_length
+# Remove the CUs when value corresponds to their generation length (make sure value)
+# match
+
+dataset101_biological_status$gen_length <- sapply(dataset101_biological_status$cuid, 
+                                                  function(cuid){
+                                                    cond <- conservationunits_decoder$cuid == cuid
+                                                    genlength <- conservationunits_decoder$gen_length[cond]
+                                                    return(genlength)
+                                                  })
+
+cu_biostatus_diff <- data.frame(yr_length = yr_length)
+cu_biostatus_diff$nb_cus_tot <- NA
+cu_biostatus_diff$nb_cus_diff <- NA
+cu_biostatus_diff$nb_cus_improve <- NA
+cu_biostatus_diff$nb_cus_worsen <- NA
+for(r in 1:nrow(cu_biostatus_diff)){
+  # r <- 1
+  yr <- cu_biostatus_diff$yr_length[r]
+  colhere <- paste0("psf_status_",yr,"yr")
+  
+  # CUs with corresponding gen length
+  cond_genLength_diff <- dataset101_biological_status$gen_length != yr
+  datahere <- dataset101_biological_status[cond_genLength_diff,]
+  
+  cu_biostatus_diff$nb_cus_tot[r] <- nrow(datahere)
+  cu_biostatus_diff$nb_cus_diff[r] <- sum(datahere[,"psf_status"] != datahere[,colhere])
+  
+  cond_improve <- apply(datahere,1,function(row){
+    out <- (row["psf_status"] %in% c("poor") & row[colhere] %in% c("fair","good")) |
+      (row["psf_status"] %in% c("fair") & row[colhere] %in% c("good"))
+    return(out)
+  })
+  
+  cond_worsen <- apply(datahere,1,function(row){
+    out <- (row["psf_status"] %in% c("good","fair") & row[colhere] %in% c("poor")) |
+      (row["psf_status"] %in% c("good") & row[colhere] %in% c("fair"))
+    return(out)
+  })
+  
+  cu_biostatus_diff$nb_cus_improve[r] <- sum(cond_improve)
+  cu_biostatus_diff$nb_cus_worsen[r] <- sum(cond_worsen)
+  
+  # check
+  if(any(!cond_genLength_diff)){
+    datacheck <- dataset101_biological_status[!cond_genLength_diff,]
+    out <- sum(datacheck[,"psf_status"] != datacheck[,colhere]) / nrow(datacheck) * 100
+    if(out > 0){
+      print(paste0("There are differences here for genlength = ",yr))
+      rows <- which(datacheck[,"psf_status"] != datacheck[,colhere])
+      print(datacheck[rows,c("region","species_name","cu_name_pse","cuid","psf_status_type","psf_status",colhere)])
+      print("***")
+    }
+  }
+}
+
+cu_biostatus_diff$nb_cus_diff_prop <- round(cu_biostatus_diff$nb_cus_diff / cu_biostatus_diff$nb_cus_tot,2)
+cu_biostatus_diff$nb_cus_worsen_prop <- round(cu_biostatus_diff$nb_cus_worsen / cu_biostatus_diff$nb_cus_tot,2)
+cu_biostatus_diff$nb_cus_improve_prop <- round(cu_biostatus_diff$nb_cus_improve / cu_biostatus_diff$nb_cus_tot,2)
+
+ymax <- apply(cu_biostatus_diff[,c("nb_cus_diff_prop","nb_cus_worsen_prop","nb_cus_improve_prop")],2, function(c){max(c)})
+ymax <- max(ymax)
+
+plot(x = cu_biostatus_diff$yr_length, y = cu_biostatus_diff$nb_cus_diff_prop, 
+     type = "l", xlab = "Year", ylab = "Proportion of CUs with different biostatus", 
+     main = "Different year length --> current spawn abund --> biostatus", las = 1, 
+     ylim = c(0,ymax), lwd = 2)
+points(x = cu_biostatus_diff$yr_length, y = cu_biostatus_diff$nb_cus_diff_prop, pch = 16)
+
+lines(x = cu_biostatus_diff$yr_length, y = cu_biostatus_diff$nb_cus_improve_prop, col = "blue", lwd = 2)
+points(x = cu_biostatus_diff$yr_length, y = cu_biostatus_diff$nb_cus_improve_prop,  col = "blue", pch = 16)
+lines(x = cu_biostatus_diff$yr_length, y = cu_biostatus_diff$nb_cus_worsen_prop, col = "red", lwd = 2)
+points(x = cu_biostatus_diff$yr_length, y = cu_biostatus_diff$nb_cus_worsen_prop,  col = "red", pch = 16)
+legend("topright",c("total","improved","worsened"), lwd = 2, col = c("black","blue","red"), bty = "n")
 
 #
 # Change of status between the old vs. new upper threshold: OLD CODE -----

@@ -1105,6 +1105,7 @@ for(r in 1:nrow(benchmarks_merged)){
   # COMMENT:
   # This is ineeded the 50% percentile and not the 75, despite the name being "75%_spw"
   # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
+  # !!!! TO CANGE !!!
   
   benchmarks_merged$`75%_spw`[r] <- benchmarks_percentile$m[cond_cuid & cond_05]
   benchmarks_merged$`75%_spw_lower`[r] <- benchmarks_percentile$CI025[cond_cuid & cond_05]
@@ -1275,7 +1276,6 @@ for(i in 1:nrow(biological_status_merged)){ # It should not print anything
     }
   }
 }
-
 
 #
 # Export files /dataset101_biological_status and dataset102_benchmarks -------

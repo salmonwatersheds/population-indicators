@@ -658,29 +658,7 @@ benchmarks <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_benchmarks_summary
 head(benchmarks)
 
 #'* fill biostatus_101 for these CUs because it was not done in 3_biological_status.R *
-biostatus_101$percentile_red_prob <- biostatus_101$status_percent_05_red
-biostatus_101$percentile_yellow_prob <- biostatus_101$status_percent_05_amber
-biostatus_101$percentile_green_prob <- biostatus_101$status_percent_05_green
-
-biostatus_101$percentile_status <- NA # apply did not work...?!
-for(r in 1:nrow(biostatus_101)){
-  # r <- which(biostatus_101$cuid == 731)
-  csa <- biostatus_101$current_spawner_abundance[r]
-  
-  cond_cuid <- benchmarks$cuid == biostatus_101$cuid[r]
-  cond_cl <- benchmarks$cycle_line_current
-  cond_bench_low <- benchmarks$benchmark == "benchmark_0.25"
-  cond_bench_up <- benchmarks$benchmark == "benchmark_0.5"
-  if(csa <= benchmarks$m[cond_cuid & cond_cl & cond_bench_low]){
-    percentile_status <- "poor"
-  }else if(csa <= benchmarks$m[cond_cuid & cond_cl & cond_bench_up]){
-    percentile_status <- "fair"
-  }else{
-    percentile_status <- "good"
-  }
-  
-  biostatus_101$percentile_status[r]  <- percentile_status
-}
+biostatus_101$percentile_status <- biostatus_101$status_percent05
 
 biostatus_101$sr_red_prob <- NA
 biostatus_101$sr_yellow_prob <- NA
@@ -712,11 +690,17 @@ for(cuid in unique(benchmarks$cuid)){
     benchmarks_102_here <- data.frame(region = conservationunits_decoder$region[cond_cuid],
                                       cuid = cuid,
                                       region_abbr = conservationunits_decoder$region_abbr[cond_cuid],
-                                      cu_name_pse = conservationunits_decoder$cu_name_pse[cond_cuid])
+                                      cu_name_pse = conservationunits_decoder$cu_name_pse[cond_cuid],
+                                      cycle_line = cl)
     
     cond_cuid <- biostatus_101$cuid == cuid
-    benchmarks_102_here$curr_spw <- biostatus_101$current_spawner_abundance[cond_cuid]
+    cond_cl <- biostatus_101$cycle_line == cl
+    benchmarks_102_here$cycle_line_dominant <- biostatus_101$cycle_line_dominant[cond_cuid & cond_cl]
     
+    cond_cuid <- biostatus_101$cuid == cuid
+    cond_cl <- biostatus_101$cycle_line == cl
+    benchmarks_102_here$curr_spw <- biostatus_101$current_spawner_abundance[cond_cuid & cond_cl]
+
     benchmarks_102_here$sgen <- NA           # lower HBSRM benchmark
     benchmarks_102_here$sgen_lower <- NA     #
     benchmarks_102_here$sgen_upper <- NA     #
@@ -725,9 +709,9 @@ for(cuid in unique(benchmarks$cuid)){
     benchmarks_102_here$smsy_upper <- NA     #
     
     cond_cuid <- benchmarks$cuid == cuid
+    cond_cl <- benchmarks$cycle_line == cl
     cond_25 <- benchmarks$benchmark == "benchmark_0.25"
     cond_50 <- benchmarks$benchmark == "benchmark_0.5"
-    cond_cl <- benchmarks$cycle_line == cl
     benchmarks_102_here$`25%_spw` <- benchmarks$m[cond_cuid & cond_cl & cond_25]
     benchmarks_102_here$`25%_spw_lower` <- benchmarks$CI025[cond_cuid & cond_cl & cond_25]
     benchmarks_102_here$`25%_spw_upper` <- benchmarks$CI975[cond_cuid & cond_cl & cond_25]
@@ -736,16 +720,10 @@ for(cuid in unique(benchmarks$cuid)){
     benchmarks_102_here$`75%_spw_upper` <- benchmarks$CI975[cond_cuid & cond_cl & cond_50]
     
     cond_cuid <- biostatus_101$cuid == cuid
-    benchmarks_102_here$curr_spw_start_year <- biostatus_101$yr_withData_start[cond_cuid]
-    benchmarks_102_here$curr_spw_end_year <- biostatus_101$yr_withData_end[cond_cuid]
+    cond_cl <- biostatus_101$cycle_line == cl
+    benchmarks_102_here$curr_spw_start_year <- biostatus_101$yr_withData_start[cond_cuid & cond_cl]
+    benchmarks_102_here$curr_spw_end_year <- biostatus_101$yr_withData_end[cond_cuid & cond_cl]
     
-    benchmarks_102_here$cycle_line <- cl
-    
-    # is this cycle-line the one including the last year of the data?
-    cond_cuid <- benchmarks$cuid == cuid
-    cond_cl <- benchmarks$cycle_line == cl
-    cl_current <- benchmarks$cycle_line_current[cond_cuid & cond_cl] |> unique() # there are three rows, one for each benchmark value
-    benchmarks_102_here$cycle_line_current <- cl_current
     
     if(is.null(benchmarks_102_cyclic)){
       benchmarks_102_cyclic <- benchmarks_102_here
@@ -761,7 +739,7 @@ figure_print <- T
 for(cuid in unique(benchmarks_102_cyclic$cuid)){
   # cuid <- unique(benchmarks_102_cyclic$cuid)[2]
   # cond_cl_current <- benchmarks_102_cyclic$cycle_line_current
-  plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
+  plot_spawnerAbundance_benchmarks_cyclic_fun(cuid = cuid,
                                        cuspawnerabundance = spawnerabundance, 
                                        dataset101_biological_status = biostatus_101, # biological_status_cu, 
                                        dataset102_benchmarks = benchmarks_102_cyclic,# [cond_cl_current,], # benchmarks_cu, 
@@ -774,7 +752,80 @@ for(cuid in unique(benchmarks_102_cyclic$cuid)){
 }
 
 #
-# Compare biostatus by changing year cut off current spawner abundance ----
+
+#
+# Effect of changing rule 1 (at least one data point in most recent generation) on biostatus -----
+#
+
+dataset101_biological_status <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
+                                                           pattern = "dataset101_biological_status")
+
+dataset101_biological_status$psf_status_code_all |> unique()
+
+# select CU with biostatus assessed
+cond_123 <- dataset101_biological_status$psf_status_code %in% 1:3
+cond_8 <- dataset101_biological_status$psf_status_code_all == "8"    # we want the CUs that were discarded because of rule 8 only
+
+dataset101_biological_status <- dataset101_biological_status[cond_123 | cond_8,]
+nrow(dataset101_biological_status) # 186
+
+
+datasetsNames_database <- datasetsNames_database_fun()
+fromDatabase <- update_file_csv <- F
+spawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                          fromDatabase = fromDatabase,
+                                          update_file_csv = update_file_csv,
+                                          wd = wd_pop_indic_data_input_dropbox)
+
+# Number of CUs with biostatus using generation length:
+counts <- c(sum(cond_123))
+names(counts) <- "gen length *"
+
+yr_cut <- 2:10
+for(yr in yr_cut){
+  # yr <- 4
+  
+  count_here <- 0
+  for(r in 1:nrow(dataset101_biological_status)){
+    # r <- 1
+    cuid <- dataset101_biological_status$cuid[r]
+    region <- dataset101_biological_status$region[r]
+    
+    # find the last year of data for the CU
+    cond <- spawnerabundance$cuid == cuid
+    cond_NAno <- !is.na(spawnerabundance$estimated_count)
+    year_data_last <- max(spawnerabundance$year[cond & cond_NAno])
+    
+    # find the last year of data for the region
+    cond <- spawnerabundance$region == region
+    year_data_last_rg <- max(spawnerabundance$year[cond], na.rm = T)
+    
+    if((year_data_last_rg - year_data_last + 1) <= yr){
+      count_here <- count_here + 1
+    }
+  }
+  names(count_here) <- yr
+  counts <- c(counts,count_here)
+}
+
+counts
+
+wd_PSAC_figures <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/PSAC/Meetings/Meeting 14/figures")
+
+jpeg(paste0(wd_PSAC_figures,"/nb_yr_cutoff_rule1_vs_biostatus.jpg"), 
+     width = 20, height = 12, units = "cm", res = 300)
+
+par(mar = c(5,5,1.5,.5))
+barplot(height = counts,col = c("cadetblue4",rep("grey60",length(yr_cut))), las = 1,
+        xlab = "Year", ylab = "Number of CUs with biological status",
+        ylim = c(0,200))
+abline(a = counts["gen length *"],b = 0, lwd = 1.5, lty = 2)
+
+dev.off()
+
+
+#
+# Compare biostatus by changing year cut off current spawner abundance WRONG ----
 #
 
 dataset101_biological_status <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 

@@ -475,10 +475,11 @@ rule1$year_data_last_rg <- sapply(rule1$cuid, function(cuid){
   rg <- conservationunits_decoder$region[cond]
 
   cond <- cuspawnerabundance$region == rg
-  last_year <- max(cuspawnerabundance$year[cond])
+  last_year <- max(cuspawnerabundance$year[cond], na.rm = T)
+  return(last_year)
 })
 
-# For none pink salmon:
+# For non-pink salmon:
 cond_pink <- grepl("Pink",rule1$species_name)
 rule1$concerned[!cond_pink] <- (rule1$year_data_last_rg[!cond_pink] - rule1$year_data_last[!cond_pink] + 1) > rule1$gen_length[!cond_pink]
 

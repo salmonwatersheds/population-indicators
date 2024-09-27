@@ -366,6 +366,13 @@ for(i_rg in 1:length(region)){
           # status over all the simulations
           if(currentSpawnerData_available & currentSpawnerData_availableRecentEnough){
             
+            
+            #' TODO: this should not be done using the benchmarkBoot but by simply 
+            #' comparing current spawner abundance to upper and lower benchamrks
+            #' This is done in 3_biological_status.R but simplify the workflow by
+            #' creating columns status_percent075 and status_percent050 here
+            #' and do not create the field status_percent_05_red, etc...
+            
             status_percent_075 <- c()
             status_percent_05 <- c()
             

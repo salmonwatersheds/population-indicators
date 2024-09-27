@@ -160,7 +160,7 @@ yearCurrentAbundance <- NA # was 2021
 # Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
-print_fig <- T
+print_fig <- F
 
 #
 for(i_rg in 1:length(region)){
@@ -261,11 +261,14 @@ for(i_rg in 1:length(region)){
           
           # Do the process for each cycle-line
           benchSummary_df_cl <- NULL
+          spawnerAbundance_cl_l <- list()
           modelCI_cl <- list()
           for(cl in 1:4){
             i <- 1:length(spawnerAbundance)
             i <- i[(i + cl - 2) %% 4 == 0]
             spawnerAbundance_cl <- spawnerAbundance[i]
+            
+            spawnerAbundance_cl_l[[cl]] <- spawnerAbundance_cl
             
             modelCI <- modelBoot(series = spawnerAbundance_cl, 
                                  numLags = numLags, # numLags is the lag for the autocorrelation; default is just 1 year
@@ -301,6 +304,7 @@ for(i_rg in 1:length(region)){
             }
           }
           names(modelCI_cl) <- paste0("cycle-line_",1:4)
+          names(spawnerAbundance_cl_l) <- 1:4
           
           if(is.null(benchSummary_region_species_df)){
             benchSummary_region_species_df <- benchSummary_df_cl
@@ -310,9 +314,13 @@ for(i_rg in 1:length(region)){
           }
           
           #------------------------------------------------------------------
-          #' biological status probability with the average current spawner 
-          #' abundance over the last generation
+          #' Biological status probability with the current spawner abundance 
+          #' for each cycle line, which is the estimated spawner abundance for
+          #' each each of the last cycle.
+          #' Note that here we do not define current spawner abundance as the
+          #' average spawner abundance over the last generation
           #------------------------------------------------------------------
+          
           condition <- conservationunits_decoder$cuid == cuids[i_cu]
           conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[condition,]
           
@@ -334,240 +342,83 @@ for(i_rg in 1:length(region)){
           CUname_pse <- conservationunits_decoder_rg_sp_cu$cu_name_pse
           CUname_dfo <- conservationunits_decoder_rg_sp_cu$cu_name_dfo
           
-          CU_genLength <- conservationunits_decoder_rg_sp_cu$gen_length[1]
-          CU_genLength_available <- TRUE
-          
-          if(is.na(CU_genLength)){
-            # From Tech-Report: 
-            #' "Where CU-specific data on age-at-return are unavailable, we assume 
-            #' generation lengths of 
-            #' - 5 years for Chinook CUs, 
-            #' - 4 years for coho CUs, 
-            #' - 4 years for chum CUs, 
-            #' - 4 years for sockeye CUs"   --> BUT 5 years for the Cus in the northen region
-            #' - Pink salmon have a consistent 2-year age-at-return and because 
-            #' even- and odd-year lineages are considered separate CUs, the most 
-            #' recent spawner abundance is simply the most recent year’s estimated 
-            #' spawner abundance for this species
-            cond <- generationLengthEstiamte_df$species %in% speciesName # generationLengthEstiamte_df is created in functions_general.R
-            CU_genLength <- generationLengthEstiamte_df$genLength[cond] 
-            CU_genLength_available <- FALSE
-            print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))
-          }
-          
-          # Calculate current spawner abundance:
-          # yearCurrentAbundance should be NA so it is calculated from the most 
-          # recent year with data
-          csa_df <- current_spawner_abundance_fun(cuids = cuids[i_cu], 
-                                                  cuspawnerabundance = cuspawnerabundance_rg_sp_cu, 
-                                                  yearCurrentAbundance = yearCurrentAbundance, 
-                                                  CU_genLength = CU_genLength)
-          yrInitial <- csa_df$yr_withData_start
-          yrFinal <-  csa_df$yr_withData_end
-          currentSpawnerData_available <- csa_df$curr_spw_available
-          spawnerAbundance_lastGen_m <- csa_df$curr_spw_abun
-          spawnerAbundance_lastGen_dataPointNb <- csa_df$dataPointNb
-          currentSpawnerData_availableRecentEnough <- csa_df$curr_spw_availableRecentEnough
-        
-          # Determine the cycle-line corresponding to the last year of data
-          # and select the corresponding modelCI
-          cl_here <- sapply(1:4,function(cl){
-            i <- 1:length(spawnerAbundance)
-            i <- i[(i + cl - 2) %% 4 == 0]
-            spawnerAbundance_cl <- spawnerAbundance[i]
-            return(yrFinal %in% names(spawnerAbundance_cl))
+          # find the high dominance year
+          sum_spawner <- sapply(spawnerAbundance_cl_l,function(sa){
+            return(sum(sa,na.rm = T))
           })
-          modelCI <- modelCI_cl[cl_here][[1]]
-          
-          # Indicate with cycle line correspond to the last year of data in benchSummary_region_species_df
-          cond <- benchSummary_region_species_df$cycle_line == (1:4)[cl_here]
-          benchSummary_region_species_df$cycle_line_current[cond] <- T
-          
-          # determine the number of time this CUs fall under the Red, Amber and Green 
-          # status over all the simulations
-          if(currentSpawnerData_available & currentSpawnerData_availableRecentEnough){
-            
-            status_percent_075 <- c()
-            status_percent_05 <- c()
-            
-            for(j in 1:nrow(modelCI$benchmarkBoot)){
-              # j <- 1
-              LB <- modelCI$benchmarkBoot[j,"benchmark_0.25"]
-              UB_075 <- modelCI$benchmarkBoot[j,"benchmark_0.75"]
-              UB_05 <- modelCI$benchmarkBoot[j,"benchmark_0.5"]
-              #
-              if(!is.na(LB) & !is.na(UB_05) & !is.na(UB_075)){
-                
-                if(spawnerAbundance_lastGen_m <= LB){
-                  status_percent_075 <- c(status_percent_075,'red')
-                  status_percent_05 <- c(status_percent_05,'red')
-                  
-                }else if(spawnerAbundance_lastGen_m <= UB_05){
-                  status_percent_075 <- c(status_percent_075,'amber')
-                  status_percent_05 <- c(status_percent_05,'amber')
-                  
-                }else if(spawnerAbundance_lastGen_m <= UB_075){
-                  status_percent_075 <- c(status_percent_075,'amber')
-                  status_percent_05 <- c(status_percent_05,'green')
-                  
-                }else{
-                  status_percent_075 <- c(status_percent_075,'green')
-                  status_percent_05 <- c(status_percent_05,'green')
-                }
-              }else{ # not needed I think
-                status_percent_075 <- c(status_percent_075,NA)
-                status_percent_05 <- c(status_percent_05,NA)
-              }
-            }
-            
-            status_percent_05 <- status_percent_05[!is.na(status_percent_05)]
-            status_percent_075 <- status_percent_075[!is.na(status_percent_075)]
-            
-            status_percent_prob_05 <- round(table(factor(status_percent_05,
-                                                           levels = c("red","amber","green")))/length(status_percent_05)*100,4)
-            status_percent_prob_075 <- round(table(factor(status_percent_075,
-                                                           levels = c("red","amber","green")))/length(status_percent_075)*100,4)
-            
-            comment <- ""
-            
-            # Figure
-            if(print_fig){
-              CUhere <- gsub(pattern = "/",'-',CUs[i_cu])  # in case "/" is in the CU's name
-              CUhere <- gsub(pattern = "\\(","",CUhere)
-              CUhere <- gsub(pattern = "\\)","",CUhere)
-              
-              cut_off <- 35
-              if(nchar(CUhere) > cut_off){   # the figure can't print if the number of characters is too large
-                CUhere <- substr(x = CUhere,start =  1,stop = cut_off) 
-              }
-              
-              pathFile <- paste0(wd_figures,"/",regionName,"_",species_abbr[i_cu],"_",CUhere,"_",cuids[i_cu],"_",
-                                 "bench_percent_hist.jpeg")
-              
-              jpeg(file = pathFile, width = 18, height = 18, units = "cm", res = 300)
-            }
-            
-            maxS <- sapply(modelCI_cl,function(m){
-              # return(quantile(x = m$benchmarkBoot[,"benchmark_0.5"],probs = .9))
-              return(max(x = m$benchmarkBoot[,"benchmark_0.5"],na.rm = T))
-            }) |> max()
-            
-            maxS <- max(c(maxS,spawnerAbundance_lastGen_m))
-            
-            # Maximum benchmark
-            maxS <- sapply(modelCI_cl,function(m){
-              # return(quantile(x = m$benchmarkBoot[,"benchmark_0.5"],probs = .9))
-              return(max(x = m$benchmarkBoot[,"benchmark_0.5"],na.rm = T))
-            }) |> max()
-            
-            # 
-            cond_025 <- benchSummary_df_cl$benchmark == 'benchmark_0.25'
-            cond_050 <- benchSummary_df_cl$benchmark == 'benchmark_0.5'
-            
-            # coefficient to use to scale the graph so that extreme values do make
-            # the figure too large
-            maxS_fig <- maxS
-            coeff <- 2
-            if(maxS > coeff * max(benchSummary_df_cl$m[cond_050])){
-              maxS <- coeff * max(benchSummary_df_cl$m[cond_050])
-            }
-            
-            layout(mat = matrix(1:4,ncol = 1), heights = c(1.2,1,1,1.2))
-            for(cl in 1:4){
-              # cl <- 1
-              
-              side1 <- side3 <- .5
-              xaxt <- "n"
-              xlab <- main <- ""
-              if(cl == 1){
-                side3 <- 3
-                main <-  paste0(regionName," - ",species_abbr[i_cu]," - ",CUname_pse," - ",cuids[i_cu])
-              }else if(cl == 4){
-                side1 <- 4.5
-                xaxt <- "s"
-                xlab <- "Number of fish"
-              }
-              
-              par(mar = c(side1,4.5,side3,1))
-              
-              coeff_div <- sqrt(maxS_fig) |> ceiling()
-              # coeff_div <- log(maxS_fig) * 2 |> ceiling()
-            
-              hl <- hist(x = modelCI_cl[[cl]]$benchmarkBoot[,"benchmark_0.25"], 
-                         col = paste0(status_cols['red'], 50), border = NA,
-                         breaks = seq(0, maxS_fig, maxS_fig/coeff_div), 
-                         #breaks = maxS/100, 
-                         xlim = c(0, maxS), 
-                         main = main, xlab = xlab,
-                         freq = FALSE, xaxt = xaxt)
-              axis(side = 1, labels = NA)
-              
-              hu_05 <- hist(x = modelCI_cl[[cl]]$benchmarkBoot[,"benchmark_0.5"], 
-                            col = paste0(status_cols['green'], 50), border = NA, 
-                            breaks = seq(0, maxS_fig, maxS_fig/coeff_div), 
-                            # breaks = maxS/50,  xaxt = xaxt,
-                            add = TRUE, 
-                            freq = FALSE)
-              
-              cond_cl <- benchSummary_df_cl$cycle_line == cl
-              segments(x0 = benchSummary_df_cl$m[cond_cl & cond_025], y0 = 0,
-                       x1 = benchSummary_df_cl$m[cond_cl & cond_025],  y1 = 1^10,
-                       lwd = 2, col = status_cols['red'])
-              segments(x0 = benchSummary_df_cl$m[cond_cl & cond_050], y0 = 0,
-                       x1 = benchSummary_df_cl$m[cond_cl & cond_050], y1 = 1^10,
-                       lwd = 2, col = status_cols['green'])
-              
-              
-              legend("right", bty = 'n',legend = paste0("Cycle-line:",cl))
-              
-              if(cl_here[cl]){ # if this cycle-line contains the last year with data 
-                segments(x0 = spawnerAbundance_lastGen_m, x1 = spawnerAbundance_lastGen_m, 
-                         y0 = 0, y1 = 1^10, lwd = 2)
-                
-                cond_leg <- status_percent_prob_05 == max(status_percent_prob_05)
-                legend("topright", bty = 'n', text.font = 2,
-                       paste0(names(status_percent_prob_05)[cond_leg]," (",max(status_percent_prob_05),"%)"))
-              }
-            }
 
-            if(print_fig){
-              dev.off()
-            }
+          # Calculate current spawner abundance:
+          csa_cl <- sapply(spawnerAbundance_cl_l,function(csa){
+            return(tail(csa,1))
+          })
+          names(csa_cl) <- gsub(".*\\.","",names(csa_cl))
+          
+          yrInitial <- names(csa_cl) |> as.numeric()
+          yrFinal <-  names(csa_cl) |> as.numeric()
+          currentSpawnerData_available <- sapply(spawnerAbundance_cl_l,function(csa){
+            return(any(!is.na(csa)))
+          })
+          spawnerAbundance_lastGen_m <- csa_cl
+          spawnerAbundance_lastGen_dataPointNb <- rep(1,length(csa_cl))
+          currentSpawnerData_availableRecentEnough <- currentSpawnerData_available # we don't use generation length so the question is the same as asking if there are non-NA values
+          
+          # Determine the biostatus for each cycle-line
+          status_percent075 <- c()
+          status_percent05 <- c()
+          for(cl in 1:length(spawnerAbundance_cl_l)){
+            # cl <- 1
+            cond_cl <- benchSummary_region_species_df$cycle_line == cl
+            cond_cuid <- benchSummary_region_species_df$cuid == cuids[i_cu]
+            cond_025 <- benchSummary_region_species_df$benchmark == "benchmark_0.25"
+            cond_05 <- benchSummary_region_species_df$benchmark == "benchmark_0.5"
+            cond_075 <- benchSummary_region_species_df$benchmark == "benchmark_0.75"
+            csa <- csa_cl[cl]
+            bench_025 <-  benchSummary_region_species_df$m[cond_cl & cond_cuid & cond_025]
+            bench_05 <-  benchSummary_region_species_df$m[cond_cl & cond_cuid & cond_05]
+            bench_075 <-  benchSummary_region_species_df$m[cond_cl & cond_cuid & cond_075]
             
-          }else{
-            
-            status_percent_prob_05 <- rep(NA,3)
-            status_percent_prob_075 <- rep(NA,3)
-            names(status_percent_prob_05) <- c("red","amber","green")
-            names(status_percent_prob_075) <- c("red","amber","green")
-            
-            if(!currentSpawnerData_available){
-              comment <- paste0("No estimated_count data in cuspawnerabundance.csv")
-            }else if(!currentSpawnerData_availableRecentEnough){
-              comment <- paste0("Not recent enough data: last year with data is ",yrFinal," while generation length = ",CU_genLength," years and current year = ",yearCurrentAbundance)
+            if(csa <= bench_025){
+              status_percent075[cl] <- "poor"
+              status_percent05[cl] <- "poor"
+            }else if(csa <= bench_05 & csa <= bench_075){
+              status_percent075[cl] <- "fair"
+              status_percent05[cl] <- "fair"
+            }else if(csa > bench_05 & csa <= bench_075){
+              status_percent075[cl] <- "fair"
+              status_percent05[cl] <- "good"
+            }else{
+              status_percent075[cl] <- "good"
+              status_percent05[cl] <- "good"
             }
           }
           
-          biologicalStatus_df <- data.frame(region = region[i_rg],
-                                            species = speciesAcroHere,
-                                            cuid = cuids[i_cu],
-                                            CU = CUs[i_cu])
+          biologicalStatus_df <- data.frame(region = rep(region[i_rg],length(spawnerAbundance_cl_l)),
+                                            species = rep(speciesAcroHere,length(spawnerAbundance_cl_l)),
+                                            cuid = rep(cuids[i_cu],length(spawnerAbundance_cl_l)),
+                                            CU = rep(CUs[i_cu],length(spawnerAbundance_cl_l)))
           biologicalStatus_df$CU_pse <- CUname_pse
           biologicalStatus_df$CU_dfo <- CUname_dfo
-          biologicalStatus_df$current_spawner_abundance <- spawnerAbundance_lastGen_m
+          biologicalStatus_df$cycle_line <- 1:4
+          biologicalStatus_df$cycle_line_dominant <- sum_spawner == max(sum_spawner)
+          biologicalStatus_df$current_spawner_abundance <- csa_cl
           biologicalStatus_df$yr_withData_start <- yrInitial
           biologicalStatus_df$yr_withData_end <- yrFinal
           biologicalStatus_df$yr_end_imposed <- yearCurrentAbundance
-          biologicalStatus_df$genLength <- CU_genLength
-          biologicalStatus_df$genLength_available <- CU_genLength_available
-          biologicalStatus_df$dataPointNb <- sum(!is.na(spawnerAbundance))
-          biologicalStatus_df$genLength_dataPointNb <- spawnerAbundance_lastGen_dataPointNb
-          biologicalStatus_df$status_percent_05_red <- status_percent_prob_05["red"]
-          biologicalStatus_df$status_percent_05_amber <- status_percent_prob_05["amber"]
-          biologicalStatus_df$status_percent_05_green <- status_percent_prob_05["green"]
-          biologicalStatus_df$status_percent_075_red <- status_percent_prob_075["red"]
-          biologicalStatus_df$status_percent_075_amber <- status_percent_prob_075["amber"]
-          biologicalStatus_df$status_percent_075_green <- status_percent_prob_075["green"]
+          cond <- conservationunits_decoder$cuid == cuids[i_cu]
+          biologicalStatus_df$genLength <- conservationunits_decoder$gen_length[cond]
+          biologicalStatus_df$genLength_available <- T
+          biologicalStatus_df$dataPointNb <- sapply(spawnerAbundance_cl_l,function(sa_cl){
+            return(sum(!is.na(sa_cl)))
+          })
+          # biologicalStatus_df$genLength_dataPointNb <- spawnerAbundance_lastGen_dataPointNb
+          # biologicalStatus_df$status_percent_05_red <- status_percent_prob_05["red"]
+          # biologicalStatus_df$status_percent_05_amber <- status_percent_prob_05["amber"]
+          # biologicalStatus_df$status_percent_05_green <- status_percent_prob_05["green"]
+          # biologicalStatus_df$status_percent_075_red <- status_percent_prob_075["red"]
+          # biologicalStatus_df$status_percent_075_amber <- status_percent_prob_075["amber"]
+          # biologicalStatus_df$status_percent_075_green <- status_percent_prob_075["green"]
+          biologicalStatus_df$status_percent05 <- status_percent05
+          biologicalStatus_df$status_percent075 <- status_percent075
           biologicalStatus_df$comment <- comment
           
           if(is.null(biologicalStatus_region_species_df)){
@@ -576,9 +427,149 @@ for(i_rg in 1:length(region)){
             biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
                                                         biologicalStatus_df)
           }
-
-        } # end of loop for the CUs
-        
+          
+          maxS <- sapply(modelCI_cl,function(m){
+            # return(quantile(x = m$benchmarkBoot[,"benchmark_0.5"],probs = .9))
+            return(max(x = m$benchmarkBoot[,"benchmark_0.5"],na.rm = T))
+          }) |> max()
+          
+          maxS <- max(c(maxS,spawnerAbundance_lastGen_m))
+          
+          maxS_fig <- maxS
+          
+          minS <- 0
+          
+          # 
+          cond_025 <- benchSummary_df_cl$benchmark == 'benchmark_0.25'
+          cond_050 <- benchSummary_df_cl$benchmark == 'benchmark_0.5'
+          
+          log10_scale <- T
+          
+          if(log10_scale){
+            maxS <- log10(maxS)
+            maxS_fig <- log10(maxS_fig)
+            minS <- sapply(modelCI_cl,function(m){
+              # return(quantile(x = m$benchmarkBoot[,"benchmark_0.5"],probs = .9))
+              return(min(x = m$benchmarkBoot[,"benchmark_0.5"],na.rm = T))
+            }) |> min()
+            minS <- min(c(minS,csa_cl))
+            minS <- log10(minS)
+          }
+          
+          # coefficient to use to scale the graph so that extreme values do make
+          # the figure too large
+          coeff <- 2
+          if(maxS > coeff * max(benchSummary_df_cl$m[cond_050])){
+            maxS <- coeff * max(benchSummary_df_cl$m[cond_050])
+          }
+          
+          # Figure
+          if(print_fig){
+            CUhere <- gsub(pattern = "/",'-',CUs[i_cu])  # in case "/" is in the CU's name
+            CUhere <- gsub(pattern = "\\(","",CUhere)
+            CUhere <- gsub(pattern = "\\)","",CUhere)
+            
+            cut_off <- 35
+            if(nchar(CUhere) > cut_off){   # the figure can't print if the number of characters is too large
+              CUhere <- substr(x = CUhere,start =  1,stop = cut_off) 
+            }
+            
+            pathFile <- paste0(wd_figures,"/",regionName,"_",species_abbr[i_cu],"_",CUhere,"_",cuids[i_cu],"_",
+                               "bench_percent_hist.jpeg")
+            
+            jpeg(file = pathFile, width = 18, height = 18, units = "cm", res = 300)
+          }
+          layout(mat = matrix(1:4,ncol = 1), heights = c(1.25,1,1,1.35))
+          for(cl in 1:4){
+            # cl <- 1
+            
+            side1 <- side3 <- .5
+            xaxt <- "n"
+            xlab <- main <- ""
+            if(cl == 1){
+              side3 <- 3
+              main <-  paste0(regionName," - ",species_abbr[i_cu]," - ",CUname_pse," - ",cuids[i_cu])
+            }else if(cl == 4){
+              side1 <- 4.5
+              xaxt <- "s"
+              xlab <- "Number of fish"
+            }
+            
+            par(mar = c(side1,4.5,side3,1))
+            
+            coeff_div <- sqrt(maxS_fig) |> ceiling()
+            # coeff_div <- log(maxS_fig) * 2 |> ceiling()
+            
+            cond_cl <- benchSummary_df_cl$cycle_line == cl
+            bench_low_dist <- modelCI_cl[[cl]]$benchmarkBoot[,"benchmark_0.25"]
+            bench_up_dist <- modelCI_cl[[cl]]$benchmarkBoot[,"benchmark_0.5"]
+            bench_low <- benchSummary_df_cl$m[cond_cl & cond_025]
+            bench_up <- benchSummary_df_cl$m[cond_cl & cond_050]
+            curr_sa <- spawnerAbundance_lastGen_m[cl]
+            xlab <- "Number of fish"
+            
+            if(!log10_scale){
+              breaks <- seq(0, maxS_fig, maxS_fig/coeff_div)
+            }
+            
+            if(log10_scale){
+              bench_low_dist <- log10(bench_low_dist)
+              bench_up_dist <- log10(bench_up_dist)
+              bench_low <- log10(bench_low)
+              bench_up <- log10(bench_up)
+              curr_sa <- log10(curr_sa)
+              breaks <- "Sturges"
+              xlab <- "Number of fish (log10)"
+            }
+            
+            hl <- hist(x = bench_low_dist, 
+                       col = paste0(status_cols['red'], 50), border = NA,
+                       breaks = breaks, 
+                       #breaks = maxS/100, 
+                       xlim = c(minS, maxS), 
+                       main = main, xlab = xlab,
+                       freq = FALSE, xaxt = xaxt)
+            axis(side = 1, labels = NA)
+            
+            hu_05 <- hist(x = bench_up_dist, 
+                          col = paste0(status_cols['green'], 50), border = NA, 
+                          breaks = breaks, 
+                          # breaks = maxS/50,  xaxt = xaxt,
+                          add = TRUE, 
+                          freq = FALSE)
+            
+            # plot the upper and lower benchmarks
+            
+            segments(x0 = bench_low, y0 = 0, x1 = bench_low,  y1 = max(c(hl$density,hu_05$density)),
+                     lwd = 2, col = status_cols['red'])
+            segments(x0 = bench_up, y0 = 0, x1 = bench_up, y1 = max(c(hl$density,hu_05$density)),
+                     lwd = 2, col = status_cols['green'])
+            
+            # plot the current spawner abundance
+            segments(x0 = curr_sa, x1 = curr_sa, y0 = 0, y1 = max(c(hl$density,hu_05$density)), lwd = 2)
+            
+            # 
+            text.col <- "green"
+            if(biologicalStatus_df$status_percent05[cl] == "fair"){
+              text.col <- "amber"
+            }else if(biologicalStatus_df$status_percent05[cl] == "poor"){
+              text.col <- "red"
+            }
+            legend("right", bty = 'n',legend = biologicalStatus_df$status_percent05[cl], 
+                   text.col = status_cols[text.col], cex = 1.5)
+            
+            if(sum_spawner[cl] == max(sum_spawner)){
+              legend("topright", bty = 'n',legend = c(biologicalStatus_df$yr_withData_end[cl],"dominant"))
+            }else{
+              legend("topright", bty = 'n',legend = biologicalStatus_df$yr_withData_end[cl])
+            }
+          }
+          
+          if(print_fig){
+            dev.off()
+          }
+        } # end of fear each CU
+          
         print(paste0("*** ",regionName,"_",speciesAcroHere," done ***"))
         write.csv(x = benchSummary_region_species_df, 
                   file = paste0(wd_output,"/intermediate/",regionName,"_",speciesAcroHere,"_cyclic_benchmarks_summary_percentiles.csv"),

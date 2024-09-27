@@ -1852,7 +1852,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   cu_name_pse <- gsub(" (even)","",cu_name_pse)
   cu_name_pse <- gsub(" (odd)","",cu_name_pse)
   if(nchar(cu_name_pse) > file_name_nchar){   # the figure can't print if the number of characters is too large
-    cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = 25) 
+    cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = file_name_nchar) 
   }
   species_abbr <- conservationunits_decoder$species_abbr[cond]
   
@@ -2168,6 +2168,332 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   if(figure_print){
     dev.off()
   }
+}
+
+
+#' Same as above but for cyclic CUs
+# cuid <- 728 # issue with Sgen > Ssmy ; 1004 : issue with biostatus percentile not match
+# dataset101_biological_status <- biostatus_101
+# dataset102_benchmarks <- benchmarks_102_cyclic
+# cuspawnerabundance <- spawnerabundance
+# dataset103_output <- biostatus_101
+# figure_print <- F
+# file_name_nchar <- 60
+plot_spawnerAbundance_benchmarks_cyclic_fun <- function(cuid, 
+                                                 cuspawnerabundance, # spawner abundance  
+                                                 dataset101_biological_status,  # biostatus
+                                                 dataset102_benchmarks,  # benchmark values
+                                                 #dataset103_output,  # smooth spawner abundance NOT UPDATED so calculated in the function
+                                                 conservationunits_decoder,  # for the generation length
+                                                 log10_scale = F,
+                                                 figure_print = F,
+                                                 wd_figures = NA,
+                                                 file_name_nchar = 25){
+  
+  require(zoo) # to use rollapply()
+  
+  # Estimated spawner abundance:
+  cond <- cuspawnerabundance$cuid == cuid
+  spawnerAbund <- cuspawnerabundance[cond,]
+  
+  y_range_min <- 0
+  if(log10_scale){
+    y_range_min <- 1
+  }
+  
+  x_range <- range(spawnerAbund$year[!is.na(spawnerAbund$estimated_count)])
+  x_range[1] <- x_range[1] - ((x_range[2] - x_range[1]) * .1) |> floor()
+  x_range[2] <- x_range[2] + ((x_range[2] - x_range[1]) * .05) |> ceiling()
+  y_range <- c(y_range_min,max(spawnerAbund$estimated_count, na.rm = T))
+  y_range[2] <- y_range[2] + ((y_range[2] - y_range[1]) * .1)
+  
+  if(log10_scale){
+    y_range <- log10(y_range)
+  }
+  
+  # Smoothed spawner abundance
+  # cond <- dataset103_output$cuid == cuid
+  # spawnerAbund_smooth <- dataset103_output[cond,]
+  
+  # generation length and more
+  cond <- conservationunits_decoder$cuid == cuid
+  genLength <- conservationunits_decoder$gen_length[cond]
+  region <- conservationunits_decoder$region[cond]
+  if(region == "Vancouver Island & Mainland Inlets"){
+    region <- "VIMI"
+  }
+  cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
+  cu_name_pse <- gsub(" (even)","",cu_name_pse)
+  cu_name_pse <- gsub(" (odd)","",cu_name_pse)
+  if(nchar(cu_name_pse) > file_name_nchar){   # the figure can't print if the number of characters is too large
+    cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = file_name_nchar) 
+  }
+  species_abbr <- conservationunits_decoder$species_abbr[cond]
+  
+  cu_file_name <- paste0(c(region,species_abbr,cu_name_pse),collapse = " - ")
+  cu_file_name <- gsub("/",".",cu_file_name)
+  
+  # Biostatus
+  cond <- dataset101_biological_status$cuid == cuid
+  biostatus <- dataset101_biological_status[cond,]
+  
+  # Benchmarks
+  cond <- dataset102_benchmarks$cuid == cuid
+  benchmarks <- dataset102_benchmarks[cond,]
+  
+  # Check that the CU is cyclic
+  if(!any(grepl("cycle_line",colnames(benchmarks)))){
+    
+    print("Error")
+    print("dataset102_benchmarks does not have the field 'cycle_line', which should be present if the CUs have cyclic dynamics.")
+    print("Use plot_spawnerAbundance_benchmarks_cyclic_fun() for non-cyclic CU.")
+    break
+    
+  }else{
+    
+    cycle_lines <- unique(benchmarks$cycle_line)
+    
+    # separate spawnerAbund in each of the cycle-lines
+    spawnerAbund_cl_l <- list()
+    for(cl in 1:4){
+      i <- 1:nrow(spawnerAbund)
+      i <- i[(i + cl - 2) %% 4 == 0]
+      spawnerAbund_cl <- spawnerAbund[i,]
+      spawnerAbund_cl_l[[cl]] <- spawnerAbund_cl
+    }
+    names(spawnerAbund_cl_l) <- 1:4
+
+    if(figure_print){
+      cu_file_name2 <- gsub(" - ","_",cu_file_name)
+      cu_file_name2 <- gsub(" ","_",cu_file_name2)
+      pathFile <- paste0(wd_figures,"/",cu_file_name2,"_",cuid,"_biostatus_benchmarks.jpg")
+      jpeg(file = pathFile, width = 25, height = 25, units = "cm", res = 300)
+    }
+    
+    layout(matrix(1:(length(cycle_lines)*2), nrow = length(cycle_lines), byrow = T), 
+           widths = c(1,.15), heights = c(1.18,1,1,1.26))
+    
+    for(cl_yr in cycle_lines){
+      # cl_yr <- 1
+      
+      cond_cl_yr <- benchmarks$cycle_line == cl_yr
+      
+      side1 <- side3 <- .5
+      xaxt <- "n"
+      main <- xlab <- ""
+      if(cl_yr == 1){
+        side3 <- 3.5
+        main <-  paste0(cu_file_name," - ",cuid)
+        
+      }else if(cl_yr == 4){
+        side1 <- 4.5
+        xaxt <- 's'
+        xlab <- "Year"
+      }
+      
+      # Find the benchmark values
+      polygons_show <- T
+      if(biostatus$psf_status_type[1] == "sr"){
+        benchmark_low <- benchmarks$sgen[cond_cl_yr]
+        benchmark_low_025 <- benchmarks$sgen_lower[cond_cl_yr]
+        benchmark_low_975 <- benchmarks$sgen_upper[cond_cl_yr]
+        
+        if(any(grepl("smsy80",colnames(benchmarks)))){
+          benchmark_up <- benchmarks$smsy80[cond_cl_yr]
+          benchmark_up_025 <- benchmarks$smsy80_lower[cond_cl_yr]
+          benchmark_up_975 <- benchmarks$smsy80_upper[cond_cl_yr]
+        }else{
+          benchmark_up <- benchmarks$smsy[cond_cl_yr]
+          benchmark_up_025 <- benchmarks$smsy_lower[cond_cl_yr]
+          benchmark_up_975 <- benchmarks$smsy_upper[cond_cl_yr]
+        }
+        method <- "HBSR"
+        status <- biostatus$sr_status
+        
+      }else if(biostatus$psf_status_type[1] == "percentile"){
+        
+        if(any(grepl("X25._spw",colnames(biostatus)))){
+          benchmark_low <- benchmarks$X25._spw[cond_cl_yr]             # `25%_spw`
+          benchmark_low_025 <- benchmarks$X25._spw_lower[cond_cl_yr]   # `25%_spw_lower`
+          benchmark_low_975 <- benchmarks$X25._spw_upper[cond_cl_yr]   # `25%_spw_upper`
+          benchmark_up <- benchmarks$X75._spw[cond_cl_yr]              # `75%_spw`
+          benchmark_up_025 <- benchmarks$X75._spw_lower[cond_cl_yr]    # `75%_spw_lower`
+          benchmark_up_975 <- benchmarks$X75._spw_upper[cond_cl_yr]    # `75%_spw_upper`
+        }else{
+          benchmark_low <- benchmarks$`25%_spw`[cond_cl_yr]
+          benchmark_low_025 <- benchmarks$`25%_spw_lower`[cond_cl_yr]
+          benchmark_low_975 <- benchmarks$`25%_spw_upper`[cond_cl_yr]
+          benchmark_up <- benchmarks$`75%_spw`[cond_cl_yr]
+          benchmark_up_025 <- benchmarks$`75%_spw_lower`[cond_cl_yr]
+          benchmark_up_975 <- benchmarks$`75%_spw_upper`[cond_cl_yr]
+        }
+        
+        method <- "Percentiles"
+        status <- biostatus$percentile_status
+        
+        # COMMENT:
+        # This is indeed the 50% percentile and not the 75, despite the name being "75%_spw"
+        # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
+        
+      }else{ # there is no benchmark values
+        print("There are no benchmark values for this CU.")
+        polygons_show <- F
+      }
+      
+      # adjust y_range eventually if values are below thresholds
+      # if(any(max(y_range) < c(benchmark_low_025,benchmark_up_025))){
+      #   y_range[2] <- benchmark_up_975 + benchmark_up_975 * .2
+      # }
+      
+      # Get current spawner abundance
+      csa <- benchmarks$curr_spw[cond_cl_yr]
+      
+      par(mar = c(side1,5,side3,0))
+      
+      ylab <- "Estimated spawwner abundance"
+      las <- 0
+      if(log10_scale){
+        
+        benchmark_low <- log10(benchmark_low)
+        benchmark_low_025 <- log10(benchmark_low_025)
+        benchmark_low_975 <- log10(benchmark_low_975)
+        benchmark_up <- log10(benchmark_up)
+        benchmark_up_025 <- log10(benchmark_up_025)
+        benchmark_up_975 <- log10(benchmark_up_975)
+        
+        csa <- log10(csa)
+        
+        ylab <- "Estimated spawwner abundance (log10)"
+        las <- 1
+      }
+      
+      plot(NA, xlim = x_range, ylim = y_range, xaxs = 'i', yaxs = 'i', bty = 'l', 
+           las = las, ylab = ylab, xlab = xlab, main = main, xaxt = xaxt)
+      
+      # polygons
+      alpha <- 0.4
+      if(polygons_show){
+        polygon(x = c(x_range,rev(x_range)), 
+                y = c(benchmark_up,benchmark_up,y_range[2],y_range[2]), 
+                col = colour_transparency_fun(status_cols["green"],alpha = alpha),
+                border = F)
+        polygon(x = c(x_range,rev(x_range)), 
+                y = c(benchmark_low,benchmark_low,benchmark_up,benchmark_up), 
+                col = colour_transparency_fun(status_cols["amber"],alpha = alpha),border = F)
+        polygon(x = c(x_range,rev(x_range)), 
+                y = c(min(y_range),min(y_range),benchmark_low,benchmark_low), 
+                col = colour_transparency_fun(status_cols["red"],alpha = alpha),border = F)
+      }
+      
+      # grid - y
+      digits_nb <- nchar(ceiling(y_range[2]))
+      grid_max <- substr(x = ceiling(y_range[2]), start = 1, stop = 1)
+      factor <- paste(c(1,rep(0,(digits_nb - 1))), collapse = "") |> as.numeric()
+      grid_vals <- 0:as.numeric(grid_max) * factor
+      if(length(grid_vals) < 5){ # add a segment to each 1/2 intervals as well
+        grid_max <- substr(x = ceiling(y_range[2]), start = 1, stop = 2)
+        grid_vals <- 0:as.numeric(grid_max) 
+        grid_vals <- grid_vals[grid_vals %% 5 == 0]
+        grid_vals <- grid_vals * factor / 10
+      }
+      if(length(grid_vals) < 5){ # add a segment to each 1/5 intervals as well
+        grid_vals <- 0:as.numeric(grid_max) 
+        grid_vals <- grid_vals[grid_vals %% 2 == 0]
+        grid_vals <- grid_vals * factor / 10
+      }
+      segments(x0 = rep(x_range[1],length(grid_vals)),
+               x1 = rep(x_range[2],length(grid_vals)),
+               y0 = grid_vals, y1 = grid_vals,
+               lwd = 2, col = colour_transparency_fun("white",alpha = .5))
+      
+      # grid - x
+      yrs <- min(spawnerAbund$year):max(spawnerAbund$year)
+      grid_vals <- yrs[yrs %% 10 == 0]
+      if(length(grid_vals) < 3){ # add a segment to each 5 years
+        grid_vals <- yrs[yrs %% 5 == 0]
+      }
+      segments(y0 = rep(y_range[1],length(grid_vals)),
+               y1 = rep(y_range[2],length(grid_vals)),
+               x0 = grid_vals, x1 = grid_vals,
+               lwd = 2, col = colour_transparency_fun("white",alpha = .5))
+      
+      # Plot current spawner abundance
+      cond <- status[cl_yr] == c("good","fair","poor","hfjfk","djahdjk")
+      col_csa <- status_cols[cond]
+      
+      segments(x0 = benchmarks$curr_spw_start_year[cond_cl_yr], x1 = x_range[2], 
+               y0 = csa, y1 = csa, lwd = 3, col = col_csa)
+      
+      # show benchmarks
+      segments(x0 = c(x_range[1],x_range[1]), x1 = c(x_range[2],x_range[2]),
+               y0 = c(benchmark_low,benchmark_up), y1 = c(benchmark_low,benchmark_up), 
+               col = c(status_cols["red"], status_cols["green"]), lwd = 2)
+      
+      # plot estimated spawner abundance
+      # remove odd and even years for PKO and PKE, respectively so the dots are 
+      # connected.
+      if(species_abbr == "PKO"){
+        cond_to_keep <- spawnerAbund$year %% 2 == 1
+      }else if(species_abbr == "PKE"){
+        cond_to_keep <- spawnerAbund$year %% 2 == 0
+      }else{
+        cond_to_keep <- rep(T,length(spawnerAbund$year))
+      }
+      x <- spawnerAbund$year[cond_to_keep]
+      y <- spawnerAbund$estimated_count[cond_to_keep]
+      if(log10_scale){
+        y <- log10(y)
+      }
+      points(x = x, y = y, pch = 16, type = 'o', lwd = 2, 
+             col = colour_transparency_fun("black",alpha = alpha))
+      
+      # Add the cycle-line
+      y <-  spawnerAbund_cl_l[[cl_yr]]$estimated_count
+      if(log10_scale){
+        y <- log10(y)
+      }
+      x <- spawnerAbund_cl_l[[cl_yr]]$year
+      points(x = x, y = y, type = 'o', lwd = 2.5, pch = 1, cex = 1)
+      
+      # display issue
+      if(benchmark_low > benchmark_up){
+        legend("top","BENCHMARK ISSUE",bty = 'n', text.col = "red")
+      }
+      
+      # Extend benchmarks and plot 95% CI and current spawner abundance
+      main <- ""
+      if(cl_yr == 1){
+        main <- method
+      }
+      par(mar = c(side1,0,side3,0.5))
+      plot(NA, xlim = c(0,1), ylim = y_range, ylab = "", xlab = "", 
+           main = main, cex.main = .9, font.main = 1, # plain font
+           xaxt = 'n', yaxt = 'n', bty = 'n', xaxs = 'i', yaxs = 'i')
+      
+      # plot the current spawner abundance
+      segments(x0 = 0, x1 = .8, y0 = csa, y1 = csa, lwd = 3, col = col_csa)
+      
+      # benchmarks
+      segments(x0 = c(0,0), y0 = c(benchmark_low,benchmark_up),
+               x1 = c(.4,.6), y1 = c(benchmark_low,benchmark_up), 
+               col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+      points(x = c(.4,.6), y = c(benchmark_low,benchmark_up), pch = 16, 
+             col = c(status_cols["red"],status_cols["green"]))
+      segments(x0 = c(.4,.6), y0 = c(benchmark_low_025,
+                                     benchmark_up_025),
+               x1 = c(.4,.6), y1 = c(benchmark_low_975,
+                                     benchmark_up_975), 
+               col = c(status_cols["red"],status_cols["green"]), lwd = 2)
+      
+      legend("right",legend = benchmarks$curr_spw_end_year[cond_cl_yr],bty = 'n')
+      
+      # 
+    } # for each cycle-line
+    
+    if(figure_print){
+      dev.off()
+    }
+  } # if the CU is cyclic
 }
 
 #' Function to run the HBSRM models with JAGS. Possibility to run the Ricker model 

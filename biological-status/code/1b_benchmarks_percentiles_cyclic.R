@@ -160,7 +160,7 @@ yearCurrentAbundance <- NA # was 2021
 # Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
-print_fig <- F
+print_fig <- T
 
 #
 for(i_rg in 1:length(region)){
@@ -236,6 +236,7 @@ for(i_rg in 1:length(region)){
         for(i_cu in 1:length(CUs)){
           
           # i_cu <- 1
+          # i_cu <- which(cuids == 728)
           
           # subset cuspawnerabundance_rg_sp
           cuspawnerabundance_rg_sp_cu <- cuspawnerabundance_rg_sp[cuspawnerabundance_rg_sp$cu_name_pse == CUs[i_cu],]
@@ -479,6 +480,7 @@ for(i_rg in 1:length(region)){
             
             jpeg(file = pathFile, width = 18, height = 18, units = "cm", res = 300)
           }
+          
           layout(mat = matrix(1:4,ncol = 1), heights = c(1.25,1,1,1.35))
           for(cl in 1:4){
             # cl <- 1

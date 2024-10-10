@@ -114,7 +114,8 @@ pattern <- "benchmarks_summary_percentiles"
 benchmarks_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                        wd_output = paste0(wd_output,"/intermediate"),
                                                        region = region,
-                                                       species_all = species_all)
+                                                       species_all = species_all,
+                                                       term_exculde = "cyclic")
 
 #'* Import biostatus obtained with HBSR Sgen - Smsy: *
 pattern <- "biological_status_HBSRM"
@@ -161,7 +162,8 @@ pattern <- "biological_status_percentiles"
 biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       wd_output = paste0(wd_output,"/intermediate"),
                                                       region = region,
-                                                      species_all = species_all)
+                                                      species_all = species_all,
+                                                      term_exculde = "cyclic")
 
 nrow(biological_status_percentile) # 451 452 448
 
@@ -352,7 +354,6 @@ highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_percentile =
 # 
 # write.csv(code_PSF_Status,paste0(wd_data_dropbox,"/code_PSF_Status.csv"),
 #           row.names = F)
-
 
 # ONLY THIS TIME:
 # the decoder has been update after the biostatus simulations were launched and 
@@ -645,10 +646,13 @@ check <- do.call(rbind.data.frame, check)
 check
 length(unique(check$cuid)) # 5
 
+# This is considered in the forloop below in Condition 3: Sgen < Smsy.
+# --> use percentile benchmarks if available.
+
 #
 for(r in 1:nrow(biological_status_merged)){
   # r <- 170
-  # r <- which(biological_status_merged$cuid == 319)
+  # r <- which(biological_status_merged$cuid == 810)
   bs_here <- biological_status_merged[r,]
   
   # *** HBSRM method ***
@@ -682,7 +686,7 @@ for(r in 1:nrow(biological_status_merged)){
     if(Sgen < Smsy){
       cond_HBRSM_3 <- T
     }else{
-      cond_HBRSM_3 <- F
+      cond_HBRSM_3 <- F     # Sgen > Smsy
     }
   }else{
     cond_HBRSM_3 <- F

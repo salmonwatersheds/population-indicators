@@ -514,7 +514,7 @@ bioStatus_merged_diff[bioStatus_merged_diff$sr_status == "good" &
 
 datasetsNames_database <- datasetsNames_database_fun()
 
-fromDatabase <- update_file_csv <- T
+fromDatabase <- update_file_csv <- F
 
 #' Import the recruitsperspawner.csv 
 # recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
@@ -622,7 +622,7 @@ cond <- bs_check$sr_status != bs_check$sr_status_2
 bs_check[cond,]
 
 #
-# Same figure as above but for cyclic CUs Percentiles -----
+# Same figure as above but for CYCLIC CUs PERCENTILES -----
 # These CUs will have their figure produced in the above section in future so 
 # no need to keep this section then.
 #
@@ -696,9 +696,6 @@ for(cuid in unique(benchmarks$cuid)){
     cond_cuid <- biostatus_101$cuid == cuid
     cond_cl <- biostatus_101$cycle_line == cl
     benchmarks_102_here$cycle_line_dominant <- biostatus_101$cycle_line_dominant[cond_cuid & cond_cl]
-    
-    cond_cuid <- biostatus_101$cuid == cuid
-    cond_cl <- biostatus_101$cycle_line == cl
     benchmarks_102_here$curr_spw <- biostatus_101$current_spawner_abundance[cond_cuid & cond_cl]
 
     benchmarks_102_here$sgen <- NA           # lower HBSRM benchmark
@@ -739,7 +736,7 @@ figure_print <- T
 for(cuid in unique(benchmarks_102_cyclic$cuid)){
   # cuid <- unique(benchmarks_102_cyclic$cuid)[2]
   # cond_cl_current <- benchmarks_102_cyclic$cycle_line_current
-  plot_spawnerAbundance_benchmarks_cyclic_fun(cuid = cuid,
+  plot_spawnerAbundance_benchmarks_cyclic_percentile_fun(cuid = cuid,
                                        cuspawnerabundance = spawnerabundance, 
                                        dataset101_biological_status = biostatus_101, # biological_status_cu, 
                                        dataset102_benchmarks = benchmarks_102_cyclic,# [cond_cl_current,], # benchmarks_cu, 
@@ -752,6 +749,211 @@ for(cuid in unique(benchmarks_102_cyclic$cuid)){
 }
 
 #
+# Same figure as above but for CYCLIC CUs RICKER & LARKIN -----
+# These CUs will have their figure produced in the above section in future so 
+# no need to keep this section then.
+#
+
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#' Import the cuspawnerabundance.csv
+spawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                          fromDatabase = fromDatabase,
+                                          update_file_csv = update_file_csv,
+                                          wd = wd_pop_indic_data_input_dropbox)
+
+# Import the conservationunits_decoder.csv
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+# Import the cyclic_biological_status_percentiles files
+biostatus_101 <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_Larkin_biological_status_HBSRM",
+                                               wd_output = paste0(wd_output,"/intermediate"), 
+                                               region = unique(conservationunits_decoder$region))
+
+
+biostatus_101_r <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_Ricker_biological_status_HBSRM",
+                                               wd_output = paste0(wd_output,"/intermediate"), 
+                                               region = unique(conservationunits_decoder$region))
+
+biostatus_101 <- rbind(biostatus_101,biostatus_101_r)
+
+head(biostatus_101)
+
+# Import the cyclic_benchmarks_summary_percentiles files
+benchmarks <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_Larkin_benchmarks_summary_HBSRM",
+                                            wd_output = paste0(wd_output,"/intermediate"), 
+                                            region = unique(conservationunits_decoder$region))
+
+benchmarks_r <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_Ricker_benchmarks_summary_HBSRM",
+                                            wd_output = paste0(wd_output,"/intermediate"), 
+                                            region = unique(conservationunits_decoder$region))
+
+benchmarks <- rbind(benchmarks,benchmarks_r)
+
+head(benchmarks)
+
+#'* fill biostatus_101 for these CUs because it was not done in 3_biological_status.R *
+# add column biostatus for both thresholds (Smsy and 80% Smsy)
+colProb <- colnames(biostatus_101)[grepl("Smsy_",colnames(biostatus_101))]
+biostatus_101$status_Smsy <- sapply(X = 1:nrow(biostatus_101), 
+                                              FUN = function(r){
+                                                # r <- 1
+                                                slice <- biostatus_101[r,colProb]
+                                                # out <- c("red","amber","green")[slice == max(slice)][1] 
+                                                out <- c("poor","fair","good")[slice == max(slice)][1] # Katy's request
+                                                return(out)
+                                              })
+
+colProb <- colnames(biostatus_101)[grepl("Smsy80_",colnames(biostatus_101))]
+biostatus_101$status_Smsy80 <- sapply(X = 1:nrow(biostatus_101), 
+                                                FUN = function(r){
+                                                  # r <- 1
+                                                  slice <- biostatus_101[r,colProb]
+                                                  # out <- c("red","amber","green")[slice == max(slice)][1]
+                                                  out <- c("poor","fair","good")[slice == max(slice)][1] # Katy's request
+                                                  return(out)
+                                                })
+
+biostatus_101$sr_status <- biostatus_101$status_Smsy80
+
+biostatus_101$percentile_red_prob <- NA
+biostatus_101$percentile_yellow_prob <- NA
+biostatus_101$percentile_green_prob <- NA
+biostatus_101$percentile_status <- NA
+
+biostatus_101$psf_status_code <- NA
+for(r in 1:nrow(biostatus_101)){
+  if(is.na(biostatus_101$sr_status[r])){
+    out <- NA
+  }else{
+    out <- 1
+    if(biostatus_101$sr_status[r] == "fair"){
+      out <- 2
+    }else if(biostatus_101$sr_status[r] == "poor"){
+      out <- 3
+    }
+  }
+  biostatus_101$psf_status_code[r]  <- out
+}
+biostatus_101$psf_status_code_all <- biostatus_101$psf_status_code
+biostatus_101$psf_status_type <- "sr"
+
+
+#'* fill biological_status_cu for these CUs because it was not done in 3_biological_status.R *
+
+benchmarks_102_cyclic <- NULL
+for(cuid in unique(benchmarks$cuid)){
+  # cuid <- benchmarks$cuid[1]
+  
+  for(model in unique(benchmarks$model)){
+    # model <- unique(benchmarks$model)[1]
+    cond_model_bench <- benchmarks$model == model
+    
+    for(yr in unique(benchmarks$year[cond_model_bench])){
+      # yr <- unique(benchmarks$year[cond_model_bench])[1]
+      cond_cuid <- conservationunits_decoder$cuid == cuid
+      benchmarks_102_here <- data.frame(region = conservationunits_decoder$region[cond_cuid],
+                                        cuid = cuid,
+                                        region_abbr = conservationunits_decoder$region_abbr[cond_cuid],
+                                        cu_name_pse = conservationunits_decoder$cu_name_pse[cond_cuid],
+                                        year = yr)
+      
+      cond_cuid <- biostatus_101$cuid == cuid
+      cond_yr <- biostatus_101$year == yr
+      cond_model <- biostatus_101$model == model
+      benchmarks_102_here$curr_spw <- biostatus_101$current_spawner_abundance[cond_cuid & cond_yr & cond_model]
+
+      cond_cuid <- benchmarks$cuid == cuid
+      cond_yr <- benchmarks$year == yr
+      cond_model <- benchmarks$model == model
+      cond_Sgen <- benchmarks$benchmark == "Sgen"
+      cond_Smsy <- benchmarks$benchmark == "Smsy"
+      cond_HPD <- benchmarks$method == "HPD"
+      benchmarks_102_here$sgen <- benchmarks$m[cond_cuid & cond_yr & cond_Sgen & cond_HPD & cond_model]        
+      benchmarks_102_here$sgen_lower <- benchmarks$CI025[cond_cuid & cond_yr & cond_Sgen & cond_HPD & cond_model] 
+      benchmarks_102_here$sgen_upper <- benchmarks$CI975[cond_cuid & cond_yr & cond_Sgen & cond_HPD & cond_model] 
+      benchmarks_102_here$smsy <- benchmarks$m[cond_cuid & cond_yr & cond_Smsy & cond_HPD & cond_model] * 0.8
+      benchmarks_102_here$smsy_lower <- benchmarks$CI025[cond_cuid & cond_yr & cond_Smsy & cond_HPD & cond_model] * 0.8
+      benchmarks_102_here$smsy_upper <- benchmarks$CI975[cond_cuid & cond_yr & cond_Smsy & cond_HPD & cond_model] * 0.8
+      
+      benchmarks_102_here$`25%_spw` <- NA
+      benchmarks_102_here$`25%_spw_lower` <- NA
+      benchmarks_102_here$`25%_spw_upper` <- NA
+      benchmarks_102_here$`75%_spw` <- NA
+      benchmarks_102_here$`75%_spw_lower` <- NA
+      benchmarks_102_here$`75%_spw_upper` <- NA
+      
+      cond_cuid <- biostatus_101$cuid == cuid
+      cond_yr <- biostatus_101$year == yr
+      cond_model <- biostatus_101$model == model
+      benchmarks_102_here$curr_spw_start_year <- biostatus_101$yr_withData_start[cond_cuid & cond_yr & cond_model]
+      benchmarks_102_here$curr_spw_end_year <- biostatus_101$yr_withData_end[cond_cuid & cond_yr & cond_model]
+      
+      benchmarks_102_here$model <- model
+      
+      if(is.null(benchmarks_102_cyclic)){
+        benchmarks_102_cyclic <- benchmarks_102_here
+      }else{
+        benchmarks_102_cyclic <- rbind(benchmarks_102_cyclic,benchmarks_102_here)
+      }
+    }
+  }
+}
+head(benchmarks_102_cyclic)
+
+cond_cuid <- biostatus_101$cuid == 731
+cond_yr <- biostatus_101$year == 2013
+biostatus_101[cond_cuid & cond_yr,]
+
+# Plot the Larkin model for the four last years:
+cond_Ricker_bio <- biostatus_101$model == "Ricker"
+cond_Ricker_bench <- benchmarks_102_cyclic$model == "Ricker"
+
+log10_scale <- T
+figure_print <- T
+for(cuid in unique(benchmarks_102_cyclic$cuid)){
+  # cuid <- unique(benchmarks_102_cyclic$cuid)[2]
+  # cond_cl_current <- benchmarks_102_cyclic$cycle_line_current
+  plot_spawnerAbundance_benchmarks_cyclic_Larkin_fun(cuid = cuid,
+                                              cuspawnerabundance = spawnerabundance, 
+                                              dataset101_biological_status = biostatus_101[!cond_Ricker_bio,], # biological_status_cu, 
+                                              dataset102_benchmarks = benchmarks_102_cyclic[!cond_Ricker_bench,],# [cond_cl_current,], # benchmarks_cu, 
+                                              #dataset103_output = cuspawnerabund_smooth,
+                                              conservationunits_decoder = conservationunits_decoder, 
+                                              log10_scale = log10_scale,
+                                              figure_print = figure_print, 
+                                              wd_figures = wd_figures, 
+                                              file_name_nchar = 60)
+}
+
+
+# Plot the Ricker model for the last years:
+for(cuid in unique(benchmarks_102_cyclic$cuid)){
+  # cuid <- unique(benchmarks_102_cyclic$cuid)[2]
+  # cond_cl_current <- benchmarks_102_cyclic$cycle_line_current
+  plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
+                                                     cuspawnerabundance = spawnerabundance, 
+                                                     dataset101_biological_status = biostatus_101[cond_Ricker_bio,], # biological_status_cu, 
+                                                     dataset102_benchmarks = benchmarks_102_cyclic[cond_Ricker_bench,],# [cond_cl_current,], # benchmarks_cu, 
+                                                     #dataset103_output = cuspawnerabund_smooth,
+                                                     conservationunits_decoder = conservationunits_decoder, 
+                                                     log10_scale = log10_scale,
+                                                     figure_print = figure_print, 
+                                                     wd_figures = wd_figures, 
+                                                     file_name_nchar = 60)
+}
+
+cond_cuid <- biostatus_101$cuid == 738
+biostatus_101[cond_cuid & cond_Ricker_bio,]
+
+
+cond_cuid <- benchmarks_102_cyclic$cuid == 738
+benchmarks_102_cyclic[cond_cuid & cond_Ricker_bench,]
 
 #
 # Effect of changing rule 1 (at least one data point in most recent generation) on biostatus -----

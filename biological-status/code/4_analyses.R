@@ -343,6 +343,351 @@ for(sh_i in 1:length(names(list))){
 #
 
 #
+#
+# Summary population indicators/biostatus (PSE 2.0 Launch Key message) -------
+# https://salmonwatersheds.slack.com/archives/CLCTC622J/p1728083530788579
+
+#'* Import the current biostatus from the database (dataset101_output) *
+fromDatabase <- update_file_csv <- F
+
+# Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
+biological_status <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
+                                               fromDatabase = fromDatabase,
+                                               update_file_csv = update_file_csv,
+                                               wd = wd_pop_indic_data_input_dropbox)
+ 
+nrow(biological_status) # 463
+
+#'* Import the conservationunits_decoder.csv *
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+
+nrow(conservationunits_decoder) # 469
+cond_SH <- conservationunits_decoder$species_name == "Steelhead"
+sum(!cond_SH) # 433
+
+cond <- ! conservationunits_decoder$cuid %in% biological_status$cuid
+cuid_cd_not_bs <- conservationunits_decoder$cuid[cond]
+conservationunits_decoder[cond,]
+
+cond <- ! conservationunits_decoder$pooledcuid %in% biological_status$cuid
+cuid_cd_not_bs <- conservationunits_decoder$cuid[cond]
+conservationunits_decoder[cond,]
+
+cond <- ! biological_status$cuid %in% conservationunits_decoder$cuid # none
+cuid_bs_not_cd <- biological_status$cuid[cond]
+biological_status[cuid_bs_not_cd,]
+
+cond <- biological_status$cuid %in% 504
+biological_status[cond,]
+
+
+
+#'* biological status &  data gaps *
+
+#' biostatus vs. data-deficient vs. not-assessed for 
+#' - region
+#' - species
+#' - region & species ?
+
+
+# biostatus_data <- biostatus_tot
+plot_biostatus_summary_fun <- function(biostatus_data,n_width = 10, n_height = NA,
+                                       main = "",col_border = "black",
+                                       psf_status_col = NA, ylab = "", 
+                                       cex = 1, font = 2, line = 1,bty = 'n'){
+  
+  if(is.na(n_height)){
+    n_height <- ceiling(sum(biostatus_data$count) / n_width)
+  }
+  
+  if(is.na(psf_status_col)[1]){
+    psf_status <- c("good","fair","poor","extinct","not-assessed","data-deficient")
+    psf_status_col <- c("#83B687","#DED38A","#C06363","black","white","#A7A9AC")
+    names(psf_status_col) <- psf_status
+  }else{
+    psf_status <- names(psf_status_col)
+  }
+  
+  plot(NA, xlim = c(0,n_width), ylim = c(0,n_height), xaxt = 'n', yaxt = 'n',
+       xlab = '', ylab = '', bty = bty, main = "", yaxs = "i", xaxs = "i")
+  
+  if(ylab != ""){
+    mtext(text = ylab, side = 2, line = line, cex = cex, font = font)
+  }
+  if(main != ""){
+    mtext(text = main, side = 3, line = line, cex = cex, font = font)
+  }
+  
+  y <- 1
+  x <- 1
+  count_tot <- 1
+  for(s in psf_status){
+    # s <- psf_status[2]
+    col_here <- psf_status_col[s]
+    cond_s <- biostatus_data$psf_status == s
+    
+    if(sum(cond_s)){
+      for(c in 1:biostatus_data$count[cond_s]){
+        # c <- 1
+        if(length(1:count_tot) > (y * n_width)){
+          y <- y + 1
+        }
+        polygon(x = c(x-1,x,x,x-1),y = c(y-1,y-1,y,y),border = col_border,col = col_here)
+        count_tot <- count_tot + 1
+        x <- x + 1
+        if(x > n_width){
+          x <- 1
+        }
+      }
+    }
+  }
+}
+
+psf_status <- c("good","fair","poor","extinct","not-assessed","data-deficient")
+psf_status_col <- c("#83B687","#DED38A","#C06363","black","#F8F2E6","#A7A9AC")
+psf_status_col <- c("#83B687","#DED38A","#C06363","black","white","#A7A9AC")
+names(psf_status_col) <- psf_status
+
+#'* Total biostatus *
+
+unique(biological_status$psf_status)
+
+biostatus_tot <- biological_status %>%
+  group_by(psf_status) %>%
+  summarise(count = n()) %>%
+  arrange(psf_status)
+
+jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0.jpeg"),
+     width = 15, height = 20, units = "cm", res = 300)
+
+par(mar = c(4,.5,.5,.5))
+plot_biostatus_summary_fun(biostatus_data = biostatus_tot, n_width = 20, 
+                           col_border = "black",psf_status_col = psf_status_col)
+legend("bottom",legend = psf_status[c(1,4,2,5,3,6)],
+       fill = psf_status_col[c(1,4,2,5,3,6)], 
+       bty = 'n', ncol = 3, inset = c(0, -.1), xpd = TRUE)
+
+dev.off()
+
+
+#'* Total biostatus - otion 2 *
+
+n_width <- 10
+
+count_max <- max(biostatus_tot$count)
+y_max <- ceiling(count_max / n_width)
+
+jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_wide.jpeg"),
+     width = 20, height = 15, units = "cm", res = 300)
+
+layout(matrix(1:length(psf_status), nrow = 1))
+par(mar = c(4,.5,.5,.5))
+for(bs in psf_status){
+  # bs <- psf_status[1]
+  cond_bs <- biostatus_tot$psf_status == bs
+  
+  plot_biostatus_summary_fun(biostatus_data = biostatus_tot[cond_bs,], n_width = n_width, 
+                             col_border = "black",psf_status_col = psf_status_col, 
+                             n_height = y_max)
+  mtext(text = bs, side = 1, line = 2)
+}
+
+dev.off()
+
+
+#'* Biostatus: regions *
+
+unique(biological_status$region)
+
+regions <- c("Yukon","Northern Transboundary","Haida Gwaii","Nass","Skeena","Central Coast",
+             "Vancouver Island & Mainland Inlets","Fraser","Columbia")
+
+length(regions) # 9
+
+# determine y_max as a function of n_width
+
+n_width <- 10
+
+biostatus_rg <- biological_status %>%
+  group_by(region) %>%
+  summarise(count = n()) %>%
+  arrange(regions)
+
+count_max <- max(biostatus_rg$count)
+y_max <- ceiling(count_max / n_width)
+
+jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_rg.jpeg"),
+     width = 15, height = 20, units = "cm", res = 300)
+
+layout(matrix(1:length(regions),byrow = T, nrow = 3))
+for(rg in regions){
+  # rg <- regions[2]
+  
+  cond_rg <- biological_status$region == rg
+  
+  biostatus_here <- biological_status[cond_rg,] %>%
+    group_by(psf_status) %>%
+    summarise(count = n()) %>%
+    arrange(psf_status)
+  
+  par(mar = c(.5,.5,3,.5))
+  
+  rg_legend <- rg
+  if(rg == "Vancouver Island & Mainland Inlets"){
+    rg_legend <- "VIMI"
+  }
+  plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                             main = rg_legend, n_height = y_max, 
+                             col_border = "white", psf_status_col = psf_status_col)
+}
+legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+
+#'* Biostatus: species *
+
+unique(biological_status$species_name)
+biological_status$species <- NA
+for(spn in unique(biological_status$species_name)){
+  
+  species <- spn
+  if(spn %in% c("Lake sockeye","River sockeye")){
+    species <- "Sockeye"
+  }else if(spn %in% c("Pink (odd)","Pink (even)")){
+    species <- "Pink"
+  }
+  cond_spn <- biological_status$species_name == spn
+  biological_status$species[cond_spn] <- species
+}
+
+species <- unique(biological_status$species)
+species
+
+length(species) # 6
+
+# determine y_max as a function of n_width
+
+n_width <- 10
+
+biostatus_sp <- biological_status %>%
+  group_by(species) %>%
+  summarise(count = n()) %>%
+  arrange(species)
+
+count_max <- max(biostatus_sp$count)
+y_max <- ceiling(count_max / n_width)
+
+jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_sp.jpeg"),
+     width = 15, height = 20*2/3, units = "cm", res = 300)
+
+layout(matrix(1:length(species),byrow = T, nrow = 2))
+for(sp in species){
+
+  cond_sp <- biological_status$species == sp
+  
+  biostatus_here <- biological_status[cond_sp,] %>%
+    group_by(psf_status) %>%
+    summarise(count = n()) %>%
+    arrange(psf_status)
+  
+  par(mar = c(.5,.5,3,.5))
+  plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                             main = sp, n_height = y_max)
+}
+legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+
+#' Biostatus: region & species  
+
+
+# determine y_max as a function of n_width
+
+n_width <- 10
+
+biostatus_rg_sp <- biological_status %>%
+  group_by(region,species) %>%
+  summarise(count = n()) %>%
+  arrange(region,species)
+
+count_max <- max(biostatus_rg_sp$count)
+y_max <- ceiling(count_max / n_width)
+
+side_min <- 0.1
+
+bty <- 'o'
+
+jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_rg_sp.jpeg"),
+     width = 16, height = 16*3/2, units = "cm", res = 300)
+
+layout(matrix(1:(length(region)*length(species)),byrow = T, nrow = length(region)),
+       widths = c(1.4,1,1,1,1,1), heights = c(1.4,1,1,1,1,1,1,1,1))
+for(rg in regions){
+  # rg <- regions[1]
+  for(sp in species){
+    # sp <- species[1]
+    cond_rg_sp <- biological_status$region == rg & biological_status$species == sp
+    
+    side2 <- side3 <- side_min
+    main <- ylab <- ""
+    if(rg == regions[1]){ # top row
+      side3 <- 3
+      main <- sp
+    }
+    if(sp == species[1]){ # left column
+      side2 <- 3
+      ylab <- rg
+      if(rg == "Vancouver Island & Mainland Inlets"){
+        ylab <- "VIMI"
+      }else if(rg == "Central Coast"){
+        ylab <- "CC"
+      }else if(rg == "Haida Gwaii"){
+        ylab <- "HG"
+      }else if(rg == "Northern Transboundary"){
+        ylab <- "NT"
+      }
+    }
+    
+    par(mar = c(side_min,side2,side3,side_min))
+    
+    if(!any(cond_rg_sp)){
+      plot(1,1, xaxt = 'n', yaxt = 'n', xlab = NA, ylab = NA, bty = 'n', 
+           col = "white", bty = bty)
+      legend("center",legend = "NA",bty = 'n')
+      mtext(text = ylab, side = 2, line = 1, font = 2, cex = 1)
+      mtext(text = main, side = 3, line = 1, font = 2, cex = 1)
+      
+    }else{
+      biostatus_here <- biological_status[cond_rg_sp,] %>%
+        group_by(psf_status) %>%
+        summarise(count = n()) %>%
+        arrange(psf_status)
+      
+      plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                                 main = main, n_height = y_max, ylab = ylab, bty = bty)
+    }
+  }
+}
+legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+#' Alternative: 
+
+
+#'* habitat threats *
+
+
+
 # Figures biological status based on HBSRM comparison Smsy vs. 80% Smsy ------
 #
 
@@ -956,6 +1301,266 @@ cond_cuid <- benchmarks_102_cyclic$cuid == 738
 benchmarks_102_cyclic[cond_cuid & cond_Ricker_bench,]
 
 #
+#
+# CYCLIC percentile vs. RICKER ---------
+# 
+
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#' Import the cuspawnerabundance.csv
+spawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                          fromDatabase = fromDatabase,
+                                          update_file_csv = update_file_csv,
+                                          wd = wd_pop_indic_data_input_dropbox)
+
+# Import the conservationunits_decoder.csv
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+# Import the cyclic_biological_status_percentiles files
+biostatus_101_percent <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_biological_status_percentiles",
+                                               wd_output = paste0(wd_output,"/intermediate"), 
+                                               region = unique(conservationunits_decoder$region))
+
+head(biostatus_101_percent)
+
+# Import the cyclic_benchmarks_summary_percentiles files
+benchmarks <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_benchmarks_summary_percentiles",
+                                            wd_output = paste0(wd_output,"/intermediate"), 
+                                            region = unique(conservationunits_decoder$region))
+
+head(benchmarks)
+
+#'* fill biostatus_101_percent for these CUs because it was not done in 3_biological_status.R *
+biostatus_101_percent$percentile_status <- biostatus_101_percent$status_percent05
+
+biostatus_101_percent$sr_red_prob <- NA
+biostatus_101_percent$sr_yellow_prob <- NA
+biostatus_101_percent$sr_green_prob <- NA
+biostatus_101_percent$sr_status <- NA
+
+biostatus_101_percent$psf_status_code <- NA
+for(r in 1:nrow(biostatus_101_percent)){
+  out <- 1
+  if(biostatus_101_percent$percentile_status[r] == "fair"){
+    out <- 2
+  }else if(biostatus_101_percent$percentile_status[r] == "poor"){
+    out <- 3
+  }
+  biostatus_101_percent$psf_status_code[r]  <- out
+}
+biostatus_101_percent$psf_status_code_all <- biostatus_101_percent$psf_status_code
+biostatus_101_percent$psf_status_type <- "percentile"
+
+
+#'* fill biological_status_cu for these CUs because it was not done in 3_biological_status.R *
+
+benchmarks_102_percent <- NULL
+for(cuid in unique(benchmarks$cuid)){
+  # cuid <- benchmarks$cuid[1]
+  for(cl in 1:4){
+    # cl <- 1
+    cond_cuid <- conservationunits_decoder$cuid == cuid
+    benchmarks_102_here <- data.frame(region = conservationunits_decoder$region[cond_cuid],
+                                      cuid = cuid,
+                                      region_abbr = conservationunits_decoder$region_abbr[cond_cuid],
+                                      cu_name_pse = conservationunits_decoder$cu_name_pse[cond_cuid],
+                                      cycle_line = cl)
+    
+    cond_cuid <- biostatus_101_percent$cuid == cuid
+    cond_cl <- biostatus_101_percent$cycle_line == cl
+    benchmarks_102_here$cycle_line_dominant <- biostatus_101_percent$cycle_line_dominant[cond_cuid & cond_cl]
+    benchmarks_102_here$curr_spw <- biostatus_101_percent$current_spawner_abundance[cond_cuid & cond_cl]
+    
+    benchmarks_102_here$sgen <- NA           # lower HBSRM benchmark
+    benchmarks_102_here$sgen_lower <- NA     #
+    benchmarks_102_here$sgen_upper <- NA     #
+    benchmarks_102_here$smsy <- NA           # upper HBSRM benchmark
+    benchmarks_102_here$smsy_lower <- NA     #
+    benchmarks_102_here$smsy_upper <- NA     #
+    
+    cond_cuid <- benchmarks$cuid == cuid
+    cond_cl <- benchmarks$cycle_line == cl
+    cond_25 <- benchmarks$benchmark == "benchmark_0.25"
+    cond_50 <- benchmarks$benchmark == "benchmark_0.5"
+    benchmarks_102_here$`25%_spw` <- benchmarks$m[cond_cuid & cond_cl & cond_25]
+    benchmarks_102_here$`25%_spw_lower` <- benchmarks$CI025[cond_cuid & cond_cl & cond_25]
+    benchmarks_102_here$`25%_spw_upper` <- benchmarks$CI975[cond_cuid & cond_cl & cond_25]
+    benchmarks_102_here$`75%_spw` <- benchmarks$m[cond_cuid & cond_cl & cond_50]
+    benchmarks_102_here$`75%_spw_lower` <- benchmarks$CI025[cond_cuid & cond_cl & cond_50]
+    benchmarks_102_here$`75%_spw_upper` <- benchmarks$CI975[cond_cuid & cond_cl & cond_50]
+    
+    cond_cuid <- biostatus_101_percent$cuid == cuid
+    cond_cl <- biostatus_101_percent$cycle_line == cl
+    benchmarks_102_here$curr_spw_start_year <- biostatus_101_percent$yr_withData_start[cond_cuid & cond_cl]
+    benchmarks_102_here$curr_spw_end_year <- biostatus_101_percent$yr_withData_end[cond_cuid & cond_cl]
+    
+    
+    if(is.null(benchmarks_102_percent)){
+      benchmarks_102_percent <- benchmarks_102_here
+    }else{
+      benchmarks_102_percent <- rbind(benchmarks_102_percent,benchmarks_102_here)
+    }
+  }
+}
+
+
+
+biostatus_101_Ricker <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_Ricker_biological_status_HBSRM",
+                                                 wd_output = paste0(wd_output,"/intermediate"), 
+                                                 region = unique(conservationunits_decoder$region))
+
+head(biostatus_101_Ricker)
+
+# Import the cyclic_benchmarks_summary_percentiles files
+benchmarks <- rbind_biologicalStatusCSV_fun(pattern = "cyclic_Ricker_benchmarks_summary_HBSRM",
+                                              wd_output = paste0(wd_output,"/intermediate"), 
+                                              region = unique(conservationunits_decoder$region))
+
+head(benchmarks)
+
+#'* fill biostatus_101_Ricker for these CUs because it was not done in 3_biological_status.R *
+# add column biostatus for both thresholds (Smsy and 80% Smsy)
+colProb <- colnames(biostatus_101_Ricker)[grepl("Smsy_",colnames(biostatus_101_Ricker))]
+biostatus_101_Ricker$status_Smsy <- sapply(X = 1:nrow(biostatus_101_Ricker), 
+                                    FUN = function(r){
+                                      # r <- 1
+                                      slice <- biostatus_101_Ricker[r,colProb]
+                                      # out <- c("red","amber","green")[slice == max(slice)][1] 
+                                      out <- c("poor","fair","good")[slice == max(slice)][1] # Katy's request
+                                      return(out)
+                                    })
+
+colProb <- colnames(biostatus_101_Ricker)[grepl("Smsy80_",colnames(biostatus_101_Ricker))]
+biostatus_101_Ricker$status_Smsy80 <- sapply(X = 1:nrow(biostatus_101_Ricker), 
+                                      FUN = function(r){
+                                        # r <- 1
+                                        slice <- biostatus_101_Ricker[r,colProb]
+                                        # out <- c("red","amber","green")[slice == max(slice)][1]
+                                        out <- c("poor","fair","good")[slice == max(slice)][1] # Katy's request
+                                        return(out)
+                                      })
+
+biostatus_101_Ricker$sr_status <- biostatus_101_Ricker$status_Smsy80
+
+biostatus_101_Ricker$percentile_red_prob <- NA
+biostatus_101_Ricker$percentile_yellow_prob <- NA
+biostatus_101_Ricker$percentile_green_prob <- NA
+biostatus_101_Ricker$percentile_status <- NA
+
+biostatus_101_Ricker$psf_status_code <- NA
+for(r in 1:nrow(biostatus_101_Ricker)){
+  if(is.na(biostatus_101_Ricker$sr_status[r])){
+    out <- NA
+  }else{
+    out <- 1
+    if(biostatus_101_Ricker$sr_status[r] == "fair"){
+      out <- 2
+    }else if(biostatus_101_Ricker$sr_status[r] == "poor"){
+      out <- 3
+    }
+  }
+  biostatus_101_Ricker$psf_status_code[r]  <- out
+}
+biostatus_101_Ricker$psf_status_code_all <- biostatus_101_Ricker$psf_status_code
+biostatus_101_Ricker$psf_status_type <- "sr"
+
+
+#'* fill biological_status_cu for these CUs because it was not done in 3_biological_status.R *
+
+benchmarks_102_Ricker <- NULL
+for(cuid in unique(benchmarks$cuid)){
+  # cuid <- benchmarks$cuid[1]
+  
+  for(model in unique(benchmarks$model)){
+    # model <- unique(benchmarks$model)[1]
+    cond_model_bench <- benchmarks$model == model
+    
+    for(yr in unique(benchmarks$year[cond_model_bench])){
+      # yr <- unique(benchmarks$year[cond_model_bench])[1]
+      cond_cuid <- conservationunits_decoder$cuid == cuid
+      benchmarks_102_here <- data.frame(region = conservationunits_decoder$region[cond_cuid],
+                                        cuid = cuid,
+                                        region_abbr = conservationunits_decoder$region_abbr[cond_cuid],
+                                        cu_name_pse = conservationunits_decoder$cu_name_pse[cond_cuid],
+                                        year = yr)
+      
+      cond_cuid <- biostatus_101_Ricker$cuid == cuid
+      cond_yr <- biostatus_101_Ricker$year == yr
+      cond_model <- biostatus_101_Ricker$model == model
+      benchmarks_102_here$curr_spw <- biostatus_101_Ricker$current_spawner_abundance[cond_cuid & cond_yr & cond_model]
+      
+      cond_cuid <- benchmarks$cuid == cuid
+      cond_yr <- benchmarks$year == yr
+      cond_model <- benchmarks$model == model
+      cond_Sgen <- benchmarks$benchmark == "Sgen"
+      cond_Smsy <- benchmarks$benchmark == "Smsy"
+      cond_HPD <- benchmarks$method == "HPD"
+      benchmarks_102_here$sgen <- benchmarks$m[cond_cuid & cond_yr & cond_Sgen & cond_HPD & cond_model]        
+      benchmarks_102_here$sgen_lower <- benchmarks$CI025[cond_cuid & cond_yr & cond_Sgen & cond_HPD & cond_model] 
+      benchmarks_102_here$sgen_upper <- benchmarks$CI975[cond_cuid & cond_yr & cond_Sgen & cond_HPD & cond_model] 
+      benchmarks_102_here$smsy <- benchmarks$m[cond_cuid & cond_yr & cond_Smsy & cond_HPD & cond_model] * 0.8
+      benchmarks_102_here$smsy_lower <- benchmarks$CI025[cond_cuid & cond_yr & cond_Smsy & cond_HPD & cond_model] * 0.8
+      benchmarks_102_here$smsy_upper <- benchmarks$CI975[cond_cuid & cond_yr & cond_Smsy & cond_HPD & cond_model] * 0.8
+      
+      benchmarks_102_here$`25%_spw` <- NA
+      benchmarks_102_here$`25%_spw_lower` <- NA
+      benchmarks_102_here$`25%_spw_upper` <- NA
+      benchmarks_102_here$`75%_spw` <- NA
+      benchmarks_102_here$`75%_spw_lower` <- NA
+      benchmarks_102_here$`75%_spw_upper` <- NA
+      
+      cond_cuid <- biostatus_101_Ricker$cuid == cuid
+      cond_yr <- biostatus_101_Ricker$year == yr
+      cond_model <- biostatus_101_Ricker$model == model
+      benchmarks_102_here$curr_spw_start_year <- biostatus_101_Ricker$yr_withData_start[cond_cuid & cond_yr & cond_model]
+      benchmarks_102_here$curr_spw_end_year <- biostatus_101_Ricker$yr_withData_end[cond_cuid & cond_yr & cond_model]
+      
+      benchmarks_102_here$model <- model
+      
+      if(is.null(benchmarks_102_Ricker)){
+        benchmarks_102_Ricker <- benchmarks_102_here
+      }else{
+        benchmarks_102_Ricker <- rbind(benchmarks_102_Ricker,benchmarks_102_here)
+      }
+    }
+  }
+}
+
+
+biostatus_101_percent$status_percent05
+biostatus_101_Ricker$status_Smsy80
+
+table <- data.frame(cu_name_pse = biostatus_101_Ricker$CU_pse)
+table$Ricker <- biostatus_101_Ricker$status_Smsy80
+
+table$percent_2022 <- sapply(table$cu_name_pse,function(cu){
+  cond <- biostatus_101_percent$CU_pse == cu & biostatus_101_percent$yr_withData_end == 2022
+  return(biostatus_101_percent$status_percent05[cond])
+})
+
+
+
+
+
+
+biostatus_101_percent$CU[cond_yr]
+
+
+
+
+
+
+
+
+
+
+
+
 # Effect of changing rule 1 (at least one data point in most recent generation) on biostatus -----
 #
 

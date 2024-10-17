@@ -850,7 +850,8 @@ SRdata_path_species_fun <- function(wd, species = NA, species_all = T){
 #' - species: vector of species acronyms (in species_acronym_fun())
 #' - species_all: T or F, if T, takes precedence on whatever is specified for species
 rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
-                                          species_all = F, term_exculde = NA){
+                                          species_all = F, 
+                                          term_exclude = NA, term_include = NA){
   
   region <- gsub(" ","_",region)
   
@@ -865,8 +866,11 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
     # returns all the files with pattern rg and "biological_status"
     list_files <- list.files(path = paste0(wd_output))
     cond <- grepl(rg,list_files) & grepl(pattern,list_files)
-    if(!is.na(term_exculde)){
-      cond <- cond & !grepl(term_exculde,list_files)
+    if(!is.na(term_exclude)){
+      cond <- cond & !grepl(term_exclude,list_files)
+    }
+    if(!is.na(term_include)){
+      cond <- cond & grepl(term_include,list_files)
     }
     list_files <- list_files[cond]
     

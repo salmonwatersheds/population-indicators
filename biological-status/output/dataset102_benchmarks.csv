@@ -154,7 +154,7 @@
 "Fraser",783,"SH","Steelhead","Fraser Canyon Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser",784,"SH","Steelhead","Lower Fraser Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser",785,"SH","Steelhead","Boundary Bay Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser",711,"SEL","Lake sockeye","Chilliwack-Early Summer (cyclic)",4276,NA,NA,NA,NA,NA,NA,1050,516,1939,2795,1672,4995,2019,2022
+"Fraser",711,"SEL","Lake sockeye","Chilliwack-Early Summer (cyclic)",4276,3741,2050,4955,10210,5508,13839,1050,516,1939,2795,1672,4995,2019,2022
 "Fraser",712,"SEL","Lake sockeye","Cultus-Late",233,NA,NA,NA,NA,NA,NA,656,374,902,1334,816,3169,2019,2022
 "Fraser",713,"SEL","Lake sockeye","Harrison-Downstream Migrating-Late",398,1917,662,7012,5717,3203,16908,620,279,1645,2080,899,4723,2019,2022
 "Fraser",714,"SEL","Lake sockeye","Harrison-Upstream Migrating-Late",6248,10276,3797,21485,50516,31970,88871,24842,7620,30023,40036,27360,53927,2019,2022
@@ -166,14 +166,14 @@
 "Fraser",721,"SEL","Lake sockeye","Chilko-Summer",295505,75550,40942,139827,331672,254762,457725,241843,178139,359384,460813,359034,582587,2019,2022
 "Fraser",725,"SEL","Lake sockeye","Francois-Fraser-Summer",74239,22911,11452,47657,97884,68581,143901,63088,46271,86438,99645,90265,126126,2019,2022
 "Fraser",727,"SEL","Lake sockeye","Nadina-Francois-Early Summer",41381,1065,468,1783,7601,5701,9371,6303,3604,9190,13650,10585,20694,2019,2022
-"Fraser",728,"SEL","Lake sockeye","Quesnel-Summer (cyclic)",34957,NA,NA,NA,NA,NA,NA,20827,6788,36987,132024,38774,230171,2019,2022
+"Fraser",728,"SEL","Lake sockeye","Quesnel-Summer (cyclic)",34957,88816,56600,120691,315217,237510,391118,20827,6788,36987,132024,38774,230171,2019,2022
 "Fraser",729,"SEL","Lake sockeye","Seton-Late (de novo)",863,2508,1091,5572,11830,7030,21556,1716,708,3008,6280,2966,8310,2019,2022
-"Fraser",731,"SEL","Lake sockeye","Takla-Trembleur-Stuart-Summer (cyclic)",31079,NA,NA,NA,NA,NA,NA,13960,8171,29232,70594,30748,84089,2019,2022
-"Fraser",732,"SEL","Lake sockeye","Takla-Trembleur-Early Stuart (cyclic)",1377,NA,NA,NA,NA,NA,NA,24043,7356,27783,46893,23193,75742,2019,2022
+"Fraser",731,"SEL","Lake sockeye","Takla-Trembleur-Stuart-Summer (cyclic)",31079,22043,13679,34048,108918,86055,132742,13960,8171,29232,70594,30748,84089,2019,2022
+"Fraser",732,"SEL","Lake sockeye","Takla-Trembleur-Early Stuart (cyclic)",1377,16306,11275,22699,56586,45057,68305,24043,7356,27783,46893,23193,75742,2019,2022
 "Fraser",734,"SEL","Lake sockeye","Taseko-Early Summer",534,NA,NA,NA,NA,NA,NA,182,87,288,679,269,984,2020,2022
 "Fraser",735,"SEL","Lake sockeye","Bowron-Early Summer",511,1748,843,4102,6651,4640,12538,1751,1062,2685,3574,2485,5337,2019,2022
-"Fraser",738,"SEL","Lake sockeye","Shuswap-Early Summer (cyclic)",15729,NA,NA,NA,NA,NA,NA,13296,9027,21321,30710,26027,62850,2019,2022
-"Fraser",739,"SEL","Lake sockeye","Shuswap-Late (cyclic)",7519,NA,NA,NA,NA,NA,NA,10108,2860,16362,67346,24630,279855,2019,2022
+"Fraser",738,"SEL","Lake sockeye","Shuswap-Early Summer (cyclic)",15729,18937,10968,27270,74645,57118,92584,13296,9027,21321,30710,26027,62850,2019,2022
+"Fraser",739,"SEL","Lake sockeye","Shuswap-Late (cyclic)",7519,137214,90518,202301,509712,347200,629113,10108,2860,16362,67346,24630,279855,2019,2022
 "Fraser",740,"SEL","Lake sockeye","Kamloops-Early Summer",4071,3246,1718,6484,15286,10903,23549,2853,2051,6500,7402,4876,13706,2019,2022
 "Fraser",742,"SER","River sockeye","Widgeon (river-type)",186,NA,NA,NA,NA,NA,NA,138,77,217,257,158,453,2019,2022
 "Fraser",745,"SER","River sockeye","Harrison River (river-type)",26834,18865,10278,34247,80559,60937,121505,4381,2460,14354,12258,8209,41933,2019,2022
@@ -449,16 +449,16 @@
 "Yukon",1219,"CM","Chum","Teslin",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Yukon",1220,"CO","Coho","Porcupine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii",828,"SEL","Lake sockeye","Marie",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1024,"SEL","Lake sockeye","Border",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1031,"SEL","Lake sockeye","Blanchard",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1037,"SEL","Lake sockeye","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1022,"SER","River sockeye","Chilkat (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1009,"CK","Chinook","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1012,"CK","Chinook","Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1014,"CO","Coho","Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1016,"CO","Coho","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1018,"CO","Coho","Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1000,"CM","Chum","Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1002,"CM","Chum","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1003,"CM","Chum","Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1032,"CM","Chum","Lower Stikine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1024,"SEL","Lake sockeye","Border",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1031,"SEL","Lake sockeye","Blanchard",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1037,"SEL","Lake sockeye","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1022,"SER","River sockeye","Chilkat (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1009,"CK","Chinook","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1012,"CK","Chinook","Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1014,"CO","Coho","Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1016,"CO","Coho","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1018,"CO","Coho","Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1000,"CM","Chum","Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1002,"CM","Chum","Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1003,"CM","Chum","Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1032,"CM","Chum","Lower Stikine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

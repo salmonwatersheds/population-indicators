@@ -4,10 +4,11 @@
 
 * priors_HBSRmodel.csv: 
 - contains the prior values for the HBSR model parameters prSmax and prCV that 
-are used in HBSRM.R.
+are used in 1a_HBSRM.R.
 - the file is created in checks_fixes.R
-- the orginal values of these priors come from the SRdata.txt files found in the 
+- the original values of these priors come from the SRdata.txt files found in the 
 "HBM and status" subfolders in each region-specific folders.
+- Those prior values are coming from Korman and English 2013.
 
 # Datasets NOT used anymore (to remove eventually):
 

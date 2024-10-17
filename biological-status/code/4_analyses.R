@@ -361,6 +361,13 @@ biological_status <- datasets_database_fun(nameDataSet = datasetsNames_database$
  
 nrow(biological_status) # 463
 
+# remove the Yukon
+cond_yk <- biological_status$region == "Yukon"
+biological_status <- biological_status[!cond_yk,]
+
+nrow(biological_status) # 443
+
+
 #'* Import the conservationunits_decoder.csv *
 conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
                                                    fromDatabase = fromDatabase,
@@ -369,24 +376,6 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 
 
 nrow(conservationunits_decoder) # 469
-cond_SH <- conservationunits_decoder$species_name == "Steelhead"
-sum(!cond_SH) # 433
-
-cond <- ! conservationunits_decoder$cuid %in% biological_status$cuid
-cuid_cd_not_bs <- conservationunits_decoder$cuid[cond]
-conservationunits_decoder[cond,]
-
-cond <- ! conservationunits_decoder$pooledcuid %in% biological_status$cuid
-cuid_cd_not_bs <- conservationunits_decoder$cuid[cond]
-conservationunits_decoder[cond,]
-
-cond <- ! biological_status$cuid %in% conservationunits_decoder$cuid # none
-cuid_bs_not_cd <- biological_status$cuid[cond]
-biological_status[cuid_bs_not_cd,]
-
-cond <- biological_status$cuid %in% 504
-biological_status[cond,]
-
 
 
 #'* biological status &  data gaps *
@@ -409,7 +398,7 @@ plot_biostatus_summary_fun <- function(biostatus_data,n_width = 10, n_height = N
   
   if(is.na(psf_status_col)[1]){
     psf_status <- c("good","fair","poor","extinct","not-assessed","data-deficient")
-    psf_status_col <- c("#83B687","#DED38A","#C06363","black","white","#A7A9AC")
+    psf_status_col <- c("#83B687","#DED38A","#C06363","#924848","black","#A7A9AC")
     names(psf_status_col) <- psf_status
   }else{
     psf_status <- names(psf_status_col)
@@ -451,8 +440,8 @@ plot_biostatus_summary_fun <- function(biostatus_data,n_width = 10, n_height = N
 }
 
 psf_status <- c("good","fair","poor","extinct","not-assessed","data-deficient")
-psf_status_col <- c("#83B687","#DED38A","#C06363","black","#F8F2E6","#A7A9AC")
-psf_status_col <- c("#83B687","#DED38A","#C06363","black","white","#A7A9AC")
+psf_status_col <- c("#83B687","#DED38A","#C06363","#924848","black","#A7A9AC")
+
 names(psf_status_col) <- psf_status
 
 #'* Total biostatus *
@@ -464,17 +453,34 @@ biostatus_tot <- biological_status %>%
   summarise(count = n()) %>%
   arrange(psf_status)
 
-jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0.jpeg"),
+biostatus_tot$percent <- round(biostatus_tot$count / sum(biostatus_tot$count) * 100,2)
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0.jpeg"),
      width = 15, height = 20, units = "cm", res = 300)
 
 par(mar = c(4,.5,.5,.5))
 plot_biostatus_summary_fun(biostatus_data = biostatus_tot, n_width = 20, 
-                           col_border = "black",psf_status_col = psf_status_col)
+                           col_border = "white",psf_status_col = psf_status_col)
 legend("bottom",legend = psf_status[c(1,4,2,5,3,6)],
        fill = psf_status_col[c(1,4,2,5,3,6)], 
        bty = 'n', ncol = 3, inset = c(0, -.1), xpd = TRUE)
 
 dev.off()
+
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_count.jpeg"),
+     width = 15, height = 20, units = "cm", res = 300)
+
+par(mar = c(4,.5,3,.5))
+plot_biostatus_summary_fun(biostatus_data = biostatus_tot, n_width = 20, 
+                           col_border = "white",psf_status_col = psf_status_col, 
+                           main = paste(sum(biostatus_tot$count),"CUs"), cex = 2)
+legend("bottom",legend = psf_status[c(1,4,2,5,3,6)],
+       fill = psf_status_col[c(1,4,2,5,3,6)], 
+       bty = 'n', ncol = 3, inset = c(0, -.1), xpd = TRUE)
+
+dev.off()
+
 
 
 #'* Total biostatus - otion 2 *
@@ -483,30 +489,51 @@ n_width <- 10
 
 count_max <- max(biostatus_tot$count)
 y_max <- ceiling(count_max / n_width)
+col_border <- "white"
 
-jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_wide.jpeg"),
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_wide.jpeg"),
      width = 20, height = 15, units = "cm", res = 300)
 
 layout(matrix(1:length(psf_status), nrow = 1))
-par(mar = c(4,.5,.5,.5))
+par(mar = c(4,.5,1,.5))
 for(bs in psf_status){
   # bs <- psf_status[1]
   cond_bs <- biostatus_tot$psf_status == bs
   
   plot_biostatus_summary_fun(biostatus_data = biostatus_tot[cond_bs,], n_width = n_width, 
-                             col_border = "black",psf_status_col = psf_status_col, 
-                             n_height = y_max)
+                             col_border = "black", psf_status_col = psf_status_col, 
+                             n_height = y_max, cex = 1)
   mtext(text = bs, side = 1, line = 2)
 }
 
 dev.off()
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_wide_count.jpeg"),
+     width = 20, height = 15, units = "cm", res = 300)
+
+layout(matrix(1:length(psf_status), nrow = 1))
+par(mar = c(4,.5,1,.5))
+for(bs in psf_status){
+  # bs <- psf_status[1]
+  cond_bs <- biostatus_tot$psf_status == bs
+
+  plot_biostatus_summary_fun(biostatus_data = biostatus_tot[cond_bs,], n_width = n_width, 
+                             col_border = col_border, psf_status_col = psf_status_col, 
+                             n_height = y_max + 2, cex = 1)
+  mtext(text = bs, side = 1, line = 2)
+  text(x = n_width/2, y = 1+ ceiling((biostatus_tot$count[cond_bs]/n_width)), 
+       labels = sum(biostatus_tot$count[cond_bs]), cex = 2)
+}
+
+dev.off()
+
 
 
 #'* Biostatus: regions *
 
 unique(biological_status$region)
 
-regions <- c("Yukon","Northern Transboundary","Haida Gwaii","Nass","Skeena","Central Coast",
+regions <- c("Northern Transboundary","Haida Gwaii","Nass","Skeena","Central Coast",
              "Vancouver Island & Mainland Inlets","Fraser","Columbia")
 
 length(regions) # 9
@@ -523,10 +550,12 @@ biostatus_rg <- biological_status %>%
 count_max <- max(biostatus_rg$count)
 y_max <- ceiling(count_max / n_width)
 
-jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_rg.jpeg"),
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_rg.jpeg"),
      width = 15, height = 20, units = "cm", res = 300)
 
-layout(matrix(1:length(regions),byrow = T, nrow = 3))
+biostatus_rg_c <- NULL
+
+layout(matrix(1:(length(regions)+1),byrow = T, nrow = 3))
 for(rg in regions){
   # rg <- regions[2]
   
@@ -536,6 +565,10 @@ for(rg in regions){
     group_by(psf_status) %>%
     summarise(count = n()) %>%
     arrange(psf_status)
+  
+  biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+  biostatus_here$region <- rg
+  biostatus_rg_c <- rbind(biostatus_rg_c,biostatus_here)
   
   par(mar = c(.5,.5,3,.5))
   
@@ -547,9 +580,52 @@ for(rg in regions){
                              main = rg_legend, n_height = y_max, 
                              col_border = "white", psf_status_col = psf_status_col)
 }
-legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+plot.new()
+legend("center",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
 
 dev.off()
+
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_rg_count.jpeg"),
+     width = 15, height = 20, units = "cm", res = 300)
+
+biostatus_rg_c <- NULL
+
+layout(matrix(1:(length(regions)+1),byrow = T, nrow = 3))
+for(rg in regions){
+  # rg <- regions[2]
+  
+  cond_rg <- biological_status$region == rg
+  
+  biostatus_here <- biological_status[cond_rg,] %>%
+    group_by(psf_status) %>%
+    summarise(count = n()) %>%
+    arrange(psf_status)
+  
+  biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+  biostatus_here$region <- rg
+  biostatus_rg_c <- rbind(biostatus_rg_c,biostatus_here)
+  
+  par(mar = c(3,.5,.5,.5))
+  
+  rg_legend <- rg
+  if(rg == "Vancouver Island & Mainland Inlets"){
+    rg_legend <- "VIMI"
+  }
+  plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                             main = "", n_height = y_max + 2, 
+                             col_border = "white", psf_status_col = psf_status_col)
+  mtext(text = rg_legend, side = 1, line = 1, font = 2)
+  text(x = n_width/2, y = 1 + ceiling(sum(biostatus_here$count)/n_width), cex = 2, 
+       labels = sum(biostatus_here$count))
+}
+plot.new()
+legend("center",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+
+biostatus_rg_c <- biostatus_rg_c[,c("region","psf_status","count","percent")]
 
 
 #'* Biostatus: species *
@@ -585,8 +661,10 @@ biostatus_sp <- biological_status %>%
 count_max <- max(biostatus_sp$count)
 y_max <- ceiling(count_max / n_width)
 
-jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_sp.jpeg"),
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_sp.jpeg"),
      width = 15, height = 20*2/3, units = "cm", res = 300)
+
+biostatus_sp_c <- NULL
 
 layout(matrix(1:length(species),byrow = T, nrow = 2))
 for(sp in species){
@@ -598,6 +676,10 @@ for(sp in species){
     summarise(count = n()) %>%
     arrange(psf_status)
   
+  biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+  biostatus_here$species <- sp
+  biostatus_sp_c <- rbind(biostatus_sp_c,biostatus_here)
+  
   par(mar = c(.5,.5,3,.5))
   plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
                              main = sp, n_height = y_max)
@@ -606,6 +688,39 @@ legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
 
 dev.off()
 
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_sp_count.jpeg"),
+     width = 15, height = 20*2/3, units = "cm", res = 300)
+
+biostatus_sp_c <- NULL
+
+layout(matrix(1:length(species),byrow = T, nrow = 2))
+for(sp in species){
+  
+  cond_sp <- biological_status$species == sp
+  
+  biostatus_here <- biological_status[cond_sp,] %>%
+    group_by(psf_status) %>%
+    summarise(count = n()) %>%
+    arrange(psf_status)
+  
+  biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+  biostatus_here$species <- sp
+  biostatus_sp_c <- rbind(biostatus_sp_c,biostatus_here)
+  
+  par(mar = c(3,.5,.5,.5))
+  plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                             main = "", n_height = y_max + 2.5, col_border = "white")
+  mtext(text = sp, side = 1, line = 1, font = 2)
+  text(x = n_width/2, y = 1.5 + ceiling(sum(biostatus_here$count)/n_width), cex = 1.5, 
+       labels = sum(biostatus_here$count))
+}
+legend("topright",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+
+biostatus_sp_c <- biostatus_sp_c[,c("species","psf_status","count","percent")]
 
 #' Biostatus: region & species  
 
@@ -626,11 +741,13 @@ side_min <- 0.1
 
 bty <- 'o'
 
-jpeg(filename = paste0(wd_figures,"/Biological_status_PSE2.0_rg_sp.jpeg"),
-     width = 16, height = 16*3/2, units = "cm", res = 300)
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_rg_sp.jpeg"),
+     width = 20, height = 16*3/2, units = "cm", res = 300)
 
-layout(matrix(1:(length(region)*length(species)),byrow = T, nrow = length(region)),
-       widths = c(1.4,1,1,1,1,1), heights = c(1.4,1,1,1,1,1,1,1,1))
+biostatus_rg_sp_c <- NULL
+
+layout(matrix(1:(length(regions)*length(species)),byrow = T, nrow = length(regions)),
+       widths = c(1.4,rep(1,length(species) - 1)), heights = c(1.4,rep(1,length(regions) - 1)))
 for(rg in regions){
   # rg <- regions[1]
   for(sp in species){
@@ -672,6 +789,11 @@ for(rg in regions){
         summarise(count = n()) %>%
         arrange(psf_status)
       
+      biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+      biostatus_here$region <- rg
+      biostatus_here$species <- sp
+      biostatus_rg_sp_c <- rbind(biostatus_rg_sp_c,biostatus_here)
+      
       plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
                                  main = main, n_height = y_max, ylab = ylab, bty = bty)
     }
@@ -680,6 +802,87 @@ for(rg in regions){
 legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
 
 dev.off()
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_rg_sp_count.jpeg"),
+     width = 20, height = 16*3/2, units = "cm", res = 300)
+
+biostatus_rg_sp_c <- NULL
+
+layout(matrix(1:(length(regions)*length(species)), byrow = T, nrow = length(regions)),
+       widths = c(1.3,rep(1,length(species) - 1)), heights = c(1.4,rep(1,length(regions) - 1)))
+for(rg in regions){
+  # rg <- regions[1]
+  for(sp in species){
+    # sp <- species[1]
+    cond_rg_sp <- biological_status$region == rg & biological_status$species == sp
+    
+    side2 <- side3 <- side_min
+    main <- ylab <- ""
+    if(rg == regions[1]){ # top row
+      side3 <- 3
+      main <- sp
+    }
+    if(sp == species[1]){ # left column
+      side2 <- 3
+      ylab <- rg
+      if(rg == "Vancouver Island & Mainland Inlets"){
+        ylab <- "VIMI"
+      }else if(rg == "Central Coast"){
+        ylab <- "CC"
+      }else if(rg == "Haida Gwaii"){
+        ylab <- "HG"
+      }else if(rg == "Northern Transboundary"){
+        ylab <- "NT"
+      }
+    }
+    
+    par(mar = c(side_min,side2,side3,side_min))
+    
+    if(!any(cond_rg_sp)){
+      plot(x = NA, y = NA, ylim = c(0,y_max + 2), xlim = c(0,n_width), bty = bty,
+           xaxt = 'n', yaxt = 'n')
+      text(x = x <- n_width/2, y =  y_max / 2, cex = 1.3, labels = "0")
+      mtext(text = ylab, side = 2, line = 1, font = 2, cex = 1)
+      mtext(text = main, side = 3, line = 1, font = 2, cex = 1)
+      
+    }else{
+      biostatus_here <- biological_status[cond_rg_sp,] %>%
+        group_by(psf_status) %>%
+        summarise(count = n()) %>%
+        arrange(psf_status)
+      
+      biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+      biostatus_here$region <- rg
+      biostatus_here$species <- sp
+      biostatus_rg_sp_c <- rbind(biostatus_rg_sp_c,biostatus_here)
+      
+      plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                                 main = main, n_height = y_max + 2, ylab = ylab, 
+                                 bty = 'n', col_border = "white")
+      par(new = T)
+      plot(x = NA, y = NA, ylim = c(0,y_max + 2), xlim = c(0,n_width), 
+           xaxt = 'n', yaxt = 'n')
+      
+      if(ceiling(sum(biostatus_here$count)/n_width) < (y_max / 2)){
+        y <- y_max / 2
+      }else{
+        y <- 1 + ceiling(sum(biostatus_here$count)/n_width)
+      }
+      if(rg == tail(regions,1) & sp == tail(species,1)){
+        x <- 1
+      }else{
+        x <- n_width/2
+      }
+      text(x = x, y = y, cex = 1.3, labels = sum(biostatus_here$count))
+    }
+  }
+}
+legend("right",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+biostatus_rg_sp_c <- biostatus_rg_sp_c[,c("region","species","psf_status","count","percent")]
+
 
 #' Alternative: 
 

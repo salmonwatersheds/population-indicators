@@ -304,37 +304,37 @@
 "Skeena",230,"SEL","Lake sockeye","Footsore/Hodder",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Skeena",291,"SEL","Lake sockeye","Prudhomme",NA,1398,947,2001,2499,2034,3060,NA,NA,NA,NA,NA,NA,NA,NA
 "Skeena",292,"SEL","Lake sockeye","Shawatlan",NA,727,421,1476,1716,1350,2456,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1004,"CK","Chinook","Alsek",4951,NA,NA,NA,NA,NA,NA,5210,3088,7011,6842,4604,10251,2019,2023
-"Transboundary",1005,"CK","Chinook","Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1006,"CK","Chinook","Taku-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1007,"CK","Chinook","Taku-Mid Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1008,"CK","Chinook","Taku-Late Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1010,"CK","Chinook","Stikine-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1011,"CK","Chinook","Stikine-Late Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1001,"CM","Chum","Taku",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1013,"CO","Coho","Alsek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1015,"CO","Coho","Taku-Late Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1017,"CO","Coho","Lower Stikine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1034,"CO","Coho","Taku-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1035,"CO","Coho","Taku-Mid Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1019,"PKE","Pink (even)","Transboundary Fjords (even)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1020,"PKO","Pink (odd)","Transboundary Fjords (odd)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1080,"SH","Steelhead","Alsek Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1081,"SH","Steelhead","Taku Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1082,"SH","Steelhead","Taku Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1083,"SH","Steelhead","Stikine Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1084,"SH","Steelhead","Stikine Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1021,"SER","River sockeye","Alsek (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1023,"SER","River sockeye","Northern Transboundary Fjords (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1025,"SEL","Lake sockeye","Christina",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1026,"SEL","Lake sockeye","Tahltan",10746,NA,NA,NA,NA,NA,NA,9305,7551,10953,12674,10542,17699,2019,2023
-"Transboundary",1027,"SEL","Lake sockeye","Kuthai",388,NA,NA,NA,NA,NA,NA,656,184,1472,1562,778,3040,2019,2023
-"Transboundary",1028,"SEL","Lake sockeye","Little Trapper",8358,NA,NA,NA,NA,NA,NA,6376,4956,8663,9522,7045,11917,2019,2023
-"Transboundary",1029,"SEL","Lake sockeye","Tatsamenie",5153,NA,NA,NA,NA,NA,NA,1937,1221,3190,4628,2314,6215,2019,2023
-"Transboundary",1033,"SEL","Lake sockeye","King Salmon",7532,NA,NA,NA,NA,NA,NA,1012,384,2612,2682,1169,3917,2020,2023
-"Transboundary",1036,"SEL","Lake sockeye","Chutine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Transboundary",1038,"SEL","Lake sockeye","Klukshu",15297,NA,NA,NA,NA,NA,NA,7852,5789,11548,13635,10020,17147,2019,2023
-"Transboundary",1039,"SEL","Lake sockeye","Nesketahin",388,NA,NA,NA,NA,NA,NA,422,216,1068,1490,619,2036,2019,2023
+"Northern Transboundary",1004,"CK","Chinook","Alsek",4951,NA,NA,NA,NA,NA,NA,5210,3088,7011,6842,4604,10251,2019,2023
+"Northern Transboundary",1005,"CK","Chinook","Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1006,"CK","Chinook","Taku-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1007,"CK","Chinook","Taku-Mid Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1008,"CK","Chinook","Taku-Late Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1010,"CK","Chinook","Stikine-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1011,"CK","Chinook","Stikine-Late Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1001,"CM","Chum","Taku",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1013,"CO","Coho","Alsek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1015,"CO","Coho","Taku-Late Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1017,"CO","Coho","Lower Stikine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1034,"CO","Coho","Taku-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1035,"CO","Coho","Taku-Mid Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1019,"PKE","Pink (even)","Transboundary Fjords (even)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1020,"PKO","Pink (odd)","Transboundary Fjords (odd)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1080,"SH","Steelhead","Alsek Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1081,"SH","Steelhead","Taku Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1082,"SH","Steelhead","Taku Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1083,"SH","Steelhead","Stikine Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1084,"SH","Steelhead","Stikine Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1021,"SER","River sockeye","Alsek (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1023,"SER","River sockeye","Northern Transboundary Fjords (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1025,"SEL","Lake sockeye","Christina",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1026,"SEL","Lake sockeye","Tahltan",10746,NA,NA,NA,NA,NA,NA,9305,7551,10953,12674,10542,17699,2019,2023
+"Northern Transboundary",1027,"SEL","Lake sockeye","Kuthai",388,NA,NA,NA,NA,NA,NA,656,184,1472,1562,778,3040,2019,2023
+"Northern Transboundary",1028,"SEL","Lake sockeye","Little Trapper",8358,NA,NA,NA,NA,NA,NA,6376,4956,8663,9522,7045,11917,2019,2023
+"Northern Transboundary",1029,"SEL","Lake sockeye","Tatsamenie",5153,NA,NA,NA,NA,NA,NA,1937,1221,3190,4628,2314,6215,2019,2023
+"Northern Transboundary",1033,"SEL","Lake sockeye","King Salmon",7532,NA,NA,NA,NA,NA,NA,1012,384,2612,2682,1169,3917,2020,2023
+"Northern Transboundary",1036,"SEL","Lake sockeye","Chutine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary",1038,"SEL","Lake sockeye","Klukshu",15297,NA,NA,NA,NA,NA,NA,7852,5789,11548,13635,10020,17147,2019,2023
+"Northern Transboundary",1039,"SEL","Lake sockeye","Nesketahin",388,NA,NA,NA,NA,NA,NA,422,216,1068,1490,619,2036,2019,2023
 "Vancouver Island & Mainland Inlets",320,"CK","Chinook","Southern Mainland-Georgia Strait (Fall x-1)",588,NA,NA,NA,NA,NA,NA,351,265,381,515,392,575,2014,2018
 "Vancouver Island & Mainland Inlets",321,"CK","Chinook","East Vancouver Island-Goldstream (Fall x-1)",4,NA,NA,NA,NA,NA,NA,16,3,28,51,19,104,2014,2018
 "Vancouver Island & Mainland Inlets",322,"CK","Chinook","East Vancouver Island-Cowichan and Koksilah (Fall x-1)",8509,NA,NA,NA,NA,NA,NA,2840,2084,4426,4558,3136,6171,2014,2018

@@ -1052,18 +1052,6 @@ sum(condition_HBSRM) + sum(condition_Percent) == sum(condition) # should be TRUE
 # bio_status_previous[bio_status_previous$cuid %in% cuid_prev[cond],]
 
 
-# Write the file Biological_status_HBSR_Percentile_all.csv (future dataset_101) REMOVE -----
-#
-# date <- as.character(Sys.time())
-# date <- strsplit(x = date, split = " ")[[1]][1]
-# date <- gsub("-","",date)
-# 
-# write.csv(biological_status_merged,paste0(wd_output,"/Biological_status_HBSR_Percentile_all_",date,".csv"),
-#           row.names = F)
-# 
-# biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
-#                                                        pattern = "Biological_status_HBSR_Percentile_all_")
-
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
 
@@ -1147,20 +1135,16 @@ for(r in 1:nrow(benchmarks_merged)){
 }
 
 #
-# write Benchmarks_HBSR_Percentile_all.csv REMOVE -----
+#
+#
+# Update Transboundary to "Northern Transboundary" to match the PSE ------
+#
 
-# date <- as.character(Sys.time())
-# date <- strsplit(x = date, split = " ")[[1]][1]
-# date <- gsub("-","",date)
-# 
-# write.csv(benchmarks_merged,paste0(wd_output,"/Benchmarks_HBSR_Percentile_all_",date,".csv"),
-#           row.names = F)
-# 
-# benchmarks_merged <-import_mostRecent_file_fun(wd = wd_output,
-#                                                pattern = "Benchmarks_HBSR_Percentile_all_")
-# 
-# cond <- benchmarks_merged$cuid %in% c(753,756,757)
-# benchmarks_merged[cond,]
+cond_tb <- biological_status_merged$region == "Transboundary"
+biological_status_merged$region[cond_tb] == "Northern Transboundary"
+
+cond_tb <- benchmarks_merged$region == "Transboundary"
+benchmarks_merged$region[cond_tb] == "Northern Transboundary"
 
 #
 # Add the missing CUs to the output files (one time fix) ------

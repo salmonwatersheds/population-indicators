@@ -103,7 +103,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Fraser
+region <- regions_df$Skeena
 region <- regions_df$Yukon
 region <- regions_df$Haida_Gwaii
 
@@ -128,7 +128,7 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "PK"])
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
@@ -377,6 +377,7 @@ for(i_rg in 1:length(region)){
       for(i in 1:nCUs){
         
         # i <- 1
+        # i <- which(cuids == 185)
         
         #----------------------
         #' biological status probability with the average spawner abundance over
@@ -389,19 +390,22 @@ for(i_rg in 1:length(region)){
         spawnerAbundance <- cuspawnerabundance_rg_sp$estimated_count[cond]
         names(spawnerAbundance) <- cuspawnerabundance_rg_sp$year[cond]
         
-        cond <- conservationunits_decoder_rg_sp$cu_name_pse %in% CUname
-        conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp[cond,]
+        condition <- conservationunits_decoder$cuid == cuids[i]
+        conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[condition,]
         
         if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
-          print("This CUS is not found in conservationunits_decoder:")
-          print(paste(region[i_rg],species[i_sp],CUname))
+          print("This CUS is not found in conservationunits_decoder: BREAK")
+          print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
           cat("\n")
+          break
         }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1){
           if(length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
-            print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
-            print(paste(region[i_rg],species[i_sp],CUname))
+            #print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
+            print("There are multiple CUs with that name who don't have the same pooledcuid, TO CHECK BREAK")
+            print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
             print(conservationunits_decoder_rg_sp_cu)
             cat("\n")
+            break
           }
           conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
         }

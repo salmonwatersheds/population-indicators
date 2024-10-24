@@ -661,15 +661,13 @@ modelBoot <- function(
 regions_fun <- function(){
   
   regions <- data.frame(
-    #Central_coast = 'Central_coast',
-    Central_coast = 'Central Coast',
+    Central_Coast = 'Central Coast',
     Columbia = "Columbia", 
     Fraser = 'Fraser',
-    # Haida_Gwaii = 'Haida_Gwaii',
     Haida_Gwaii = 'Haida Gwaii',
     Nass = 'Nass',
     Skeena = 'Skeena',
-    Transboundary = "Transboundary",
+    Northern_Transboundary = "Northern Transboundary",
     VIMI = "Vancouver Island & Mainland Inlets",
     Yukon = 'Yukon')
   
@@ -857,7 +855,7 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
   
   biological_status_df <- NULL
   for(rg in region){
-    # rg <- region[1]
+    # rg <- region[3]
     
     if(rg == "Vancouver_Island_&_Mainland_Inlets"){
       rg <- "VIMI"

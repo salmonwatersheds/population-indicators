@@ -79,6 +79,12 @@ wd_data_input <- wd_output
 # Import functions for this specific project
 source("Code/functions.R")
 
+#' Include SR benchmarks for cyclic CUs
+#' - if true the HBSR Ricker model was applied to the cyclic CUs to determine 
+#' their biostatus
+#' - if false, these CUs have a psf_status_code 5 = not-assessed
+cyclic_biostatus <- T
+
 #
 # Import Datasets -----
 
@@ -109,17 +115,18 @@ benchmarks_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
 cond <- grepl("cyclic",benchmarks_HBSRM$CU)
 benchmarks_HBSRM[cond,]
 
-# Import the Ricker benchmarks down with the cycle CUs
-pattern <- "benchmarks_summary_HBSRM"
-benchmarks_HBSRM_c <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                  wd_output = paste0(wd_output,"/intermediate"),
-                                                  region = region,
-                                                  species_all = species_all,
-                                                  term_include = "cyclic_Ricker")
-
-# Merge the two
-benchmarks_HBSRM <- rbind(benchmarks_HBSRM,benchmarks_HBSRM_c[,colnames(benchmarks_HBSRM)])
-
+if(cyclic_biostatus){
+  # Import the Ricker benchmarks down with the cycle CUs
+  pattern <- "benchmarks_summary_HBSRM"
+  benchmarks_HBSRM_c <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                      wd_output = paste0(wd_output,"/intermediate"),
+                                                      region = region,
+                                                      species_all = species_all,
+                                                      term_include = "cyclic_Ricker")
+  
+  # Merge the two
+  benchmarks_HBSRM <- rbind(benchmarks_HBSRM,benchmarks_HBSRM_c[,colnames(benchmarks_HBSRM)])
+}
 
 #'* Import benchmark values for the percentile method *
 pattern <- "benchmarks_summary_percentiles"
@@ -145,18 +152,19 @@ unique(biological_status_HBSRM$comment)
 cond <- grepl("cyclic",biological_status_HBSRM$CU_pse)
 biological_status_HBSRM[cond,]
 
-
-# Import the Ricker benchmark values for cyclic CUs
-biological_status_HBSRM_c <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                         wd_output = paste0(wd_output,"/intermediate"),
-                                                         region = region,
-                                                         species_all = species_all,
-                                                         term_include = "cyclic_Ricker")
-biological_status_HBSRM_c$species <- "SX"
-
-
-biological_status_HBSRM <- rbind(biological_status_HBSRM,
-                                 biological_status_HBSRM_c[,colnames(biological_status_HBSRM)])
+if(cyclic_biostatus){
+  # Import the Ricker benchmark values for cyclic CUs
+  biological_status_HBSRM_c <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+                                                             wd_output = paste0(wd_output,"/intermediate"),
+                                                             region = region,
+                                                             species_all = species_all,
+                                                             term_include = "cyclic_Ricker")
+  biological_status_HBSRM_c$species <- "SX"
+  
+  biological_status_HBSRM <- rbind(biological_status_HBSRM,
+                                   biological_status_HBSRM_c[,colnames(biological_status_HBSRM)])
+  
+}
 
 # add column biostatus for both thresholds (Smsy and 80% Smsy)
 colProb <- colnames(biological_status_HBSRM)[grepl("Smsy_",colnames(biological_status_HBSRM))]
@@ -187,7 +195,7 @@ biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       species_all = species_all,
                                                       term_exclude = "cyclic")
 
-nrow(biological_status_percentile) # 451 452 448
+nrow(biological_status_percentile) # 449 451 452 448
 
 # Add final biostatus for both thresholds (i.e., 0.75 and 0.5 upper threshold)
 #' NOTE: the percentile biostatus is obtain used the benchmarks are current spawner
@@ -260,22 +268,24 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 465 466
+nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 463 465 466
+length(unique(conservationunits_decoder$pooledcuid)) # 463
+length(unique(conservationunits_decoder$cuid)) # 469
 
 #'* Import dataset390_data_quality (dataset390_output) for survey_quality *
-# dataset390_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[18],
-#                                     fromDatabase = fromDatabase,
-#                                     update_file_csv = update_file_csv,
-#                                     wd = wd_pop_indic_data_input_dropbox)
-# dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
+dataset390_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[18],
+                                    fromDatabase = fromDatabase,
+                                    update_file_csv = update_file_csv,
+                                    wd = wd_pop_indic_data_input_dropbox)
+dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
 
 # TEMPORARY (11/09/2024)
-dataset390_output <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
-                                                pattern = "dataset390_data_quality")
-dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_quality")]
-colnames(dataset390_output)[colnames(dataset390_output) == "catch_quality"] <- "catch_method"
+# dataset390_output <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
+#                                                 pattern = "dataset390_data_quality")
+# dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_quality")]
+# colnames(dataset390_output)[colnames(dataset390_output) == "catch_quality"] <- "catch_method"
 head(dataset390_output)
-nrow(dataset390_output) # 465 466
+nrow(dataset390_output) # 463 465 466
 
 # survey_quality as in data-quality.R: 
 # "Low" ~ 1
@@ -422,15 +432,18 @@ biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
 #' UPDATE: it was decided during Population meeting of October 16 2024 to provide 
 #' the Ricker benchmarks to the (Fraser) cyclic CUs
 #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
-# row_toUpdate <- grepl("(cyclic)",biological_status_HBSRM$CU_pse)
-# val_toUpdate <- biological_status_HBSRM$psf_status_code[row_toUpdate]
-# val_new <- paste(val_toUpdate,5, sep = ", ")
-# biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
-# 
-# row_toUpdate <- grepl("(cyclic)",biological_status_percentile$CU_pse)
-# val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
-# val_new <- paste(val_toUpdate,5, sep = ", ")
-# biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
+
+if(!cyclic_biostatus){
+  row_toUpdate <- grepl("(cyclic)",biological_status_HBSRM$CU_pse)
+  val_toUpdate <- biological_status_HBSRM$psf_status_code[row_toUpdate]
+  val_new <- paste(val_toUpdate,5, sep = ", ")
+  biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
+  
+  row_toUpdate <- grepl("(cyclic)",biological_status_percentile$CU_pse)
+  val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
+  val_new <- paste(val_toUpdate,5, sep = ", ")
+  biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
+}
 
 #'* 6 = not-assessed (low productivity or high exploitation) --> Percentile only *
 for(r in 1:nrow(highExploit_lowProd)){
@@ -464,7 +477,6 @@ row_toUpdate <- biological_status_percentile$dataPointNb < 20
 val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
 val_new <- paste(val_toUpdate,7, sep = ", ")
 biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
-
 
 #'* 8 = data-deficient (no estimates of spawner abundance in the most recent generation) *
 #' Rule 1: To be considered CUs must have at least one data point within the 
@@ -623,6 +635,9 @@ length(CUs_Percent_only) # 305 (311 - 6 cyclic) ; 311 313 315 311
 # Expected number of rows in biological_status_merged:
 length(CUs_comm) + length(CUs_HBSRM_only) + length(CUs_Percent_only) # 449 451 452 448
 nrow(biological_status_merged) # 449 451 452 --> ALL GOOD
+
+# cond <- biological_status_merged$cuid == 185
+# biological_status_merged[cond,]
 
 # Renames columns
 colnames(biological_status_merged) <- gsub("red","red_prob",colnames(biological_status_merged))
@@ -948,7 +963,7 @@ nrow(biological_status_merged) # 449 451 452 448
 
 # Number CUs with biostatus assessed over both methods
 condition <- biological_status_merged$psf_status_code %in% 1:3
-sum(condition) # 143 144 134 196 195
+sum(condition) # 149 (--> 6 cyclic CUs) 143 144 134 196 195
 
 # CUs not assessed because cyclic dynamics, low productivity/high mortality or data deficient
 condition_5 <- grepl(pattern = "5",biological_status_merged$psf_status_code)
@@ -956,14 +971,14 @@ condition_6 <- grepl(pattern = "6",biological_status_merged$psf_status_code)
 condition_7 <- grepl(pattern = "7",biological_status_merged$psf_status_code)
 condition_5_6_7 <- condition_5 | condition_6 | condition_7
 biological_status_merged$psf_status_code_all[condition_5_6_7]
-sum(condition_5_6_7) # 226 232 234 38
+sum(condition_5_6_7) # 226 (less 6 cyclic CUs) 232 234 38
 
 # Number CUs with biostatus assessed with HBSRM:
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "sr"
 sum(condition_HBSRM)                   # 110 104 97 124 125
-sum(condition_1_2_3 & condition_HBSRM) # 110 104 97 124 125
+sum(condition_1_2_3 & condition_HBSRM) # 110 (--> + 6 cyclic CUs) 104 97 124 125
 
 # Number CUs with biostatus assessed with percentile method: 
 condition_Percent <- !is.na(biological_status_merged$psf_status_type) & 
@@ -1141,10 +1156,10 @@ for(r in 1:nrow(benchmarks_merged)){
 #
 
 cond_tb <- biological_status_merged$region == "Transboundary"
-biological_status_merged$region[cond_tb] == "Northern Transboundary"
+biological_status_merged$region[cond_tb] <- "Northern Transboundary"
 
 cond_tb <- benchmarks_merged$region == "Transboundary"
-benchmarks_merged$region[cond_tb] == "Northern Transboundary"
+benchmarks_merged$region[cond_tb] <- "Northern Transboundary"
 
 #
 # Add the missing CUs to the output files (one time fix) ------
@@ -1212,7 +1227,6 @@ benchmarks_add[,cond_col] <- NA
 
 benchmarks_merged <- rbind(benchmarks_merged,
                            benchmarks_add)
-
 
 # date <- as.character(Sys.time())
 # date <- strsplit(x = date, split = " ")[[1]][1]

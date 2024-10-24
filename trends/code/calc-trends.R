@@ -382,7 +382,7 @@ dataset391_output_new[cond,]
 #
 # Remove VIMI SH South Coast Winter 980 TEMPORARY --------
 #' cf. PSE Data Check-In Meeting Notes - 19-09-2024
-#' This CUs should be removed becaue the only population for which there is data
+#' These CUs should be removed because the only population for which there is data
 #' is not representative of the whole CU
 #' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1726265990287849?thread_ts=1726158954.361189&cid=CJ5RVHVCG
 #' Eric will edit the code so the estimated spawner abundance will not be calculated

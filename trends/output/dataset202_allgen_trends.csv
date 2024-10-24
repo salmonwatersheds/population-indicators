@@ -214,14 +214,14 @@
 "Vancouver Island & Mainland Inlets","Steelhead",981,"East Vancouver Island Winter",-0.9,-15.7,-0.009457,24.932,5.99,2003,2021
 "Vancouver Island & Mainland Inlets","Steelhead",984,"West Vancouver Island Summer",-1.4,-37.3,-0.014595,35.771,6.741,1989,2021
 "Vancouver Island & Mainland Inlets","Steelhead",985,"East Vancouver Island Summer",-1.2,-36.3,-0.011874,28.846,5.336,1980,2018
-"Transboundary","Chinook",1004,"Alsek",-3,-72.5,-0.030032,68.956,9.492,1980,2023
-"Transboundary","Lake sockeye",1026,"Tahltan",-0.8,-18.4,-0.008113,25.823,9.614,1998,2023
-"Transboundary","Lake sockeye",1027,"Kuthai",-7.8,-95.8,-0.080994,169.717,9.025,1984,2023
-"Transboundary","Lake sockeye",1028,"Little Trapper",-1.8,-48,-0.018182,45.583,9.456,1987,2023
-"Transboundary","Lake sockeye",1029,"Tatsamenie",0.2,4,0.001618,4.973,8.208,1999,2023
-"Transboundary","Lake sockeye",1033,"King Salmon",18.8,1478.6,0.172446,-340.108,5.991,2007,2023
-"Transboundary","Lake sockeye",1038,"Klukshu",-1.5,-47,-0.014771,38.927,9.681,1980,2023
-"Transboundary","Lake sockeye",1039,"Nesketahin",-7,-90.8,-0.072388,152.243,8.19,1990,2023
+"Northern Transboundary","Chinook",1004,"Alsek",-3,-72.6,-0.030083,69.058,9.493,1980,2023
+"Northern Transboundary","Lake sockeye",1026,"Tahltan",-0.8,-18.4,-0.008113,25.823,9.614,1998,2023
+"Northern Transboundary","Lake sockeye",1027,"Kuthai",-7.8,-95.8,-0.080994,169.717,9.025,1984,2023
+"Northern Transboundary","Lake sockeye",1028,"Little Trapper",-1.8,-48,-0.018182,45.583,9.456,1987,2023
+"Northern Transboundary","Lake sockeye",1029,"Tatsamenie",0.2,4,0.001618,4.973,8.208,1999,2023
+"Northern Transboundary","Lake sockeye",1033,"King Salmon",18.8,1478.6,0.172446,-340.108,5.991,2007,2023
+"Northern Transboundary","Lake sockeye",1038,"Klukshu",-1.5,-47,-0.014771,38.927,9.681,1980,2023
+"Northern Transboundary","Lake sockeye",1039,"Nesketahin",-7,-90.8,-0.072388,152.243,8.19,1990,2023
 "Yukon","Chinook",1201,"Big Salmon",2.5,102.7,0.024361,-39.945,8.534,1990,2019
 "Yukon","Chinook",1203,"Pelly",-0.3,-7.4,-0.002656,14.218,8.933,1990,2019
 "Yukon","Chinook",1204,"Middle Yukon",0.7,21,0.006583,-4.136,8.965,1990,2019

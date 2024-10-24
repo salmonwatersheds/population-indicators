@@ -214,14 +214,14 @@
 "Vancouver Island & Mainland Inlets","Steelhead",981,"East Vancouver Island Winter",-1.7,-21.5,-0.017247,40.638,6.023,2007,2021,NA
 "Vancouver Island & Mainland Inlets","Steelhead",984,"West Vancouver Island Summer",-0.9,-11.5,-0.008695,23.879,6.428,2007,2021,NA
 "Vancouver Island & Mainland Inlets","Steelhead",985,"East Vancouver Island Summer",5.3,105.9,0.051585,-98.81,4.567,2004,2018,NA
-"Transboundary","Chinook",1004,"Alsek",0.3,4,0.002801,2.689,8.316,2009,2023,NA
-"Transboundary","Lake sockeye",1026,"Tahltan",-2.4,-28.7,-0.024118,58.078,9.625,2009,2023,NA
-"Transboundary","Lake sockeye",1027,"Kuthai",-10.8,-79.9,-0.114514,237.043,6.985,2009,2023,NA
-"Transboundary","Lake sockeye",1028,"Little Trapper",3.9,71.2,0.038408,-68.622,8.539,2009,2023,NA
-"Transboundary","Lake sockeye",1029,"Tatsamenie",3.5,62.3,0.034604,-61.554,7.967,2009,2023,NA
-"Transboundary","Lake sockeye",1033,"King Salmon",13.5,304,0.126933,-248.231,7.158,2012,2023,NA
-"Transboundary","Lake sockeye",1038,"Klukshu",2.5,40.3,0.024205,-39.669,8.958,2009,2023,NA
-"Transboundary","Lake sockeye",1039,"Nesketahin",-13.7,-87.3,-0.147151,302.873,7.246,2009,2023,NA
+"Northern Transboundary","Chinook",1004,"Alsek",0.2,3.5,0.002434,3.426,8.317,2009,2023,NA
+"Northern Transboundary","Lake sockeye",1026,"Tahltan",-2.4,-28.7,-0.024118,58.078,9.625,2009,2023,NA
+"Northern Transboundary","Lake sockeye",1027,"Kuthai",-10.8,-79.9,-0.114514,237.043,6.985,2009,2023,NA
+"Northern Transboundary","Lake sockeye",1028,"Little Trapper",3.9,71.2,0.038408,-68.622,8.539,2009,2023,NA
+"Northern Transboundary","Lake sockeye",1029,"Tatsamenie",3.5,62.3,0.034604,-61.554,7.967,2009,2023,NA
+"Northern Transboundary","Lake sockeye",1033,"King Salmon",13.5,304,0.126933,-248.231,7.158,2012,2023,NA
+"Northern Transboundary","Lake sockeye",1038,"Klukshu",2.5,40.3,0.024205,-39.669,8.958,2009,2023,NA
+"Northern Transboundary","Lake sockeye",1039,"Nesketahin",-13.7,-87.3,-0.147151,302.873,7.246,2009,2023,NA
 "Yukon","Chinook",1201,"Big Salmon",3.8,87.1,0.036843,-65.077,8.683,2002,2019,NA
 "Yukon","Chinook",1203,"Pelly",-0.6,-9.3,-0.005717,20.385,8.94,2002,2019,NA
 "Yukon","Chinook",1204,"Middle Yukon",-1.9,-28.1,-0.019389,48.094,9.278,2002,2019,NA

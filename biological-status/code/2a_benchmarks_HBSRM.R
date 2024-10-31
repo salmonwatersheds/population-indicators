@@ -407,7 +407,7 @@ for(i_rg in 1:length(region)){
             cat("\n")
             break
           }
-          conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
+          # conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
         }
         
         # keep track of the different versions of the CU names

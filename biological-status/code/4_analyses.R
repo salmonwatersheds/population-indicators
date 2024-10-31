@@ -92,7 +92,7 @@ species_acronym_df <- species_acronym_fun()
 regions_df <- regions_fun()
 
 # select all the regions
-region <- as.character(regions_df[1,])
+# region <- as.character(regions_df[1,])
 
 # select certain species
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
@@ -358,6 +358,10 @@ biological_status <- datasets_database_fun(nameDataSet = datasetsNames_database$
                                                fromDatabase = fromDatabase,
                                                update_file_csv = update_file_csv,
                                                wd = wd_pop_indic_data_input_dropbox)
+
+# Import the latest data update with Ricker benchmark status obtained for cyclic CUs
+biological_status <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                pattern = "dataset101_biological_status")
  
 nrow(biological_status) # 463
 
@@ -366,6 +370,9 @@ cond_yk <- biological_status$region == "Yukon"
 biological_status <- biological_status[!cond_yk,]
 
 nrow(biological_status) # 443
+
+# Northern Transboundary if needed
+unique(biological_status$region)
 
 
 #'* Import the conservationunits_decoder.csv *
@@ -482,8 +489,7 @@ legend("bottom",legend = psf_status[c(1,4,2,5,3,6)],
 dev.off()
 
 
-
-#'* Total biostatus - otion 2 *
+#'* Total biostatus - option 2 *
 
 n_width <- 10
 
@@ -526,7 +532,6 @@ for(bs in psf_status){
 }
 
 dev.off()
-
 
 
 #'* Biostatus: regions *
@@ -589,8 +594,6 @@ dev.off()
 jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_rg_count.jpeg"),
      width = 15, height = 20, units = "cm", res = 300)
 
-biostatus_rg_c <- NULL
-
 layout(matrix(1:(length(regions)+1),byrow = T, nrow = 3))
 for(rg in regions){
   # rg <- regions[2]
@@ -604,8 +607,7 @@ for(rg in regions){
   
   biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
   biostatus_here$region <- rg
-  biostatus_rg_c <- rbind(biostatus_rg_c,biostatus_here)
-  
+
   par(mar = c(3,.5,.5,.5))
   
   rg_legend <- rg
@@ -621,6 +623,55 @@ for(rg in regions){
 }
 plot.new()
 legend("center",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n')
+
+dev.off()
+
+
+
+
+n_width <- 5
+
+count_max <- max(biostatus_rg$count)
+y_max <- ceiling(count_max / n_width)
+
+# sort regions
+regions_sorted <- biostatus_rg$region[order(biostatus_rg$count)]
+
+
+jpeg(filename = paste0(wd_figures,"/PSE_summary/Biological_status_PSE2.0_rg_count_oneLine.jpeg"),
+     width = 25, height = 14, units = "cm", res = 300)
+
+layout(matrix(1:(length(regions)),byrow = T, nrow = 1))
+for(rg in regions_sorted){
+  # rg <- regions[2]
+  
+  cond_rg <- biological_status$region == rg
+  
+  biostatus_here <- biological_status[cond_rg,] %>%
+    group_by(psf_status) %>%
+    summarise(count = n()) %>%
+    arrange(psf_status)
+  
+  biostatus_here$percent <- round(biostatus_here$count / sum(biostatus_here$count) * 100,2)
+  biostatus_here$region <- rg
+  
+  par(mar = c(.5,3,.5,.5), xpd=TRUE)
+  
+  rg_legend <- rg
+  # if(rg == "Vancouver Island & Mainland Inlets"){
+  #   rg_legend <- "VIMI"
+  # }
+  plot_biostatus_summary_fun(biostatus_data = biostatus_here, n_width = n_width, 
+                             main = "", n_height = y_max + 2, 
+                             col_border = "white", psf_status_col = psf_status_col)
+  mtext(text = rg_legend, side = 2, line = 1, font = 2, adj = 0, cex = 1)
+  text(x = n_width/2, y = 1 + ceiling(sum(biostatus_here$count)/n_width), cex = 1.5, 
+       labels = sum(biostatus_here$count))
+  if(rg == regions_sorted[1]){
+    legend("left",legend = rev(psf_status), fill = rev(psf_status_col), bty = 'n', 
+           inset = c(-.2,0))
+  }
+}
 
 dev.off()
 
@@ -645,7 +696,7 @@ for(spn in unique(biological_status$species_name)){
 }
 
 species <- unique(biological_status$species)
-species
+species <- c("Sockeye","Coho","Chinook","Pink","Chum","Steelhead")
 
 length(species) # 6
 
@@ -1764,6 +1815,137 @@ biostatus_101_percent$CU[cond_yr]
 
 
 
+# 
+# CYCLIC LARKIN ALPHA analysis -------
+
+# Import the Larkin's alpha (or "a") and alpha' (or "a'") as in the model:
+# log(Rt/St) = a - b*St - b1*St-1 - b2*St-2 - b3*St-3 
+# log(Rt/St) = a' - b*St
+alpha_Larkin <- import_mostRecent_file_fun(wd = paste0(wd_output,"/intermediate"), 
+                                           pattern = "cyclic_Larkin_alphas_HBSRM")
+
+# Import the corresponding benchmark values
+benchmarks_Larkin <- import_mostRecent_file_fun(wd = paste0(wd_output,"/intermediate"), 
+                                                pattern = "cyclic_Larkin_benchmarks_summary_HBSRM")
+
+# Import the convergence diagnostic:
+convDiagnostic_Larking <- import_mostRecent_file_fun(wd = paste0(wd_output,"/intermediate"), 
+                                                     pattern = "cyclic_Larkin_DIC_HBSRM_convDiagnostic")
+
+
+cuid <- unique(benchmarks_Larkin$cuid)
+
+x_offset <- .1
+
+m <- matrix(data = NA, nrow = length(cuid) * 2, ncol = 2)
+r <- 1
+count <- 1
+for(c in cuid){
+  m[r,] <- count
+  m[r + 1,] <- c(count + 1, count + 2)
+  r <- r + 2
+  count <- count + 3
+}
+
+jpeg(paste0(wd_figures,"/Fraser_SE_cyclic_Larkin_alphas_comparisons.jpg"),
+     width = 15, height = 30, units = "cm", res = 300)
+layout(m, heights = c(rep(c(1,4),length(cuid) - 1),1,5))
+for(c in cuid){
+  # c <- cuid[1]
+  
+  # Benchmarks info
+  cond_c <- benchmarks_Larkin$cuid == c
+  
+  region <- unique(benchmarks_Larkin$region[cond_c])
+  species <- unique(benchmarks_Larkin$species[cond_c])
+  cu_name_pse <- unique(benchmarks_Larkin$cu_name_pse[cond_c])
+  model <- unique(benchmarks_Larkin$model[cond_c])
+  
+  cond_HPD <- benchmarks_Larkin$method == "HPD"
+  cond_Sgen <- benchmarks_Larkin$benchmark == "Sgen"
+  cond_Smsy <- benchmarks_Larkin$benchmark == "Smsy"
+  
+  yr <- benchmarks_Larkin$year[cond_c & cond_HPD & cond_Sgen]
+  order_yr <- order(yr)
+  Sgen <- benchmarks_Larkin$m[cond_c & cond_HPD & cond_Sgen]
+  Smsy <- benchmarks_Larkin$m[cond_c & cond_HPD & cond_Smsy]
+  Sgen_CIL <- benchmarks_Larkin$CI025[cond_c & cond_HPD & cond_Sgen]
+  Sgen_CIU <- benchmarks_Larkin$CI975[cond_c & cond_HPD & cond_Sgen]
+  Smsy_CIL <- benchmarks_Larkin$CI025[cond_c & cond_HPD & cond_Smsy]
+  Smsy_CIU <- benchmarks_Larkin$CI975[cond_c & cond_HPD & cond_Smsy]
+  # ymin <- min(c(Sgen_CIL,Smsy_CIL))
+  ymax <- max(c(Sgen_CIU,Smsy_CIU))
+  xlim <- c(min(yr) - .2, max(yr) + .2)
+  
+  # Convergence info
+  cond_c <- convDiagnostic_Larking$cuid == c
+  cond_model <- convDiagnostic_Larking$model == model
+  convDiagnostic_Larking[cond_c & cond_model,]
+  
+  # Plot info CU
+  par(mar = rep(0,4))
+  plot.new()
+  legend("center",legend = paste(region,species,cu_name_pse,c,model, sep = " - "), 
+         bty = 'n')
+  
+  side1 <- 2
+  if(which(c == cuid) == length(cuid)){
+    side1 <- 4.5
+  }
+  
+  par(mar = c(side1,4,.5,.5))
+  
+  plot(x = yr[order_yr] - x_offset, y = Sgen[order_yr], 
+       ylim = c(0,ymax), xlim = xlim, ylab = "Spawner", xlab = "",
+       pch = 16, col = status_cols["red"], xaxt = "n")
+  axis(side = 1, at = yr[order_yr], labels = yr[order_yr])
+  points(x = yr[order_yr] + x_offset, y = Smsy[order_yr], 
+         pch = 16, col = status_cols["green"])
+  segments(x0 = yr[order_yr] - x_offset, x1 = yr[order_yr] - x_offset, 
+           y0 = Sgen_CIL[order_yr], y1 = Sgen_CIU[order_yr], 
+           col =  status_cols["red"], lwd = 1.5)
+  segments(x0 = yr[order_yr] + x_offset, x1 = yr[order_yr] + x_offset, 
+           y0 = Smsy_CIL[order_yr], y1 = Smsy_CIU[order_yr], 
+           col =  status_cols["green"], lwd = 1.5)
+  
+  if(which(c == cuid) == length(cuid)){
+    mtext(text = "Year",side = 1, line = 2.5, cex = .8)
+  }
+  
+  # Plot a and alpha
+  cond_c <- alpha_Larkin$cuid == c
+  yr <- alpha_Larkin$year[cond_c]
+  order_yr <- order(yr)
+  alpha <- alpha_Larkin$a_median[cond_c]
+  alpha_prime <- alpha_Larkin$a_Larkin_median[cond_c]
+  alpha_CIL <- alpha_Larkin$a_CI025[cond_c]
+  alpha_CIU <- alpha_Larkin$a_CI975[cond_c]
+  alpha_prime_CIL <- alpha_Larkin$a_Larkin_CI025[cond_c]
+  alpha_prime_CIU <- alpha_Larkin$a_Larkin_CI975[cond_c]
+  
+  ymax <- max(c(alpha_CIU,alpha_prime_CIU))
+  ymin <- min(c(0,alpha_CIL,alpha_prime_CIL))
+  
+  plot(x = yr[order_yr] - x_offset, y = alpha[order_yr], 
+       ylim = c(ymin,ymax), xlim = xlim, pch = 16, xaxt = "n",
+       ylab = "Spawner/year", xlab = "",)
+  axis(side = 1, at = yr[order_yr], labels = yr[order_yr])
+  points(x = yr[order_yr] + x_offset, y = alpha_prime[order_yr], 
+         pch = 16, col = "blueviolet")
+  segments(x0 = yr[order_yr] - x_offset, x1 = yr[order_yr] - x_offset, 
+           y0 = alpha_CIL[order_yr], y1 = alpha_CIU[order_yr], lwd = 1.5)
+  segments(x0 = yr[order_yr] + x_offset, x1 = yr[order_yr] + x_offset, 
+           y0 = alpha_prime_CIL[order_yr], y1 = alpha_prime_CIU[order_yr], 
+           col =  "blueviolet", lwd = 1.5)
+  abline(h = 0, lty = 2)
+  
+  if(which(c == cuid) == length(cuid)){
+    mtext(text = "Year",side = 1, line = 2.5, cex = .8)
+  }
+}
+dev.off()
+
+#
 # Effect of changing rule 1 (at least one data point in most recent generation) on biostatus -----
 #
 

@@ -326,17 +326,19 @@ for(i_rg in 1:length(region)){
           conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[condition,]
           
           if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
-            print("This CUS is not found in conservationunits_decoder:")
+            print("This CUS is not found in conservationunits_decoder BREAK")
             print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
             cat("\n")
+            break
           }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1){
             if(length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
-              print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
+              print("There are multiple CUs with that name who don't have the same pooledcuid BREAK")
               print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
               print(conservationunits_decoder_rg_sp_cu)
               cat("\n")
+              break
             }
-            conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
+            # conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
           }
           
           # keep track of the different versions of the CU names

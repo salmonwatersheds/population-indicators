@@ -274,6 +274,10 @@ datasets_database_fun <- function(nameDataSet, fromDatabase = F, update_file_csv
     }
   }else{
     output <- read.csv(paste(wd,nameFileCVS,sep = "/"), header = T)
+    
+    file.mtime <- file.mtime(paste(wd,nameFileCVS,sep = "/"))
+    print(paste0("Date last modification of ",nameFileCVS,": ",max(file.mtime)))
+
   }
   return(output)
 }
@@ -333,16 +337,16 @@ datasetsNames_database_fun <- function(){
       "dataset391_output.csv",
       "dataset380_output.csv",
       "dataset384_output.csv",
-      "dataset101_biological_status", #"dataset101_output.csv",
+      "dataset101_biological_status.csv", #"dataset101_output.csv",
       "catchrunsize_output.csv",
       "dataset1cu_output.csv",              # dataset_1part1
       "dataset103_output.csv",
       "dataset202_output.csv",
-      "dataset390_data_quality",       # "dataset390_output.csv",
-      "dataset102_benchmarks",         # "dataset102_output.csv",
+      "dataset390_data_quality.csv",       # "dataset390_output.csv",
+      "dataset102_benchmarks.csv",         # "dataset102_output.csv",
       "ssp.biologicalstatuscodes.csv",
-      "dataset384_output",                 # Hatchery Releases for Salmon and Steelhead Conservation Units
-      "dataset386_output"                  # Stream Level Data Quality
+      "dataset384_output.csv",                 # Hatchery Releases for Salmon and Steelhead Conservation Units
+      "dataset386_output.csv"                  # Stream Level Data Quality
       ))
   
   out_df$index <- 1:nrow(out_df)
@@ -774,11 +778,18 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
 
 #' Function to return the last version of a file whose name contains the given
 #' pattern. Works with .csv and .xlsx formats.
-import_mostRecent_file_fun <- function(wd,pattern){
+import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA){
   
   files_c <- list.files(wd)
   files_c <- files_c[grepl(x = files_c, 
                            pattern = pattern)]
+  
+  if(!is.na(pattern_exclude[1])){
+    for(p in pattern_exclude){
+      files_c <- files_c[!grepl(x = files_c, 
+                                pattern = p)]
+    }
+  }
   
   if(length(files_c) == 0){
     print("File not found.")

@@ -1832,6 +1832,81 @@ benchmarks_Larkin <- import_mostRecent_file_fun(wd = paste0(wd_output,"/intermed
 convDiagnostic_Larking <- import_mostRecent_file_fun(wd = paste0(wd_output,"/intermediate"), 
                                                      pattern = "cyclic_Larkin_DIC_HBSRM_convDiagnostic")
 
+# Import biological status other CUs
+biostatus <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
+                                        pattern = "dataset101_biological_status")
+
+# return all the CUs for which Sgen < Smsy
+cond_sr <- biostatus$psf_status_type == "sr" &
+  !is.na(biostatus$psf_status_type) &
+  !grepl("cyclic",biostatus$cu_name_pse)
+
+sum(cond_sr) # 104
+cuid_sr <- biostatus$cuid[cond_sr]
+
+# return the posterior density for a 
+a_post_c <- c()
+for(rg in unique(biostatus$region[cond_sr])){
+  # rg <- unique(biostatus$region[cond_sr])[1]
+  cond_rg <- biostatus$region == rg
+  rg_name <- gsub(" ","_",rg)
+  if(rg_name == "Northern_Transboundary"){
+    rg_name <- "Transboundary"
+  }else if(grepl("Vancouver",rg_name)){
+    rg_name <- "VIMI"
+  }
+  
+  print(rg)
+  
+  for(sp in unique(biostatus$species_abbr[cond_sr & cond_rg])){
+    # sp <- unique(biostatus$species_abbr[cond_sr & cond_rg])[1]
+    sp_name <- sp
+    if(grepl("SE",sp_name[1])){
+      sp_name <- "SX"
+    }else if(grepl("PK",sp_name[1])){
+      sp_name <- "PK"
+    }
+    
+    print(paste0(" - ",sp))
+    
+    # Import the SR matrices to obtain the order of the CUs in the posterior distributions
+    SRm <-  readRDS(paste0(wd_output,"/intermediate/",rg_name,"_",sp_name,"_SR_matrices.rds"))
+    
+    # import the posterior distributions
+    post <-  readRDS(paste0(wd_output,"/intermediate/",rg_name,"_",sp_name,"_HBSRM_posteriors_priorShift.rds"))
+    post_a <- NULL
+    for(chain in 1:length(post)){
+      # chain <- 1
+      cond_a <- grepl("a",colnames(post[[chain]])) &
+        !grepl("_a",colnames(post[[chain]])) &
+        !grepl("deviance",colnames(post[[chain]])) 
+      
+      out <- post[[chain]][,cond_a,drop = F]
+      
+      if(is.null(post_a)){
+        post_a <- out
+      }else{
+        post_a <- rbind(post_a,out)
+      }
+    }
+    
+    colnames(post_a) <- colnames(SRm$R)
+    
+    # only retain the CUs with "sr" biostatus
+    cond_sp <- biostatus$species_abbr == sp
+    cu_name <- biostatus$cu_name_pse[cond_sr & cond_rg & cond_sp]
+    
+    post_a <- post_a[,cu_name, drop = F]
+    
+    for(c in 1:ncol(post_a)){
+      a_post_c <- c(a_post_c,post_a[,c])
+    }
+  } # for each sp
+} # for each rg
+
+length(a_post_c)
+
+a_post_c_q <- quantile(a_post_c,probs = c(.025,.5,.975))
 
 cuid <- unique(benchmarks_Larkin$cuid)
 
@@ -1875,7 +1950,7 @@ for(c in cuid){
   Smsy_CIU <- benchmarks_Larkin$CI975[cond_c & cond_HPD & cond_Smsy]
   # ymin <- min(c(Sgen_CIL,Smsy_CIL))
   ymax <- max(c(Sgen_CIU,Smsy_CIU))
-  xlim <- c(min(yr) - .2, max(yr) + .2)
+  xlim <- c(min(yr) - .5, max(yr) + .5)
   
   # Convergence info
   cond_c <- convDiagnostic_Larking$cuid == c
@@ -1912,6 +1987,11 @@ for(c in cuid){
     mtext(text = "Year",side = 1, line = 2.5, cex = .8)
   }
   
+  if(which(c == cuid) == 1){
+    legend("right",legend = c("Sgen","Smsy"),
+           text.col = c(status_cols["red"],status_cols["green"]),bty = 'n')
+  }
+  
   # Plot a and alpha
   cond_c <- alpha_Larkin$cuid == c
   yr <- alpha_Larkin$year[cond_c]
@@ -1923,12 +2003,16 @@ for(c in cuid){
   alpha_prime_CIL <- alpha_Larkin$a_Larkin_CI025[cond_c]
   alpha_prime_CIU <- alpha_Larkin$a_Larkin_CI975[cond_c]
   
-  ymax <- max(c(alpha_CIU,alpha_prime_CIU))
-  ymin <- min(c(0,alpha_CIL,alpha_prime_CIL))
+  ymax <- max(c(alpha_CIU,alpha_prime_CIU,a_post_c_q))
+  ymin <- min(c(-0.04,alpha_CIL,alpha_prime_CIL,a_post_c_q))
   
   plot(x = yr[order_yr] - x_offset, y = alpha[order_yr], 
        ylim = c(ymin,ymax), xlim = xlim, pch = 16, xaxt = "n",
-       ylab = "Spawner/year", xlab = "",)
+       ylab = "Spawner/year", xlab = "")
+  polygon(x = c(xlim[1]-.5,xlim[2]+.5,rev(c(xlim[1]-.5,xlim[2]+.5))),
+          y = c(rep(a_post_c_q[1],2),rep(a_post_c_q[3],2)), border = NA, 
+          col = colour_transparency_fun("grey50",alpha = .2))
+  abline(h = a_post_c_q[2], lty = 1)
   axis(side = 1, at = yr[order_yr], labels = yr[order_yr])
   points(x = yr[order_yr] + x_offset, y = alpha_prime[order_yr], 
          pch = 16, col = "blueviolet")
@@ -1941,6 +2025,18 @@ for(c in cuid){
   
   if(which(c == cuid) == length(cuid)){
     mtext(text = "Year",side = 1, line = 2.5, cex = .8)
+  }
+  
+  if(which(c == cuid) == 1){
+    # legend("topright",legend = c("a","a Larkin","a median"),
+    #        col = c("black","blueviolet","black"),lwd = c(1.5,1.5,1), pch = c(16,16,NA),
+    #        text.col = c("black","blueviolet","black"),bty = 'n')
+    legend("topleft",legend = "a", col = "black", lwd = 1.5, pch = 16, 
+           text.col = "black", bty = 'n')
+    legend("top",legend = "a Larkin", col = "blueviolet", lwd = 1.5, pch = 16, 
+           text.col = "blueviolet", bty = 'n')
+    legend("topright",legend = "a median", col = "black", lwd = 1, text.col = "black", bty = 'n')
+    
   }
 }
 dev.off()

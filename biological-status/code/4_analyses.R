@@ -1136,8 +1136,8 @@ biological_status_cu <- datasets_database_fun(nameDataSet = datasetsNames_databa
 # In case the file on the database is not updated:
 # biological_status_cu <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
 #                                      header = T)
-# biological_status_cu <- import_mostRecent_file_fun(wd = wd_output,
-#                                                    pattern = "dataset101_biological_status")
+biological_status_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                   pattern = "dataset101_biological_status")
 
 # biological_status <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
 #                               header = T)
@@ -1151,8 +1151,8 @@ benchmarks_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name
 # In case the file on the database is not updated:
 # benchmarks_cu <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
 #                                  header = T)
-# benchmarks_cu <- import_mostRecent_file_fun(wd = wd_output,
-#                                             pattern = "dataset102_benchmarks")
+benchmarks_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                            pattern = "dataset102_benchmarks")
 
 # Import the conservationunits_decoder.csv
 conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
@@ -1171,14 +1171,14 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 cond <- biological_status_cu$psf_status_code %in% 1:3
 cuid_biostat <- biological_status_cu$cuid[cond]
 
-figure_print <- T
+figure_print <- F
 percent <- 0
 for(cuid in cuid_biostat){
-  # cuid <- 408
+  # cuid <- 599
   plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
                                        cuspawnerabundance = spawnerabundance_cu, 
-                                       dataset101_output = biological_status_cu, 
-                                       dataset102_output = benchmarks_cu, 
+                                       dataset101_biological_status = biological_status_cu, 
+                                       dataset102_benchmarks = benchmarks_cu, 
                                        #dataset103_output = cuspawnerabund_smooth,
                                        conservationunits_decoder = conservationunits_decoder, 
                                        figure_print = figure_print, # figure_print, 

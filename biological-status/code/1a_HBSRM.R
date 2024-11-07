@@ -129,21 +129,19 @@ region <- as.character(regions_df[1,])
 # Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
-             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
+cond_sp <- species_acronym_df$species_qualified_simple == "CK" | 
+           species_acronym_df$species_qualified_simple == "SE"
+species <- species_acronym_df$species_name_simple[cond_sp] |> unique()
 
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
-
-# If we do not specify the species: all the species that have a _SRdata files are 
-# returned: 
-# note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- F
+# For all species
+species <- species_acronym_df$species_name_simple |> unique()
 
 #' Import the prior values for the HBSR model parameters prSmax and prCV that are
 #' used in HBSRM.R (the file is created in checks_fixes.R and contains the values 
 #' of these priors that were originally contained in SRdata.txt files that are 
 #' found in the "HBM and status" subfolders in each region-specific folders.
-priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
+#' NOT USED ANYMORE
+# priors_HBSRmodel <- read.csv(paste0(wd_data,"/priors_HBSRmodel.csv"),header = T)
 
 # Set first brood year, "-99" for no constraint
 FBYr <- -99
@@ -170,63 +168,66 @@ options(warn = 2)  # treat warnings as errors
 for(i_rg in 1:length(region)){
   # i_rg <- 3
   
-  recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
-  
-  if(species_all){
-    species <- unique(recruitsperspawner_rg$species_name)
-  }
-  
-  species <- species[species != "Steelhead"] # QUESTION: is it still relevant?
+  cond_rs_rg <- recruitsperspawner$region == region[i_rg]
+  # recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
   
   species_acro <- sapply(X = species,FUN = function(sp){
-    species_acronym_df$species_acro[species_acronym_df$species_name == sp]
-    })
+    cond <- species_acronym_df$species_name == sp
+    return(species_acronym_df$species_qualified_simple[cond])
+  })
   
   regionName <- region[i_rg]
   if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
     regionName <- "VIMI"
   }
   
-  if(sum(!is.na(recruitsperspawner_rg$spawners)) == 0 | sum(!is.na(recruitsperspawner_rg$recruits)) == 0){
+  cond <- all(is.na(recruitsperspawner$spawners[cond_rs_rg])) | 
+          all(is.na(recruitsperspawner$recruits[cond_rs_rg]))
+  
+  if(cond){
     
     print(paste0("*** There is no data in recruitsperspawner.csv for salmon in ",region[i_rg]," ***"))
     
   }else{
     
-    for(i_sp in 1:length(unique(species_acro))){
+    for(i_sp in 1:length(species_acro)){
+      # i_sp <- 4
+      speciesAcroHere <- species_acro[i_sp]
       
-      # i_sp <- 1
+      cond <- species_acronym_df$species_qualified_simple == speciesAcroHere
+      speciesHere <- species_acronym_df$species_name[cond] |> unique()
       
-      speciesAcroHere <- unique(species_acro)[i_sp]
-      speciesHere <- species_acronym_df$species_name[species_acronym_df$species_acro %in% speciesAcroHere]
+      cond_rs_rg_sp <- cond_rs_rg & recruitsperspawner$species_name %in% speciesHere
       
-      recruitsperspawner_rg_sp <- recruitsperspawner_rg[recruitsperspawner_rg$species_name %in% speciesHere,]
+      # recruitsperspawner_rg_sp <- recruitsperspawner_rg[recruitsperspawner_rg$species_name %in% speciesHere,]
       
-      conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
-                                                                     conservationunits_decoder$species_name %in% speciesHere,]
+      cond_cud_rg_sp <- conservationunits_decoder$region == region[i_rg] &
+                        conservationunits_decoder$species_name %in% speciesHere
+      
+      # conservationunits_decoder_rg_sp <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
+      #                                                                conservationunits_decoder$species_name %in% speciesHere,]
       
       print(paste0("*** Plot for: ",region[i_rg]," - ",speciesAcroHere," ***"))
       
       #'* Define the spawner (S) and recruits (R) matrices *
       
       # organize the data into a year x CU for R and S:
-      CUs <- unique(recruitsperspawner_rg_sp$cu_name_pse)
-      CUs_cuid <- sapply(X = CUs,
-                         FUN = function(cu){unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])})
+      CUs <- unique(recruitsperspawner$cu_name_pse[cond_rs_rg_sp])
+      CUs_cuid <- sapply(X = CUs, FUN = function(cu){
+        cond <- conservationunits_decoder$cu_name_pse == cu
+        return(unique(conservationunits_decoder$cuid[cond]))
+        })
       # unique(recruitsperspawner_rg_sp[,c("cu_name_pse","cuid")])
       nCUs <- length(CUs)
-      Yrs <- min(recruitsperspawner_rg_sp$year):max(recruitsperspawner_rg_sp$year)
+      Yrs <- min(recruitsperspawner$year[cond_rs_rg_sp]):max(recruitsperspawner$year[cond_rs_rg_sp])
       nYrs <- length(Yrs)
       
       S <- R <- matrix(nrow = nYrs, ncol = nCUs, dimnames = list(Yrs,CUs))
       for(j in 1:nCUs){
         # j <- 1
-        dj <- subset(recruitsperspawner_rg_sp,cu_name_pse == CUs[j])
+        dj <- subset(recruitsperspawner[cond_rs_rg_sp,],cu_name_pse == CUs[j])
         S[as.character(dj$year),j] <- dj$spawners # dj$Esc
         R[as.character(dj$year),j] <- dj$recruits # dj$Rec
-        
-        # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
-        # R[1:Nyrs[j],j] <- d1$Rec
       }
       
       # remove the row with NAs in S but not R and vice versa of a same CU
@@ -260,8 +261,9 @@ for(i_rg in 1:length(region)){
       S <- S[,!colnames(S) %in% CuToRemove, drop = F]
       R <- R[,!colnames(R) %in% CuToRemove, drop = F]
       CUs <- CUs[!CUs %in% CuToRemove]
-      CUs_cuid <- sapply(X = CUs,FUN = function(cu){
-        unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])
+      CUs_cuid <- sapply(X = CUs, FUN = function(cu){
+        cond <- conservationunits_decoder$cu_name_pse == cu
+        return(unique(conservationunits_decoder$cuid[cond]))
       })
       nCUs <- length(CUs)
       SR_l$R <- R
@@ -379,7 +381,7 @@ for(i_rg in 1:length(region)){
             if(any(grepl("a",para_issue))){
               
               print(paste0("*** Convergence issue with a hyper parameters for a with ",
-                           region[i_rg]," ",(unique(species_acro))[i_sp]," ",cyclic_filen," CUs"))
+                           region[i_rg]," ",species_acro[i_sp]," ",cyclic_filen," CUs"))
               print("")
               
               # remove them because there is nothing we can do for now
@@ -389,7 +391,7 @@ for(i_rg in 1:length(region)){
             if(length(para_issue) > 0){
               
               print(paste0("*** Convergence issue with a hyper parameters for b with ",
-                           region[i_rg]," ",(unique(species_acro))[i_sp]," ",cyclic_filen,": ",
+                           region[i_rg]," ",species_acro[i_sp]," ",cyclic_filen,": ",
                            paste0(CUs_concerned,collapse = " ; ")))
               print("Running procedure with prCV = 1")
               print("")
@@ -422,7 +424,7 @@ for(i_rg in 1:length(region)){
                 prtaub = prtaub # prior on tau for b
               )
               
-              ptm = proc.time()
+              ptm <- proc.time()
               
               jags_m_here <- HBSRM_JAGS_fun(model_name = "Ricker",
                                             modelFilename = NA,
@@ -449,7 +451,7 @@ for(i_rg in 1:length(region)){
             } # End of re-running the model with prCV = 1 due to convergence issues
           } # End of if there are convergence issues
           
-          endtime <- proc.time()-ptm
+          endtime <- proc.time() - ptm
           endtime[3]/60
           
           post <- jags_m_here$post

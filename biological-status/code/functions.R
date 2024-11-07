@@ -1895,7 +1895,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
       benchmark_up <- benchmarks$smsy80
       benchmark_up_025 <- benchmarks$smsy80_lower
       benchmark_up_975 <- benchmarks$smsy80_upper
-    }else{                                           # sould still be smsy80
+    }else{                                           # should still be smsy80
       benchmark_up <- benchmarks$smsy
       benchmark_up_025 <- benchmarks$smsy_lower
       benchmark_up_975 <- benchmarks$smsy_upper
@@ -3167,5 +3167,186 @@ HBSRM_JAGS_fun <- function(model_name = c("Ricker",
   return(out)
 }
 
+#' Function that return prior values for the distribution of the beta 
+#' parameter in the Ricker model: prCV and prSmax
+#' with beta ~ logNormal(log(1/prSmax),prCV)
+#' The default values are:
+#' - prSmax = geometric mean (S)
+#' - prCV = 10, which is highly non informative (note that a more informative 
+#' value of 1 is used if there are convergence issues --> not in the scope of
+#'this function).
+#' Several SEL Cus have prSmax estimated using photosynthetic-based modelling
+#' approach, in which case the values come from DFO report. In those cases, 
+#' prCV = 0.3. This is the cae for several SEL in Skeena, and prSmax values
+#' come from (Korman & English 2013).
+#' Note that Grant et al. 2020 also used photosynthetic-based values for prSmax
+#' for SEL CUs in the Fraser (cf. Table 10) but it was decided in during a PSAC 
+#' meeting in April 2019 to not use them:
+#' https://www.dropbox.com/scl/fi/lht2ln9c7srvi3l3k4guw/PSAC-meeting-2-notes-final.docx?rlkey=nypzeiokod8bey2u2419ieeos&dl=0
+#' 
+# cuid <- CUs_cuid
+# Sm <- SR_l$S
+prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
+  
+  if(all(is.na(conservationunits_decoder))){
+    
+    conservationunits_decoder <- import_mostRecent_file_fun(wd = wd,
+                                                            pattern = "conservationunits_decoder")
+  }
+  
+  cond <- conservationunits_decoder$cuid %in% cuid
+  coln <- c("region","species_name","cu_name_pse","cuid")
+  cu_prior_df <- conservationunits_decoder[cond,coln]
+  cu_prior_df$prSmax <- NA
+  cu_prior_df$prCV <- 10
+  
+  #'* Skeena SEL for which prSmax is estimated with a photosynthetic-based *
+  # approach (from Korman & English 2013; cf. Table SX.1 p. 33)
+  cuid_Skeena_SEL <- c(171,191,192,193,175,176,183,177,178,185,197,187)
+  
+  #' Note1: CU Swan/Club (cuid 188) was also in this list above but the CU
+  #' was assigned to the Stephens CU, following DFO update
+  #' The change in the PSE was made in August 2024
+  #' https://salmonwatersheds.slack.com/archives/CPD76USTU/p1726165574970689
+  
+  #' Note 2:  There is no values given for Asitika cuid 190 in the report, 
+  #' it was removed from the list.
+  
+  if(nrow(cu_prior_df) != length(cuid)){
+    print("PROBLEM: In prior_beta_Ricker_fun(): cuid(s) not in conservationunits_decoder")
+  }
+  
+  if(any(cuid %in% cuid_Skeena_SEL)){
+    
+    cuid_concerned <- cuid[cuid %in% cuid_Skeena_SEL]
+    
+    cond <- cu_prior_df$cuid %in% cuid_Skeena_SEL
+    cu_prior_df$prCV[cond] <- 0.3
+    
+    # create a data frame with the CU-specific values for prSmx
+    cond <- conservationunits_decoder$cuid %in% cuid_concerned
+    coln <- c("region","species_name","cu_name_pse","cuid")
+    cuid_Skeena_SEL_df <- conservationunits_decoder[cond,coln]
+    cuid_Skeena_SEL_df$prSmax <- NA
+    cuid_Skeena_SEL_df$prCV <- 0.3
+    
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Alastair"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 23437
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Azuklotz"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 5933
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Bear"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 40532
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Damshilgwit"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 2000
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Johnston"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 4125
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Kitsumkalum"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 20531
+    cond <- grepl("Kitwancool",cuid_Skeena_SEL_df$cu_name_pse)
+    cuid_Skeena_SEL_df$prSmax[cond] <- 36984
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Lakelse"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 35916
+    cond <- grepl("Mcdonell",cuid_Skeena_SEL_df$cu_name_pse)
+    cuid_Skeena_SEL_df$prSmax[cond] <- 4072
+    cond <- grepl("Morice",cuid_Skeena_SEL_df$cu_name_pse)
+    cuid_Skeena_SEL_df$prSmax[cond] <- 191362
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Stephens"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 7069
+    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Motase"
+    cuid_Skeena_SEL_df$prSmax[cond] <- 1764
+    
+    # replace values in cu_prior_df
+    for(cu in cuid_concerned){
+      # cu <- cuid_concerned[1]
+      cond <- cuid_Skeena_SEL_df$cuid == cu
+      prSmax_here <- cuid_Skeena_SEL_df$prSmax[cond]
+      
+      cond <- cu_prior_df$cuid == cu
+      cu_prior_df$prSmax[cond] <- prSmax_here
+    }
+  } # End Skeena SEL for which prSmax is estimated with a photosynthetic-based (Korman & English 2013)
+  
+  #'* Fraser SEL for which prSmax is estimated with a photosynthetic-based *
+  # approach (from Grant et al. 2020; cf. Table 10)
+  cuid_Fraser_SEL <- c(711,715,721,735)
+  
+  use_habitat_prior_Fraser <- F # it was decided to not use 
+  
+  # The other CUs in Table 10 for which photosynthetic-based prSmax is obtained 
+  # but not used --> we will ask if we shoul use them or not at our next PSCA meeting
+  # TO KEEP COMMENTED OUT UNTIL THEN
+  # cuid_Fraser_SEL <- c(cuid_Fraser_SEL,712,714,716,719,725,727,729,740) 
+  
+  if(nrow(cu_prior_df) != length(cuid)){
+    print("PROBLEM: In prior_beta_Ricker_fun(): cuid(s) not in conservationunits_decoder")
+  }
+  
+  if(any(cuid %in% cuid_Fraser_SEL) & use_habitat_prior_Fraser){
+    
+    cuid_concerned <- cuid[cuid %in% cuid_Fraser_SEL]
+    
+    cond <- cu_prior_df$cuid %in% cuid_Fraser_SEL
+    cu_prior_df$prCV[cond] <- 0.3
+    
+    # create a data frame with the CU-specific values for prSmx
+    cond <- conservationunits_decoder$cuid %in% cuid_concerned
+    coln <- c("region","species_name","cu_name_pse","cuid")
+    cuid_Fraser_SEL_df <- conservationunits_decoder[cond,coln]
+    cuid_Fraser_SEL_df$prSmax <- NA
+    cuid_Fraser_SEL_df$prCV <- 0.3
+    
+    cond <- cuid_Fraser_SEL_df$cu_name_pse == "Chilliwack-Early Summer (cyclic)"
+    cuid_Fraser_SEL_df$prSmax[cond] <- 41000
+    cond <- cuid_Fraser_SEL_df$cu_name_pse == "Pitt-Early Summer"
+    cuid_Fraser_SEL_df$prSmax[cond] <- 115000
+    cond <- cuid_Fraser_SEL_df$cu_name_pse == "Chilko-Summer"
+    cuid_Fraser_SEL_df$prSmax[cond] <- 483000
+    cond <- cuid_Fraser_SEL_df$cu_name_pse == "Bowron-Early Summer"
+    cuid_Fraser_SEL_df$prSmax[cond] <- 41000
+    
+    # TO KEEP COMMENTED OUT until next PSAC meeting
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Cultus-Late"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 4125
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Harrison-Upstream Migrating-Late"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 85000
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Lillooet-Harrison-Late"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 164000
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Anderson-Seton-Early Summer"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 286000
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Francois-Fraser-Summer"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 600000
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Nadina-Francois-Early Summer"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 1350000
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Seton-Late (de novo)"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 188000
+    # cond <- cuid_Fraser_SEL_df$cu_name_pse == "Kamloops-Early Summer"
+    # cuid_Fraser_SEL_df$prSmax[cond] <- 445000
+    
+    # replace values in cu_prior_df
+    for(cu in cuid_concerned){
+      # cu <- cuid_concerned[1]
+      cond <- cuid_Fraser_SEL_df$cuid == cu
+      prSmax_here <- cuid_Fraser_SEL_df$prSmax[cond]
+      
+      cond <- cu_prior_df$cuid == cu
+      cu_prior_df$prSmax[cond] <- prSmax_here
+    }
+  } # End Fraser SEL for which prSmax is estimated with a photosynthetic-based (Korman & English 2013)
+  
+  
+  # For the rest of the CUs: prSmax = geo_mean(S):
+  cuid_concerned <- cuid[! cuid %in% cuid_Skeena_SEL]
+  for(cu in cuid_concerned){
+    # cu <- cuid_concerned[1]
+    cond <- conservationunits_decoder$cuid == cu
+    cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
+    prSmax_here <- mean_geom_fun(x = Sm[,cu_name_pse])
+    
+    cond <- cu_prior_df$cuid == cu
+    cu_prior_df$prSmax[cond] <- prSmax_here
+  }
+  
+  return(cu_prior_df)
+}
 
 

@@ -90,7 +90,6 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species
 #------------------------------------------------------------------------------#
@@ -133,10 +132,12 @@ region <- as.character(regions_df[1,])
 species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
              species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
 
+species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
+
 # If we do not specify the species: all the species that have a _SRdata files are 
 # returned: 
 # note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- TRUE
+species_all <- F
 
 #' Import the prior values for the HBSR model parameters prSmax and prCV that are
 #' used in HBSRM.R (the file is created in checks_fixes.R and contains the values 
@@ -155,6 +156,10 @@ n.iter <- 10000 # 100000  # --> 10000 only QUESTION
 n.burnin <- 3000 # 5000  # 
 n.chains <- 6     # 
 
+# The Gelman and Rubin's convergence of parameters Rc
+# if Rc > Rc_max_cut --> prCV = 1 instead of 10 
+Rc_max_cut <- 1.1 # 1.2
+
 # options(warn=1)  # print warnings as they occur
 options(warn = 2)  # treat warnings as errors
 
@@ -163,7 +168,7 @@ options(warn = 2)  # treat warnings as errors
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
-  # i_rg <- 9
+  # i_rg <- 3
   
   recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
   
@@ -202,17 +207,6 @@ for(i_rg in 1:length(region)){
       
       print(paste0("*** Plot for: ",region[i_rg]," - ",speciesAcroHere," ***"))
       
-      # Import the priors and counts from the SRdata.txt file. The function retain 
-      # CUs with at least MinSRpts nb of data points and update their names in case 
-      # the CUID and not the name was used.
-      # d_old <- SRdata_fun(path_file = fndata[i_sp], wd_data = wd_data, MinSRpts = MinSRpts)
-      # d_prior <- d_old$priors
-      # d_old <- d_old$counts
-      # CUs_old <- unique(d_old$CU)
-      # nCUs_old <- length(CUs_old)
-      # Yrs_old <- min(d_old$BY):max(d_old$BY)
-      # nYrs_old <- length(Yrs_old)
-      
       #'* Define the spawner (S) and recruits (R) matrices *
       
       # organize the data into a year x CU for R and S:
@@ -234,26 +228,6 @@ for(i_rg in 1:length(region)){
         # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
         # R[1:Nyrs[j],j] <- d1$Rec
       }
-      
-      # S_old <- R_old <- matrix(nrow = nYrs_old, ncol = nCUs_old, dimnames = list(Yrs_old,CUs_old))
-      # for(j in 1:nCUs_old){
-      #   # j <- 1
-      #   # previous code
-      #   dj_old <- subset(d_old,CU == CUs_old[j])
-      #   S_old[as.character(dj_old$BY),j] <- dj_old$Esc
-      #   R_old[as.character(dj_old$BY),j] <- dj_old$Rec
-      #   
-      #   # S[1:Nyrs[j],j] <- d1$Esc      # BSC: previous code
-      #   # R[1:Nyrs[j],j] <- d1$Rec
-      # }
-      
-      # col <- 4
-      # cbind(S[,col],R[,col])#[28:nrow(S),]
-      # cbind(S_old[,col],R_old[,col])
-      
-      # save the S and R matrix
-      # SR_l <- list(S,R)
-      # names(SR_l) <- c("S","R")
       
       # remove the row with NAs in S but not R and vice versa of a same CU
       SR_l <- cuSR_removeNA_fun(R = R, S = S)
@@ -293,314 +267,276 @@ for(i_rg in 1:length(region)){
       SR_l$R <- R
       SR_l$S <- S
       
-      #'* Set priors on b: prSmax and prCV *
-      # select the prior for these CUs and check those that do not have values
-      priors_HBSRmodel_rg_sp <- priors_HBSRmodel[priors_HBSRmodel$region == region[i_rg] &
-                                                   priors_HBSRmodel$species %in% speciesHere,]
+      #'* Separate the process for cyclic and non-cyclic CUs *
+      cond <- grepl("cyclic",colnames(R))
+      CU_cyclic <- colnames(R)[cond]
+      CU_cyclicNO <- colnames(R)[!cond]
       
-      CUs_priors <- data.frame(region = region[i_rg],
-                               species_acro = unique(species_acro)[i_sp],
-                               species = NA,
-                               cuid = NA,
-                               cu_pse = CUs,
-                               prSmax = NA,
-                               prCV = NA)
-      
-      for(r in 1:nrow(CUs_priors)){
-        # r <- 1
-        cond <- conservationunits_decoder_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]
-        cuidHere <- conservationunits_decoder_rg_sp$cuid[cond]
-        speciesHere <- conservationunits_decoder_rg_sp$species_name[cond]
+      for(i_CUs in 1:2){
+        # i_CUs <- 1
+        CUs_here <- list(CU_cyclicNO,CU_cyclic)[[i_CUs]]
         
-        # in case multiple instances are returned (happens with pooled CUs)
-        if(length(cuidHere) > 1){
-
-          cuidPooledHere <- conservationunits_decoder_rg_sp$pooledcuid[cond]
+        if(length(CUs_here) > 0){
           
-          if(length(unique(cuidPooledHere)) == 1){
-            cuidHere <- unique(cuidPooledHere)
-            speciesHere <- unique(speciesHere)
-
+          R <- SR_l$R[,CUs_here]
+          S <- SR_l$S[,CUs_here]
+          
+          SR_l_here <- list()
+          SR_l_here$R <- R
+          SR_l_here$S <- S
+          
+          nCUs <- length(CUs_here)
+          
+          CUs_cuid <- sapply(CUs_here,function(cu){
+            cond <- conservationunits_decoder$cu_name_pse == cu
+            return(conservationunits_decoder$cuid[cond])
+          })
+          
+          if(any(grepl("cyclic",CUs_here))){
+            cyclic_filen <- "_cyclic"
           }else{
-            print(paste0("There are multiple different CUs here: i_rg: ",i_rg,
-                         " ; i_sp: ",i_sp," ; r: ",r))
-            print(conservationunits_decoder_rg_sp[cond,])
+            cyclic_filen <- ""
           }
-        }
-        
-        cond <- priors_HBSRmodel_rg_sp$cu_name_pse == CUs_priors$cu_pse[r]
-        prSmaxHere <- priors_HBSRmodel_rg_sp$prSmax[cond]
-        prCVHere <- priors_HBSRmodel_rg_sp$prCV[cond]
-
-        if(length(prSmaxHere) == 0){
-          prSmaxHere <- prCVHere <- NA
-        }
-        
-        CUs_priors$prSmax[r] <- prSmaxHere
-        CUs_priors$prCV[r] <- prCVHere
-        CUs_priors$species[r] <- speciesHere
-        CUs_priors$cuid[r] <- cuidHere
-      }
-      
-      #' if certain CUs do not have prior estimate, check why, eventually remove
-      #' them if appropriate (e.g. they are cyclic) or find a value if possible.
-      CuToRemove <- c()
-      if(sum(is.na(CUs_priors$prSmax)) > 0){
-        
-        CUs_priors_noData <- CUs_priors[is.na(CUs_priors$prSmax),]
-        CuToRemove <- CUs_priors_noData$cu_pse[grepl("cyclic",CUs_priors_noData$cu_pse)]
-        
-        CUs_priors_noData <- CUs_priors_noData[!CUs_priors_noData$cu_pse %in% CuToRemove,]
-        
-        if(nrow(CUs_priors_noData) > 0){
           
-          #' Define the prSmax and prCV following Korman and English 2013:
-          #' https://salmonwatersheds.ca/document_library_files/lib_318.pdf
-          #' - prSmax = the average escapement
-          #' - prCV = 10 (highly uninformative) or 1 (minimal informative) (Steph:
-          #' "they start with uninformative (CV = 10), and then only use CV = 1 
-          #' for those CUs that had convergence issues).
+          file_name <- paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",
+                              speciesAcroHere,cyclic_filen,"_SR_matrices.rds")
+          saveRDS(SR_l,file = file_name)
           
-          for(r in 1:nrow(CUs_priors_noData)){
+          #'* Set priors on b: prSmax and prCV *
+          # select the prior for these CUs and check those that do not have values
+          # priors_HBSRmodel_rg_sp <- priors_HBSRmodel[priors_HBSRmodel$region == region[i_rg] &
+          #                                              priors_HBSRmodel$species %in% speciesHere,]
+          # THIS IS AN OLD LIST COMING FROM TXT FILES FOR WHICH THE CREATING CODE IS 
+          # LOST.
+          
+          CUs_priors <- prior_beta_Ricker_fun(cuid = CUs_cuid,
+                                              conservationunits_decoder = conservationunits_decoder,
+                                              Sm = S)
+          
+          # Define corresponding parameters to feed the HBSRM:
+          prSmax <- CUs_priors$prSmax
+          prCV <- CUs_priors$prCV
+          prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
+          # prtaub <- 1/prCV^2				# convert from cv to tau --> BSC: should be prtaub <- prmub^2/prCV^2 ???
+          prtaub <- prmub^2/prCV^2
+          
+          #### Estimate a and b by linreg and plot
+          if(show_figures){
+            if(.Platform$OS.type == "windows"){      # BSC: what to do with Linux? : x11()?
+              windows()                              # Also do we want it to open in a new window vs in Rstudio?
+            }else{
+              quartz()
+            }
+          }
+          
+          #------------------------------------------------------------------------------#
+          #  Bayes model defined with rjags
+          #------------------------------------------------------------------------------#
+          
+          # Replace NAs with a value so that the model can run. Note that obs_lnRS still
+          # has NAs, so the it does not matter what pred_lnRS is for these cases because
+          # they are not considered in the likelihood calcutation (due to NAs in obs_lnRS).
+          S[is.na(S)] <- -99    # could put any value
+          nYrs <- nrow(S)
+          
+          # jags inputs:
+          jags.data <- list(
+            nCUs = nCUs,
+            nYrs = nYrs,
+            obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
+            S = S,         # data on observed spawners - matrix nYrs x nCU 
+            prmub = prmub, # prior on mu for b
+            prtaub = prtaub # prior on tau for b
+          )
+          
+          jags.parms <- c("a", "b", 
+                          "sd",     # the sd for the loglikelihood function
+                          "mu_a", "sd_a")
+          
+          jags_m_here <- HBSRM_JAGS_fun(model_name = "Ricker",
+                                        modelFilename = NA,
+                                        jags.data = jags.data, 
+                                        jags.parms = jags.parms, 
+                                        n.thin = 10,             # to keep every 10th data point
+                                        n.burnin = n.burnin,
+                                        n.chains = n.chains)
+          print("")
+          
+          # check convergence of parameters with Gelman and Rubin's Rc
+          convergence <- gelman.diag(jags_m_here$post)$psrf
+          cond_deviance <- rownames(convergence) == "deviance"
+          convergence <- convergence[!cond_deviance,] # remove the "deviance" column because it is not a model parameter
+          if(any(convergence[,"Point est."] > Rc_max_cut)){
+            
+            # convergence[ rownames(convergence) == "sd_a","Point est."] <- 1.2
+            # convergence[ rownames(convergence) == "b[11]","Point est."] <- 1.2
+            # convergence[ rownames(convergence) == "b[8]","Point est."] <- 1.2
+            
+            # Return the parameters with Point estimate > Rc_max_cut
+            cond_issue <- convergence[,"Point est."] > Rc_max_cut
+            para_issue <- rownames(convergence)[cond_issue]
+            
+            if(any(grepl("a",para_issue))){
+              
+              print(paste0("*** Convergence issue with a hyper parameters for a with ",
+                           region[i_rg]," ",(unique(species_acro))[i_sp]," ",cyclic_filen," CUs"))
+              print("")
+              
+              # remove them because there is nothing we can do for now
+              para_issue <- para_issue[!grepl("a",para_issue)]
+            }
+            
+            if(length(para_issue) > 0){
+              
+              print(paste0("*** Convergence issue with a hyper parameters for b with ",
+                           region[i_rg]," ",(unique(species_acro))[i_sp]," ",cyclic_filen,": ",
+                           paste0(CUs_concerned,collapse = " ; ")))
+              print("Running procedure with prCV = 1")
+              print("")
+              
+              # Find the CUs concerned
+              CU_nb <- sapply(X = para_issue, function(c){
+                out <- gsub("b","",c)
+                out <- gsub("\\[","",out)
+                out <- gsub("]","",out)
+                return(as.numeric(out))
+              })
+              
+              CUs_concerned <- CUs_here[CU_nb]
+              
+              # Provide a more informative prCV = 1
+              cond <- CUs_priors$cu_name_pse %in% CUs_concerned
+              CUs_priors$prCV[cond] <- 1
+              
+              # Define corresponding parameters to feed the HBSRM:
+              prCV <- CUs_priors$prCV
+              prtaub <- prmub^2/prCV^2
+              
+              # jags inputs:
+              jags.data <- list(
+                nCUs = nCUs,
+                nYrs = nYrs,
+                obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
+                S = S,         # data on observed spawners - matrix nYrs x nCU 
+                prmub = prmub, # prior on mu for b
+                prtaub = prtaub # prior on tau for b
+              )
+              
+              ptm = proc.time()
+              
+              jags_m_here <- HBSRM_JAGS_fun(model_name = "Ricker",
+                                            modelFilename = NA,
+                                            jags.data = jags.data, 
+                                            jags.parms = jags.parms, 
+                                            n.thin = 10,             # to keep every 10th data point
+                                            n.burnin = n.burnin,
+                                            n.chains = n.chains)
+              print("")
+              
+              convergence <- gelman.diag(jags_m_here$post)$psrf
+              cond_deviance <- rownames(convergence) == "deviance"
+              convergence <- convergence[!cond_deviance,]
+              
+              cond_issue <- convergence[,"Point est."] > Rc_max_cut
+              para_issue <- rownames(convergence)[cond_issue]
+              para_issue <- para_issue[!grepl("a",para_issue)]
+              
+              if(any(grepl("a",para_issue))){
+                print("*** There is still convergence issue!")
+              }else{
+                print("*** Convergence Solved!")
+              }
+            } # End of re-running the model with prCV = 1 due to convergence issues
+          } # End of if there are convergence issues
+          
+          endtime <- proc.time()-ptm
+          endtime[3]/60
+          
+          post <- jags_m_here$post
+          
+          # 
+          file_name <- paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",
+                              speciesAcroHere,cyclic_filen,"_HBSRM_posteriors_priorShift.rds")
+          saveRDS(post, file = file_name)
+          
+          ##### INFERENCE #####
+          
+          # Gelman and Rubin's convergence diagnostic
+          # remove the "deviance" column because it is not a model parameter
+          for(l in 1:length(post)){
+            # l <- 1
+            post[[l]] <- post[[l]][,colnames(post[[l]]) != "deviance"] 
+          }
+          convDiagnostic <- as.data.frame(gelman.diag(post, multivariate = F)$psrf)
+          convDiagnostic$parameter <- rownames(convDiagnostic)
+          convDiagnostic$cu_name_pse <- NA
+          convDiagnostic$cuid <- NA
+          convDiagnostic$region <- NA
+          convDiagnostic$species_name <- NA
+          convDiagnostic$species_acro <- NA
+          convDiagnostic$nb <- NA           # the number of the CU for the parameters (e.g. 3 for b[3])
+          convDiagnostic$prSmax <- convDiagnostic$prCV <- NA
+          
+          for(r in 1:nrow(convDiagnostic)){
             # r <- 1
-            CUHere <- CUs_priors_noData$cu_pse[r]
-            SHere <- S[,CUHere]
-            CUs_priors$prSmax[CUs_priors$cu_pse == CUHere] <- mean(SHere,na.rm = T)
-            CUs_priors$prCV[CUs_priors$cu_pse == CUHere] <- 10
+            nbHere <- rownames(convDiagnostic)[r]
+            nbHere <- sub(".*\\[", "", nbHere) # remove everything before "[" including "["
+            nbHere <- sub("\\].*", "", nbHere) #
+            
+            if(!nbHere %in% c("mu_a",'sd_a')){
+              if(length(CUs) == 1){  # there is not number associated with the parameter, e.g. "a" and not "a[1]"
+                nbHere <- 1
+              }else{
+                nbHere <- as.numeric(nbHere)
+              }
+              CUHere <- CUs[nbHere]
+              cuidHere <- CUs_cuid[nbHere]
+              prSmaxHere <- round(prSmax[nbHere],2)
+              prCVHere <- prCV[nbHere]
+              sp_nameHere <- conservationunits_decoder$species_name[conservationunits_decoder$cuid == CUs_cuid[nbHere]]
+            }else{
+              nbHere <- sp_nameHere <- CUHere <- cuidHere <- prSmaxHere <- prCVHere <- ""
+            }
+            
+            convDiagnostic$cu_name_pse[r] <- CUHere
+            convDiagnostic$cuid[r] <- cuidHere
+            convDiagnostic$region[r] <- region[i_rg]
+            convDiagnostic$species_name[r] <- sp_nameHere
+            convDiagnostic$species_acro[r] <- speciesAcroHere
+            convDiagnostic$nb[r] <- nbHere
+            convDiagnostic$prSmax[r] <- prSmaxHere
+            convDiagnostic$prCV[r] <- prCVHere
           }
-        }
-      }
-      #' filter CUs again
-      S <- S[,!colnames(S) %in% CuToRemove, drop = F]
-      R <- R[,!colnames(R) %in% CuToRemove, drop = F]
-      CUs <- CUs[!CUs %in% CuToRemove]
-      CUs_cuid <- sapply(X = CUs,FUN = function(cu){
-        unique(recruitsperspawner_rg_sp$cuid[recruitsperspawner_rg_sp$cu_name_pse == cu])
-      })
-      nCUs <- length(CUs)
-      SR_l$R <- R
-      SR_l$S <- S
-      CUs_priors <- CUs_priors[!CUs_priors$cu_pse %in% CuToRemove,]
-      
-      # Define corresponding parameters to feed the HBSRM:
-      # prSmax <- d_prior$prSmax
-      # prCV <- d_prior$prCV
-      prSmax <- CUs_priors$prSmax
-      prCV <- CUs_priors$prCV
-      prmub <- log(1/prSmax)    # convert mean prior on Smax to log b for winbugs model
-      # prtaub <- 1/prCV^2				# convert from cv to tau --> BSC: should be prtaub <- prmub^2/prCV^2 ???
-      prtaub <- prmub^2/prCV^2
-      
-      saveRDS(SR_l,
-              file = paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",speciesAcroHere,"_SR_matrices.rds"))
-      
-      #### Estimate a and b by linreg and plot
-      if(show_figures){
-        if(.Platform$OS.type == "windows"){      # BSC: what to do with Linux? : x11()?
-          windows()                              # Also do we want it to open in a new window vs in Rstudio?
-        }else{
-          quartz()
-        }
-      }
-      
-      # LnRS <- log(R/S)   # BSC: now is created inside the function with R and S to limit the number of parameters to pass in
-      # inipars <- LinReg(Nyrs,LNRS,S,R,StNames)
-      # Display the RS plot and output the estimated parameter values:
-      inipars <- linRegRicker_fun(S = S, R = R, plot_figures = show_figures, 
-                                  verbose = F)
-      # BSC: linRegRicker_fun() was LinReg() and estSR()
-      # ***SP: Check with Eric about priors on b. ***
-      
-      # BSC: this is temporary: see if it is possible to treat each CU separately in the
-      # JAGS chunk in case there are NAs that differ among CU.
-      # rowToKeep <- apply(X = S, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
-      # S <-  S[rowToKeep,,drop = F]
-      # rowToKeep <- apply(X = R, MARGIN = 1, FUN = function(x){sum(is.na(x)) == 0})
-      # R <-  R[rowToKeep,,drop = F]
-      
-      # Yrs <- as.numeric(rownames(R))
-      # nYrs <- length(Yrs)
-      
-      # LnRS <- log(R/S)
-      
-      #------------------------------------------------------------------------------#
-      #  Bayes model defined with rjags
-      #------------------------------------------------------------------------------#
-      
-      # Replace NAs with a value so that the model can run. Note that obs_lnRS still
-      # has NAs, so the it does not matter what pred_lnRS is for these cases because
-      # they are not considered in the likelihood calcutation (due to NAs in obs_lnRS).
-      S[is.na(S)] <- -99    # could put any value
-      nYrs <- nrow(S)
-      
-      # jags inputs:
-      jags.data <- list(
-        nCUs = nCUs,
-        nYrs = nYrs,
-        # rowsToKeep = rowsToKeep,
-        obs_lnRS = log(R/S),  # data on observed log(recruits/spawners) - matrix nYrs x nCU
-        S = S,         # data on observed spawners - matrix nYrs x nCU 
-        # ln_Smsr = log(1/inipars$b),
-        prmub = prmub, # prior on mu for b
-        prtaub = prtaub # prior on tau for b
-      ) # cov - not sure what this is
-      
-      jags.parms <- c("a", "b", 
-                      "sd",     # the sd for the loglikelihood function
-                      "mu_a", "sd_a")
-      
-      # what is sd?  --> the sd for the likelihood --> not in the tech report
-      # why sd_bi are not estimated?
-      # why taking the exp(sd) in Sgen.optim()?
-      
-      # Definition of the model:
-      modelFilename = "Bayes_SR_model.txt"
-      cat("
-        model{
-        
-        	# Hyper priors
-        	log_mu_a ~ dnorm(0.5, 1.0E-6) # SP: Note that this parameter was confusing as it was defined as mu_a previously; changed this.
-        	mu_a <- exp(log_mu_a)
-        	tau_a ~ dgamma(0.5, 0.5) 
-        	sd_a <- pow(tau_a, -0.5) # = sigma_a = sqrt(1/tau_a)
-        	
-        	for(i in 1:nCUs) {	# For each CU, draw estimates from hyperdistribution
-        	
-        		# a[i] ~ dlnorm(log_mu_a, tau_a) # Hyper distribution on alpha --> dlnorm(mu_a,tau_a) instead ??? 
-        		# a[i] ~ dlnorm(mu_a, tau_a) # TOCHANGE: CONFUSION WITH ALPHA = exp(a) --> a[i] ~ dnorm(mu_a, tau_a) ???
-        		
-        		a[i] ~ dnorm(mu_a, tau_a) # --> FINAL CALL from Population meeting 30/01/2024.
-        		
-        		b[i] ~ dlnorm(prmub[i], prtaub[i])	# prior on CU-dependent b
-        		
-        		# Getting very broad estimates of b, try to contstrain by fitting
-        		# S at max recruits (Smsr) instead of b and truncating at 1e10
-        		# Smsr[i] ~ dlnorm(ln_Smsr[i], pow(1, -2)) T(0, 1e10)
-        		# b[i] <- 1/Smsr[i]
-        		
-        		# BSC: sigma for the model likelihood estimation
-        		sd[i] ~ dunif(0.05, 10)
-        		tau[i] <- pow(sd[i], -2)	
-        	}
-        	
-        	for(i in 1:nCUs){
-        		for(j in 1:nYrs){
-        		
-        		 	# Model prediction for log R/S based on estimated parameters
-        		 	pred_lnRS[j, i] <- a[i] - b[i] * S[j, i]
-        		 	
-        		 	# Likelihood
-        		 	obs_lnRS[j, i] ~ dnorm(pred_lnRS[j, i], tau[i])
-        		}
-        	}
-        }", fill = TRUE, file = modelFilename)
-      
-      # Run Model
-      print("Running Parallel")
-      # **SP: Why have this message when it's not actually running in parallel?
-      # **BSC: TODO: get the parallele to work on windows, MAC and Linux
-      # https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
-      
-      ptm = proc.time()
-      
-      jagsfit.p <- jags(data = jags.data,  
-                        parameters.to.save = jags.parms,
-                        n.thin = 10,                     # thinning rate
-                        n.iter = n.iter,  # n.iter 100000
-                        model.file = modelFilename, 
-                        n.burnin = n.burnin, # 5000
-                        n.chains = n.chains) # 6
-      
-      endtime <- proc.time()-ptm
-      endtime[3]/60
-      
-      post <- as.mcmc(jagsfit.p)
-      
-      # plot <- plot(post)
-      
-      # 
-      saveRDS(post,
-              file = paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_posteriors_priorShift.rds"))
-      
-
-      ##### INFERENCE #####
-      
-      # Gelman and Rubin's convergence diagnostic
-      # remove the "deviance" column because it is not a model parameter
-      for(l in 1:length(post)){
-        # l <- 1
-        post[[l]] <- post[[l]][,colnames(post[[l]]) != "deviance"] 
-      }
-      convDiagnostic <- as.data.frame(gelman.diag(post, multivariate = F)$psrf)
-      convDiagnostic$parameter <- rownames(convDiagnostic)
-      convDiagnostic$cu_name_pse <- NA
-      convDiagnostic$cuid <- NA
-      convDiagnostic$region <- NA
-      convDiagnostic$species_name <- NA
-      convDiagnostic$species_acro <- NA
-      convDiagnostic$nb <- NA
-      convDiagnostic$prSmax <- convDiagnostic$prCV <- NA
-      for(r in 1:nrow(convDiagnostic)){
-        # r <- 1
-        nbHere <- rownames(convDiagnostic)[r]
-        nbHere <- sub(".*\\[", "", nbHere) # remove everything before "[" including "["
-        nbHere <- sub("\\].*", "", nbHere) #
-        
-        if(!nbHere %in% c("mu_a",'sd_a')){
-          if(length(CUs) == 1){  # there is not number associated with the parameter, e.g. "a" and not "a[1]"
-            nbHere <- 1
-          }else{
-            nbHere <- as.numeric(nbHere)
+          
+          rownames(convDiagnostic) <- NULL
+          
+          # order rows:
+          for(char in c("a\\[","b\\[","sd\\[")){
+            # char <- "a\\["
+            dfToSort <- convDiagnostic[grepl(char,convDiagnostic$parameter) & !is.na(convDiagnostic$cu_name_pse),]
+            dfToSort$nb <- as.numeric(dfToSort$nb)
+            dfToSort <- dfToSort[order(dfToSort$nb),]
+            convDiagnostic[grepl(char,convDiagnostic$parameter) & !is.na(convDiagnostic$cu_name_pse),] <- dfToSort
           }
-          CUHere <- CUs[nbHere]
-          cuidHere <- CUs_cuid[nbHere]
-          sp_nameHere <- conservationunits_decoder$species_name[conservationunits_decoder$cuid == CUs_cuid[nbHere]]
-          prSmaxHere <- prSmax[nbHere]
-          prCVHere <- prCV[nbHere]
-        }else{
-          nbHere <- CUHere <- cuidHere <- prSmaxHere <- prCVHere <- sp_nameHere <- ""
-        }
-        
-        regionHere <- region[i_rg]
-        sp_acroHere <- speciesAcroHere
-        
-        convDiagnostic$cu_name_pse[r] <- CUHere
-        convDiagnostic$cuid[r] <- cuidHere
-        convDiagnostic$region[r] <- regionHere
-        convDiagnostic$species_name[r] <- sp_nameHere
-        convDiagnostic$species_acro[r] <- sp_acroHere
-        convDiagnostic$nb[r] <- nbHere
-        convDiagnostic$prSmax[r] <- prSmaxHere
-        convDiagnostic$prCV[r] <- prCVHere
-      }
-
-      rownames(convDiagnostic) <- NULL
-      
-      # order rows:
-      for(char in c("a\\[","b\\[","sd\\[")){
-        # char <- "a\\["
-        dfToSort <- convDiagnostic[grepl(char,convDiagnostic$parameter) & !is.na(convDiagnostic$cu_name_pse),]
-        dfToSort$nb <- as.numeric(dfToSort$nb)
-        dfToSort <- dfToSort[order(dfToSort$nb),]
-        convDiagnostic[grepl(char,convDiagnostic$parameter) & !is.na(convDiagnostic$cu_name_pse),] <- dfToSort
-      }
-      
-      convDiagnostic <- convDiagnostic[,c("region","species_name","cuid","cu_name_pse","species_acro",
-                                          "parameter","Point est.","Upper C.I.",
-                                          "prSmax","prCV")]
-
-      write.csv(convDiagnostic,
-                file = paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",speciesAcroHere,"_HBSRM_convDiagnostic.csv"),
-                row.names = F)
-      
-      
-      post_m <- as.matrix(post, chain = F)
-      post_m <- post_m[,colnames(post_m) != "deviance"] 
-      model.probs <- round(cbind(est = colMeans(post_m),
-                                 sd = apply(post_m,2,sd),
-                                 ci = t(apply(post_m,2,quantile,c(.025,.975)))),
-                           digits = 8)
-      # model.probs
+          
+          convDiagnostic <- convDiagnostic[,c("region","species_name","cuid","cu_name_pse","species_acro",
+                                              "parameter","Point est.","Upper C.I.",
+                                              "prSmax","prCV")]
+          
+          file_name <- paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",
+                              speciesAcroHere,cyclic_filen,"_HBSRM_convDiagnostic.csv")
+          
+          write.csv(convDiagnostic,file = file_name,row.names = F)
+          
+          # post_m <- as.matrix(post, chain = F)
+          # post_m <- post_m[,colnames(post_m) != "deviance"] 
+          # model.probs <- round(cbind(est = colMeans(post_m),
+          #                            sd = apply(post_m,2,sd),
+          #                            ci = t(apply(post_m,2,quantile,c(.025,.975)))),
+          #                      digits = 8)
+          
+        } # if there are CU in list(CU_cyclicNO,CU_cyclic)[[i_CUs]]
+      } # end of process for non-cyclic and cyclic CUs
     } # species loop
   }  # if there is data for this region
 } # region loop

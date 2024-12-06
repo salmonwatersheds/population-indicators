@@ -512,7 +512,7 @@ is_MAX_ESTIMATE_duplicate_fun <- function(IndexId,GFE_ID,all_areas_nuseds,shortC
 
 
 #' Function that takes one IndexId ('iid') from CUSS and
-#' - 1) check if there are multiple GFE_IDs associated
+#' - 1) check if there are multiple GFE_IDs associated to one unique time series
 #' - 2) else look if there is a time series with the iid & its GFE_ID ('gfeid') in 
 #'      all_areas_nuseds
 #' - 3) if there is not, that could be due to either (i) a typo in the IndexId or

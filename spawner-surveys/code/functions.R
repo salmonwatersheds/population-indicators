@@ -628,7 +628,7 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
                                      in_cuss = rep(NA,nrow(d)))
       
       if(nrow(iid_GFE_IDs_here) == 0){ # iid is not present in all_areas_nuseds
-        comment_iid <- paste(iid,"is not in all_areas_nuseds") # NOT USED
+        comment_iid <- paste(iid,"is not in NUSEDS") # NOT USED
         
       }else{
         # For each series with alternative GFE_ID: check if there are present in 
@@ -660,7 +660,7 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
                                         in_cuss = rep(NA,nrow(d)))
       
       if(nrow(IndexIds_gfeid_here) == 0){ # species + gfeid is not present in all_areas_nuseds
-        comment_gfeid <- paste(species_acr,"&",gfeid,"is not in all_areas_nuseds") # NOT USED
+        comment_gfeid <- paste(species_acr,"&",gfeid,"is not in NUSEDS") # NOT USED
         
       }else{
         # For each series with alternative IndexId: check if there are present in 
@@ -681,7 +681,7 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
       alternatives <- rbind(iid_GFE_IDs_here,IndexIds_gfeid_here)
       
       if(nrow(alternatives) == 0){
-        trackRecord_here$comment <- "There is no alternative series in all_areas_nuseds"
+        trackRecord_here$comment <- "There is no alternative series in NUSEDS"
         
       }else{
         comment <- apply(alternatives[,c("IndexId","GFE_ID")], 1, paste, collapse = " & " )

@@ -1,3 +1,6 @@
+# Complete list of PSE colours is online at:
+# https://docs.google.com/spreadsheets/d/1CRIR5BWXMDQJmMxZFsplbA6PJFOwycirog7eqVJK7Fk/edit?gid=1085968672#gid=1085968672 
+
 PSF_cols <- c(tidal = "#74BDB8",
 							deepwater = "#0D1E33",
 							activeyellow = "#FED925",

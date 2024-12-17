@@ -783,11 +783,11 @@ table(biological_status_merged$psf_status)
 #            268              4             37             58             18             64   2024-11-19
 
 
-#'* Show psf_status_type for CUs with psf_status_code == 8 *
+#'* Show psf_status_type for CUs with psf_status_code_all == 8 *
 #' Update (2024-11-20 from PSE data meeting): we still show the method used in 
 #' psf_status_type.
-
-cond_8 <- biological_status_merged$psf_status_code == 8
+#' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1732225660151029?thread_ts=1732133777.124549&cid=C03LB7KM6JK
+cond_8 <- biological_status_merged$psf_status_code_all == "8"
 cond_sr <- !is.na(biological_status_merged$sr_status)
 cond_percentile <- !is.na(biological_status_merged$percentile_status)
 # biological_status_merged[cond_8,]

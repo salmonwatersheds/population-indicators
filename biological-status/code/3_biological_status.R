@@ -83,7 +83,7 @@ source("Code/functions.R")
 #' - if true the HBSR Ricker model was applied to the cyclic CUs to determine 
 #' their biostatus
 #' - if false, these CUs have a psf_status_code 5 = not-assessed
-cyclic_biostatus <- T
+cyclic_biostatus <- F
 
 #
 # Import Datasets -----
@@ -366,12 +366,12 @@ biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
 #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
 
 if(!cyclic_biostatus){
-  row_toUpdate <- grepl("(cyclic)",biological_status_HBSRM$CU_pse)
+  row_toUpdate <- grepl("(cyclic)",biological_status_HBSRM$cu_name_pse)
   val_toUpdate <- biological_status_HBSRM$psf_status_code[row_toUpdate]
   val_new <- paste(val_toUpdate,5, sep = ", ")
   biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
   
-  row_toUpdate <- grepl("(cyclic)",biological_status_percentile$CU_pse)
+  row_toUpdate <- grepl("(cyclic)",biological_status_percentile$cu_name_pse)
   val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
   val_new <- paste(val_toUpdate,5, sep = ", ")
   biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
@@ -1152,6 +1152,38 @@ for(i in 1:nrow(biological_status_merged)){ # It should not print anything
     }
   }
 }
+
+#
+# MANUAL CHANGES: for Fraser CO and SH -----
+# From population meeting in 18/12/2024
+# 
+
+# check that cyclic CU are not-assessed
+cond_cyclic <- grepl("cyclic",biological_status_merged$cu_name_pse)
+biological_status_merged[cond_cyclic,]
+
+# Set to not assessed the 5 Fraser CO CUs for now until we figure out what to do 
+# with them (the fit looks weird)
+cuid_here <- c(705,707:709,749)
+cond <- biological_status_merged$cuid %in% cuid_here
+biological_status_merged[cond,]
+biological_status_merged$sr_red_prob[cond] <- NA
+biological_status_merged$sr_yellow_prob[cond] <- NA
+biological_status_merged$sr_green_prob[cond] <- NA
+biological_status_merged$sr_status[cond] <- NA
+biological_status_merged$psf_status_code[cond] <- 6
+biological_status_merged$psf_status_type[cond] <- NA
+biological_status_merged$psf_status[cond] <- "not-assessed"
+
+# use the percentile approach for the two SH Fraser CUs (THIS SHOULD BE PERMANENT)
+cuid_here <- c(780,781)
+cond <- biological_status_merged$cuid %in% cuid_here
+biological_status_merged[cond,]
+biological_status_merged$psf_status[cond] <- biological_status_merged$percentile_status[cond]
+biological_status_merged$psf_status_code[cond] <- sapply(biological_status_merged$psf_status[cond],FUN = function(bs){
+  return((3:1)[bs == c("poor","fair","good")])
+})
+biological_status_merged$psf_status_type[cond] <- "percentile"
 
 #
 # Export files /dataset101_biological_status and dataset102_benchmarks -------

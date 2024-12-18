@@ -103,15 +103,12 @@ region <- as.character(regions_df[1,])
 # Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
-             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
+cond_sp <- species_acronym_df$species_qualified_simple == "CK" | 
+  species_acronym_df$species_qualified_simple == "SE"
+species <- species_acronym_df$species_name_simple[cond_sp] |> unique()
 
-species <- species_acronym_df$species_name[species_acronym_df$species_acro == "CO"]
-
-# If we do not specify the species: all the species that have a _SRdata files are 
-# returned: 
-# note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- T
+# For all species
+species <- species_acronym_df$species_name_simple |> unique()
 
 #' Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
@@ -135,7 +132,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 466 467
+nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 463 466 467
 
 # Import the spawner_abundance.csv, downloaded from SPS work. OLDER CODE
 # spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/data")
@@ -158,89 +155,57 @@ yearCurrentAbundance <- NA # was 2021
 # Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
-print_fig <- T
+print_fig <- F
 
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
-  
-  region_i <- gsub("_"," ",region[i_rg])
-  if(region_i == "Central coast"){
-    region_i <- "Central Coast"
-  }
+  # i_rg <- 3
+  cond_csa_rg <- cuspawnerabundance$region == region[i_rg]
   
   if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
     regionName <- "VIMI"
   }else{
     regionName <- regionName <- gsub(" ","_",region[i_rg])
   }
-  
-  cuspawnerabundance_rg <- cuspawnerabundance[cuspawnerabundance$region == region_i,]
-  
-  if(species_all){
-    species <- unique(cuspawnerabundance_rg$species_name)
-  }
-  
-  # remove Steelhead
-  # species <- species[species != "Steelhead"]
 
   species_acro <- sapply(X = species,FUN = function(sp){
-    species_acronym_df$species_acro[species_acronym_df$species_name == sp]
-  }) |> unique()
+    cond <- species_acronym_df$species_name == sp
+    return(species_acronym_df$species_qualified_simple[cond])
+  })
   
-  if(sum(!is.na(cuspawnerabundance_rg$estimated_count)) == 0){
+  cond <- all(is.na(cuspawnerabundance$estimated_count[cond_csa_rg]))
+  if(cond){
     
     print(paste0("*** There is no data in for salmon in ",region[i_rg]," ***"))
     
   }else{
     
-    for(i_sp in 1:length(unique(species_acro))){
+    for(i_sp in 1:length(species_acro)){
       
-      # i_sp <- 1
+      # i_sp <- 4
       
-      speciesAcroHere <- unique(species_acro)[i_sp]
-      cond <- species_acronym_df$species_acro %in% speciesAcroHere
-      species_i <- species_acronym_df$species_name[cond]
-      species_qualify_i <- species_acronym_df$species_acro2_details[cond] |> unique()
+      speciesAcroHere <- species_acro[i_sp]
       
-      cond <- cuspawnerabundance_rg$species_name %in% species_i
-      cuspawnerabundance_rg_sp <- cuspawnerabundance_rg[cond,]
+      cond <- species_acronym_df$species_qualified_simple == speciesAcroHere
+      speciesHere <- species_acronym_df$species_name[cond] |> unique()
       
+      cond_csa_rg_sp <- cond_csa_rg & cuspawnerabundance$species_name %in% speciesHere
+
       # in case the species was selected by the user it is not present in that region:
-      if(nrow(cuspawnerabundance_rg_sp) == 0){
-        print(paste0("The species ",species_i," is not present in ",region_i," in the dataset used."))
+      if(sum(cond_csa_rg_sp) == 0){
+        
+        print(paste0("The species ",speciesHere," is not present in ",region[i_rg] ," in the dataset used."))
         
       }else{
         
         # find the CUs present
-        CUs <- unique(cuspawnerabundance_rg_sp$cu_name_pse)
+        CUs <- unique(cuspawnerabundance$cu_name_pse[cond_csa_rg_sp])
         
         # find the corresponding cuid
-        cuids <-  unique(cuspawnerabundance_rg_sp$cuid) # 
+        cuids <-  unique(cuspawnerabundance$cuid[cond_csa_rg_sp]) # 
         
-        # BSC: not sure why I was doing it more complicated (below) but to keep
-        # until I run the code again in case I am missing something.
-        # cuids <- sapply(X = CUs, function(cu){
-        #   # cu <- CUs[6]
-        #   conservationunits_decoder_cut <- conservationunits_decoder[conservationunits_decoder$region == region[i_rg] &
-        #                                                              conservationunits_decoder$species_name %in% species_i & 
-        #                                                              conservationunits_decoder$cu_name_pse == cu,]
-        #   
-        #   # we could probably simply use pooledcuid
-        #   if(nrow(conservationunits_decoder_cut) == 1){
-        #     out <- conservationunits_decoder_cut$cuid
-        #   }else{
-        #     out <- unique(conservationunits_decoder_cut$pooledcuid)
-        #   }
-        # 
-        #   if(length(out) == 0){
-        #     print(paste("There is no cuid for:",region[i_rg],"-",species_i,"-",cu))
-        #   }
-        #   return(out)
-        # })
-        
-        # create a dataframe to retain the benchmark information for all the CUs of
+        # create a data frame to retain the benchmark information for all the CUs of
         # the species in the region
         benchSummary_region_species_df <- NULL
         
@@ -250,26 +215,36 @@ for(i_rg in 1:length(region)){
           
           # i_cu <- 1
           
+          cond <- conservationunits_decoder$cuid == cuids[i_cu]
+          species_qualifyHere <- conservationunits_decoder$species_abbr[cond]
+          species_nameHere <- conservationunits_decoder$species_name[cond]
+          
+          # TEMPORARY
+          # simplify species_name as in PSE data meeting December 11 2024
+          # To remove eventually when conservationunits_decoder$species_name 
+          # changed as well.
+          if(grepl("[s|S]ockeye",species_nameHere)){
+            
+            species_nameHere <- "Sockeye"
+            
+          }else if(grepl("Pink",species_nameHere)){
+            
+            species_nameHere <- "Pink"
+            
+          }
+          
           # subset cuspawnerabundance_rg_sp
-          cuspawnerabundance_rg_sp_cu <- cuspawnerabundance_rg_sp[cuspawnerabundance_rg_sp$cu_name_pse == CUs[i_cu],]
+          cond_csa_rg_sp_cu <- cond_csa_rg_sp & cuspawnerabundance$cuid == cuids[i_cu]
           
           # get the count
-          spawnerAbundance <- cuspawnerabundance_rg_sp_cu$estimated_count
+          spawnerAbundance <- cuspawnerabundance$estimated_count[cond_csa_rg_sp_cu]
           spawnerAbundance[spawnerAbundance <= 0] <- NA
-          names(spawnerAbundance) <- cuspawnerabundance_rg_sp_cu$year
+          names(spawnerAbundance) <- cuspawnerabundance$year[cond_csa_rg_sp_cu]
           
           comment <- ""
           
-          # if(all(is.na(spawnerAbundance))){
-          #   comment <- paste0("There is no estimated_count data for ",species_i[1]," - ",CUs[i_cu],", in ",regionName)
-          # }
-          
-          # This does not work so we remove the Nas instead of the odd or even years
-          # if(speciesAcroHere == "PK"){  # numLags has to be set to 2 year and not one because of the odd and even CUs
-          #   numLags <- 2
-          # }else{
-          #   numLags <- 1
-          # }
+          # Simulate the time series to obtain the 95% CI for the percentile 
+          # benchmarks
           numLags <- 1
           modelCI <- modelBoot(series = spawnerAbundance, 
                                numLags = numLags, # numLags is the lag for the autocorrelation; default is just 1 year
@@ -278,9 +253,10 @@ for(i_rg in 1:length(region)){
           
           # place the information a dataframe
           benchSummary_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
-                                        species = rep(speciesAcroHere,length(benchmarks)),
+                                        species_name = rep(species_nameHere,length(benchmarks)),
+                                        species_qualified = rep(species_qualifyHere,length(benchmarks)),
                                         cuid = rep(cuids[i_cu],length(benchmarks)),
-                                        CU = rep(CUs[i_cu],length(benchmarks)),
+                                        cu_name_pse = rep(CUs[i_cu],length(benchmarks)),
                                         benchmark = paste0("benchmark_",benchmarks), # c('lower','upper'),
                                         method = rep('percentile',length(benchmarks))) # was HS_percentiles
           
@@ -305,31 +281,24 @@ for(i_rg in 1:length(region)){
           #' biological status probability with the average current spawner 
           #' abundance over the last generation
           #------------------------------------------------------------------
-          condition <- conservationunits_decoder$cuid == cuids[i_cu]
-          conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[condition,]
-          
-          if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
+          cond_cud_cu <- conservationunits_decoder$cuid == cuids[i_cu]
+
+          if(!any(cond_cud_cu)){
             print("This CUS is not found in conservationunits_decoder: BREAK")
-            print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
-            cat("\n")
+            print(paste(region[i_rg],species[i_sp],CUs[i_cu],cuid[i_cu]))
             break
-          }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1){
-            if(length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
-              #print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
-              print("There are multiple CUs with that name who don't have the same pooledcuid, TO CHECK BREAK")
-              print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
-              print(conservationunits_decoder_rg_sp_cu)
-              cat("\n")
-              break
-            }
-            conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
+          }else if(sum(cond_cud_cu) > 1){
+            print("There are multiple CUs with that CUID, TO CHECK BREAK")
+            print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
+            print(conservationunits_decoder[cond_cud_cu,])
+            break
           }
           
           # keep track of the different versions of the CU names
-          CUname_pse <- conservationunits_decoder_rg_sp_cu$cu_name_pse
-          CUname_dfo <- conservationunits_decoder_rg_sp_cu$cu_name_dfo
+          cu_name_pse <- conservationunits_decoder$cu_name_pse[cond_cud_cu]
+          cu_name_dfo <- conservationunits_decoder$cu_name_dfo[cond_cud_cu]
           
-          CU_genLength <- conservationunits_decoder_rg_sp_cu$gen_length[1]
+          CU_genLength <- conservationunits_decoder$gen_length[cond_cud_cu]
           CU_genLength_available <- TRUE
           
           if(is.na(CU_genLength)){
@@ -344,38 +313,62 @@ for(i_rg in 1:length(region)){
             #' even- and odd-year lineages are considered separate CUs, the most 
             #' recent spawner abundance is simply the most recent year’s estimated 
             #' spawner abundance for this species
-            cond <- generationLengthEstiamte_df$species %in% speciesName # generationLengthEstiamte_df is created in functions_general.R
-            CU_genLength <- generationLengthEstiamte_df$genLength[cond] 
-            CU_genLength_available <- FALSE
-            print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))
+            # cond <- generationLengthEstiamte_df$species %in% speciesName # generationLengthEstiamte_df is created in functions_general.R
+            # CU_genLength <- generationLengthEstiamte_df$genLength[cond] 
+            # CU_genLength_available <- FALSE
+            # print(paste("No generation length for:",region[i_rg],species[i_sp],CUname))
+            print(paste("No generation length for:",region[i_rg],species[i_sp],CUname,"BREAK"))
+            break
           }
           
           # Calculate current spawner abundance:
           # yearCurrentAbundance should be NA so it is calculated from the most 
           # recent year with data
           csa_df <- current_spawner_abundance_fun(cuids = cuids[i_cu], 
-                                                  cuspawnerabundance = cuspawnerabundance_rg_sp_cu, 
+                                                  cuspawnerabundance = cuspawnerabundance, 
                                                   yearCurrentAbundance = yearCurrentAbundance, 
                                                   CU_genLength = CU_genLength)
           yrInitial <- csa_df$yr_withData_start   #TODO: rename/add "curr_spw"or something because this is confusing with the entire timeseries
           yrFinal <-  csa_df$yr_withData_end
           currentSpawnerData_available <- csa_df$curr_spw_available
-          spawnerAbundance_lastGen_m <- csa_df$curr_spw_abun
+          csa <- csa_df$curr_spw_abun
           spawnerAbundance_lastGen_dataPointNb <- csa_df$dataPointNb
           currentSpawnerData_availableRecentEnough <- csa_df$curr_spw_availableRecentEnough
         
-          
           # determine the number of time this CUs fall under the Red, Amber and Green 
           # status over all the simulations
           if(currentSpawnerData_available & currentSpawnerData_availableRecentEnough){
             
             
-            #' TODO: this should not be done using the benchmarkBoot but by simply 
-            #' comparing current spawner abundance to upper and lower benchamrks
-            #' This is done in 3_biological_status.R but simplify the workflow by
-            #' creating columns status_percent075 and status_percent050 here
-            #' and do not create the field status_percent_05_red, etc...
+            #' Determine the biostatus by comparing the percentile benchmarks 
+            #' to current spawner abundance
+            csa <- csa_df$curr_spw_abun
+            cond_025 <- benchSummary_df$benchmark == "benchmark_0.25"
+            cond_050 <- benchSummary_df$benchmark == "benchmark_0.5"
+            cond_075 <- benchSummary_df$benchmark == "benchmark_0.75"
+            bench_025 <- benchSummary_df$m[cond_025]
+            bench_050 <- benchSummary_df$m[cond_050]
+            bench_075 <- benchSummary_df$m[cond_075]
+            status_percent075 <- status_percent050 <- NA
+            if(csa <= bench_025){
+              status_percent075 <- status_percent050 <- "poor"
+            }else if(csa <= bench_050){
+              status_percent075 <- status_percent050 <- "fair"
+            }else if(csa > bench_050 & csa <= bench_075){
+              status_percent075 <- "fair"
+              status_percent050 <- "good"
+            }else{
+              status_percent075 <- status_percent050 <- "good"
+            }
             
+            comment <- ""
+            
+            #' This part of the code below determine the probability of the red, 
+            #' yellow and green status using the modelCI$benchmarkBoot.
+            #' THESE PROBABILITIES ARE NOT USED TO PROVIDE BIOSTATUS.
+            #' We add those as columns in dataset101_biologocal_status.csv but
+            #' just for information.
+
             status_percent_075 <- c()
             status_percent_05 <- c()
             
@@ -387,15 +380,15 @@ for(i_rg in 1:length(region)){
               #
               if(!is.na(LB) & !is.na(UB_05) & !is.na(UB_075)){
                 
-                if(spawnerAbundance_lastGen_m <= LB){
+                if(csa <= LB){
                   status_percent_075 <- c(status_percent_075,'red')
                   status_percent_05 <- c(status_percent_05,'red')
                   
-                }else if(spawnerAbundance_lastGen_m <= UB_05){
+                }else if(csa <= UB_05){
                   status_percent_075 <- c(status_percent_075,'amber')
                   status_percent_05 <- c(status_percent_05,'amber')
                   
-                }else if(spawnerAbundance_lastGen_m <= UB_075){
+                }else if(csa <= UB_075){
                   status_percent_075 <- c(status_percent_075,'amber')
                   status_percent_05 <- c(status_percent_05,'green')
                   
@@ -413,11 +406,9 @@ for(i_rg in 1:length(region)){
             status_percent_075 <- status_percent_075[!is.na(status_percent_075)]
             
             status_percent_prob_05 <- round(table(factor(status_percent_05,
-                                                           levels = c("red","amber","green")))/length(status_percent_05)*100,4)
+                                                         levels = c("red","amber","green")))/length(status_percent_05)*100,4)
             status_percent_prob_075 <- round(table(factor(status_percent_075,
-                                                           levels = c("red","amber","green")))/length(status_percent_075)*100,4)
-            
-            comment <- ""
+                                                          levels = c("red","amber","green")))/length(status_percent_075)*100,4)
             
             # Figure
             if(print_fig){
@@ -429,7 +420,7 @@ for(i_rg in 1:length(region)){
                 CUhere <- substr(x = CUhere,start =  1,stop = 25) 
               }
               
-              pathFile <- paste0(wd_figures,"/",regionName,"_",species_qualify_i,"_",CUhere,
+              pathFile <- paste0(wd_figures,"/",regionName,"_",species_qualifyHere,"_",CUhere,
                                  "_benchmark_percentiles_hist.jpeg")
               
               jpeg(file = pathFile, width = 18, height = 14, units = "cm", res = 300)
@@ -439,7 +430,7 @@ for(i_rg in 1:length(region)){
             hl <- hist(x = modelCI$benchmarkBoot[,"benchmark_0.25"], 
                        col = paste0(status_cols['red'], 50), border = NA,
                        breaks = seq(0, maxS, maxS/50), xlim = c(0, maxS), 
-                       main = paste0(regionName," ",species_qualify_i," (",cuids[i_cu],")"), 
+                       main = paste0(regionName," - ",species_qualifyHere," - ",CUs[i_cu]," - (",cuids[i_cu],")"), 
                        freq = FALSE, xlab = "Number of fish")
             
             hu_05 <- hist(x = modelCI$benchmarkBoot[,"benchmark_0.5"], 
@@ -453,12 +444,8 @@ for(i_rg in 1:length(region)){
             segments(x0 = benchSummary_df$m[benchSummary_df$benchmark == 'benchmark_0.5'], 
                      x1 = benchSummary_df$m[benchSummary_df$benchmark == 'benchmark_0.5'], 
                      y0 = 0, y1 = 1^10, lwd = 2, col = status_cols['green'])
-            segments(x0 = spawnerAbundance_lastGen_m, x1 = spawnerAbundance_lastGen_m, 
+            segments(x0 = csa, x1 = csa, 
                      y0 = 0, y1 = 1^10, lwd = 2)
-            
-            cond_leg <- status_percent_prob_05 == max(status_percent_prob_05)
-            legend("topright", bty = 'n',
-                   paste0(names(status_percent_prob_05)[cond_leg]," (",max(status_percent_prob_05),"%)"))
             
             if(print_fig){
               dev.off()
@@ -466,10 +453,7 @@ for(i_rg in 1:length(region)){
             
           }else{
             
-            status_percent_prob_05 <- rep(NA,3)
-            status_percent_prob_075 <- rep(NA,3)
-            names(status_percent_prob_05) <- c("red","amber","green")
-            names(status_percent_prob_075) <- c("red","amber","green")
+            status_percent075 <- status_percent050 <- NA
             
             if(!currentSpawnerData_available){
               comment <- paste0("No estimated_count data in cuspawnerabundance.csv")
@@ -479,12 +463,12 @@ for(i_rg in 1:length(region)){
           }
           
           biologicalStatus_df <- data.frame(region = region[i_rg],
-                                            species = speciesAcroHere,
+                                            species_name = species_nameHere,
+                                            species_qualified = species_qualifyHere,
                                             cuid = cuids[i_cu],
-                                            CU = CUs[i_cu])
-          biologicalStatus_df$CU_pse <- CUname_pse
-          biologicalStatus_df$CU_dfo <- CUname_dfo
-          biologicalStatus_df$current_spawner_abundance <- spawnerAbundance_lastGen_m
+                                            cu_name_pse = cu_name_pse)
+          
+          biologicalStatus_df$current_spawner_abundance <- csa
           biologicalStatus_df$yr_withData_start <- yrInitial
           biologicalStatus_df$yr_withData_end <- yrFinal
           biologicalStatus_df$yr_end_imposed <- yearCurrentAbundance
@@ -498,6 +482,8 @@ for(i_rg in 1:length(region)){
           biologicalStatus_df$status_percent_075_red <- status_percent_prob_075["red"]
           biologicalStatus_df$status_percent_075_amber <- status_percent_prob_075["amber"]
           biologicalStatus_df$status_percent_075_green <- status_percent_prob_075["green"]
+          biologicalStatus_df$status_percent050 <- status_percent050 
+          biologicalStatus_df$status_percent075 <- status_percent075
           biologicalStatus_df$comment <- comment
           
           if(is.null(biologicalStatus_region_species_df)){
@@ -510,9 +496,10 @@ for(i_rg in 1:length(region)){
         } # end of loop for the CUs
         
         print(paste0("*** ",regionName,"_",speciesAcroHere," done ***"))
+        
         write.csv(x = benchSummary_region_species_df, 
                   file = paste0(wd_output,"/intermediate/",regionName,"_",speciesAcroHere,"_benchmarks_summary_percentiles.csv"),
-                  row.names = F) # keep region[i_rg] and not region_i because of "Central coast" is used to name the other files and not "Central Coast"
+                  row.names = F) # keep region[i_rg] and not region[i_rg]  because of "Central coast" is used to name the other files and not "Central Coast"
         
         write.csv(x = biologicalStatus_region_species_df, 
                   file = paste0(wd_output,"/intermediate/",regionName,"_",speciesAcroHere,"_biological_status_percentiles.csv"),

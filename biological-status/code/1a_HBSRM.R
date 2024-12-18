@@ -160,7 +160,7 @@ options(warn = 0)  #
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
-  # i_rg <- 5
+  # i_rg <- 3
   
   cond_rs_rg <- recruitsperspawner$region == region[i_rg]
   # recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
@@ -185,7 +185,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 5
+      # i_sp <- 4
       
       speciesAcroHere <- species_acro[i_sp]
       
@@ -264,7 +264,7 @@ for(i_rg in 1:length(region)){
         CU_cyclicNO <- colnames(R)[!cond]
         
         for(i_CUs in 1:2){
-          # i_CUs <- 1
+          # i_CUs <- 2
           CUs_here <- list(CU_cyclicNO,CU_cyclic)[[i_CUs]]
           
           if(length(CUs_here) > 0){
@@ -482,6 +482,7 @@ for(i_rg in 1:length(region)){
             convDiagnostic$nb <- NA           # the number of the CU for the parameters (e.g. 3 for b[3])
             convDiagnostic$prSmax <- convDiagnostic$prCV <- NA
             
+            speciesAcroHere_file <- speciesAcroHere
             for(r in 1:nrow(convDiagnostic)){
               # r <- 2
               nbHere <- rownames(convDiagnostic)[r]
@@ -499,15 +500,40 @@ for(i_rg in 1:length(region)){
                 prSmaxHere <- round(prSmax[nbHere],2)
                 prCVHere <- prCV[nbHere]
                 sp_nameHere <- conservationunits_decoder$species_name[conservationunits_decoder$cuid == CUs_cuid[nbHere]]
+                
               }else{
                 nbHere <- sp_nameHere <- CUHere <- cuidHere <- prSmaxHere <- prCVHere <- ""
+              }
+              
+              # TEMPORARY
+              # simplify species_name as in PSE data meeting December 11 2024
+              # To remove eventually when conservationunits_decoder$species_name 
+              # changed as well.
+              if(grepl("[s|S]ockeye",sp_nameHere)){
+                
+                if(grepl("Lake",sp_nameHere)){
+                  speciesAcroHere <- "SEL"
+                }else if(grepl("River",sp_nameHere)){
+                  speciesAcroHere <- "SER"
+                }
+                sp_nameHere <- "Sockeye"
+                
+              }else if(grepl("Pink",sp_nameHere)){
+                
+                if(grepl("odd",sp_nameHere)){
+                  speciesAcroHere <- "PKO"
+                }else if(grepl("even",sp_nameHere)){
+                  speciesAcroHere <- "PKE"
+                }
+                sp_nameHere <- "Pink"
+                
               }
               
               convDiagnostic$cu_name_pse[r] <- CUHere
               convDiagnostic$cuid[r] <- cuidHere
               convDiagnostic$region[r] <- region[i_rg]
               convDiagnostic$species_name[r] <- sp_nameHere
-              convDiagnostic$species_acro[r] <- speciesAcroHere
+              convDiagnostic$species_qualified[r] <- speciesAcroHere
               convDiagnostic$nb[r] <- nbHere
               convDiagnostic$prSmax[r] <- prSmaxHere
               convDiagnostic$prCV[r] <- prCVHere
@@ -524,12 +550,12 @@ for(i_rg in 1:length(region)){
               convDiagnostic[grepl(char,convDiagnostic$parameter) & !is.na(convDiagnostic$cu_name_pse),] <- dfToSort
             }
             
-            convDiagnostic <- convDiagnostic[,c("region","species_name","cuid","cu_name_pse","species_acro",
+            convDiagnostic <- convDiagnostic[,c("region","species_name","species_qualified","cuid","cu_name_pse",
                                                 "parameter","Point est.","Upper C.I.",
                                                 "prSmax","prCV")]
             
             file_name <- paste0(wd_output,"/intermediate/",gsub(" ","_",regionName),"_",
-                                speciesAcroHere,cyclic_filen,"_HBSRM_convDiagnostic.csv")
+                                speciesAcroHere_file,cyclic_filen,"_HBSRM_convDiagnostic.csv")
             
             write.csv(convDiagnostic,file = file_name,row.names = F)
             

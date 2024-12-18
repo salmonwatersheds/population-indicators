@@ -111,14 +111,14 @@ benchmarks_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                   region = region,
                                                   species_all = species_all,
                                                   term_exclude = "cyclic")
-#' remove the cyclic  CUs for now because their HBSRM analysis has not been incorporated in the workflow yet
+
+#' check that the cyclic CUs are not in benchmarks_HBSRM
 cond <- grepl("cyclic",benchmarks_HBSRM$CU)
 benchmarks_HBSRM[cond,]
-nrow(benchmarks_HBSRM)
+nrow(benchmarks_HBSRM) # 616
 
 if(cyclic_biostatus){
   # Import the Ricker benchmarks down with the cycle CUs
-  pattern <- "benchmarks_summary_HBSRM"
   benchmarks_HBSRM_c <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       wd_output = paste0(wd_output,"/intermediate"),
                                                       region = region,
@@ -129,6 +129,7 @@ if(cyclic_biostatus){
   # Merge the two
   benchmarks_HBSRM <- rbind(benchmarks_HBSRM,benchmarks_HBSRM_c[,colnames(benchmarks_HBSRM)])
 }
+nrow(benchmarks_HBSRM) # 640
 
 #'* Import benchmark values for the percentile method *
 pattern <- "benchmarks_summary_percentiles"
@@ -137,6 +138,7 @@ benchmarks_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                        region = region,
                                                        species_all = species_all,
                                                        term_exclude = "cyclic")
+nrow(benchmarks_percentile) # 1347
 
 #'* Import biostatus obtained with HBSR Sgen - Smsy: *
 pattern <- "biological_status_HBSRM"
@@ -145,12 +147,13 @@ biological_status_HBSRM <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                          region = region,
                                                          species_all = species_all,
                                                          term_exclude = "cyclic")
+nrow(biological_status_HBSRM) # 154 145 138 144 143 ;  137
 head(biological_status_HBSRM)
 colnames(biological_status_HBSRM)
-nrow(biological_status_HBSRM) # 145 138 144 143 ;  137
 
 unique(biological_status_HBSRM$comment)
 
+# check that there is no cyclic CUs in biological_status_HBSRM
 cond <- grepl("cyclic",biological_status_HBSRM$cu_name_pse)
 biological_status_HBSRM[cond,]
 
@@ -162,12 +165,13 @@ if(cyclic_biostatus){
                                                              species_all = species_all,
                                                              term_include = "cyclic",
                                                              term_exclude = "Larkin")
-  biological_status_HBSRM_c$species <- "SE"
-  
+
   biological_status_HBSRM <- rbind(biological_status_HBSRM,
                                    biological_status_HBSRM_c[,colnames(biological_status_HBSRM)])
   
 }
+
+nrow(biological_status_HBSRM) # 160
 
 # add column biostatus for both thresholds (Smsy and 80% Smsy)
 colProb <- colnames(biological_status_HBSRM)[grepl("Smsy_",colnames(biological_status_HBSRM))]
@@ -407,7 +411,7 @@ val_new <- paste(val_toUpdate,7, sep = ", ")
 biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
 
 #'* 8 = data-deficient (no estimates of spawner abundance in the most recent generation) *
-#' Rule 1: To be considered for biostatus assessement CUs must have at least one 
+#' Rule 1: To be considered for biostatus assessment CUs must have at least one 
 #' data point within the interval defined by the last year of available data for
 #' a given region and this last year - generation length + 1 
 #' Update (2024-09-13): for Pink, there must be at least one data point within
@@ -454,13 +458,13 @@ rule1$concerned[!cond_pink] <- (rule1$year_data_last_rg[!cond_pink] - rule1$year
 # For pink salmon:
 rule1$concerned[cond_pink] <- (rule1$year_data_last_rg[cond_pink] - rule1$year_data_last[cond_pink] + 1) > 4
 
-sum(rule1$concerned) # 50 67 77
+sum(rule1$concerned) # 51 50 67 77
 
 
 # row_toUpdate <- biological_status_HBSRM$genLength_dataPointNb == 0 # old and wrong
 # sum(row_toUpdate) # 2
 row_toUpdate <- biological_status_HBSRM$cuid %in% rule1$cuid[rule1$concerned]
-sum(row_toUpdate) # 23 33
+sum(row_toUpdate) # 24 23 33
 val_toUpdate <- biological_status_HBSRM$psf_status_code[row_toUpdate]
 val_new <- paste(val_toUpdate,8, sep = ", ")
 biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
@@ -468,7 +472,7 @@ biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
 # row_toUpdate <- biological_status_percentile$genLength_dataPointNb == 0 # old and wrong
 # sum(row_toUpdate) # 217
 row_toUpdate <- biological_status_percentile$cuid %in% rule1$cuid[rule1$concerned]
-sum(row_toUpdate) # 50 67 77
+sum(row_toUpdate) # 51 50 67 77
 val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
 val_new <- paste(val_toUpdate,8, sep = ", ")
 biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
@@ -515,8 +519,8 @@ unique(biological_status_HBSRM$psf_status_code)
 unique(biological_status_percentile$psf_status_code)
 
 # Combine the two datasets:
-colCommon <- c("region","species","cuid","cu_name_pse","current_spawner_abundance",
-               "psf_status_code")
+colCommon <- c("region","species_name","species_qualified","cuid","cu_name_pse",
+               "current_spawner_abundance","psf_status_code")
               # "year_last","year_first","genLength")
 
 #' NOTE:
@@ -537,7 +541,8 @@ colPercent <- c("status_percent_05_red","status_percent_05_amber","status_percen
 
 biological_status_merged <- merge(x = biological_status_HBSRM[,c(colCommon,colHBSR)],
                                   y = biological_status_percentile[,c(colCommon,colPercent)],
-                                  by =  c("region","species","cuid","cu_name_pse","current_spawner_abundance"), 
+                                  by =  c("region","species_name","species_qualified",
+                                          "cuid","cu_name_pse","current_spawner_abundance"), 
                                   all = T)
 
 cond <- grepl("\\.x",colnames(biological_status_merged))
@@ -552,7 +557,7 @@ head(biological_status_merged)
 # Check if number of CUs is correct:
 CUs_comm <- biological_status_HBSRM$cuid[biological_status_HBSRM$cuid %in% 
                                           biological_status_percentile$cuid]
-length(CUs_comm) # 151 144 (138 + 6 cyclic CUs) ; 138 137
+length(CUs_comm) # 160 151 144 (138 + 6 cyclic CUs) ; 138 137
 
 CUs_HBSRM_only <- biological_status_HBSRM$cuid[!biological_status_HBSRM$cuid %in% 
                                                biological_status_percentile$cuid]
@@ -560,7 +565,7 @@ length(CUs_HBSRM_only) # 0
 
 CUs_Percent_only <- biological_status_percentile$cuid[!biological_status_percentile$cuid %in% 
                                                        biological_status_HBSRM$cuid]
-length(CUs_Percent_only) # 298 305 (311 - 6 cyclic) ; 311 313 315 311
+length(CUs_Percent_only) # 289 298 305 (311 - 6 cyclic) ; 311 313 315 311
 
 # Expected number of rows in biological_status_merged:
 length(CUs_comm) + length(CUs_HBSRM_only) + length(CUs_Percent_only) # 449 451 452 448
@@ -781,7 +786,7 @@ table(biological_status_merged$psf_status)
 #            285              4             40             56             11             53 
 #            268              4             37             59             18             63 
 #            268              4             37             58             18             64   2024-11-19
-
+#            265              4             38             60             18             64 
 
 #'* Show psf_status_type for CUs with psf_status_code_all == 8 *
 #' Update (2024-11-20 from PSE data meeting): we still show the method used in 
@@ -834,19 +839,6 @@ for(r in 1:nrow(biological_status_merged)){
 colToDrop <- c("psf_status_code_sr","psf_status_code_percentile")
 biological_status_merged <- biological_status_merged[,!colnames(biological_status_merged) %in% colToDrop]
 
-#'* add species_name and species_abbr and remove species *
-biological_status_merged$species_name <- sapply(X = biological_status_merged$cuid,
-                                                FUN = function(cuid){
-                                                  cond <- conservationunits_decoder$cuid == cuid
-                                                  return(conservationunits_decoder$species_name[cond])
-                                                })
-biological_status_merged$species_abbr <- sapply(X = biological_status_merged$cuid,
-                                                FUN = function(cuid){
-                                                  cond <- conservationunits_decoder$cuid == cuid
-                                                  return(conservationunits_decoder$species_abbr[cond])
-                                                })
-biological_status_merged <- biological_status_merged[,colnames(biological_status_merged) != "species"]
-
 # Check
 cond <- is.na(biological_status_merged$current_spawner_abundance)
 unique(biological_status_merged[,c("psf_status_code","psf_status_code_all")][cond,])
@@ -864,8 +856,8 @@ biological_status_merged$psf_status[cond] |> unique()
 col_prob <- colnames(biological_status_merged)[grepl("_prob",colnames(biological_status_merged))]
 col_status <- colnames(biological_status_merged)[grepl("_status",colnames(biological_status_merged))]
 
-biological_status_merged <- biological_status_merged[,c("region","cuid","species_abbr",
-                                                        "species_name","cu_name_pse",
+biological_status_merged <- biological_status_merged[,c("region","species_name","species_qualified",
+                                                        "cuid","cu_name_pse",
                                                         col_prob,
                                                         c("hist_red","hist_yellow","hist_green"),
                                                         col_status)]
@@ -884,29 +876,35 @@ nrow(biological_status_merged) # 449 451 452 448
 
 # Number CUs with biostatus assessed over both methods
 condition <- biological_status_merged$psf_status_code %in% 1:3
-sum(condition) # 159 149 (--> 6 cyclic CUs) 143 144 134 196 195
+sum(condition) # 162 159 149 (--> 6 cyclic CUs) 143 144 134 196 195
 
 # CUs not assessed because cyclic dynamics, low productivity/high mortality or data deficient
-condition_5 <- grepl(pattern = "5",biological_status_merged$psf_status_code)
-condition_6 <- grepl(pattern = "6",biological_status_merged$psf_status_code)
-condition_7 <- grepl(pattern = "7",biological_status_merged$psf_status_code)
+condition_5 <- biological_status_merged$psf_status_code == "5"
+condition_6 <- biological_status_merged$psf_status_code == "6"
+condition_7 <- biological_status_merged$psf_status_code == "7"
+condition_8 <- biological_status_merged$psf_status_code == "8"
 condition_5_6_7 <- condition_5 | condition_6 | condition_7
 biological_status_merged$psf_status_code_all[condition_5_6_7]
-sum(condition_5_6_7) # 233 226 (less 6 cyclic CUs) 232 234 38
+sum(condition_5_6_7) # 229 233 226 (less 6 cyclic CUs) 232 234 38
 
 # Number CUs with biostatus assessed with HBSRM:
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "sr"
 sum(condition_HBSRM)                   # 117 110 104 97 124 125
-sum(condition_1_2_3 & condition_HBSRM) # 117 110 (--> + 6 cyclic CUs) 104 97 124 125
+sum(condition_1_2_3 & condition_HBSRM) # 125 117 110 (--> + 6 cyclic CUs) 104 97 124 125
+sum(condition_8 & condition_HBSRM)     # 24 with not enough recent data but psf_status_type still shown
 
 # Number CUs with biostatus assessed with percentile method: 
 condition_Percent <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "percentile"
-sum(condition_Percent)                       # 42 39 40 37 72 71 69
-sum(condition_1_2_3 & condition_Percent)     # 42 39 40 37 72 71 69
-sum(condition_HBSRM) + sum(condition_Percent) == sum(condition) # should be TRUE
+sum(condition_Percent)                       # 57 42 39 40 37 72 71 69
+sum(condition_1_2_3 & condition_Percent)     # 37 42 39 40 37 72 71 69
+
+sum(condition_HBSRM) + 
+  sum(condition_Percent) - 
+  sum(condition_HBSRM & condition_8)- 
+  sum(condition_Percent & condition_8) == sum(condition_1_2_3) # should be TRUE
 
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
@@ -915,8 +913,8 @@ sum(condition_HBSRM) + sum(condition_Percent) == sum(condition) # should be TRUE
 # biological_status_merged <- import_mostRecent_file_fun(wd = wd_output,
 #                                                        pattern = "Biological_status_HBSR_Percentile_all_")
 
-benchmarks_merged <- biological_status_merged[,c("region","cuid","species_abbr",
-                                                 "species_name","cu_name_pse")]
+benchmarks_merged <- biological_status_merged[,c("region","species_name","species_qualified",
+                                                 "cuid","cu_name_pse")]
 
 benchmarks_merged$curr_spw <- NA       # current spawner abundance
 benchmarks_merged$sr_lower <- NA           # lower HBSRM benchmark
@@ -991,8 +989,8 @@ for(r in 1:nrow(benchmarks_merged)){
 }
 
 #
-# Add the missing CUs to the output files (one time fix) ------
-#' There are 18 CUs that were excluded in the biostatus analysis because there is 
+# Add the missing CUs to the output files ------
+#' There are CUs excluded in the biostatus analysis because there is 
 #' no spawner survey for them (not in dataset5_output (in the R code: recruitsperspawner)
 #' nor in dataset1cu_output (in the R code: cuspawnerabundance)).
 #' https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714665184357159?thread_ts=1701199596.229739&cid=CJG0SHWCW
@@ -1003,10 +1001,27 @@ for(r in 1:nrow(benchmarks_merged)){
 # benchmarks_merged <- import_mostRecent_file_fun(wd_output,
 #                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
 
-# find their cuid:
-cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid
-cuidMissing <- conservationunits_decoder$cuid[cond]
+nrow(biological_status_merged)  # 449
+nrow(conservationunits_decoder) # 469
 
+# We use the "pooledcuid" field and not "cuid" because the latter contains cuid
+# values that are not used anymore because the associated CUs have been pooled
+# (i.e. associated to another cuid, whose value is in pooledcuid).
+pooledcuid <- conservationunits_decoder$pooledcuid |> unique()
+cuid <- conservationunits_decoder$cuid |> unique()
+
+length(pooledcuid) # 463
+length(cuid)       # 469
+
+pooledcuid[! pooledcuid %in% cuid] # none
+cuid[! cuid %in% pooledcuid]       # 172 173 243 184 179 204 --> those have been pooled with other CUs
+
+cond <- conservationunits_decoder$cuid %in% cuid[! cuid %in% pooledcuid]
+conservationunits_decoder[cond,c("region","species_abbr","pooledcuid","cuid","cu_name_pse","cu_name_dfo","cu_type")]
+
+# find their cuid:
+cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid #
+cuidMissing <- conservationunits_decoder$cuid[cond] |> unique()
 cuidMissing
 length(cuidMissing) # 14
 
@@ -1015,13 +1030,27 @@ head(biological_status_merged)
 
 biological_status_add <- biological_status_merged[1:length(cuidMissing),]
 biological_status_add$region <- conservationunits_decoder$region[cond]
+species_name <- conservationunits_decoder$species_name[cond]
+# TEMPORARY
+# simplify species_name as in PSE data meeting December 11 2024
+# To remove eventually when conservationunits_decoder$species_name 
+# changed as well.
+species_name <- sapply(species_name, FUN = function(sp){
+  out <- sp
+  if(grepl("[s|S]ockeye",sp)){
+    out <- "Sockeye"
+  }else if(grepl("Pink",sp)){
+    out <- "Pink"
+  }
+  return(out)
+})
+biological_status_add$species_name <- species_name
+biological_status_add$species_qualified <- conservationunits_decoder$species_abbr[cond]
 biological_status_add$cuid <- conservationunits_decoder$cuid[cond]
-biological_status_add$species_abbr <- conservationunits_decoder$species_abbr[cond]
-biological_status_add$species_name <- conservationunits_decoder$species_name[cond]
 biological_status_add$cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
 
-cond_col <- ! colnames(biological_status_add) %in% c("region","cuid","species_abbr",
-                                                     "species_name","cu_name_pse")
+cond_col <- ! colnames(biological_status_add) %in% c("region","species_name","species_qualified",
+                                                     "cuid","cu_name_pse")
 biological_status_add[,cond_col] <- NA
 
 biological_status_add$psf_status <- "data-deficient"
@@ -1044,18 +1073,19 @@ head(benchmarks_merged)
 
 benchmarks_add <- benchmarks_merged[1:length(cuidMissing),]
 benchmarks_add$region <- conservationunits_decoder$region[cond]
+benchmarks_add$species_name <- species_name
+benchmarks_add$species_qualified <- conservationunits_decoder$species_abbr[cond]
 benchmarks_add$cuid <- conservationunits_decoder$cuid[cond]
-benchmarks_add$species_abbr <- conservationunits_decoder$species_abbr[cond]
-benchmarks_add$species_name <- conservationunits_decoder$species_name[cond]
 benchmarks_add$cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
 
-cond_col <- ! colnames(benchmarks_add) %in% c("region","cuid","species_abbr",
-                                              "species_name","cu_name_pse")
-
+cond_col <- ! colnames(benchmarks_add) %in% c("region","species_name","species_qualified",
+                                              "cuid","cu_name_pse")
 benchmarks_add[,cond_col] <- NA
 
 benchmarks_merged <- rbind(benchmarks_merged,
                            benchmarks_add)
+
+nrow(benchmarks_merged) # 463
 
 #
 # round fish count to closest integer in benchmarks_merged ------
@@ -1093,7 +1123,7 @@ cuid_extinct_pse[! cuid_extinct_pse %in% cuid_extinct_cosewic]     # 758
 dataset380$Sheet1[dataset380$Sheet1$cuid %in% c(758),]
 
 #
-# Check: check is there is any CUs with biostatus with last year data point too old ------
+# Check: is there any CUs with biostatus with last year data point too old ------
 #
 
 yr_last_rg <- sapply(region,function(rg){

@@ -437,9 +437,27 @@ for(i_rg in 1:length(region)){
           }
         }
         
+        species_name <- conservationunits_decoder$species_name[cond_cud_cu]
+        species_qualified <- conservationunits_decoder$species_abbr[cond_cud_cu]
+        
+        # TEMPORARY
+        # simplify species_name as in PSE data meeting December 11 2024
+        # To remove eventually when conservationunits_decoder$species_name 
+        # changed as well.
+        if(grepl("[s|S]ockeye",species_name)){
+          
+          species_name <- "Sockeye"
+          
+        }else if(grepl("Pink",species_name)){
+
+          species_name <- "Pink"
+          
+        }
+        
         # Record the probabilities:
         biologicalStatus_df <- data.frame(region = region[i_rg],
-                                          species = species_acro[i_sp], # species[i_sp],
+                                          species_name = species_name,
+                                          species_qualified = species_qualified,
                                           cuid = cuids[i],
                                           cu_name_pse = CUs[i],
                                           cu_name_dfo = cu_name_dfo,
@@ -481,7 +499,8 @@ for(i_rg in 1:length(region)){
         
         # Report the benchmark values and CI
         benchSummary_df <- data.frame(region = rep(region[i_rg],4),
-                                      species =  rep(species_acro[i_sp],4), # rep(species[i_sp],4),
+                                      species_name = rep(species_name,4),
+                                      species_qualified = rep(species_qualified,4),
                                       cuid = rep(cuids[i],4),
                                       cu_name_pse = rep(CUs[i],4),
                                       benchmark = c(rep(names(benchSummary)[1],2),

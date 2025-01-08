@@ -1594,7 +1594,7 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
     # i <- 1
     sp <- highExploit_lowProd$species[i]
     cu <- highExploit_lowProd$cu_name_pse[i]
-    biological_status_percentileHere <- biological_status_percentile[biological_status_percentile$CU_pse == cu,]
+    biological_status_percentileHere <- biological_status_percentile[biological_status_percentile$cu_name_pse == cu,]
     if(nrow(biological_status_percentileHere) > 1){
       print(biological_status_percentileHere)
       biological_status_percentileHere <- biological_status_percentileHere[biological_status_percentileHere$species == sp,]
@@ -3177,7 +3177,7 @@ HBSRM_JAGS_fun <- function(model_name = c("Ricker",
 #'this function).
 #' Several SEL Cus have prSmax estimated using photosynthetic-based modelling
 #' approach, in which case the values come from DFO report. In those cases, 
-#' prCV = 0.3. This is the cae for several SEL in Skeena, and prSmax values
+#' prCV = 0.3. This is the case for several SEL in Skeena, and prSmax values
 #' come from (Korman & English 2013).
 #' Note that Grant et al. 2020 also used photosynthetic-based values for prSmax
 #' for SEL CUs in the Fraser (cf. Table 10) but it was decided in during a PSAC 
@@ -3268,12 +3268,13 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
   
   #'* Fraser SEL for which prSmax is estimated with a photosynthetic-based *
   # approach (from Grant et al. 2020; cf. Table 10)
-  cuid_Fraser_SEL <- c(711,715,721,735)
+  # cuid_Fraser_SEL <- c(711,715,721,735)
+  cuid_Fraser_SEL <- c()
   
   use_habitat_prior_Fraser <- F # it was decided to not use 
   
   # The other CUs in Table 10 for which photosynthetic-based prSmax is obtained 
-  # but not used --> we will ask if we shoul use them or not at our next PSCA meeting
+  # but not used --> we will ask if we should use them or not at our next PSCA meeting
   # TO KEEP COMMENTED OUT UNTIL THEN
   # cuid_Fraser_SEL <- c(cuid_Fraser_SEL,712,714,716,719,725,727,729,740) 
   
@@ -3335,9 +3336,10 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
   
   
   # For the rest of the CUs: prSmax = geo_mean(S):
-  cuid_concerned <- cuid[! cuid %in% cuid_Skeena_SEL]
+  cond <- ! cuid %in% cuid_Skeena_SEL & ! cuid %in% cuid_Fraser_SEL
+  cuid_concerned <- cuid[cond]
   for(cu in cuid_concerned){
-    # cu <- cuid_concerned[1]
+    # cu <- cuid_concerned[2]
     cond <- conservationunits_decoder$cuid == cu
     cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
     prSmax_here <- mean_geom_fun(x = Sm[,cu_name_pse])
@@ -3348,5 +3350,4 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
   
   return(cu_prior_df)
 }
-
 

@@ -66,7 +66,7 @@ library(zoo) # for rollmean function
 
 # source("code/functions.R") # note used
 
-figure_print <- F
+figure_print <- T
 
 #
 # Import datasets --------
@@ -77,7 +77,6 @@ figure_print <- F
 datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
-
 
 #'* Import cuspawnerabundance:  CU-level spawner abundance data *
 spawners <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
@@ -110,17 +109,33 @@ cu_decoder <- cu_decoder  %>%
 
 cuid <- unique(spawners$cuid)
 
+species_name <- spawners$species_name[match(cuid, spawners$cuid)]
+# TEMPORARY
+# simplify species_name as in PSE data meeting December 11 2024
+# To remove eventually when conservationunits_decoder$species_name 
+# changed as well.
+species_name <- sapply(species_name, FUN = function(sp){
+  out <- sp
+  if(grepl("[s|S]ockeye",sp)){
+    out <- "Sockeye"
+  }else if(grepl("Pink",sp)){
+    out <- "Pink"
+  }
+  return(out)
+})
+
 cu_list <- data.frame(
   region = cu_decoder$region[match(cuid, cu_decoder$pooledcuid)],
+  species_name = species_name,
+  species_qualified = cu_decoder$species_abbr[match(cuid, cu_decoder$pooledcuid)],
   cuid = cuid,
-  species_abbr = cu_decoder$species_abbr[match(cuid, cu_decoder$pooledcuid)],
-  species_name = spawners$species_name[match(cuid, spawners$cuid)],
   cu_name_pse = cu_decoder$cu_name_pse[match(cuid, cu_decoder$pooledcuid)]
 )
 
 # Add year range
-cu_list <- cu_list %>% left_join(
-  spawners %>% 
+cu_list <- cu_list %>% 
+  left_join(
+    spawners %>% 
     select(cuid, year, estimated_count) %>%
     filter(!is.na(estimated_count)) %>%
     group_by(cuid) %>%
@@ -141,6 +156,7 @@ for(i in 1:nrow(cu_list)){
   
   region <- cu_list$region[i]
   species_name <- cu_list$species_name[i]
+  species_qualified <- cu_list$species_qualified[i]
   cuid <- cu_list$cuid[i]
   cu_name_pse <- cu_list$cu_name_pse[i]
   
@@ -192,6 +208,7 @@ for(i in 1:nrow(cu_list)){
   # Fill  dataset103_output (the smoothed log time series)
   dataset103_output_here <- data.frame(region = rep(region,length(x)))
   dataset103_output_here$species_name <- species_name
+  dataset103_output_here$species_qualified <- species_qualified
   dataset103_output_here$cuid <- cuid
   dataset103_output_here$cu_name_pse <- cu_name_pse
   dataset103_output_here$year <- x
@@ -219,6 +236,7 @@ for(i in 1:nrow(cu_list)){
   # Fill dataset202_output (LT trend dataset)
   dataset202_output_here <- data.frame(region = region)
   dataset202_output_here$species_name <- species_name
+  dataset202_output_here$species_qualified <- species_qualified
   dataset202_output_here$cuid <- cuid
   dataset202_output_here$cu_name_pse <- cu_name_pse
   dataset202_output_here$percent_change <- percent_change              # CHANGE TO rate_change ?
@@ -244,7 +262,7 @@ for(i in 1:nrow(cu_list)){
   lm_3g <- lm(tail(y_log_smooth, g*3) ~ x3g, na.action = "na.exclude")
   
   if(cond_pink){
-    if(grepl("odd",species_name)){
+    if(species_qualified == "PKO"){
       cond_keep <- x3g %% 2 == 1
     }else{
       cond_keep <- x3g %% 2 == 0
@@ -281,6 +299,7 @@ for(i in 1:nrow(cu_list)){
   dataset391_output_here <- data.frame(region = region)
   dataset391_output_here$region <- region
   dataset391_output_here$species_name <- species_name
+  dataset391_output_here$species_qualified <- species_qualified
   dataset391_output_here$cuid <- cuid
   dataset391_output_here$cu_name_pse <- cu_name_pse
   dataset391_output_here$threegen_percent_change <- threegen_percent_change             # CHANGE TO threegen_rate_change ?
@@ -304,7 +323,7 @@ for(i in 1:nrow(cu_list)){
   if(region_here ==  "Vancouver Island & Mainland Inlets"){
     region_here <- "VIMI"
   }
-  main <- paste(region_here,species_name,cuid,cu_name_pse,sep = "_")
+  main <- paste(region_here,species_qualified,cuid,cu_name_pse,sep = "_")
   main <- gsub("/",".",main)
   main <- gsub(" ","_",main)
   

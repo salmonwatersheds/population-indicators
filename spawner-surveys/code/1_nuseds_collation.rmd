@@ -1,0 +1,1769 @@
+---
+title: "1_nuseds_collation"
+author: "Bruno S. Carturan"
+date: "2024-11-18"
+output: 
+  html_document:
+    toc: true                  # Adds a table of contents to the document
+    toc_float: true           # Makes the table of contents float on the side as the reader scrolls.
+    toc_collapsed: true        # Starts the table of contents in a collapsed state.
+    toc_depth: 3               # Specifies the depth of headers (e.g., ##, ###) to include in the table of contents.
+    number_sections: true      # 
+    theme: journal  # lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+The goal of the script is to fix issues in NuSEDS and to merge the two constituent datasets all_area_nuseds and conservation_unit_system_sites.
+
+The NuSEDs version corresponding to this script is:
+
+Fisheries and Oceans Canada. 2024. NuSEDS - New Salmon Escapement Database System. Pacific Biological Station. Retrieved January 22, 2024, from https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6.
+
+
+```{r, include = F}
+
+#'******************************************************************************
+#' The goal of the script is to import, clean and format NuSEDS data.
+#' Script based on Emma Atkinson's previous version (26-Mar-2019).
+#' 
+#' Files imported:
+#' - conservationunits_decoder.csv (from database)
+#' - streamlocationids.csv (from database)
+#' - all_areas_nuseds_DATE.csv (from DFO)
+#' - conservation_unit_system_sites_DATE.csv (from DFO)
+#' - nuseds_report_definitions.csv (from DFO)
+#' - conservation_unit_report_definitions.csv (from DFO)
+#' - DFO_GFE_IDs_list_1.xlsx (from Wu Zhipeng, DFO)
+#' - DFO_GFE_IDs_list_2.xlsx (from Wu Zhipeng, DFO)
+#' 
+#' Files produced: 
+#' - 1_all_areas_nuseds_cleaned_DATE.csv
+#' - 1_conservation_unit_system_sites_cleaned_DATE.csv
+#' - 1_NuSEDS_escapement_data_collated_DATE.csv         # the merged and further corrected all_areas_nuseds and conservation_unit_system_sites
+#' - 1_series_inNUSEDS_noInCUSS_DATE.csv                # series removed because no alternative series could be found in conservation_unit_system_sites; to investigate later may be
+#' - 1_series_removed_DATE.csv                          # series removed from either datasets and why
+#' - 1_series_added_DATE.csv                            # series added to either dataset and why
+
+#'******************************************************************************
+
+# NOTE (to remove eventually): original script is:
+# 1_nuseds_data_collationJun72023.R in:
+# \X Drive\1_PROJECTS\1_Active\Fraser_VIMI\analysis\Compilation\Code
+
+rm(list = ls())
+graphics.off()
+
+# Loading packages & functions
+library(tidyr)
+library(plyr)
+library(dplyr)
+library(readxl)
+library(parallel)
+library(sp) # to calculate distances from geo-spatial coordinates
+# library(dplyr)
+# library(tibble)
+# library(scales)
+# library(ggplot2)
+# library(reshape2)
+# library(stringr)
+# library(viridis)
+
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
+
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("code/functions_set_wd.R")
+source("code/functions_general.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$spawner_surveys,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_project <- wds_l$wd_project
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                               wds_l$wd_project_dropbox,
+                               "references",sep="/")
+
+wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                         wds_l$wd_project_dropbox,
+                         "data",sep="/")
+
+wd_documents <- paste(wd_project,"documents",sep="/")
+
+wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                                         wds_l$wd_population_indicator_data_input_dropbox,
+                                         sep = "/")
+
+
+source("code/functions.R")
+
+options(digits = 9)
+```
+
+# Import datasets
+
+```{r}
+#'* Import the all_areas_nuseds data ("NUSEDS) *
+all_areas_nuseds <- datasets_NuSEDS_fun(name_dataSet = "all_areas_nuseds", 
+                                        from_NuSEDS_website = F, 
+                                        wd = wd_data_dropbox)
+
+#' Remove duplicated rows:
+dupli <- all_areas_nuseds %>%
+  dplyr::group_by(SPECIES, POP_ID, GFE_ID, ANALYSIS_YR,
+                  NATURAL_ADULT_SPAWNERS,NATURAL_JACK_SPAWNERS,        
+                  NATURAL_SPAWNERS_TOTAL, ADULT_BROODSTOCK_REMOVALS, 
+                  JACK_BROODSTOCK_REMOVALS, TOTAL_BROODSTOCK_REMOVALS,    
+                  OTHER_REMOVALS, TOTAL_RETURN_TO_RIVER) %>%
+  dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+  dplyr::filter(n > 1L)
+
+dupli # one
+
+toRemove_r <- which(duplicated(all_areas_nuseds[,c("SPECIES","POP_ID","GFE_ID","ANALYSIS_YR",
+                                     "NATURAL_ADULT_SPAWNERS","NATURAL_JACK_SPAWNERS",        
+                                     "NATURAL_SPAWNERS_TOTAL","ADULT_BROODSTOCK_REMOVALS", 
+                                     "JACK_BROODSTOCK_REMOVALS","TOTAL_BROODSTOCK_REMOVALS",    
+                                     "OTHER_REMOVALS","TOTAL_RETURN_TO_RIVER")]))
+
+all_areas_nuseds <- all_areas_nuseds[-toRemove_r,]
+```
+
+```{r}
+#'* Import conservation_unit_system_sites ("CUSS") *
+# DFO provided files matching streams and Nuseds to full CU index 
+conservation_unit_system_sites <- datasets_NuSEDS_fun(name_dataSet = "conservation_unit_system_sites", 
+                                                      from_NuSEDS_website = F, 
+                                                      wd = wd_data_dropbox)
+
+#' check for duplicated rows: --> NONE
+dupli <- conservation_unit_system_sites %>%
+  dplyr::group_by(SPECIES_QUALIFIED,POP_ID,GFE_ID) %>%
+  dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+  dplyr::filter(n > 1L)
+
+dupli # none
+
+
+#'* Import the definition of the different fields of these two datasets *
+fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
+# fields_def$all_areas_nuseds$AREA
+# fields_def$cu_system_sites$IS_INDICATOR
+
+
+#'* Import list for the fields in NUSEDS and CUSS that are associated to unique IndexId and GFE_ID *
+#' IndexId is define below as the species acronym + _ + POP_ID
+fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
+                                      conservation_unit_system_sites = conservation_unit_system_sites)
+
+# fields_l$NUSEDS$IndexId
+
+#'* Create a dataframe with the species names and the different acronymes *
+sp_salmon_detail <- c("Chum", "Chinook", "Coho", "Pink even","Pink odd","Sockeye lake","Sockeye river")
+sp_salmon <-        c("Chum", "Chinook", "Coho", "Pink","Pink","Sockeye","Sockeye")
+sp_salmon_acro <-     c("CM", "CK", "CO", "PKE", "PKO", "SEL", "SER")
+sp_salmon_acro_ncc <- c("CM", "CN", "CO", "PKE", "PKO",  "SX",  "SX")  # SpeciesId ; NCC Salmon Database (NCCSDB) Designation 
+
+sp_salmon_names_acro_df <- data.frame(name = sp_salmon,
+                                      name_detail = sp_salmon_detail,
+                                      acronym = sp_salmon_acro,
+                                      acronym_ncc = sp_salmon_acro_ncc)
+
+#'* Import the PSE list of CUs (conservationunits_decoder) *
+fromDatabase <- F
+update_file_csv <- F
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+#'* Import streamlocationids *
+streamlocationids <- datasets_database_fun(nameDataSet = "streamlocationids.csv",
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+```
+
+```{r, include=F}
+streamlocationids$sys_nm <- tolower(streamlocationids$sys_nm)
+streamlocationids$cu_name_pse <- tolower(streamlocationids$cu_name_pse)
+
+# Add species_name to streamlocationids
+cuids <- unique(streamlocationids$cuid)
+streamlocationids$species_name <- NA
+for(c in cuids){
+  cond <- conservationunits_decoder$cuid == c
+  if(sum(cond) > 0){
+    streamlocationids$species_name[streamlocationids$cuid == c] <- conservationunits_decoder$species_name[cond]
+  }
+}
+```
+
+# Initial modidifications
+
+```{r}
+#'* Remove rows for Atlantic, Steelhead, and Kokanee *
+all_areas_nuseds <- dplyr::filter(all_areas_nuseds, 
+                                  !SPECIES %in% c("Steelhead","Atlantic","Kokanee"))
+
+conservation_unit_system_sites <- dplyr::filter(conservation_unit_system_sites, 
+                                                SPECIES_QUALIFIED %in% sp_salmon_names_acro_df$acronym)
+
+unique(all_areas_nuseds$SPECIES)
+unique(conservation_unit_system_sites$SPECIES_QUALIFIED)
+
+#'* Rename the year column *
+colnames(all_areas_nuseds)[colnames(all_areas_nuseds) == "ANALYSIS_YR"] <- "Year"
+
+#'* Add the field SPECIES to CUSS *
+conservation_unit_system_sites$SPECIES <- NA
+species <- c("Coho","Chinook","Pink","Pink","Chum","Sockeye","Sockeye")
+sp_acronym_q <- c("CO","CK","PKE","PKO","CM","SEL","SER")
+for(spq in sp_acronym_q){
+  # spq <- sp_acronym_q[1]
+  condition <- conservation_unit_system_sites$SPECIES_QUALIFIED == spq
+  sp_Here <- unique(species[spq == sp_acronym_q])
+  conservation_unit_system_sites$SPECIES[condition] <- sp_Here
+}
+unique(conservation_unit_system_sites$SPECIES)
+
+
+#'* Create the field "species_acronym_ncc"to NUSEDS *
+#' i.e., CN, SX instead of CK and SER or SEL in the SPECIES_QUALIFIED.
+#' There is no information about sockeye river vs. lake in NUSEDS, 
+#' contrary to in conservation_unit_system_sites. We consequently have to create
+#' the field species_acronym_ncc in both dataset to be able to merge them after.
+#' (Note that there is information about the rearing locations the fieldsWATERBODY,
+#' GAZETTED_NAME, LOCAL_NAME_1, LOCAL_NAME_2, POPULATION).
+all_areas_nuseds$species_acronym_ncc <- conservation_unit_system_sites$species_acronym_ncc <- NA
+species <- c("Coho","Chinook","Pink","Chum","Sockeye")
+species_acronym_ncc <- c("CO","CN","PK","CM","SX")
+for(sp in species){
+  # sp <- species[3]
+  sp_acroHere <- species_acronym_ncc[sp == species]
+  condition <- all_areas_nuseds$SPECIES == sp
+  all_areas_nuseds$species_acronym_ncc[condition] <- sp_acroHere
+  condition <- conservation_unit_system_sites$SPECIES == sp
+  conservation_unit_system_sites$species_acronym_ncc[condition] <- sp_acroHere
+  
+  # For Pink, add E and O for Even and Odd, respectively
+  if(sp == "Pink"){
+    all_areas_nuseds$species_acronym_ncc[all_areas_nuseds$SPECIES == sp & 
+                                           all_areas_nuseds$Year %% 2 == 0] <- "PKE"
+    all_areas_nuseds$species_acronym_ncc[all_areas_nuseds$SPECIES == sp & 
+                                           all_areas_nuseds$Year %% 2 != 0] <- "PKO"
+    
+    condition <- conservation_unit_system_sites$SPECIES_QUALIFIED == "PKE"
+    conservation_unit_system_sites$species_acronym_ncc[condition] <- "PKE"
+    
+    condition <- conservation_unit_system_sites$SPECIES_QUALIFIED == "PKO"
+    conservation_unit_system_sites$species_acronym_ncc[condition] <- "PKO"
+  }
+}
+unique(all_areas_nuseds$species_acronym_ncc)
+unique(conservation_unit_system_sites$species_acronym_ncc)
+
+#' * Add the field IndexId = species_acronym_ncc + POP_ID *
+all_areas_nuseds$IndexId <- paste(all_areas_nuseds$species_acronym_ncc,
+                                  all_areas_nuseds$POP_ID,sep = "_")
+
+conservation_unit_system_sites$IndexId <- paste(conservation_unit_system_sites$species_acronym_ncc,
+                                                conservation_unit_system_sites$POP_ID,sep = "_")
+
+
+#'* Add the field StatArea to NUSEDS * 
+#' Old code, not sure how important this is.
+all_areas_nuseds$StatArea <- Convert2StatArea(all_areas_nuseds$AREA)
+
+# Make corrections for populations with discrepancies in area assignments #
+# These errors become apparent when merging data frames later on #
+all_areas_nuseds[all_areas_nuseds$IndexId == "CO_46240",]$StatArea <- "29"    # vs. "29J" "29K"
+all_areas_nuseds[all_areas_nuseds$IndexId == "PKO_51094",]$StatArea <- "12"  # BSC: there is one ""
+all_areas_nuseds[all_areas_nuseds$IndexId == "SX_45495",]$StatArea <- "120"  # BSC: already "120"
+```
+
+```{r, include=F}
+
+# The filed Returns is not used but we keep the code just in case.
+
+#'* Determine "Returns" (i.e. number fish) in NUSEDS (NOT USED - TO REMOVED?) *
+#' "Return" will be the column that contains the final fish count. Priority of the
+#' fields to population Returns:
+#'1) NATURAL_ADULT_SPAWNERS, if not available:
+#'2) sum of 
+#'  - NATURAL_SPAWNERS_TOTAL
+#'  - ADULT_BROODSTOCK_REMOVALS (or TOTAL_BROODSTOCK_REMOVALS if not available)
+#'  - OTHER_REMOVALS
+#'3) TOTAL_RETURN_TO_RIVER
+
+# Add "Return" which will contain the final number of fish
+all_areas_nuseds$Returns <- all_areas_nuseds$NATURAL_ADULT_SPAWNERS         # All salmon that have reached maturity, excluding jacks (jacks are salmon that have matured at an early age).
+all_areas_nuseds$Source <- "NATURAL_ADULT_SPAWNERS"                        # this field will change below depending on data availability and origin
+NATURAL_ADULT_SPAWNERS_any <- !is.na(all_areas_nuseds$NATURAL_ADULT_SPAWNERS)
+all_areas_nuseds$Source[!NATURAL_ADULT_SPAWNERS_any] <- NA
+
+#' Define the sum of:
+#' - "Spawner" = NATURAL_SPAWNERS_TOTAL +
+#' - "Broodstock" = ADULT_BROODSTOCK_REMOVALS (or TOTAL_BROODSTOCK_REMOVALS if not available) + 
+#' - "Removals" = OTHER_REMOVALS
+
+# Spawners:
+all_areas_nuseds$Spawners <- all_areas_nuseds$NATURAL_SPAWNERS_TOTAL
+spawners_any <- !is.na(all_areas_nuseds$Spawners)
+all_areas_nuseds$SpawnersSource[!NATURAL_ADULT_SPAWNERS_any & spawners_any] <- "NATURAL_SPAWNERS_TOTAL"
+
+# Broodstock:
+all_areas_nuseds$Broodstock <- all_areas_nuseds$ADULT_BROODSTOCK_REMOVALS
+ADULT_BROODSTOCK_REMOVALS_any <- !is.na(all_areas_nuseds$ADULT_BROODSTOCK_REMOVALS)
+TOTAL_BROODSTOCK_REMOVALS_any <- !is.na(all_areas_nuseds$TOTAL_BROODSTOCK_REMOVALS)
+toReplace <- !ADULT_BROODSTOCK_REMOVALS_any & TOTAL_BROODSTOCK_REMOVALS_any
+all_areas_nuseds$Broodstock[toReplace] <- all_areas_nuseds$TOTAL_BROODSTOCK_REMOVALS[toReplace]
+all_areas_nuseds$BroodstockSource[!NATURAL_ADULT_SPAWNERS_any & ADULT_BROODSTOCK_REMOVALS_any] <- 'ADULT_BROODSTOCK_REMOVALS'
+all_areas_nuseds$BroodstockSource[toReplace] <- 'TOTAL_BROODSTOCK_REMOVALS'
+
+# Removals:
+all_areas_nuseds$Removals <- all_areas_nuseds$OTHER_REMOVALS
+OTHER_REMOVALS_any <- !is.na(all_areas_nuseds$OTHER_REMOVALS)
+all_areas_nuseds$RemovalsSource[!NATURAL_ADULT_SPAWNERS_any & OTHER_REMOVALS_any] <- "OTHER_REMOVALS"
+
+# Calculate Returns when !NATURAL_ADULT_SPAWNERS_any as the sum of what other 
+# sources of data is available:
+all_areas_nuseds$Returns[!NATURAL_ADULT_SPAWNERS_any] <- apply(
+  X = all_areas_nuseds[!NATURAL_ADULT_SPAWNERS_any, c("Spawners","Broodstock","Removals")],
+  MARGIN = 1, 
+  FUN = sum, 
+  na.rm = TRUE
+)
+
+all_areas_nuseds$Source[!NATURAL_ADULT_SPAWNERS_any] <- apply(
+  X = all_areas_nuseds[!NATURAL_ADULT_SPAWNERS_any,c("SpawnersSource","BroodstockSource","RemovalsSource")], 
+  MARGIN = 1, 
+  FUN = function(x){
+    paste(na.omit(x),collapse=" + ")}
+)
+
+# Set as NA rather than zero if no info in any column (the na.rm = T above produced)
+# 0s when only NAs were available).
+allNAs <- apply(
+  X = all_areas_nuseds[!NATURAL_ADULT_SPAWNERS_any, c("Spawners","Broodstock","Removals")],
+  MARGIN = 1, 
+  FUN = function(x){all(is.na(x))}
+) 
+all_areas_nuseds$Returns[!NATURAL_ADULT_SPAWNERS_any][allNAs] <- NA
+
+# Use TOTAL_RETURN_TO_RIVER if we still don't have a value
+returns_any <- !is.na(all_areas_nuseds$Returns)
+TOTAL_RETURN_TO_RIVER_any <- !is.na(all_areas_nuseds$TOTAL_RETURN_TO_RIVER)
+toReplace <- !returns_any & TOTAL_RETURN_TO_RIVER_any
+all_areas_nuseds$Returns[toReplace] <- all_areas_nuseds$TOTAL_RETURN_TO_RIVER[toReplace]
+all_areas_nuseds$Source[toReplace] <- "TOTAL_RETURN_TO_RIVER"
+```
+
+```{r}
+#'* Determine "MAX_ESTIMATE" in NUSEDS *
+
+#' MAX_ESTIMATE is the maximum estimate of all these fields:
+var_in_MAX_ESTIMATE <- c("NATURAL_ADULT_SPAWNERS", 
+                         "NATURAL_JACK_SPAWNERS", 
+                         "NATURAL_SPAWNERS_TOTAL", 
+                         "ADULT_BROODSTOCK_REMOVALS", 
+                         "JACK_BROODSTOCK_REMOVALS",
+                         "TOTAL_BROODSTOCK_REMOVALS",    
+                         "OTHER_REMOVALS", 
+                         "TOTAL_RETURN_TO_RIVER")
+
+all_areas_nuseds$MAX_ESTIMATE <- apply(all_areas_nuseds[,var_in_MAX_ESTIMATE], 1,
+                                       max, na.rm = TRUE)
+
+# Replace infinite values by NA
+all_areas_nuseds$MAX_ESTIMATE[is.infinite(all_areas_nuseds$MAX_ESTIMATE)] <- NA
+```
+
+# Fixes on NUSEDS and CUSS
+
+```{r, include=F}
+all_areas_nuseds_all <- all_areas_nuseds
+nrow(all_areas_nuseds_all) # 412492
+
+conservation_unit_system_sites_all <- conservation_unit_system_sites
+nrow(conservation_unit_system_sites_all) # 7145
+```
+
+## Fix: coordinates of certain locations in CUSS
+
+There are multiple locations in **CUSS** that have different `SYSTEM_SITE` and `GFE_ID` but exactly the same geographic coordinates. This is because the coordinates are not defined as the survey location but the
+
+```{r, echo = F}
+fields_def$cu_system_sites$X_LONGT
+```
+
+There can be large distances between the coordinates in CUSS and the real survey locations for large water bodies. Plus, identical coordinates for different GFE_ID will cause issues in the next script when defining `streamid` (TO CHECK). We consequently manually update the coordinates of 
+
+
+```{r, include=F}
+#' There are multiple locations in conservation_unit_system_sites that have 
+#' different names and GFE_ID but exactly the same geographic coordinates. 
+#' This causes an issue in the next data processing process when trying to 
+#' provide streamid for the PSE.
+#' The goal is to estimate the coordinates of the locations by hand using 
+#' - google map
+#' - https://maps.gov.bc.ca/ess/hm/imap4m
+
+#' TODO: export the file manually once and then import it in future (cf. Population
+#' meeting Sep 11 2024)
+
+#' Note: the coordinates do not correspond to the survey location but the mouth
+#' or centroid of the water body. But that causes a problem for large rivers.
+conservation_unit_system_sites$X_LONGT <- round(conservation_unit_system_sites $X_LONGT,6)
+conservation_unit_system_sites$Y_LAT <- round(conservation_unit_system_sites $Y_LAT,6)
+```
+
+```{r}
+# Find the coordinates of all the GFE_IDs
+locations <- unique(conservation_unit_system_sites[,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2333
+```
+```{r}
+# Get the duplicated coordinates and associated GFE_ID:
+cond <- duplicated(locations[,c("X_LONGT","Y_LAT")])
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][cond,]
+nrow(coord_duplicated) # 21
+```
+There are `r nrow(coord_duplicated)` locations with more than one GFE_ID.
+
+```{r}
+# Find the GFE_IDs concerned:
+GFE_ID_duplicated <- c()
+for(r in 1:nrow(coord_duplicated)){
+  cond <- locations$X_LONGT == coord_duplicated$X_LONGT[r] &
+    locations$Y_LAT == coord_duplicated$Y_LAT[r]
+  GFE_ID_duplicated <- c(GFE_ID_duplicated,locations$GFE_ID[cond])
+}
+
+GFE_ID_duplicated <- unique(GFE_ID_duplicated)
+length(GFE_ID_duplicated) # 41
+```
+
+```{r}
+# Return these locatoins with SYSTEM_SITE
+cond <- conservation_unit_system_sites$GFE_ID %in% GFE_ID_duplicated
+col <- c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT")
+locations_duplicated <- unique(conservation_unit_system_sites[cond,col])
+
+# Sort the dataset and group per coordinates (same letter for same coordinates)
+locations_duplicated <- locations_duplicated_group_fun(locations_duplicated)
+rownames(locations_duplicated) <- NULL
+head(locations_duplicated)
+```
+
+```{r}
+# Fill the coordinate appropriately in each case:
+i <- 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(51.344756,-119.797289)
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+
+i_toChange <- 2
+# not sure where the channel so I picked a location a little bit above the creek mouth
+X_Y <- c(49.090741,-121.531078)  
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+X_Y <- c(49.107077, -121.636804)  #
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+# could not check if the creek is called Hawkins
+X_Y <- c(49.169178, -122.191740)  
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+# could not found the beach so I picked a location just beside it
+X_Y <- c(52.720154, -120.867586)  
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+i_toChange <- 3
+ # could not found the beach so I picked a location just beside it
+X_Y <- c(52.746393, -120.837075) 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, include=F}
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BAXTER BEACH"
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BEAR BEACH - SHORE"
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BETTY FRANK'S - SHORE"
+cond <- conservation_unit_system_sites$SYSTEM_SITE %in% c("BAXTER BEACH",
+                                                          "BEAR BEACH - SHORE",
+                                                          "BETTY FRANK'S - SHORE")
+conservation_unit_system_sites[cond,]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(49.740213, -122.147390)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, include=F}
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "LILLOOET RIVER"
+conservation_unit_system_sites[cond,]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+# moved to CAYOOSH CREEK's mouth
+X_Y <- c(50.680016, -121.929476) 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+# moved north a little bit
+X_Y <- c(49.626847, -122.671116) 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(49.111242, -123.168505)  # just besid it 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(51.745035, -122.413504)  # just above it 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+# moved to the cross between the two rivers
+X_Y <- c(49.294603, -124.879074)  
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(49.201198, -125.512450)  # placed it above
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+X_Y <- c(54.445124, -125.458809)  # moved above the weir
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+X_Y <- c(52.378979, -126.581766)  # no idea where these two creeks are exactly
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, include=F}
+cond <- conservation_unit_system_sites$SYSTEM_SITE == "BETTY FRANK'S - SHORE"
+cond <- conservation_unit_system_sites$SYSTEM_SITE %in% c("FORESTRY CREEK",
+                                                          "MARTY'S CREEK")
+conservation_unit_system_sites[cond,]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(50.342682, -127.437795)  # I don't know what is the difference between "creek" and "system"
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(55.081340, -125.560056)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 2
+X_Y <- c(54.816010, -126.163338)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+X_Y <- c(52.225501, -127.598108)  # moved it just a little nord
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+X_Y <- c(52.044541, -128.068576)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+```{r, echo=F}
+i <- i + 1
+letter <- unique(locations_duplicated$group)[i]
+cond <- locations_duplicated$group == letter
+i_toChange <- 1
+X_Y <- c(52.877146, -132.000700)  # 
+locations_duplicated$Y_LAT_new[cond][i_toChange] <- X_Y[1]
+locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
+locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
+```
+
+The fields `X_LONGT` and `Y_LAT` are updated in CUSS, and the new field `coordinates_changed` is added to indicate which locations are concerned.
+
+```{r, include=F}
+# Replace these values in CUSS
+conservation_unit_system_sites$coordinates_changed <- F
+
+for(l in unique(locations_duplicated$group)){
+  # l <- unique(locations_duplicated$group)[1]
+  cond_l <- locations_duplicated$group == l & !is.na(locations_duplicated$Y_LAT_new)
+  GFE_ID <- locations_duplicated$GFE_ID[cond_l]
+  SYSTEM_SITE <- locations_duplicated$SYSTEM_SITE[cond_l]
+  Y_LAT_new <- locations_duplicated$Y_LAT_new[cond_l]
+  X_LONGT_new <- locations_duplicated$X_LONGT_new[cond_l]
+  
+  for(i in 1:length(GFE_ID)){
+    cond_cuss <- conservation_unit_system_sites$GFE_ID == GFE_ID[i] & 
+      conservation_unit_system_sites$SYSTEM_SITE == SYSTEM_SITE[i]
+    
+    conservation_unit_system_sites$Y_LAT[cond_cuss] <- Y_LAT_new[i]
+    conservation_unit_system_sites$X_LONGT[cond_cuss] <- X_LONGT_new[i]
+    conservation_unit_system_sites$coordinates_changed[cond_cuss] <- T
+  }
+}
+
+# Check if there is no more duplicated coordinates
+locations <- unique(conservation_unit_system_sites [,c("GFE_ID","X_LONGT","Y_LAT")])
+nrow(locations) # 2333
+```
+
+```{r}
+# check is there still are different GFE_IDs with same coordinates:
+coord_duplicated <- locations[,c("X_LONGT","Y_LAT")][duplicated(locations[,c("X_LONGT","Y_LAT")]),]
+nrow(coord_duplicated) # 0
+```
+
+## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
+
+```{r}
+# Use package parallel To optimize the (take up to 20 minutes otherwise)
+# detectCores()
+# detectCores(logical = FALSE)
+cores_nb <- 10
+all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
+                                                             zeros_too = T, # to consider 0s as well
+                                                             cores_nb = cores_nb)
+
+nrow(all_areas_nuseds) # 309647
+```
+
+This procedure removed `r nrow(all_areas_nuseds_all) - nrow(all_areas_nuseds)` rows in NUSEDS, corresponding to `r 100 - round(nrow(all_areas_nuseds)/nrow(all_areas_nuseds_all)*100,1)`% of the original dataset.
+
+```{r, include = F}
+# Record the series that were removed and why:
+IndexId_GFE_ID_all <- unique(all_areas_nuseds_all[,c("IndexId","GFE_ID")])
+nrow(IndexId_GFE_ID_all) # 11553
+
+IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
+nrow(IndexId_GFE_ID) # 7062
+
+IndexId_GFE_ID_all <- paste(IndexId_GFE_ID_all$IndexId,IndexId_GFE_ID_all$GFE_ID,sep = "&")
+IndexId_GFE_ID <- paste(IndexId_GFE_ID$IndexId,IndexId_GFE_ID$GFE_ID,sep = "&")
+
+IndexId_GFE_ID_removed_c <- IndexId_GFE_ID_all[! IndexId_GFE_ID_all %in% IndexId_GFE_ID]
+length(IndexId_GFE_ID_removed_c) # 4491
+IndexId_GFE_ID_removed <- data.frame(IndexId = rep(NA,length(IndexId_GFE_ID_removed_c)),
+                                     GFE_ID = rep(NA,length(IndexId_GFE_ID_removed_c)))
+
+IndexId_GFE_ID_removed$IndexId <- sapply(X = IndexId_GFE_ID_removed_c, FUN = function(s){
+  # s <- IndexId_GFE_ID_removed[1]
+  return(strsplit(x = s, split = "&")[[1]][1])
+  })
+
+IndexId_GFE_ID_removed$GFE_ID <- sapply(X = IndexId_GFE_ID_removed_c, FUN = function(s){
+  # s <- IndexId_GFE_ID_removed[1]
+  return(strsplit(x = s, split = "&")[[1]][2])
+})
+
+removed_all <- IndexId_GFE_ID_removed
+removed_all$dataset <- "NUSEDS"
+removed_all$comment <- "Only NAs and/or 0s for MAX_ESTIMATE"
+
+# check
+# i <- 3243
+# plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
+#                         GFE_IDs = removed_all$GFE_ID[i],
+#                         all_areas_nuseds = all_areas_nuseds_all)
+```
+
+All the time series removed are referenced in `removed_all`:
+
+```{r}
+head(removed_all)
+```
+
+```{r}
+nrow(removed_all) # 4491
+```
+
+Note that we do not remove these series with only NAs in CUSS at this stage because thy could be alternative series for the series in NUSEDS that do not appear in CUSS. It is only once series in NUSEDS absent in CUSS were found alternative for that one should remove series in CUSS that have only NAs in NUSEDS.
+
+
+## Fix populations in CUSS that are not in NUSEDS
+
+Look for each `IndexId` & `GFE_ID` series in CUSS:
+
+1) check if there are multiple GFE_IDs associated to one unique time series; if yes: trouble shoot manually because this should not happen.
+      
+2) else look if there is a time series with the same `IndexId` & `GFE_ID` in NUSEDS; if yes: all good :-)
+
+3) else: that could be due to either (i) a typo in the IndexId or (ii) a typo in the GFE_ID. The the rest of the code looks for potential alternative series in NUSEDS with either a different IndexId (but with the same species) or a different GFE_ID. Alternative series identified NOT present in CUSS are kept, the ones present are not considered.
+
+The function returns a simple data frame with the `IndexId` & `GFE_ID` series concerned and associated comment and eventual potential alternative series that have to be checked manually after.
+
+```{r}
+cores_nb <- 10
+trackRecord <- cuss_nuseds_match_parallel_fun(conservation_unit_system_sites = conservation_unit_system_sites,
+                                              all_areas_nuseds = all_areas_nuseds, 
+                                              cores_nb = cores_nb)
+nrow(trackRecord)
+
+# Number of time series present in CUSS but not in NUSEDS:
+cond <- trackRecord$in_nused == "no"
+sum(cond)
+
+head(trackRecord[cond,])
+
+# check the series related to different comments:
+unique(trackRecord$comment)
+```
+### Alternative series present
+
+The goal is to go over all the cases where alternative series are available.
+
+```{r}
+comment <- "Alternative series:"
+trackRecord_cuss_alternative <- trackRecord[grepl(comment,trackRecord$comment),]
+rownames(trackRecord_cuss_alternative) <- NULL
+nrow(trackRecord_cuss_alternative) # 4
+trackRecord_cuss_alternative
+```
+
+
+
+```{r, include=F}
+r <- 1
+d <- trackRecord_cuss_alternative[r,,drop = F]
+series_alternative <- d$comment
+series_alternative <- gsub("Alternative series: ","",series_alternative)
+series_alternative <- strsplit(series_alternative, split = ", ")[[1]]
+series_alternative <- strsplit(series_alternative," & ")
+
+iids <- sapply(X = series_alternative, function(c){c[1]})
+gfeids <- sapply(X = series_alternative, function(c){c[2]})
+
+d <- data.frame(IndexId = iids,
+                GFE_ID = as.numeric(gfeids))
+
+d
+
+series_alternative <- paste(d$IndexId,"& GFE_ID =",d$GFE_ID)
+series_focal <- paste0(trackRecord_cuss_alternative$IndexId[r]," & GFE_ID = ",
+                      trackRecord_cuss_alternative$GFE_ID[r])
+```
+
+```{r}
+#' Note: the title of the figure shows the focal series that is in CUSS but not 
+#' in NUSEDS. The series on the top left corner are potential alternative series,
+#' i.e. they are present in NUSEDS but not in CUSS.
+main <- paste0("Alternative series for ",series_focal)
+plot_IndexId_GFE_ID_fun(IndexIds = d$IndexId, 
+                        GFE_IDs = d$GFE_ID, 
+                        all_areas_nuseds = all_areas_nuseds_all, 
+                        main = main)
+```
+
+The focal CUSS time series `r series_focal` corresponds to the `CU_NAME`:
+
+```{r, echo = F}
+cond <- conservation_unit_system_sites$IndexId %in% c("CN_46842","CN_46841")
+unique(conservation_unit_system_sites$CU_NAME[cond])
+```
+
+The two alternative time series are noted as two different runs:
+
+```{r,echo=F}
+cond <- all_areas_nuseds$IndexId %in% c("CN_46842","CN_46841")
+unique(all_areas_nuseds$POPULATION[cond])
+```
+```{r,include=F}
+cond <- conservation_unit_system_sites$GFE_ID == as.numeric(gfeids[2])
+Y_LAT_focal <- conservation_unit_system_sites$Y_LAT[cond] |> unique()
+X_LONGT_focal <- conservation_unit_system_sites$X_LONGT[cond] |> unique()
+
+cond <- conservation_unit_system_sites$GFE_ID == as.numeric(gfeids[1])
+Y_LAT <- conservation_unit_system_sites$Y_LAT[cond] |> unique()
+X_LONGT <- conservation_unit_system_sites$X_LONGT[cond] |> unique()
+
+# c(Y_LAT_focal,X_LONGT_focal)
+# c(Y_LAT,X_LONGT)
+
+pt_focal <- SpatialPoints(coords = data.frame(x = X_LONGT_focal, y = Y_LAT_focal), 
+                          proj4string = CRS("+proj=longlat +datum=WGS84"))
+pt_alternative <- SpatialPoints(coords = data.frame(x = X_LONGT, y = Y_LAT), 
+                                proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+dist <- spDists(x = pt_focal,y = pt_alternative, longlat = T) # distance in km
+# spDists(x = pt_focal,y = pt_alternative, longlat = F) # Euclidian distance in ???
+dist <- round(as.numeric(dist),2)
+```
+
+
+The distance between the two locations is `r dist` km.
+
+```{r, include=F}
+#' TODO: replace CN_46842 & GFE_ID = 2463 and CN_46841 & GFE_ID = 285 by 
+#' CN_46842 & GFE_ID = 285 in all_area_nuseds.
+
+#' Conversation about merging them:
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707929645199719?thread_ts=1707771319.134789&cid=CJ5RVHVCG 
+
+removed <- data.frame(IndexId = c("CN_46842","CN_46841"),
+                      GFE_ID = c(2463,285))
+removed$dataset <- "NUSEDS"
+removed$comment <- "Alternative series for CN_46842 & GFE_ID = 285"
+removed_all <- rbind(removed_all,removed)
+
+#' CN_46842 & GFE_ID = 2463 --> CN_46842 & GFE_ID = 285
+#' --> change of GFE_ID:
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CN_46842",
+                                                IndexId_alter = "CN_46842",
+                                                GFE_ID_focal = 2463,
+                                                GFE_ID_alter = 285,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
+
+#' CN_46841 & GFE_ID = 285 --> CN_46842 & GFE_ID = 285
+#' --> change IndexId
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CN_46841",
+                                                IndexId_alter = "CN_46842",
+                                                GFE_ID_focal = 285,
+                                                GFE_ID_alter = 285,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
+```
+
+**Decision:** It was decided to merge the two time series `r paste(series_alternative, collapse = " and ")` to the series `r series_focal` in NUSEDS because there is only one timing for this Middle Fraser River (Spring 5-2) Chinook CU and the two series are complementary.
+
+
+```{r, include=F}
+r <- 2
+d <- trackRecord_cuss_alternative[r,,drop = F]
+series_alternative <- d$comment
+series_alternative <- gsub("Alternative series: ","",series_alternative)
+series_alternative <- strsplit(series_alternative, split = ", ")[[1]]
+series_alternative <- strsplit(series_alternative," & ")
+
+iids <- sapply(X = series_alternative, function(c){c[1]})
+gfeids <- sapply(X = series_alternative, function(c){c[2]})
+
+d <- data.frame(IndexId = iids,
+                GFE_ID = gfeids)
+
+series_alternative <- paste(d$IndexId,"& GFE_ID =",d$GFE_ID)
+series_focal <- paste0(trackRecord_cuss_alternative$IndexId[r]," & GFE_ID = ",
+                      trackRecord_cuss_alternative$GFE_ID[r])
+```
+
+```{r, echo=FALSE}
+main <- paste0("Alternative series for ",series_focal)
+plot_IndexId_GFE_ID_fun(IndexIds = d$IndexId, 
+                        GFE_IDs = d$GFE_ID, 
+                        all_areas_nuseds = all_areas_nuseds_all, 
+                        main = main)
+```
+
+**Decision:** we remove series `r series_focal` from CUSS and `r series_alternative` from NUSEDS.
+
+```{r,include=F}
+
+#' TODO: we remove PKE_42409 & GFE_ID = 1490 from conservation_unit_system_sites
+#' and PKE_54793433 & GFE_ID = 1490 from all_area_nuseds.
+removed <- data.frame(IndexId = c("PKE_42409","PKE_54793433"),
+                      GFE_ID = c(1490,1490))
+removed$dataset <- c("CUSS","NUSEDS")
+removed$comment <- c("Removed because not in NUSEDS and alternative series PKE_54793433 & GFE_ID = 1490 ahs only one data point as was removed",
+                     "Only 1 data point(s) and not in CUSS")
+
+removed_all <- rbind(removed_all,removed)
+
+condition <- conservation_unit_system_sites$IndexId == removed$IndexId[1] &
+  conservation_unit_system_sites$GFE_ID == removed$GFE_ID[1]
+conservation_unit_system_sites[condition,]
+conservation_unit_system_sites <- conservation_unit_system_sites[!condition,]
+nrow(conservation_unit_system_sites) # 7144
+
+condition <- all_areas_nuseds$IndexId == removed$IndexId[2] &
+  all_areas_nuseds$GFE_ID == removed$GFE_ID[2]
+all_areas_nuseds <- all_areas_nuseds[!condition,]
+nrow(all_areas_nuseds) # 309637
+```
+```{r, include=F}
+r <- 3
+d <- trackRecord_cuss_alternative[r,,drop = F]
+series_alternative <- d$comment
+series_alternative <- gsub("Alternative series: ","",series_alternative)
+series_alternative <- strsplit(series_alternative, split = ", ")[[1]]
+series_alternative <- strsplit(series_alternative," & ")
+
+iids <- sapply(X = series_alternative, function(c){c[1]})
+gfeids <- sapply(X = series_alternative, function(c){c[2]})
+
+d <- data.frame(IndexId = iids,
+                GFE_ID = gfeids)
+
+series_alternative <- paste(d$IndexId,"& GFE_ID =",d$GFE_ID)
+series_focal <- paste0(trackRecord_cuss_alternative$IndexId[r]," & GFE_ID = ",
+                      trackRecord_cuss_alternative$GFE_ID[r])
+```
+
+
+```{r, echo=FALSE}
+main <- paste0("Alternative series for ",series_focal)
+plot_IndexId_GFE_ID_fun(IndexIds = d$IndexId, 
+                        GFE_IDs = d$GFE_ID, 
+                        all_areas_nuseds = all_areas_nuseds, 
+                        main = main)
+```
+
+These two locations are from the same river:
+
+```{r,echo=F}
+cond <- conservation_unit_system_sites$GFE_ID %in% c(2463,285)
+unique(conservation_unit_system_sites$SYSTEM_SITE[cond])
+```
+```{r,include=F}
+cond <- conservation_unit_system_sites$GFE_ID == 285
+Y_LAT_focal <- conservation_unit_system_sites$Y_LAT[cond] |> unique()
+X_LONGT_focal <- conservation_unit_system_sites$X_LONGT[cond] |> unique()
+
+cond <- conservation_unit_system_sites$GFE_ID == 2463
+Y_LAT <- conservation_unit_system_sites$Y_LAT[cond] |> unique()
+X_LONGT <- conservation_unit_system_sites$X_LONGT[cond] |> unique()
+
+# c(Y_LAT_focal,X_LONGT_focal)
+# c(Y_LAT,X_LONGT)
+
+pt_focal <- SpatialPoints(coords = data.frame(x = X_LONGT_focal, y = Y_LAT_focal), 
+                          proj4string = CRS("+proj=longlat +datum=WGS84"))
+pt_alternative <- SpatialPoints(coords = data.frame(x = X_LONGT, y = Y_LAT), 
+                                proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+dist <- spDists(x = pt_focal,y = pt_alternative, longlat = T) # distance in km
+# spDists(x = pt_focal,y = pt_alternative, longlat = F) # Euclidian distance in ???
+dist <- round(as.numeric(dist),2)
+```
+
+The distance between the two locations is `r dist` km (same as before).
+
+```{r,include=F}
+#' TODO: replace CO_46835 & 2463 by CO_46835 & 285 in all_area_nuseds.
+#' --> change GFE_ID:
+
+removed <- data.frame(IndexId = c("CO_46835"),
+                      GFE_ID = 2463)
+removed$dataset <- "NUSEDS"
+removed$comment <- "Alternative series for CO_46835 & GFE_ID = 285"
+removed_all <- rbind(removed_all,removed)
+
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "CO_46835",
+                                                IndexId_alter = "CO_46835",
+                                                GFE_ID_focal = 2463,
+                                                GFE_ID_alter = 285,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
+```
+
+**Decision:** Replace `r paste(series_alternative, collapse = " and ")` by `r series_focal` in NUSEDS.
+
+
+```{r,include=FALSE}
+r <- 4
+d <- trackRecord_cuss_alternative[r,,drop = F]
+series_alternative <- d$comment
+series_alternative <- gsub("Alternative series: ","",series_alternative)
+series_alternative <- strsplit(series_alternative, split = ", ")[[1]]
+series_alternative <- strsplit(series_alternative," & ")
+
+iids <- sapply(X = series_alternative, function(c){c[1]})
+gfeids <- sapply(X = series_alternative, function(c){c[2]})
+
+d <- data.frame(IndexId = iids,
+                GFE_ID = gfeids)
+
+series_alternative <- paste(d$IndexId,"& GFE_ID =",d$GFE_ID)
+series_focal <- paste0(trackRecord_cuss_alternative$IndexId[r]," & GFE_ID = ",
+                      trackRecord_cuss_alternative$GFE_ID[r])
+```
+
+```{r, echo=FALSE}
+main <- paste0("Alternative series for ",series_focal)
+plot_IndexId_GFE_ID_fun(IndexIds = d$IndexId, 
+                        GFE_IDs = d$GFE_ID, 
+                        all_areas_nuseds = all_areas_nuseds, 
+                        main = main)
+```
+
+The two time series have the same `CU_NAME` in CUSS:
+
+```{r,echo=F}
+sapply(X = c("SX_7763","SX_47954"),function(iid){
+  cond <- conservation_unit_system_sites$IndexId == iid
+  return(conservation_unit_system_sites$CU_NAME[cond])
+})
+```
+```{r,include=F}
+#' TODO: replace SX_47954 & 21 by SX_7763 & 21 in all_area_nuseds.
+#' --> change IndexId
+removed <- data.frame(IndexId = c("SX_47954"),
+                      GFE_ID = 21)
+removed$dataset <- "NUSEDS"
+removed$comment <- "Alternative series for SX_7763 & GFE_ID = 21"
+removed_all <- rbind(removed_all,removed)
+
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T, 
+                                                IndexId_focal = "SX_47954",
+                                                IndexId_alter = "SX_7763",
+                                                GFE_ID_focal = 21,
+                                                GFE_ID_alter = 21,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
+```
+
+**Decision:** Replace `r paste(series_alternative, collapse = " and ")` by `r series_focal` in NUSEDS.
+
+
+###  Alternative series not present in NUSEDS
+
+The goal is to remove these `InsexId` & `GFE_ID` references from CUSS and to specify if those were simply not present in the orgainal NUSEDS or only contained NAs and/or 0s.
+
+```{r}
+comment <- "There is no alternative series in NUSEDS"
+trackRecord_cuss_noAlernative <- trackRecord[grepl(comment,trackRecord$comment),]
+rownames(trackRecord_cuss_noAlernative) <- NULL
+nrow(trackRecord_cuss_noAlernative) # 254
+head(trackRecord_cuss_noAlernative[,c("IndexId","GFE_ID","in_cuss","in_nused","comment")])
+```
+
+```{r, include=F}
+for(r in 1:nrow(trackRecord_cuss_noAlernative)){
+  # r <- 1
+  iid <- trackRecord_cuss_noAlernative$IndexId[r]
+  gfeid <- trackRecord_cuss_noAlernative$GFE_ID[r]
+  
+  # check if the series already exists in removed_all
+  cond <- removed_all$IndexId == iid & removed_all$GFE_ID == gfeid
+  if(nrow(removed_all[cond,]) > 0){ # edit removed_all
+    removed_all$dataset[cond] <- "both"   # because if the reference of the series is already there is because it was removed from NUSEDS
+    print(paste("Series",iid,"-",gfeid,"was in NUSEDS with only NAs and/or 0s"))
+    
+  }else{ # add row to removed_all
+    removed <- data.frame(IndexId = iid,
+                          GFE_ID = gfeid,
+                          dataset = "CUSS")
+    removed$comment <- "Not in NUSEDS and no alternative series"
+    removed_all <- rbind(removed_all,removed)
+    # print(paste("Series",iid,"-",gfeid,"was not nuseds"))
+  }
+  
+  # remove series from conservation_unit_system_sites
+  cond <- conservation_unit_system_sites$IndexId == iid &
+    conservation_unit_system_sites$GFE_ID == gfeid
+  conservation_unit_system_sites <- conservation_unit_system_sites[!cond,]
+}
+
+nrow(conservation_unit_system_sites) # 6890
+
+
+# all but one of the series are in all_areas_nuseds_all
+cond <- removed_all$dataset == "both"
+sum(cond) # 253 (vs. 254)
+
+```
+
+`r sum(cond)` of the `r nrow(trackRecord_cuss_noAlernative)` `InsexId` & `GFE_ID` references were removed previously from **NUSEDS** because they contained only NAs and/or 0s. Only the following references was not in **NUSEDS** initially:
+
+```{r, include=FALSE}
+# the only series in CUSS not in all_areas_nuseds_all
+cond <- grepl("Not in NUSEDS and no alternative series",removed_all$comment)
+removed_all[cond,]
+# IndexId GFE_ID                        dataset                                           comment
+# SX_2167	150	CUSS	Not in NUSEDS and no alternative series
+
+IndexId <- removed_all$IndexId[cond]
+GFE_ID <- removed_all$GFE_ID[cond]
+```
+
+```{r, echo=F}
+cond <- conservation_unit_system_sites_all$IndexId == IndexId & 
+  conservation_unit_system_sites_all$GFE_ID == GFE_ID
+
+show <- conservation_unit_system_sites_all[cond,c("GFE_ID","SYSTEM_SITE","SPECIES_QUALIFIED","CU_NAME","FULL_CU_IN")] # "UPPER FRASER"
+rownames(show) <- NULL
+show
+```
+
+### Multiple GFE_IDs for a same IndexId in CUSS
+
+There should not be any `InsexId` & `GFE_ID` references to a time series associated with multiple `GFE_IDs` (it is a MANY TO ONE relationship). The goal here is to keep only the `InsexId` & `GFE_ID` references present in **NUSEDS**.
+
+```{r, include=FALSE}
+comment <- "In CUSS: there are multiple GFE_IDs for"
+trackRecord_cuss_multi_fgeid <- trackRecord[grepl(comment,trackRecord$comment),]
+rownames(trackRecord_cuss_multi_fgeid) <- NULL
+```
+
+This happens for `r length(unique(trackRecord_cuss_multi_fgeid$IndexId))` populations:
+
+```{r, echo=FALSE}
+unique(trackRecord_cuss_multi_fgeid$comment)
+```
+
+```{r, echo=FALSE}
+#' Case with CN_7479:
+#'    -  series CN_7479 & GF_ID = 133 is not in all_areas_nuseds_all 
+#'    (nor in all_area_nuseds) as shown by its absence in the figure below.
+#'    TODO: remove CN_7479 & GF_ID = 133 from CUSS
+iid <- unique(trackRecord_cuss_multi_fgeid$IndexId)[1]
+gfeids <- trackRecord_cuss_multi_fgeid$GFE_ID[1:2]
+
+#' Note: series CN_7479 & GF_ID = 133 is not in NUSEDS, which is why it does not 
+#' appear in the figure.
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = iid,
+                        all_areas_nuseds = all_areas_nuseds)
+```
+
+The figure above only show the time series present in **NUSEDS**. The other time series is removed from **CUSS**.
+
+```{r, include=FALSE}
+cond <- conservation_unit_system_sites$IndexId == "CN_7479" & 
+  conservation_unit_system_sites$GFE_ID == 133
+
+conservation_unit_system_sites <- conservation_unit_system_sites[!cond,]
+nrow(conservation_unit_system_sites) # 6889
+
+removed <- data.frame(IndexId = "CN_7479",
+                      GFE_ID = 133,
+                      dataset = "conservation_unit_system_sites")
+removed$comment <- "Not in all_area_nuseds and no alternative series"
+removed_all <- rbind(removed_all,removed)
+```
+
+
+```{r, echo=FALSE}
+#' Case with SX_45525:
+#' - there is no "Nadina channel" in streamlocationids (the red series) and seems
+#' that the abundances were summed in the PSE.
+#' TODO: create a new row in streamlocationids for the red series.
+iid <- unique(trackRecord_cuss_multi_fgeid$IndexId)[2]
+gfeids <- trackRecord_cuss_multi_fgeid$GFE_ID[trackRecord_cuss_multi_fgeid$IndexId == iid]
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = iid, 
+                        all_areas_nuseds = all_areas_nuseds_all)
+
+# add the WATERBODY associated with the GFE_ID:
+POP_WB <- lapply(X = c(2444,303), FUN = function(x){
+  cond <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == x
+  pop <- unique(all_areas_nuseds$POPULATION[cond])
+  wb <-  unique(all_areas_nuseds$WATERBODY[cond])
+  out <- data.frame(POPULATION = pop,
+                    WATERBODY = wb)
+  return(out)
+})
+POP_WB <- do.call(rbind,POP_WB)
+legend("top",c("WATERBODY:",POP_WB$WATERBODY),bty = 'n')
+#legend("topright",c("POPULATION:",GFE_IDs),bty = 'n')
+
+cond <- conservation_unit_system_sites$IndexId == iid
+CU_NAME <- conservation_unit_system_sites$CU_NAME[cond]
+```
+
+```{r, include=FALSE}
+# internal checks
+cond <- grepl("[N|n]adina",streamlocationids$sys_nm) & grepl("[S|s]ockeye",streamlocationids$species_name)
+streamlocationids[cond,]
+
+# they have the same CU_NAME (as expected because it is the same IndexId)
+sapply(X = c(2444,303),FUN = function(x){
+  cond <- conservation_unit_system_sites$IndexId == iid &
+    conservation_unit_system_sites$GFE_ID == x
+  out <- conservation_unit_system_sites$CU_NAME[cond]
+  return(out)
+})
+
+# check coordinates --> there are different
+sapply(X = c(2444,303),FUN = function(x){
+  cond <- conservation_unit_system_sites$IndexId == iid &
+    conservation_unit_system_sites$GFE_ID == x
+  out <- conservation_unit_system_sites[cond,c("Y_LAT","X_LONGT")]
+  return(out)
+})
+
+# check pop size for the blue (to see if correspond to values in the PSE)
+cond <- all_areas_nuseds$IndexId == "SX_45525" & all_areas_nuseds$GFE_ID == 303
+all_areas_nuseds[cond,c("Year","MAX_ESTIMATE")][order(all_areas_nuseds[cond,c("Year")]),]
+```
+
+These two time series of this CU (`CU_NAME` = `r CU_NAME`) should have a different `IndexId` (i.e. `POP_ID`). We keep them as is and do not make any change to **NUSEDS** and **CUSS**.
+
+
+```{r, include=FALSE}
+#' TODO: check if the time series below appears on the PSE now --> IT IS
+cond <- conservation_unit_system_sites$GFE_ID == 2444
+SYSTEM_SITE <- conservation_unit_system_sites$SYSTEM_SITE[cond]
+toAdd <- data.frame(IndexId = "SX_45525",
+                    GFE_ID = 2444,
+                    SYSTEM_SITE = SYSTEM_SITE.
+                    dataset = "streamlocationids",
+                    CU_NAME = "NADINA/FRANCOIS-EARLY SUMMER TIMING",
+                    comment = "In both CUSS and NUSEDS but not in the PSE; but series SX_45525 - 303 is.")
+
+added_all <- toAdd
+```
+
+## Fix populations in NUSEDS that are not in CUSS
+
+The goal here is to look for each `IndexId` & `GFE_ID` series in **NUSEDS** that are not in **CUSS**:
+
+1) Remove series with < 4 data points (too much work for not enough data points)
+
+2) Look if there are altenative series in **NUSEDS** that are also present in **CUSS**
+
+- if not, add the `IndexId` & `GFE_ID` reference in **CUSS**
+
+- if yes, see of the series can be merged or not; if not, add the `IndexId` & `GFE_ID` reference in **CUSS**
+
+
+```{r, include=FALSE}
+series_nuseds <- paste(all_areas_nuseds$IndexId,
+                       all_areas_nuseds$GFE_ID,sep = "&")
+series_nuseds <- unique(series_nuseds)
+length(series_nuseds) # 7060
+
+series_cuss <- paste(conservation_unit_system_sites$IndexId,
+                     conservation_unit_system_sites$GFE_ID,sep = "&")
+series_cuss <- unique(series_cuss)
+length(series_cuss) # 6889
+
+#' Now all the series in CUSS are in all_areas_nuseds.
+series_cuss[! series_cuss %in% series_nuseds]
+
+# Number of series in NUSEDS not in CUSS:
+series_Nuseds_noCuss <- series_nuseds[! series_nuseds %in% series_cuss]
+series_Nuseds_noCuss <- series_Nuseds_noCuss[order(series_Nuseds_noCuss)]
+n <- length(series_Nuseds_noCuss) # 171
+```
+
+There are `r n` `IndexId` & `GFE_ID` references in **NUSEDS** that are not present in **CUSS**.
+
+```{r, include=FALSE}
+iids <- sapply(X = series_Nuseds_noCuss,FUN = function(s){
+  return(strsplit(s,"&")[[1]][1])
+})
+
+gfeids <- sapply(X = series_Nuseds_noCuss,FUN = function(s){
+  return(strsplit(s,"&")[[1]][2])
+})
+
+trackRecord_nuseds <- data.frame(IndexId = iids,
+                                 GFE_ID = gfeids)
+trackRecord_nuseds$nb_dataPt <- NA
+trackRecord_nuseds$alternative_IndexId <- NA
+trackRecord_nuseds$alternative_GFE_ID <- NA
+trackRecord_nuseds$alternative_IndexId_track <- NA # to retain the alternative IndexId not retained because series is not in CUSS
+trackRecord_nuseds$alternative_GFE_ID_track <- NA # to retain the alternative GFE_ID not retained because series is not in CUSS
+# trackRecord_nuseds$only_0s <- NA
+rownames(trackRecord_nuseds) <- NULL
+
+for(i in 1:nrow(trackRecord_nuseds)){
+  # i <- 35
+  #' 2. is there a GFE_ID + species in cuss
+  iid <- trackRecord_nuseds$IndexId[i]
+  speciesAcro <- strsplit(iid,split = "_")[[1]][1]
+  gfeid <- trackRecord_nuseds$GFE_ID[i]
+  
+  # plot_IndexId_GFE_ID_fun(IndexIds = iid,
+  #                         all_areas_nuseds = all_areas_nuseds)
+  # legend("topright", paste("Series not in CUSS"), bty = 'n')
+  
+  # Find the number of data points
+  cond <- all_areas_nuseds$IndexId == iid &
+    all_areas_nuseds$GFE_ID == gfeid
+  nuseds_cut <- all_areas_nuseds[cond,]
+  max_esti <- nuseds_cut$MAX_ESTIMATE
+  trackRecord_nuseds$nb_dataPt[i] <- sum(!is.na(nuseds_cut$MAX_ESTIMATE))
+  # max_esti <- max_esti[!is.na(max_esti)]
+  # if(all(max_esti == 0)){
+  #   trackRecord_nuseds$only_0s[i] <- T
+  # }
+  
+  #' 1) Look in NUSEDS for alternative series that are in CUSS with the same IndexId
+  #' but different GFE_ID.
+  cond <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID != gfeid
+  nuseds_here <- all_areas_nuseds[cond,]
+  
+  alternative_GFE_ID <- c()
+  alternative_GFE_ID_track <- c()
+  
+  # there is no alternative series in NUSEDS
+  if(nrow(nuseds_here) == 0){
+    alternative_GFE_ID <- "none"
+    
+  }else{
+    
+    # look if the these alternative series are in CUSS:
+    gfeids <- unique(nuseds_here$GFE_ID)
+    for(gfeid_i in gfeids){
+      # gfeid_i <- gfeids[2]
+      cond <- conservation_unit_system_sites$IndexId == iid &
+        conservation_unit_system_sites$GFE_ID == gfeid_i
+      
+      # if the alternative series is in CUSS
+      if(any(cond)){
+        alternative_GFE_ID <- c(alternative_GFE_ID,
+                                conservation_unit_system_sites$GFE_ID[cond])
+        
+      }else{ # in that case the alternative series has to be in trackRecord_nuseds
+        cond <- trackRecord_nuseds$IndexId == iid &
+          trackRecord_nuseds$GFE_ID == gfeid_i
+        
+        alternative_GFE_ID_track <- c(alternative_GFE_ID_track,
+                                      trackRecord_nuseds$GFE_ID[cond])
+      }
+    }
+    if(length(alternative_GFE_ID) == 0){
+      alternative_GFE_ID <- "none"
+    }
+  }
+  
+  #' 2) Look in NUSEDS for alternative series that are in CUSS with the same GFE_ID 
+  #' and species but different IndexId
+  cond <- all_areas_nuseds$species_acronym_ncc == speciesAcro & 
+    all_areas_nuseds$GFE_ID == gfeid &
+    all_areas_nuseds$IndexId != iid
+  nuseds_here <- all_areas_nuseds[cond,]
+  
+  alternative_IndexId <- c()
+  alternative_IndexId_track <- c()
+  
+  # there is no alternative series in NUSEDS
+  if(nrow(nuseds_here) == 0){
+    alternative_IndexId <- "none"
+    
+  }else{
+    # look if the these alternative series are in CUSS:
+    iids <- unique(nuseds_here$IndexId)
+    for(iid_i in iids){
+      # iid_i <- iids[1]
+      cond <- conservation_unit_system_sites$IndexId == iid_i &
+        conservation_unit_system_sites$GFE_ID == gfeid
+      
+      # if the alternative series is in CUSS
+      if(any(cond)){
+        alternative_IndexId <- c(alternative_IndexId,
+                                 conservation_unit_system_sites$IndexId[cond])
+        
+      }else{ # in that case the alternative series has to be in trackRecord_nuseds
+        cond <- trackRecord_nuseds$IndexId == iid_i &
+          trackRecord_nuseds$GFE_ID == gfeid
+        
+        alternative_IndexId_track <- c(alternative_IndexId_track,
+                                       trackRecord_nuseds$IndexId[cond])
+      }
+    }
+    if(length(alternative_IndexId) == 0){
+      alternative_IndexId <- "none"
+    }
+  }
+  trackRecord_nuseds$alternative_GFE_ID[i] <- paste(alternative_GFE_ID,collapse = " ; ")
+  trackRecord_nuseds$alternative_GFE_ID_track[i] <- paste(alternative_GFE_ID_track,collapse = " ; ")
+  trackRecord_nuseds$alternative_IndexId[i] <- paste(alternative_IndexId,collapse = " ; ")
+  trackRecord_nuseds$alternative_IndexId_track[i] <- paste(alternative_IndexId_track,collapse = " ; ")
+  # trackRecord_nuseds[i,]
+}
+#View(trackRecord_nuseds)
+head(trackRecord_nuseds)
+nrow(trackRecord_nuseds) # 171
+
+```
+
+
+#### Remove series number of data points < 4
+
+```{r, include=FALSE}
+cond_3 <- trackRecord_nuseds$nb_dataPt < 4
+trackRecord_nuseds_3 <- trackRecord_nuseds[cond_3,]
+nrow(trackRecord_nuseds_3) # 94
+```
+
+There are `r nrow(trackRecord_nuseds_3)` populations removed becaues they have < 4 data points; for instance:
+
+```{r, echo=FALSE}
+i <- 94
+par(mar = c(4.5,4.5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = trackRecord_nuseds_3$IndexId[i],
+                        GFE_IDs = trackRecord_nuseds_3$GFE_ID[i],
+                        all_areas_nuseds = all_areas_nuseds_all)
+```
+
+```{r, include = FALSE}
+removed <- trackRecord_nuseds_3[,c("IndexId","GFE_ID")]
+removed$dataset <- "all_areas_nuseds"
+removed$comment <- paste("Only",trackRecord_nuseds_3$nb_dataPt,
+                         "data point(s) and not in conservation_unit_system_sites")
+
+all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
+                                           toRemove = removed, 
+                                           fields = c("IndexId","GFE_ID"))
+nrow(all_areas_nuseds) # 308250
+
+removed_all <- rbind(removed_all,removed)
+nrow(removed_all) # 4593
+```
+
+####  Alternative IndexId AND no alternative GFE_ID
+
+The section concerns `IndexId` & `GFE_ID` time series in **NUSEDS** that are not in **CUSS** for which there is alternative series in **CUSS** with the same `IndexId` but a different `GFE_ID`.  The goal here is to compare the focal vs. the alternative time series and take the following actions:
+
+- if the time series are 100% complementary: merge them (i.e., edit `IndexId` in **NUSEDS**)
+
+- if the time series are 100% duplicated: remove the focal series in **NUSEDS**
+
+- if the series are partially conflictual or if there are multiple potential alternative series: trubble shoot manually
+
+
+```{r, include=FALSE}
+cond <- trackRecord_nuseds$alternative_IndexId != "none" &
+  trackRecord_nuseds$alternative_GFE_ID == "none" & 
+  !cond_3
+trackRecord_nuseds_iid <- trackRecord_nuseds[cond,]
+```
+There are `r nrow(trackRecord_nuseds_iid)` time series concerned: 
+
+```{r, echo=FALSE}
+show <- trackRecord_nuseds_iid[,c("IndexId","GFE_ID","nb_dataPt","alternative_IndexId")]
+row.names(show) <- NULL
+show
+```
+
+There figures below show for each of these cases the decision that was made. The figure also show the `CU_MAME` of focal and alternative `IndexId`. The `i` at the bottom left of each plot is used after to reference the figures when fixing time series manually.
+
+
+```{r, echo=FALSE}
+removed <- removed_all[F,]
+
+set_aside <- list()
+count_set_aside <- 1
+for(i in 1:nrow(trackRecord_nuseds_iid)){
+  # i <- 2
+  iid_focal <- trackRecord_nuseds_iid$IndexId[i]
+  iid_alter <- strsplit(trackRecord_nuseds_iid$alternative_IndexId[i]," ; ")[[1]]
+  gfeid <- trackRecord_nuseds_iid$GFE_ID[i]
+  
+  # compare the series
+  cond <- all_areas_nuseds$IndexId == iid_focal & 
+    all_areas_nuseds$GFE_ID == gfeid
+  series_focal <- all_areas_nuseds$MAX_ESTIMATE[cond]
+  names(series_focal) <- all_areas_nuseds$Year[cond]
+  
+  # 
+  POPULATION_focal <- unique(all_areas_nuseds$POPULATION[cond])
+  POPULATION_alter <- c()
+  
+  comparison_series <- data.frame(IndexId = iid_alter, 
+                                  GFE_ID = gfeid)
+  comparison_series$complementary <- NA
+  comparison_series$duplicate <- NA
+  comparison_series$conflict <- NA
+  comparison_series$decision <- NA
+  
+  for(iid in iid_alter){
+    # iid <- iid_alter[1]
+    cond <- all_areas_nuseds$IndexId == iid & 
+      all_areas_nuseds$GFE_ID == gfeid[1]
+    series_comp <- all_areas_nuseds$MAX_ESTIMATE[cond]
+    names(series_comp) <- all_areas_nuseds$Year[cond]
+    comparison <- compare_series_fun(series_focal,series_comp,percentage = T)
+    
+    comparison_series$nb_dataPt[which(iid == iid_alter)] <- comparison$nb_dataPt
+    comparison_series$complementary[which(iid == iid_alter)] <- comparison$complementary
+    comparison_series$duplicate[which(iid == iid_alter)] <- comparison$duplicate
+    comparison_series$conflict[which(iid == iid_alter)] <- comparison$conflict
+    
+    POPULATION_here <- unique(all_areas_nuseds$POPULATION[cond])
+    POPULATION_alter <- c(POPULATION_alter,POPULATION_here)
+  }
+  
+  removed_here <- NULL
+  #' 1) If the series is 100% duplicated with another: remove
+  if(any(comparison_series$duplicate == 100)){
+    
+    cond <- comparison_series$duplicate == 100
+    iid_replacement <- comparison_series$IndexId[cond]
+    gfeid_replacement <- comparison_series$GFE_ID[cond]
+    
+    removed_here <- removed_all[1,]
+    removed_here$IndexId <- iid_focal
+    removed_here$GFE_ID <- gfeid
+    removed_here$dataset <- "all_areas_nuseds"
+    comment <- paste("Duplicate of series IndexId =",iid_replacement,"& GFE_ID =",
+                     gfeid_replacement)
+    removed_here$comment <- comment
+    
+    main <- "Removed because duplicated"
+    
+    #' Do the change in NUSEDS: only change the IndexId are related fields (not 
+    #' the GFE_ID ones because here GFE_IDs are the same).
+    all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
+                                               toRemove = removed_here, 
+                                               fields = c("IndexId","GFE_ID"))
+    
+    #' 2) if a series is 100 % compatible with one and only one alternative: merge.
+    #' If with more than one: set aside.
+  }else if(any(comparison_series$complementary == 100)){
+    
+    if(sum(comparison_series$complementary == 100) == 1){
+      cond <- comparison_series$complementary == 100
+      iid_merge <- comparison_series$IndexId[cond]
+      gfeid_merge <- comparison_series$GFE_ID[cond]
+      
+      removed_here <- removed_all[1,]
+      removed_here$IndexId <- iid_focal
+      removed_here$GFE_ID <- gfeid
+      removed_here$dataset <- "all_areas_nuseds"
+      comment <- paste("Merged to series IndexId =",iid_merge,"& GFE_ID =",
+                       gfeid_merge,"because 100% compatible")
+      removed_here$comment <- comment
+      
+      main <- paste("Merged to",iid_merge,"-",gfeid_merge)
+      
+    }else{
+      set_aside[[count_set_aside]] <- comparison_series
+      names(set_aside)[count_set_aside] <- paste("IndexId =",iid_focal,"& GFE_ID =",
+                                                 gfeid)
+      count_set_aside <- count_set_aside + 1
+      main <-"Set aside all alternative series are 100% compatible"
+    }
+  }else{
+    main <- "Set aside for now"
+    set_aside[[count_set_aside]] <- comparison_series
+    names(set_aside)[count_set_aside] <- paste("IndexId =",iid_focal,"& GFE_ID =",
+                                               gfeid)
+    count_set_aside <- count_set_aside + 1
+    
+  }
+  
+  #
+  plot_IndexId_GFE_ID_fun(IndexIds = c(iid_focal,iid_alter),
+                          GFE_IDs = rep(trackRecord_nuseds_iid$GFE_ID[i],
+                                        length(iid_alter) + 1),
+                          all_areas_nuseds = all_areas_nuseds_all, 
+                          main = main)
+  # legend("top",c("focal",rep("alterntive",length(POPULATION_alter))),col = NA,lwd = 1,bty = "n")
+  # legend("topright",c(POPULATION_focal,POPULATION_alter),pch = NA, bty = "n")
+  n1 <- c("focal",rep("alterntive",length(POPULATION_alter)))
+  n2 <- c(POPULATION_focal,POPULATION_alter)
+  legend("topright",paste(n1,n2, sep = " - "),pch = NA, bty = "n")
+  legend("bottomleft",paste("i =",i),bty = "n")
+  
+  print(comparison_series)
+  print("***")
+  
+  if(!is.null(removed_here)){
+    removed <- rbind(removed,removed_here)
+  }
+}
+```
+
+We now assess the cases that are set aside.
+
+```{r, include=FALSE}
+i <- 2
+#' Case with CN_3334 (i = 2): UNKNOWN TIMING
+#' Temporal fields show contradictions.
+#' TODO: remove because they cannot be attributed to either alternative series
+iid <- c("CN_3334")
+gfeid <- trackRecord_nuseds_iid$GFE_ID[trackRecord_nuseds_iid$IndexId == iid]
+cond <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == gfeid
+unique(all_areas_nuseds[cond,c("START_DTT","END_DTT")]) # all year
+unique(all_areas_nuseds[cond,c("STREAM_ARRIVAL_DT_FROM","STREAM_ARRIVAL_DT_TO")]) # spring
+unique(all_areas_nuseds[cond,c("PEAK_SPAWN_DT_FROM","PEAK_SPAWN_DT_TO")]) # summer/fall
+unique(all_areas_nuseds[cond,c("END_SPAWN_DT_FROM","END_SPAWN_DT_TO")])   # fall
+
+toRemove <- data.frame(IndexId = iid, 
+                       GFE_ID = gfeid, 
+                       dataset = "all_areas_nuseds")
+toRemove$comment <- paste("Unkown timing, not in conservation_unit_system_sites; potential alternative series:",
+                          trackRecord_nuseds_iid$alternative_IndexId[1])
+removed_all <- rbind(removed_all,toRemove)
+
+cond <- all_areas_nuseds$IndexId == iid & 
+  all_areas_nuseds$GFE_ID == gfeid
+all_areas_nuseds <- all_areas_nuseds[!cond,]
+nrow(all_areas_nuseds) # 308232
+```
+
+In the case `i =` `r i` above with series `r paste(iid,gfeid,sep = " - ")` was initially going to be merged to the alternative series with which is was 100% compatible. But is was decided to remove it from **NUSEDS** it has unknown timing.
+
+```{r, include=FALSE}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

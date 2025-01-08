@@ -181,7 +181,7 @@ dupli # none
 #' * Import the definition of the different fields of these two datasets *
 fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
 fields_def$all_areas_nuseds$AREA
-fields_def$cu_system_sites$`Waterbody Name`
+fields_def$cu_system_sites$IS_INDICATOR
 
 
 #' * Import  list for the fields in NUSEDS and CUSS that are associated to unique IndexId and GFE_ID *
@@ -391,7 +391,7 @@ nrow(all_areas_nuseds_all) # 412492
 conservation_unit_system_sites_all <- conservation_unit_system_sites
 nrow(conservation_unit_system_sites_all) # 7145
 
-#'* Get the GFE_IDs in NUSEDS that are not in CUSS * IS THIS NEEDED ? 
+#'* Get the GFE_IDs in NUSEDS that are not in CUSS * IS THIS NEEDED ? NOT IN Rmarkdown
 #' There are several series (i.e. data points of a unique POP_ID/IndexId - GFE_ID 
 #' associations) present in NUSEDS that are not in CUSS 
 #' 
@@ -707,8 +707,17 @@ cores_nb <- 10
 all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
                                                              zeros_too = T, 
                                                              cores_nb = cores_nb)
+
+# Check if we only consider NAs: --> same as considering both NAs and 0s
+# --> there is no series with only NAs AND 0s
+# all_areas_nuseds_0 <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
+#                                                              zeros_too = F, 
+#                                                              cores_nb = cores_nb)
+# nrow(all_areas_nuseds_0) # 309647
+
 nrow(all_areas_nuseds) # 309647
 nrow(all_areas_nuseds)/nrow(all_areas_nuseds_all) # .75
+nrow(all_areas_nuseds) - nrow(all_areas_nuseds_all) # 102845
 
 # Record the series that were removed and why:
 IndexId_GFE_ID_all <- unique(all_areas_nuseds_all[,c("IndexId","GFE_ID")])
@@ -779,10 +788,10 @@ plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 
 # graphics.off()
 
-colNuSEDS <- c("SPECIES","IndexId","GFE_ID","WATERBODY","Year","MAX_ESTIMATE")
+
 
 #' Merge NUSEDS and CUSS by IndexId and GFE_ID and indicate the if there are 
-#' present in NUSEDS and CUSS and find potential altermative series.
+#' present in NUSEDS and CUSS and find potential alternative series.
 detectCores()
 detectCores(logical = FALSE)
 cores_nb <- 10
@@ -916,7 +925,6 @@ nrow(conservation_unit_system_sites) # 7144
 
 condition <- all_areas_nuseds$IndexId == removed$IndexId[2] &
   all_areas_nuseds$GFE_ID == removed$GFE_ID[2]
-all_areas_nuseds[condition,colNuSEDS]
 all_areas_nuseds <- all_areas_nuseds[!condition,]
 nrow(all_areas_nuseds) # 309637
 
@@ -1063,7 +1071,7 @@ cond <- conservation_unit_system_sites_all$IndexId == "SX_2167"
 conservation_unit_system_sites_all$CU_NAME[cond] # "UPPER FRASER"
 
 #
-#'** 2.3) Manual fix: there are multiple GFE_IDs for a sum IndexId/POP_ID in CUSS **
+#'** 2.3) Manual fix: there are multiple GFE_IDs for a same IndexId/POP_ID in CUSS **
 comment <- "In CUSS: there are multiple GFE_IDs for"
 trackRecord_cuss_multi_fgeid <- trackRecord[grepl(comment,trackRecord$comment),]
 trackRecord_cuss_multi_fgeid
@@ -1152,7 +1160,7 @@ added_all <- toAdd
 #
 #'* 3) Check all the IndexId - GFE_ID series in NUSEDS but not in CUSS *
 #' Look for each IndexId & GFE_ID series in NUSEDS that are not in CUSS
-#' 1) remove series with <= 3 data points (n = 94)
+#' 1) remove series with < 4 data points (n = 94)
 #' 2) look if there are alternative series in NUSEDS that are also in CUSS
 #'  - if yes then check if they can be merged
 #'    - if they cannot -->  add the series to CUSS
@@ -1309,9 +1317,9 @@ nrow(trackRecord_nuseds) # 171
 hist(trackRecord_nuseds$nb_dataPt)
 nrow(trackRecord_nuseds[trackRecord_nuseds$nb_dataPt > 3,]) # 77
 
-#' ** 3.1) Remove series number of data points <= 3 **
+#' ** 3.1) Remove series number of data points < 4 **
 #' It is not worth making a guess to save three data points.
-cond_3 <- trackRecord_nuseds$nb_dataPt <= 3
+cond_3 <- trackRecord_nuseds$nb_dataPt < 4
 trackRecord_nuseds_3 <- trackRecord_nuseds[cond_3,]
 nrow(trackRecord_nuseds_3) # 94
 
@@ -2931,12 +2939,12 @@ write.csv(conservation_unit_system_sites,paste0(wd_output,"/archive/1_conservati
 # Merge NUSEDS AND CUSS and do some edits -----
 #
 
-all_areas_nuseds <- import_mostRecent_file_fun(wd = wd_output,
+all_areas_nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                                pattern = "all_areas_nuseds_cleaned")
 # all_areas_nuseds <- read.csv(paste0(wd_output,"/all_areas_nuseds_cleaned.csv"),
 #                              header = T)
 
-conservation_unit_system_sites <- import_mostRecent_file_fun(wd = wd_output,
+conservation_unit_system_sites <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                                              pattern = "conservation_unit_system_sites_cleaned")
 # conservation_unit_system_sites <- read.csv(paste0(wd_output,"/conservation_unit_system_sites_cleaned.csv"),
 #                                            header = T)
@@ -2950,13 +2958,14 @@ nrow(unique(conservation_unit_system_sites[,c("SPECIES_QUALIFIED","POP_ID","SYST
 col_common <- c("IndexId","POP_ID","GFE_ID")
 
 col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE",
-                #"ENUMERATION_METHODS",            # 
+                "ENUMERATION_METHODS",            # 
                 "ESTIMATE_CLASSIFICATION",
                 "ESTIMATE_METHOD",
                 "GAZETTED_NAME",
                 "LOCAL_NAME_1",
-                "LOCAL_NAME_2"
-                )
+                "LOCAL_NAME_2",
+                "ADULT_PRESENCE",
+                "JACK_PRESENCE")
 
 col_cuss <- c("SPECIES_QUALIFIED","CU_NAME","CU_TYPE","FAZ_ACRO","JAZ_ACRO","MAZ_ACRO",
               "FULL_CU_IN","SYSTEM_SITE","Y_LAT","X_LONGT","IS_INDICATOR",
@@ -2999,6 +3008,9 @@ nuseds_final$MAX_ESTIMATE[cond] <- NA
 #'    - points that are conflictual or duplicated are added
 #'    - points that are complementary are merged
 #' 
+
+# removed_all <- read.csv(paste0(wd_output,"/archive/series_removed_20240419.csv"),
+#                         header = T)
 
 removed_all_new <- removed_all[NULL,]
 

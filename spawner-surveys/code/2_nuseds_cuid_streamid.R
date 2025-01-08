@@ -66,19 +66,20 @@ library(dplyr) # for arrange()
 source("code/functions.R")
 
 # Import files ------
+#
 
 #'* Import the most recent NuSEDS_escapement_data_collated file *
 nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
                                      pattern = "NuSEDS_escapement_data_collated")
 
 head(nuseds)
-nrow(nuseds) # 306999
+nrow(nuseds) # 306823 306999
 
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6868
 nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6868
 
 sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 0
-sum(is.na(nuseds$MAX_ESTIMATE))
+sum(is.na(nuseds$MAX_ESTIMATE)) # 155984
 
 
 #'* Files from PSF database *
@@ -142,6 +143,7 @@ regionsid_df <- unique(merge(x = unique(streamspawnersurveys_output[,c("region",
 #                      Transboundary       10
 #                              Yukon        8
 rownames(regionsid_df) <- NULL
+regionsid_df <- regionsid_df[!is.na(regionsid_df$regionid),]
 
 #
 # Edit the NUSEDS dataset for the PSE ----
@@ -188,8 +190,6 @@ for(ecn in estim_class_nuseds){
   
   if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
     out <- "High"
-  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
-    out <- "Medium-High"
   }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
     out <- "Medium-High"
   }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
@@ -364,6 +364,38 @@ for(r in 1:nrow(CU_name_species)){
     nuseds$regionid[cond] <- regionid_here
   }
 }
+
+# UPDATE: 2024-11-21: the CU Fraser Sockeye Adams & Momich Lakes-Early Summer  
+# 751 was split into the CUs with cuid 760 and 761. Consequently cuid 751 is not
+# in the decoder anymore. For the sake of updating the data for the data demise
+# paper, I add it here:
+# This section should be removed in the next NuSEDS update.
+# CU Fraser Sockeye Adams & Momich Lakes-Early Summer  751 that was split into CUs 760 and 761
+cond_751 <- grepl(simplify_string_fun("Adams and Momich Lakes_Early Summer"),
+              simplify_string_fun(nuseds$CU_NAME))
+nuseds[cond_751,]$cuid <- 751
+nuseds[cond_751,]$cu_name_pse <- "Adams & Momich Lakes-Early Summer"
+nuseds[cond_751,]$cu_name_dfo <- "Adams and Momich Lakes_Early Summer <<Extinct>>"
+nuseds[cond_751,]$regionid <- 4
+nuseds[cond_751,]$region <- "Fraser"
+
+cond_751 <- nuseds$cuid == 751 & !is.na(nuseds$cuid)
+nuseds[cond_751 , c("cuid","WATERBODY","Y_LAT","X_LONGT")] |> unique()
+#  cuid            WATERBODY latitude_final longitude_final
+#   751         BURTON CREEK       51.48255       -119.4648 --> 760  Adams-Early Summer
+#   751 MOMICH RIVER - UPPER       51.31958       -119.3236 --> 761 Momich-Early Summer
+#   751  ADAMS RIVER - UPPER       51.41090       -119.4561 --> 760  Adams-Early Summer
+#   751         MOMICH RIVER       51.33461       -119.4232 --> 761 Momich-Early Summer
+#   751        CAYENNE CREEK       51.32071       -119.3197 --> 761 Momich-Early Summer
+
+cond_760 <- cond_751 & nuseds$WATERBODY %in% c("BURTON CREEK","ADAMS RIVER - UPPER")
+cond_761 <- cond_751 & nuseds$WATERBODY %in% c("MOMICH RIVER - UPPER","MOMICH RIVER",
+                                               "CAYENNE CREEK")
+nuseds$cuid[cond_760] <- 760
+nuseds$cu_name_pse[cond_760] <- "Adams-Early Summer"
+
+nuseds$cuid[cond_761] <- 761
+nuseds$cu_name_pse[cond_761] <- "Momich-Early Summer"
 
 # Rows for which we could not find cuid: --> all are binned --> remove them
 cond_cuid_na <- is.na(nuseds$cuid)
@@ -941,12 +973,9 @@ for(r in 1:nrow(cuid_GFE_ID)){
 sum(is.na(nuseds$cuid))     # 1998
 sum(is.na(nuseds$streamid)) # 1998
 
-
 cond <- grepl("OKANAGAN RIVER",nuseds$sys_nm)
 sum(cond)
 unique(nuseds[cond,c("streamid","GFE_ID","cuid")])
-
-
 
 #'* coordinates & sys_nm*
 
@@ -1007,7 +1036,8 @@ nrow(coord_duplicated) # 0
 #
 # Add the survey_score field -------
 #' cf. Table 4.5 in section 4.1.3 of the Tech Report
-nuseds <- import_mostRecent_file_fun(wd = wd_output,pattern = "nuseds_cuid_streamid_")
+# nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+#                                      pattern = "nuseds_cuid_streamid_")
 
 estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
 estim_class_nuseds

@@ -28,7 +28,11 @@ SWP_cols <- c(
 	soil1 = "#8B8477",
 	soil2 = "#615753")
 
-status_cols <- c(green = "#83B687", amber = "#DED38A", red = "#C06363", extinct = "", datadeficient = "#A7A9AC")
+status_cols <- c(green = "#83B687", 
+                 amber = "#DED38A",
+                 red = "#C06363",
+                 extinct = "#924848",
+                 datadeficient = "#A7A9AC")
 
 species_cols_light <- c(
   	Chinook = "#87AC9F",

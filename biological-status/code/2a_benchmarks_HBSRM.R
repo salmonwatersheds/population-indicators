@@ -103,7 +103,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Skeena
+region <- regions_df$Fraser
 region <- regions_df$Yukon
 region <- regions_df$Haida_Gwaii
 
@@ -125,15 +125,13 @@ region <- as.character(regions_df[1,])
 # Option to set species to NULL; in that case all script looks inside the repository
 # and import the files present for the species.
 # If we specify the species:
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
-             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
+cond_sp <- species_acronym_df$species_qualified_simple == "CK" | 
+  species_acronym_df$species_qualified_simple == "SE"
+cond_sp <- species_acronym_df$species_qualified_simple == "SE"
+species <- species_acronym_df$species_name_simple[cond_sp] |> unique()
 
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
-
-# If we do not specify the species: all the species that have a _SRdata files are 
-# returned: 
-# note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- T
+# For all species
+species <- species_acronym_df$species_name_simple |> unique()
 
 #' Last year to calculate current spawner abundance.
 #' If NA then the current spawner abundance is calculated considering the range 
@@ -149,61 +147,46 @@ options(warn = 0)  # warnings are stored until the top level function returns (d
 # 
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
-  
-  region_i <- gsub("_"," ",region[i_rg])
-  if(region_i == "Central coast"){    # might not be needed anymore
-    region_i <- "Central Coast"
-  }
+  # i_rg <- 3
   
   if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
     regionName <- "VIMI"
   }else{
-    regionName <- regionName <- gsub(" ","_",region[i_rg])
+    regionName <- gsub(" ","_",region[i_rg])
   }
   
   # Get all the species for which _posteriors_priorShift datasets are available
-  if(species_all){
-    files_list <- list.files(wd_data_input)
-    files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
-    files_s <- files_s[grepl(pattern = regionName,files_s)]
-    
-    # Remove the "cyclic" pattern for now because cyclic CUs have not been integrated to this main workflow yet 
-    cond <- grepl("cyclic",files_s)
-    files_s <- files_s[!cond]
-    
-    species_acro <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
-    species_acro <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species_acro)
-    
-    species <- sapply(X = species_acro,FUN = function(sp){
-      species_acronym_df$species_name[species_acronym_df$species_acro == sp][1]
-    })
-    
-  }else{
-    species_acro <- sapply(X = species,FUN = function(sp){
-      species_acronym_df$species_acro[species_acronym_df$species_name == sp][1]
-    }) |> unique()
-  }
+  files_list <- list.files(wd_data_input)
+  files_s <- files_list[grepl(pattern = "_posteriors_priorShift",files_list)]
+  files_s <- files_s[grepl(pattern = regionName,files_s)]
   
-  if(length(species) == 0){
+  # Remove the "cyclic" pattern for now because cyclic CUs have not been integrated to this main workflow yet 
+  # cond <- grepl("cyclic",files_s)
+  # files_s <- files_s[!cond]
+  
+  species_acro <- unique(sub("_HBSRM_posteriors_priorShift.*", "", files_s))
+  species_acro <- gsub(pattern = paste0(regionName,"_"), replacement = "", x = species_acro)
+  
+  species_rg <- sapply(X = species_acro,FUN = function(sp){
+    cond <- species_acronym_df$species_qualified_simple == sp
+    if(sp == "SE_cyclic"){
+      cond <- species_acronym_df$species_qualified_simple == "SE"
+    }
+    return(unique(species_acronym_df$species_name_simple[cond]))
+  })
+  
+  # Print a message for the species for which there is no data
+  cond <- species_rg %in% species
+  species_rg <- species_rg[cond]
+  species_acro <- names(species_rg)
+  if(length(species_rg) == 0){
     
-    print(paste0("*** There is no data in region ",region[i_rg]," ***"))
+    print(paste0("There is no posterior files in ",region[i_rg]," for ",paste(species[cond],collapse = ", ")))
     
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 1
-      
-      cond <- species_acronym_df$species_acro == species_acro[i_sp]
-      speciesHere <- species_acronym_df$species_name[cond]
-      
-      cond <- cuspawnerabundance$region == region_i &
-        cuspawnerabundance$species_name %in% speciesHere
-      cuspawnerabundance_rg_sp <- cuspawnerabundance[cond,]
-      
-      cond <- conservationunits_decoder$region == region_i &
-        conservationunits_decoder$species_name%in% speciesHere
-      conservationunits_decoder_rg_sp <- conservationunits_decoder[cond,]
+      # i_sp <- 3
       
       # Import the HBSRM outputs, i.e., the posterior distributions of:
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
@@ -218,56 +201,40 @@ for(i_rg in 1:length(region)){
       SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species_acro[i_sp],
                             "_SR_matrices.rds"))
       
-      # Find the nb of CUs
-      # CUs <- read.csv(paste0(wd_data_input,"/",region[i_rg],"_",species[i_sp],"_CUs_names.csv"),
-      #                 header = T,stringsAsFactors = F)
-      # CUs <- CUs$CU
       CUs <- colnames(SRm$R)
       nCUs <-length(CUs)
       
+      # Find the species_name for these CUs
+      if(species_acro[i_sp] == "SE_cyclic"){
+        cond <- species_acronym_df$species_qualified_simple == "SE"
+      }else{
+        cond <- species_acronym_df$species_qualified_simple == species_acro[i_sp]
+      }
+      speciesHere <- unique(species_acronym_df$species_name[cond])
+      
       # find the corresponding cuid 
-      cuids <- sapply(X = CUs, function(cu){
-        # cu <- CUs[6]
-        cond <- conservationunits_decoder_rg_sp$cu_name_pse == cu
-        conservationunits_decoder_cut <- conservationunits_decoder_rg_sp[cond,]
-        
-        # we could probably simply use pooledcuid
-        if(nrow(conservationunits_decoder_cut) == 1){
-          out <- conservationunits_decoder_cut$cuid
-        }else{
-          out <- unique(conservationunits_decoder_cut$pooledcuid)
+      cuids <- sapply(CUs,function(cu){
+        cond_cu <- conservationunits_decoder$cu_name_pse == cu
+        cond_rg <- conservationunits_decoder$region == region[i_rg]
+        cond_sp <- conservationunits_decoder$species_name %in% speciesHere
+        val <- conservationunits_decoder$cuid[cond_rg & cond_sp & cond_cu]
+        if(length(val) > 1){ # in case of pooled CUs
+          val <- conservationunits_decoder$pooledcuid[cond_rg & cond_sp & cond_cu]
+          val <- unique(val)
         }
-        
-        if(length(out) == 0){
-          print(paste("There is no cuid for:",region[i_rg],"-",speciesHere,"-",cu))
-        }
-        return(out)
+        return(val)
       })
       
+      cond_sa_rg_sp <- cuspawnerabundance$region == region[i_rg] &
+        cuspawnerabundance$species_name %in% speciesHere
+      
+      cond_cud_rg_sp <- conservationunits_decoder$region == region[i_rg] &
+        conservationunits_decoder$species_name%in% speciesHere
+
       # nb of chains
       nchains <- length(post) # 6 chains
       # parameter names
       pnames <- colnames(post[[1]])
-      
-      #-----------------------------------------------------------------------------#
-      # Check convergence of chains
-      #-----------------------------------------------------------------------------#
-      
-      # The Gelman-Rubin metric : R_hat ; if R_hat < 1.1 all is good
-      # r.hat <- gelman.diag(x = post, multivariate = F)
-      # if(sum(r.hat[[1]][, 1] > 1.1, na.rm = T) > 0){
-      #   warning(paste("Some convergence issues for parameters: \n", 
-      #                 paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(r.hat[[1]][, 1] > 1.1)])))
-      #   print(r.hat)
-      # }
-      # if(sum(is.na(r.hat[[1]][, 1])) > 0){  # BSC: I added that for Fraser PK 
-      #   warning(paste("Some convergence issues for parameters: \n", 
-      #                 paste0(region[i_rg]," - ",species[i_sp]," - ",pnames[which(is.na(r.hat[[1]][, 1]))])))
-      #   print(r.hat)
-      # }
-      
-      #' BSC: This is being checked in checks_fixes.R under section "Check the 
-      #' convergence diagnostic files for the HBSRM".
       
       #-----------------------------------------------------------------------------#
       # Calculate benchmarks
@@ -338,30 +305,6 @@ for(i_rg in 1:length(region)){
       # Plot the benchmark posteriors
       #------------------------------------------------------------------------------#
       
-      # library(MCMCglmm) # For poster.mode function
-      
-      # Import the S and R matrices used for fitting the HBSR model:
-      # BSC: the wd here will eventually have to be set to the final repo for the 
-      # exported datasets.
-      # SRm <- readRDS(paste0(wd_data_input,"/",regionName,"_",species[i_sp],"_SR_matrices.rds"))
-      
-      # S and R in SRm potentially contains CUs that have only NAs, which are not
-      # in the vector CUs --> remove them
-      
-      # SRm$R <- SRm$R[,colnames(SRm$R) %in% CUs, drop = F]
-      # SRm$S <- SRm$S[,colnames(SRm$S) %in% CUs, drop = F]
-      
-      # BSC: this is not relevant any more because CUs without MinSRpts and without
-      # prior estimates are filtered out
-      # SRm$R <- SRm$R[,CUs, drop = F]
-      # SRm$S <- SRm$S[,CUs, drop = F]
-      
-      # Compare median/quantiles (medQuan) and HPD/HPDI (HPD)
-      # if(print_fig){
-      #   pathFile <- paste0(wd_figures,"/",region,"_",species[i_sp],"_benchmark_posteriors.pdf")
-      #   pdf(file = pathFile, width = 8.5, height = 11)
-      # }
-      
       # data frame that will contain the biological status expressed as probabilities
       # for each of the three levls (i.e., red, amber and green) both with 
       # upper threshold Smsy and 80% of Smsy
@@ -371,9 +314,6 @@ for(i_rg in 1:length(region)){
       # methods used (median and quantile and HPD)
       benchSummary_region_species_df <- NULL
       
-      # statusCols <- c(g = "#8EB687", a = "#DFD98D", r = "#9A3F3F") 
-      # par(mfrow = c(3,2), mar = c(4, 4, 5, 1), oma = c(3,3,1,0))
-      # layout(matrix(data = 1:(nCUs * 2), nrow = nCUs, byrow = T))
       for(i in 1:nCUs){
         
         # i <- 1
@@ -384,37 +324,28 @@ for(i_rg in 1:length(region)){
         #' the last generation
         #----------------------
         
-        CUname <- gsub(pattern = "_",replacement = " ",x = CUs[i])   # DFO Cu name --> not anymore it is pse naw and gsub might not be needed anymore
+        CUname <- gsub(pattern = "_",replacement = " ",x = CUs[i])   # DFO Cu name --> not anymore it is pse now and gsub might not be needed anymore
         
-        cond <- cuspawnerabundance_rg_sp$cu_name_pse == CUname
-        spawnerAbundance <- cuspawnerabundance_rg_sp$estimated_count[cond]
-        names(spawnerAbundance) <- cuspawnerabundance_rg_sp$year[cond]
+        cond_sa_cu <- cuspawnerabundance$cuid ==  cuids[i]
+        spawnerAbundance <- cuspawnerabundance$estimated_count[cond_sa_cu]
+        names(spawnerAbundance) <- cuspawnerabundance$year[cond_sa_cu]
         
-        condition <- conservationunits_decoder$cuid == cuids[i]
-        conservationunits_decoder_rg_sp_cu <- conservationunits_decoder[condition,]
-        
-        if(nrow(conservationunits_decoder_rg_sp_cu) == 0){
+        cond_cud_cu <- conservationunits_decoder$cuid == cuids[i]
+
+        if(!any(cond_cud_cu)){
           print("This CUS is not found in conservationunits_decoder: BREAK")
           print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
           cat("\n")
           break
-        }else if(nrow(conservationunits_decoder_rg_sp_cu) > 1){
-          if(length(unique(conservationunits_decoder_rg_sp_cu$pooledcuid)) > 1){ # if == 1 there are all the same CUs for PSF
-            #print("There are multiple CUs with that name who don't have the same pooledcuid, the 1st row is used")
-            print("There are multiple CUs with that name who don't have the same pooledcuid, TO CHECK BREAK")
-            print(paste(region[i_rg],species[i_sp],CUs[i_cu]))
-            print(conservationunits_decoder_rg_sp_cu)
-            cat("\n")
-            break
-          }
-          # conservationunits_decoder_rg_sp_cu <- conservationunits_decoder_rg_sp_cu[1,,drop = F]
+        }else if(sum(cond_cud_cu) > 1){
+          print("There are multiple CUs with that name who don't have the same pooledcuid, TO CHECK BREAK")
+          break
         }
         
         # keep track of the different versions of the CU names
-        CUname_pse <- conservationunits_decoder_rg_sp_cu$cu_name_pse
-        CUname_dfo <- conservationunits_decoder_rg_sp_cu$cu_name_dfo
+        cu_name_dfo <- conservationunits_decoder$cu_name_dfo[cond_cud_cu]
         
-        CU_genLength <- conservationunits_decoder_rg_sp_cu$gen_length[1]
+        CU_genLength <- conservationunits_decoder$gen_length[cond_cud_cu]
         CU_genLength_available <- TRUE
         
         if(is.na(CU_genLength)){
@@ -506,13 +437,30 @@ for(i_rg in 1:length(region)){
           }
         }
         
+        species_name <- conservationunits_decoder$species_name[cond_cud_cu]
+        species_qualified <- conservationunits_decoder$species_abbr[cond_cud_cu]
+        
+        # TEMPORARY
+        # simplify species_name as in PSE data meeting December 11 2024
+        # To remove eventually when conservationunits_decoder$species_name 
+        # changed as well.
+        if(grepl("[s|S]ockeye",species_name)){
+          
+          species_name <- "Sockeye"
+          
+        }else if(grepl("Pink",species_name)){
+
+          species_name <- "Pink"
+          
+        }
+        
         # Record the probabilities:
         biologicalStatus_df <- data.frame(region = region[i_rg],
-                                          species = species_acro[i_sp], # species[i_sp],
+                                          species_name = species_name,
+                                          species_qualified = species_qualified,
                                           cuid = cuids[i],
-                                          CU = CUs[i],
-                                          CU_pse = CUname_pse,
-                                          CU_dfo = CUname_dfo,
+                                          cu_name_pse = CUs[i],
+                                          cu_name_dfo = cu_name_dfo,
                                           current_spawner_abundance = spawnerAbundance_lastGen_m,
                                           yr_withData_end = yrFinal,
                                           yr_withData_start = yrInitial,
@@ -551,9 +499,10 @@ for(i_rg in 1:length(region)){
         
         # Report the benchmark values and CI
         benchSummary_df <- data.frame(region = rep(region[i_rg],4),
-                                      species =  rep(species_acro[i_sp],4), # rep(species[i_sp],4),
+                                      species_name = rep(species_name,4),
+                                      species_qualified = rep(species_qualified,4),
                                       cuid = rep(cuids[i],4),
-                                      CU = rep(CUs[i],4),
+                                      cu_name_pse = rep(CUs[i],4),
                                       benchmark = c(rep(names(benchSummary)[1],2),
                                                     rep(names(benchSummary)[2],2)),
                                       method = rep(rownames(benchSummary[[1]]),2))
@@ -569,7 +518,6 @@ for(i_rg in 1:length(region)){
           benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
                                                   benchSummary_df)
         }
-        
         
         #----------------------
         # Plot
@@ -597,6 +545,7 @@ for(i_rg in 1:length(region)){
         
         # max spawners for that CU for plotting purposes
         maxS <- max(SRm$S[, i], na.rm = TRUE) * 1.5
+        maxR <- max(SRm$R[, i], na.rm = TRUE)
         
         #----------------------
         # Plot SR relationship
@@ -621,9 +570,12 @@ for(i_rg in 1:length(region)){
         
         # Plot SR relationship with predicted recruits and 95% CI
         plot(x = dummy_spawners, y = dummy_recruits[[1]][1,], type = "n", 
-             xlim = c(0, maxS/1.5), ylim = c(0, max(SRm$R[, i], na.rm = TRUE)), 
+             xlim = c(0, maxS/1.5), ylim = c(0, maxR), 
              xlab = "Spawners", ylab = "Recruits", bty = "l")
-        mtext(side = 3, adj = 0, line = 2.5, CUs[i])
+        mtext(side = 3, adj = 0, line = 2.5, paste(CUs[i],cuids[i],sep = " - "))
+        mtext(side = 3, adj = 0, line = 1.2, 
+              paste0("(",paste(range(row.names(SRm$S)[!is.na(SRm$S[,i])]),collapse = " - "),")"))
+        
         points(SRm$S[, i], SRm$R[, i])
         for(j in 1:2){
           lines(dummy_spawners, dummy_recruits[[j]][1, ], lty = c(2,1)[j], lwd = 2)
@@ -634,9 +586,9 @@ for(i_rg in 1:length(region)){
         #----------------------
         # Plot benchmarks
         #----------------------
-
-        u <- par('usr')
-        for(j in 1:2){    # median, CI
+        
+        # u <- par('usr')
+        for(j in 1:2){    # median, HPD
           # j <- 1
           for(k in 1:2){  # Sgen, Smsy
             # k <- 1
@@ -644,7 +596,9 @@ for(i_rg in 1:length(region)){
                    col = status_cols[c('red', 'green')[k]])
             # abline(v = benchSummary[[k]][j, 2], lty = c(2,1)[j], col = statusCols[c('r', 'g')[k]])
             # abline(v = benchSummary[[k]][j, 3], lty = c(2,1)[j], col = statusCols[c('r', 'g')[k]])
-            y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+            # y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+            y <-  maxR * (1 + c(0, 0.02)[j] + c(-0.1, 0)[k])
+            
             points(x = benchSummary[[k]][j, 1],y = y, 
                    col = status_cols[c('red', 'green')[k]], pch = 19, xpd = NA)
             segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
@@ -656,8 +610,9 @@ for(i_rg in 1:length(region)){
         
         legend("topright", lty = c(2,1, NA, NA), pch = c(NA, NA, 19, 19), 
                col = c(1, 1, status_cols['red'], status_cols['green']), 
-               legend = c("median and quantiles", "HPD", "Sgen", "Smsy"), bg = "white")
-        
+               legend = c("median and quantiles", "HPD", "Sgen", "Smsy"), 
+               # bg = "white",
+               bty = "n")
         
         # Histograms of posterior mcmc draws:
         Sgen <- SR_bench[i, "Sgen", , ]
@@ -668,6 +623,8 @@ for(i_rg in 1:length(region)){
         
         dens <- list(density(SR_bench[i, "Sgen", , ], from = 0, to = maxS/1.5, na.rm = T), # BSC: I had to add na.rm = T
                      density(SR_bench[i, "Smsy", , ], from = 0, to = maxS/1.5, na.rm = T))
+        
+        par(mar = c(4.5,4.5,4,.5))
         
         # If there are Sgen and Smsy values < Smax:
         if(length(Sgen) > 0 & length(Smsy) > 0){
@@ -681,14 +638,14 @@ for(i_rg in 1:length(region)){
           
           # Plot density lines and benchmark estimates
           u <- par('usr')
-          for(k in 1:2){
+          for(k in 1:2){   # median, HPD
             lines(dens[[k]], lwd = 2, col = status_cols[c('red', 'green')[k]])
-            for(j in 1:2){
+            for(j in 1:2){ # Sgen, Smsy
               abline(v = benchSummary[[k]][j, 1], col = status_cols[c('red', 'green')[k]], 
                      lty = c(2,1)[j])
               # abline(v = benchSummary[[k]][j, 2:3], col = statusCols[c('r', 'g')[k]], lty = c(2,1)[j])
-              
-              y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+              # y <- u[4] + c(c(0.05, 0.02)[k] + c(0, 0.05)[j])*(u[4]- u[3])
+              y <- u[4] + c(c(-0.2,-0.1)[k] + c(0, 0.02)[j])*(u[4]- u[3])
               points(x = benchSummary[[k]][j, 1],y = y, col = status_cols[c('red', 'green')[k]],
                      pch = 19, xpd = NA)
               segments(x0 = benchSummary[[k]][j, 2], x1 = benchSummary[[k]][j, 3], 
@@ -696,6 +653,13 @@ for(i_rg in 1:length(region)){
                        col = status_cols[c('red', 'green')[k]], lty = c(2,1)[j], lwd = 2, xpd = NA)
             }
           }
+          
+          # plot current spawner abundance
+          abline(v = spawnerAbundance_lastGen_m, y0 = y, y1 = y, col = "black", lwd = 2)
+          mtext(side = 3, adj = 0, line = 1.5, 
+                paste0("(Curr. spawner abund. ",yrInitial,"-",yrFinal,")"))
+          
+          
         }else{
           
           commentHere <- paste0("maxS = ",maxS,

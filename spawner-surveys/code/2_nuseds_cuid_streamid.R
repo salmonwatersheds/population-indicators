@@ -415,10 +415,11 @@ for(r in 1:nrow(unique(nuseds[cond_cuid_na,cols]))){
     print(unique(nuseds[cond_cuid_na,cols])$CU_NAME[r])
     print(paste(unique(nuseds[cond_cuid_na,cols])$CU_LAT[r],
                 unique(nuseds[cond_cuid_na,cols])$CU_LONGT[r],sep = ", "))
-    
-    
   }
 }
+
+# I checked all these coordinates on Google maps and could then group the CU_NAMEs
+# as follow:
 
 cond_VIMI <- nuseds[cond_cuid_na,]$CU_NAME %in% c("SOUTH-MISCELLANEOUS<<BIN>>",
                                                   "SOUTHERN BC-CROSS-CU SUPPLEMENTATION EXCLUSION<<BIN>>",
@@ -454,8 +455,38 @@ cond <- cond_CC
 nuseds[cond_cuid_na,]$region[cond] <- "Central Coast"
 nuseds[cond_cuid_na,]$regionid[cond] <- regionsid_df$regionid[regionsid_df$region == unique(nuseds[cond_cuid_na,]$region[cond])]
 
-unique(nuseds[cond_cuid_na,cols])
+data_show <- unique(nuseds[cond_cuid_na,cols])
+rownames(data_show) <- NULL
+data_show
+#                                region regionid SPECIES_QUALIFIED FULL_CU_IN FULL_CU_IN_PSF          CU_TYPE                                               CU_NAME   CU_LAT  CU_LONGT
+# 1                              Fraser        4                CM    CM-9004        CM-9004              Bin                                INTERIOR FRASER<<BIN>> 49.83262 -121.4864
+# 2                              Fraser        4                CK    CK-9006        CK-9006              Bin      FRASER-CROSS-CU SUPPLEMENTATION EXCLUSION<<BIN>> 49.20557 -122.2647
+# 3  Vancouver Island & Mainland Inlets        5                CK    CK-9005        CK-9005              Bin                            SOUTH-MISCELLANEOUS<<BIN>> 48.62104 -123.6267
+# 4                         Haida Gwaii        6                CK    CK-9002        CK-9002              Bin                   (P)HATCHERY EXCLUSION-PALLANT CREEK 53.05171 -132.0330
+# 5                              Fraser        4                CK    CK-9004        CK-9004              Bin                           FRASER-MISCELLANEOUS<<BIN>> 49.93296 -122.1751
+# 6  Vancouver Island & Mainland Inlets        5                CK    CK-9007        CK-9007              Bin SOUTHERN BC-CROSS-CU SUPPLEMENTATION EXCLUSION<<BIN>> 49.67006 -123.9409
+# 7                              Fraser        4                CK    CK-9008        CK-9008              Bin         FRASER-HARRISON FALL TRANSPLANT_FA_0.3<<BIN>> 49.06245 -121.6467
+# 8                              Fraser        4               PKE   PKE-9005       PKE-9005              Bin                                   FRASER RIVER<<BIN>> 50.49251 -122.4648
+# 9                              Fraser        4               SER     SER-06         SER-06        VREQ[Bin]                                          UPPER FRASER 53.61510 -120.8006
+# 10                             Fraser        4               SEL  SEL-03-xx      SEL-03-xx              Bin                  FRASER RIVER MIGRATORY COUNTS<<BIN>> 50.62197 -121.9441
+# 11 Vancouver Island & Mainland Inlets        5               SEL  SEL-13-xx      SEL-13-xx              Bin                           GREAT CENTRAL/SPROAT<<BIN>> 49.24618 -124.8201
+# 12                             Fraser        4               SEL  SEL-06-18      SEL-06-18        VREQ[Bin]                                 CARIBOO-SUMMER TIMING 52.78683 -121.3466
+# 13 Vancouver Island & Mainland Inlets        5               SEL  SEL-13-21      SEL-13-21        VREQ[Bin]                                             OWOSSITSA 49.82836 -126.9177
+# 14                      Central Coast        3               SEL  SEL-18-11      SEL-18-11        VREQ[Bin]                                                WHALEN 53.24728 -129.0723
+# 15                             Fraser        4               SEL  SEL-06-05      SEL-06-05 VREQ[Extirpated]                                  FRANCOIS-LATE TIMING 53.92982 -126.7652
+# 16                             Fraser        4               SEL  SEL-06-04      SEL-06-04 VREQ[Extirpated]                          FRANCOIS-EARLY SUMMER TIMING 53.97423 -126.6841
+# 17                             Fraser        4               SER     SER-05         SER-05        VREQ[Bin]                                         MIDDLE FRASER 52.39530 -122.6734
+# 18                             Fraser        4               SEL  SEL-07-02      SEL-07-02        VREQ[Bin]                     INDIAN/KRUGER-EARLY SUMMER TIMING 53.44522 -121.5672
+# 19 Vancouver Island & Mainland Inlets        5               SEL  SEL-11-11      SEL-11-11        VREQ[Bin]                                                  PACK 51.17131 -127.4701
+# 20 Vancouver Island & Mainland Inlets        5               SEL  SEL-11-12      SEL-11-12        VREQ[Bin]                                           (N)GLENDALE 50.65101 -125.7236
+# 21                      Central Coast        3               SEL  SEL-15-03      SEL-15-03        VREQ[Bin]                                   OWIKENO-LATE TIMING 51.72770 -127.0454
+# 22 Vancouver Island & Mainland Inlets        5               SEL  SEL-11-10      SEL-11-10 VREQ[Extirpated]                                           VILLAGE BAY 50.20400 -125.2333
 
+#' Notes about these CUs:
+#' - CK 9008: huge and strictly hatchery ; Steph to talk to Katrina (Pop Team meeting Sept 25 2024)
+
+
+sum(cond_cuid_na) # 1998
 
 #' TODO: troubleshoot with Katy after PSE 2.0 --> add these CUs
 # nuseds <- nuseds[!is.na(nuseds$cuid),]

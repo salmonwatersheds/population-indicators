@@ -1,7 +1,7 @@
 ---
 title: "1_nuseds_collation"
 author: "Bruno S. Carturan"
-date: "2024-11-18"
+date: "2025-01-24"
 output: 
   html_document:
     toc: true                  # Adds a table of contents to the document
@@ -18,9 +18,9 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
 
-The goal of the script is to fix issues in NuSEDS and to merge the two constituent datasets all_areas_nuseds and conservation_unit_system_sites.
+The goal of the script is to fix issues in NuSEDS and to merge the two constituent datasets **all_areas_nuseds** (referred to as **NuSEDS**) and **conservation_unit_system_sites** (referred to as **CUSS**).
 
-The NuSEDs version corresponding to this script is:
+The dataset version corresponding to this script is:
 
 Fisheries and Oceans Canada. 2024. NuSEDS - New Salmon Escapement Database System. Pacific Biological Station. Retrieved January 22, 2024, from https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6.
 
@@ -117,6 +117,9 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
 source("code/functions.R")
 
 options(digits = 9)
+
+
+export_datasets <- F  # set tp true to update the datasets
 ```
 
 # Import datasets
@@ -3222,8 +3225,6 @@ for(r in 1:nrow(trackRecord_nuseds_nocuss)){
 }
 ```
 
-
-
 ```{r, include=FALSE}
 #' ** CHECKS **
 
@@ -3253,7 +3254,6 @@ sum(cond) # 0
 
 ## Merge NuSEDS and CUSS and replace 0s by NAs
 
-
 ```{r}
 col_common <- c("IndexId","POP_ID","GFE_ID")
 
@@ -3276,8 +3276,8 @@ nuseds_final <- base::merge(x = all_areas_nuseds[,c(col_common,col_nuseds)],
                             by = col_common, 
                             all.x = T)
 
-nrow(nuseds_final)     # 307217
-nrow(all_areas_nuseds) # 307217
+# nrow(nuseds_final)     # 307217
+# nrow(all_areas_nuseds) # 307217
 ```
 ```{r, include=FALSE}
 cond <- nuseds_final$MAX_ESTIMATE == 0 & !is.na(nuseds_final$MAX_ESTIMATE)
@@ -3286,20 +3286,29 @@ prop_cases <- sum(cond)/nrow(nuseds_final) * 100
 nuseds_final$MAX_ESTIMATE[cond] <- NA
 ```
 
-So far we have not been able to determine which 0s are actual 0s and those which should be NAs. We consequently replace all 0s by NAs (`r n = nb cases`, or `r paste0(round(prop_cases,2),"%)` of the data points).
+So far we have not been able to determine which 0s are actual 0s and those which should be NAs. We consequently replace all 0s by NAs (`r paste0("n = ",nb_cases)`, or `r paste0(round(prop_cases,2),"%")` of the data points).
 
 ## Fix duplicated series and points
 
 There are many cases where a CU in a given location (i.e., a unique `GFE_ID`) has multiple series (i.e. `IndexId`/`POP_ID`) with clear duplicates or single data point that are not worth keeping. To fix these issues we proceed as follow:
-- Case 1: one of the duplicated series has only one data point:
-  - if it is complementary: merge to the other (longer) series
-  - if it is in conflict or duplicate: remove the focal series
-- Case 2: the shorter series is 100% duplicated: removed the focal series
-- Case 3: for the rest of the duplicated series, 
-  - points that are conflictual or duplicated are added
-  - points that are complementary are merged
 
-```{r, echo=FALSE}
+- Case 1: one of the duplicated series has only one data point:
+
+  - if it is complementary: merge to the other (longer) series
+  
+  - if it is in conflict or duplicate: remove the focal series
+  
+- Case 2: the shorter series is 100% duplicated: removed the focal series
+
+- Case 3: for the rest of the duplicated series, 
+
+  - points that are conflictual or duplicated are summed up
+  
+  - points that are complementary are merged
+  
+There are three instance with a special fix was done, as indicated below to corresponding figures.
+
+```{r, echo=FALSE, fig.width=15, fig.height=15}
 # Short cut for trouble shooting
 # write.csv(all_areas_nuseds,paste0(wd_data,"/all_areas_nuseds_TEMP.csv"), row.names = F)
 # write.csv(conservation_unit_system_sites,paste0(wd_data,"/conservation_unit_system_sites_TEMP.csv"), row.names = F)
@@ -3334,8 +3343,16 @@ nrow(nuseds_CU_GFI_ID) # 6848
 #' unique CU_NAME and SPECIES_QUALIFIED) and location (i.e GFE_ID) if there are 
 #' multiple IndexId (= POP_ID).
 count <- 1
+layout(matrix(1:2,nrow = 2))
+par(mar = c(4,4.5,3.5,.5))
 for(r in 1:nrow(nuseds_CU_GFI_ID)){
-  # r <- 1
+  # r <- 1 # case one
+  # r <- 1410 # case 2
+  # r <- 966 # case 3
+  # r <- 1124 # "correct_exception" with  IndexId_focal == "CM_50537" & GFE_ID_here == 816
+  # r <- 1422 #  "Case 3 - CN_2483 & GFE_ID_here == 142": there are three time series 
+  # r <-  # "delete_exception" with  IndexId_focal == "CN_50619" & GFE_ID_here == 824
+
   CU_NAME_here <- nuseds_CU_GFI_ID$CU_NAME[r]
   GFE_ID_here <- nuseds_CU_GFI_ID$GFE_ID[r]
   SPECIES_QUALIFIED_here <- nuseds_CU_GFI_ID$SPECIES_QUALIFIED[r]
@@ -3350,7 +3367,8 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
     
     plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                             GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                            all_areas_nuseds = nuseds_final)
+                            all_areas_nuseds = nuseds_final, 
+                            main = "BEFORE")
     legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
     legend("topright",legend = c(paste0("count = ",count),
                                  paste0("r = ",r)),bty = 'n')
@@ -3417,8 +3435,9 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         
         plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                                 GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final)
-        legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+                                all_areas_nuseds = nuseds_final, 
+                                main = "AFTER")
+        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
         legend("topright",legend = "MERGED",bty = 'n')
         
       }else{ # discard it
@@ -3435,8 +3454,8 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         
         plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                                 GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final)
-        legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+                                all_areas_nuseds = nuseds_final,main = "AFTER")
+        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
         legend("topright",legend = "DELETED",bty = 'n')
       }
       
@@ -3456,9 +3475,13 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
       plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                               GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                              all_areas_nuseds = nuseds_final)
-      legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+                              all_areas_nuseds = nuseds_final,main = "AFTER")
+      legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
       legend("topright",legend = "DELETED",bty = 'n')
+      
+      if(delete_exception){
+        print("Special fix (above): the two blue points are deleted; one is a duplicate, there other one is very close to be one.")
+      }
       
     }else if(correct_exception){
       
@@ -3480,7 +3503,7 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
       cond_focal_YrtoRemove <- cond_focal & nuseds_final$Year %in% years_toRemove
       
-      # 2nd merge the rest of the series but summing the data
+      # 2nd merge the rest of the series by summing the data
       # change the field in the focal series
       for(f in fields_IndexId){
         # f <- fields_IndexId[1]
@@ -3514,21 +3537,27 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
       plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                               GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                              all_areas_nuseds = nuseds_final)
-      legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+                              all_areas_nuseds = nuseds_final,main = "AFTER")
+      legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
       legend("topright",legend = "DELETED & MERGED",bty = 'n')
+      
+      if(correct_exception){
+        print("Special fix (above): the blue points before 1950 are deleted, the other ones are summed to the red series.")
+      }
       
 #' - Case 3: on the rest of the series, 
 #'    - points that are conflictual or duplicated are added
 #'    - points that are complementary are merged
     }else{ 
-      
-      plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
-                              GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                              all_areas_nuseds = nuseds_final)
-      legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+
+      # plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
+      #                         GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
+      #                         all_areas_nuseds = nuseds_final,main = "AFTER")
+      # legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
       
       if("CN_2483" %in% IndexId_here & GFE_ID_here == 142){
+        
+        # print("Case 3 - CN_2483 & GFE_ID_here == 142")
         
         # - 1) merge CN_47277 - 142 to CN_2483 - 142
         # - 2) remove the point CN_47278 - 142
@@ -3569,10 +3598,11 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         
         plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                                 GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final)
-        legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+                                all_areas_nuseds = nuseds_final, main = "AFTER")
+        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
         legend("topright",legend = "MERGED & DELETED",bty = 'n')
         
+        print("Special fix (above): the blue points is deleted, the green series is merged to the red one.")
         
       }else{
         
@@ -3600,8 +3630,8 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         
         plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                                 GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final)
-        legend("top",legend = paste0("CU_NAME_here = ",CU_NAME_here),bty = 'n')
+                                all_areas_nuseds = nuseds_final, main = "AFTER")
+        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
         legend("topright",legend = "MERGED",bty = 'n')
         
         removed <- data.frame(IndexId = IndexId_focal,
@@ -3620,23 +3650,86 @@ removed_all <- rbind(removed_all,removed_all_new)
 removed_all <- unique(removed_all)
 ```
 
+# Export datasets
 
+The following files are exported:
+
+- *1_NuSEDS_escapement_data_collated_DATE.csv*: the cleaned combined **NuSEDS** and **CUSS** datasets
+
+- *1_series_inNUSEDS_noInCUSS_DATE.csv*: information about the series in  **NuSEDS** and not in **CUSS**
+
+- *1_series_removed_DATE.csv*: the series removed from either **NuSEDS** or **CUSS** and why
+
+- *1_series_added_DATE.csv*: the series added to either **NuSEDS** or **CUSS** and why
 
 ```{r, include=FALSE}
+if(export_datasets){
+  
+  date <- as.character(Sys.Date())
+  
+  write.csv(nuseds_final,paste0(wd_output,"/archive/1_NuSEDS_escapement_data_collated_",date,".csv"),
+            row.names = F)
+  
+  #' Export the series in NUSEDS with IndexIds and GFE_IDs not in CUSS with 
+  #' info on the number of data points and POPULATION
+  #' slack: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1709250704372429
+  
+  cond <- trackRecord_nuseds$alternative_GFE_ID == "none" &
+    trackRecord_nuseds$alternative_IndexId == "none"
+  
+  trackRecord_toExport <- trackRecord_nuseds[cond,c("IndexId","GFE_ID","nb_dataPt")]
+  
+  trackRecord_toExport$POP_ID <- apply(X = trackRecord_toExport, 1, 
+                                       FUN = function(r){
+                                         iid <- r["IndexId"]
+                                         popid <- strsplit(x = iid, split = "_")[[1]][2]
+                                         return(popid)
+                                       })
+  
+  trackRecord_toExport$POPULATION <- apply(X = trackRecord_toExport, 1, 
+                                           FUN = function(r){
+                                             iid <- r["IndexId"]
+                                             gfeid <- r["GFE_ID"]
+                                             cond <- all_areas_nuseds_all$IndexId == iid &
+                                               all_areas_nuseds_all$GFE_ID == gfeid
+                                             return(unique(all_areas_nuseds_all$POPULATION[cond]))
+                                           })
+  
+  trackRecord_toExport$POP_ID <- sapply(X = trackRecord_toExport$IndexId, 
+                                        FUN = function(iid){strsplit(x = iid,split = "_")[[1]][2]})
+  
+  trackRecord_toExport$species_acro <- sapply(X = trackRecord_toExport$IndexId, 
+                                              FUN = function(iid){strsplit(x = iid,split = "_")[[1]][1]}) 
+  
+  trackRecord_toExport <- trackRecord_toExport[,c("IndexId","POP_ID","species_acro",
+                                                  "GFE_ID","nb_dataPt","POPULATION")]
+  
+  write.csv(trackRecord_toExport,paste0(wd_output,"/archive/1_series_inNUSEDS_noInCUSS_",date,".csv"),
+            row.names = F)
+  
+  
+  #' Export the CUs removed and those added:
+  removed_all$POP_ID <- sapply(X = removed_all$IndexId, 
+                               FUN = function(iid){strsplit(x = iid,split = "_")[[1]][2]})
+  
+  removed_all$species_acro <- sapply(X = removed_all$IndexId, 
+                                     FUN = function(iid){strsplit(x = iid,split = "_")[[1]][1]}) 
+  
+  removed_all <- removed_all[,c("IndexId","POP_ID","species_acro","GFE_ID","dataset","comment")]
+  
+  write.csv(removed_all,paste0(wd_output,"/archive/1_series_removed_",date,".csv"),row.names = F)
+  
+  #
+  added_all$POP_ID <- sapply(X = added_all$IndexId, 
+                             FUN = function(iid){strsplit(x = iid,split = "_")[[1]][2]})
+  
+  added_all$species_acro <- sapply(X = added_all$IndexId, 
+                                   FUN = function(iid){strsplit(x = iid,split = "_")[[1]][1]}) 
+  
+  added_all <- added_all[,c("IndexId","POP_ID","species_acro","CU_NAME","GFE_ID","dataset","comment")]
+  
+  
+  write.csv(added_all,paste0(wd_output,"/archive/1_series_added_",date,".csv"),row.names = F)
+}
 
-
-# write.csv(all_areas_nuseds,paste0(wd_data,"/all_areas_nuseds_TEMP.csv"), row.names = F)
-# write.csv(conservation_unit_system_sites,paste0(wd_data,"/conservation_unit_system_sites_TEMP.csv"), row.names = F)
-# write.csv(removed_all,paste0(wd_data,"/removed_all_TEMP.csv"), row.names = F)
-# write.csv(added_all,paste0(wd_data,"/added_all_TEMP.csv"), row.names = F)
-# 
-# read.csv(paste0(wd_data,"/all_areas_nuseds_TEMP.csv"), header = T)
-# read.csv(paste0(wd_data,"/conservation_unit_system_sites_TEMP.csv"), header = T)
-# read.csv(paste0(wd_data,"/removed_all_TEMP.csv"), header = T)
-# read.csv(paste0(wd_data,"/added_all_TEMP.csv"), header = T)
 ```
-
-
-
-
-

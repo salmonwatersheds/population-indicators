@@ -152,8 +152,9 @@ nuseds_fields_definitions_fun <- function(wd_references){
 plot_IndexId_GFE_ID_fun <- function(IndexIds = NA, GFE_IDs = NA, species_acro = NA,
                                     all_areas_nuseds, 
                                     xaxt = 's', yaxt = 's', xlab = NA, ylab = NA,
-                                    Xlim = NA, Ylim = NA, main = "",
-                                    y_var_name = c("MAX_ESTIMATE","Returns")){
+                                    Xlim = NA, Ylim = NA, main = "",pchs = NA,ltys= NA,
+                                    y_var_name = c("MAX_ESTIMATE","Returns"),
+                                    colPalette = c("firebrick","chartreuse3","black","deepskyblue3")){
   
   y_var_name <- y_var_name[1]
   
@@ -197,10 +198,14 @@ plot_IndexId_GFE_ID_fun <- function(IndexIds = NA, GFE_IDs = NA, species_acro = 
         pop_max <- 1
       }
       
-      colfunc <- colorRampPalette(c("firebrick","chartreuse3","black","deepskyblue3"))
+      colfunc <- colorRampPalette(colPalette)
       cols <- colfunc(length(IndexIds))
-      ltys <- 1:length(IndexIds)
-      pchs <- 1:length(IndexIds)
+      if(is.na(ltys)[1]){
+        ltys <- 1:length(IndexIds)
+      }
+      if(is.na(pchs)[1]){
+        pchs <- 1:length(IndexIds)
+      }
       
       if(all(is.na(Xlim))){
         xlim <- c(yr_min-(yr_max - yr_min)/5,yr_max)
@@ -289,10 +294,14 @@ plot_IndexId_GFE_ID_fun <- function(IndexIds = NA, GFE_IDs = NA, species_acro = 
           pop_max <- 1
         }
         
-        colfunc <- colorRampPalette(c("firebrick","chartreuse3","black","deepskyblue3"))
+        colfunc <- colorRampPalette(colPalette)
         cols <- colfunc(length(var_in_vals))
-        ltys <- 1:length(var_in_vals)
-        pchs <- 1:length(var_in_vals)
+        if(is.na(ltys)[1]){
+          ltys <- 1:length(var_in_vals)
+        }
+        if(is.na(pchs)[1]){
+          pchs <- 1:length(var_in_vals)
+        }
         
         if(all(is.na(Xlim))){
           xlim <- c(yr_min-(yr_max - yr_min)/5,yr_max)

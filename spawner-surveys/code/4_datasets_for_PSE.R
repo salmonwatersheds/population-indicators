@@ -6,7 +6,7 @@
 #' sent by Arianne Nickels from the Reynolds' Lab (SFU).
 #' 
 #' Files imported:
-#' - nuseds_cuid_streamid_nuseds_20240419.csv : the cleaned NuSEDS data with PSE cuid and streamid (and with data no in PSE)
+#' - nuseds_cuid_streamid_nuseds_20240419.csv : the cleaned NuSEDS data with PSE cuid and streamid (and with data not in PSE)
 #' - data_extra_Reynolds_lab_DATE.csv : the cleaned  Reynolds' Lab (SFU) data (sent by  Arianne Nickels)
 #' - SFU_Escapement_issues.csv        : 
 #' - .../steelhead_dataset_1part2.DATE.csv                             : dataset generated in its own repository
@@ -422,7 +422,7 @@ head(dataset_1part2)
 # wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Transboundary/Data & Assessments/transboundary-data/output") # not -status
 # TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset_1part2")
 wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/transboundary-data/output")
-TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset2_spawner_surveys")
+TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset2_spawner-surveys")
 colnames(TBR_data)[colnames(TBR_data) == "survey_qual"] <- "survey_quality"
 #  2024-04-19
 head(TBR_data)

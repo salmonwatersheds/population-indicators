@@ -234,6 +234,9 @@ retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
     statement = paste("SELECT * FROM",name_dataset)
   )
   
+  # Replace -989898 with NA
+  dataset[which(dataset == -989898 | dataset == "-989898.0", arr.ind = TRUE)] <- NA
+  
   return(dataset)
 }
 

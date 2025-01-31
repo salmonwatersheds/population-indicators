@@ -101,14 +101,16 @@ relationships_twoCol_df_fn <- function(df,col1,col2,printDF = F,n_eg = 3){
 # Function to compute the geometric mean accounting for NAs values
 # x <- c(450, NA, 350, 350)
 mean_geom_fun <- function(x){
-  # exp(mean(log(x),na.rm = T))  # other equivalent formula 
+  # 
   if(sum(!is.na(x))> 0){
-    gm <- prod(x, na.rm = T)^(1/sum(!is.na(x)))
+    # gm <- prod(x, na.rm = T)^(1/sum(!is.na(x)))
+    gm <- exp(mean(log(x),na.rm = T)) # other equivalent formula that does not risk to return Inf
   }else{
     gm <- NA
   }
   return(gm)
 }
+
 
 # Function that returns a data frame of the fish species names (as column names)
 # and corresponding acronym.
@@ -128,13 +130,19 @@ species_acronym_fun <- function(){
   #   Steelhead = "SH",   
   #   Cutthroat = "CT")   
   
+  # species_acronym <- data.frame(
+  #   species_name = c("Chinook","Chum","Coho","Sockeye","Lake sockeye","River sockeye","Pink","Pink (even)","Pink (odd)","Steelhead","Cutthroat"),
+  #   species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"),
+  #   species_acro_details = c("CK","CM","CO","SX","LSX","RSX","PK","PKE","PKO","SH","CT"),
+  #   species_acro2 = c("CK","CM","CO","SE","SE","SE","PK","PK","PK","SH","CT"),
+  #   species_acro2_details = c("CN","CM","CO","SE","SEL","SER","PK","PKE","PKO","SH","CT"))
+  
   species_acronym <- data.frame(
     species_name = c("Chinook","Chum","Coho","Sockeye","Lake sockeye","River sockeye","Pink","Pink (even)","Pink (odd)","Steelhead","Cutthroat"),
-    species_acro = c("CK","CM","CO","SX","SX","SX","PK","PK","PK","SH","CT"),
-    species_acro_details = c("CK","CM","CO","SX","LSX","RSX","PK","PKE","PKO","SH","CT"),
-    species_acro2 = c("CK","CM","CO","SE","SE","SE","PK","PK","PK","SH","CT"),
-    species_acro2_details = c("CN","CM","CO","SE","SEL","SER","PK","PKE","PKO","SH","CT"))
-    
+    species_name_simple = c("Chinook","Chum","Coho","Sockeye","Sockeye","Sockeye","Pink","Pink","Pink","Steelhead","Cutthroat"),
+    species_qualified = c("CK","CM","CO","SE","SEL","SER","PK","PKE","PKO","SH","CT"),
+    species_qualified_simple = c("CK","CM","CO","SE","SE","SE","PK","PK","PK","SH","CT"))
+  
   return(species_acronym)
 }
 
@@ -390,7 +398,7 @@ deleteFiles_fun <- function(wd,patterns){
 #' dataframes). The function returns the the dataframe without the corresponding
 #' rows.
 # dataframe <- all_areas_nuseds
-remove_rows_fields_fun <- function(dataframe,toRemove,fields = NA){
+remove_rows_fields_fun <- function(dataframe,toRemove,fields = NA,silience = F){
   
   nrow_all <- nrow(dataframe)
   if(all(is.na(fields))){
@@ -414,7 +422,9 @@ remove_rows_fields_fun <- function(dataframe,toRemove,fields = NA){
   out <- dataframe[!condition,]
   
   nrow_cut <- nrow(out)
-  print(paste0("Number of rows removed from dataframe = ",nrow_all - nrow_cut))
+  if(!silience){
+    print(paste0("Number of rows removed from dataframe = ",nrow_all - nrow_cut))
+  }
   
   return(out)
 }
@@ -778,7 +788,7 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
 
 #' Function to return the last version of a file whose name contains the given
 #' pattern. Works with .csv and .xlsx formats.
-import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA){
+import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA,second_last = F){
   
   files_c <- list.files(wd)
   files_c <- files_c[grepl(x = files_c, 
@@ -796,8 +806,18 @@ import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA){
     out <- NA
   }else{
     file.mtime <- file.mtime(paste(wd,files_c,sep="/"))
-    file <- files_c[file.mtime == max(file.mtime)]
-    print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
+    
+    if(second_last){ # to select the second last file
+      time_secondLast <- rev(sort(file.mtime))[2]
+      file <- files_c[file.mtime == time_secondLast]
+      print(paste0("Second last file imported: ",file," ; Date modified: ",time_secondLast))
+      file_last <- files_c[file.mtime == max(file.mtime)]
+      print(paste0("Last file is: ",file_last," ; Date modified: ", max(file.mtime)))
+      
+    }else{
+      file <- files_c[file.mtime == max(file.mtime)]
+      print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
+    }
     
     if(grepl(".xlsx",file)){
       require(readxl)
@@ -808,6 +828,10 @@ import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA){
                                                   sheet = s)
       }
       names(out) <- sheets_n
+      
+      if(length(out) == 1){ # return a data frame instead of a list if there is only one sheet
+        out <- out[[1]]
+      }
       
     }else if(grepl(".csv",file)){
       out <- read.csv(paste(wd,file,sep = "/"),header = T)

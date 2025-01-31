@@ -69,9 +69,20 @@ species_cols_dark <- c(
 # )
 
 spawnerSurvey_speciesColors = c(
-  chinook: '#4C649A',
-  chum: '#3B4E78',
-  coho: '#657DB3',
-  pink: '#2A3756',
-  sockeye: '#A9B7D5',
-  steelhead: '#CCD4E6')
+  chinook = '#4C649A',
+  chum = '#3B4E78',
+  coho = '#657DB3',
+  pink = '#2A3756',
+  sockeye = '#A9B7D5',
+  steelhead = '#CCD4E6')
+
+# spawnerSurvey_speciesColors = c(
+#   chinook: '#4C649A',
+#   chum: '#3B4E78',
+#   coho: '#657DB3',
+#   pink: '#2A3756',
+#   sockeye: '#A9B7D5',
+#   steelhead: '#CCD4E6')
+
+
+

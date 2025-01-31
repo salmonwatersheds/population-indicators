@@ -242,6 +242,9 @@ retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
     statement = paste("SELECT * FROM",name_dataset)
   )
   
+  # Replace -989898 with NA
+  dataset[which(dataset == -989898 | dataset == "-989898.0", arr.ind = TRUE)] <- NA
+  
   return(dataset)
 }
 
@@ -314,6 +317,7 @@ datasetsNames_database_fun <- function(){
       "appdata.vwdl_streamspawnersurveys_output",
       "appdata.vwdl_setr_appendix4",
       "appdata.vwdl_catchrunsize_output",
+      "appdata.vwdl_dataset4_output",
       "appdata.vwdl_conservationunits",
       "appdata.vwstreamlocationids",
       "appdata.vwdl_surveystreams",
@@ -339,6 +343,7 @@ datasetsNames_database_fun <- function(){
       "streamspawnersurveys_output.csv",     # dataset_1part2
       "setr_appendix4.csv",
       "catchrunsize_output.csv",
+      "exploitation-rate_output.csv",
       "conservationunits.csv",
       "streamlocationids.csv",
       "surveystreams.csv",

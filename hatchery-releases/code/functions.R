@@ -160,29 +160,30 @@ matching_columns_fun <- function(wd_data,wd_spawner_surveys_data,DFO_df = NA){
 
 #' Function that returns the most recent file from the wd_data repository and using
 #' part of the file name (i.e., "pattern")
-return_file_lastVersion_fun <- function(wd_data,pattern){
-  
-  # import most recent PSF file:
-  files_list <- list.files(wd_data)
-  files_list <- files_list[grepl(pattern = pattern,files_list)]
-  
-  # in case there is no file
-  if(length(files_list) == 0){
-    print(paste0("There is no file with pattern '",pattern,"' in ",wd_data))
-    break
-  }else{
-    # if multiple files, select the one with the most recent date modified:
-    if(length(files_list) > 1){
-      files_dates <- file.info(paste(wd_data,files_list,sep="/"))$mtime
-      files_list <- files_list[files_dates == max(files_dates)]
-    }
-    print(paste("The file selected is: ",files_list))
-  }
-  
-  file_output <- read_excel(paste(wd_data,files_list,sep="/"))
-  
-  return(file_output)
-}
+#' USE import_mostRecent_file_fun() instead in population-indicators/code/functions_general.R
+# return_file_lastVersion_fun <- function(wd_data,pattern){
+#   
+#   # import most recent PSF file:
+#   files_list <- list.files(wd_data)
+#   files_list <- files_list[grepl(pattern = pattern,files_list)]
+#   
+#   # in case there is no file
+#   if(length(files_list) == 0){
+#     print(paste0("There is no file with pattern '",pattern,"' in ",wd_data))
+#     break
+#   }else{
+#     # if multiple files, select the one with the most recent date modified:
+#     if(length(files_list) > 1){
+#       files_dates <- file.info(paste(wd_data,files_list,sep="/"))$mtime
+#       files_list <- files_list[files_dates == max(files_dates)]
+#     }
+#     print(paste("The file selected is: ",files_list))
+#   }
+#   
+#   file_output <- read_excel(paste(wd_data,files_list,sep="/"))
+#   
+#   return(file_output)
+# }
 
 
 #' Function returning a list of the sheets (as data frames) of the PSF hatchery 
@@ -219,7 +220,7 @@ hatchery_template_fun <- function(wd_data,
 # cuid <- NA
 # cu_index <- sheetNew$cu_index
 # conservation_units <- conservationunits_decoder
-cui_cu_index_conservation_units_fun <- function(cuid = NA, cu_index = NA,
+cuid_cu_index_conservation_units_fun <- function(cuid = NA, cu_index = NA,
                                                 conservation_units){
   
   if(is.na(cuid)){

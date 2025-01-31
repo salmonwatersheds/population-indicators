@@ -12,12 +12,13 @@ Working directory setup:
 Many of the files used as input are saved in the PSF Dropbox. In order to set up 
 the working directories properly, each use must:
 
-1. Create a text file `named wd_X_Drive1_PROJECTS.txt` in your local 
+1. Create a text file named `wd_X_Drive1_PROJECTS.txt` in your local 
 `population-indicator` github folder (along with the R project file).
 
 2. Paste in the file the your personal path from the C drive to the PSF dropbox 
 `1_PROJECTS` folder on dropbox (e.g. C:/Users/YOUR OWN PATH/X Drive/1_PROJECTS).
-For Microsoft Windows OS, replace the `\` by `/`.
+For Microsoft Windows OS, replace the `\` by `/`. Do not forget to process 
+`Return` at the end of the line.
 
 
 ## Files

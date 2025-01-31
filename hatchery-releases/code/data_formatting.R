@@ -11,7 +11,6 @@
 #' the hatchery data will be exported in one unique (PSF_modified_SEP_releases.xlsx)
 #' file.
 #' 
-#' 
 #' Files imported:
 #' - conservationunits_decoder.csv               # List of CUs in the PSE
 #' - PSF_modified_SEP_releases_2023.xlsx         # Source file sent by DFO to Eric
@@ -66,16 +65,22 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
+wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
+
 # Define wd to access population-indicators/spawner-surveys/data/conservation-units.csv
 
 wd_spawner_surveys_data <- paste(wd_X_Drive1_PROJECTS,
                                  "1_Active/Population Methods and Analysis/population-indicators/spawner-surveys",
                                  "data",sep="/")
 
+wd_spawner_surveys_output <- paste(wd_X_Drive1_PROJECTS,
+                                 "1_Active/Population Methods and Analysis/population-indicators/spawner-surveys",
+                                 "output",sep="/")
 library(xlsx)
 library(readxl)
 library(tidyverse)
 library(stringr)
+library(scales)  # for alpha
 
 source(paste(wd_code,"functions.R",sep = "/"))
 
@@ -96,28 +101,846 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 
 #'* Import the most recent version of PSF_modified_SEP_releases_DATE.xlsx in wd_data *
 #' The is the file from DFO
-DFO_df_all <- return_file_lastVersion_fun(wd_data = wd_data,
-                                          pattern = "PSF_modified_SEP_releases")
+DFO_df_all <- import_mostRecent_file_fun(wd = wd_data,
+                                         pattern = "PSF_modified_SEP_releases")
 head(DFO_df_all)
+DFO_df_all <- as.data.frame(DFO_df_all)
+nrow(DFO_df_all) # 35623
 
-#' 1) Deal with NAs in STOCK_CU_INDEX
+unique(DFO_df_all$SPECIES_NAME)
+
+cond_ct <- DFO_df_all$SPECIES_NAME == "Cutthroat"
+unique(DFO_df_all$STOCK_CU_INDEX[cond_ct])#  NA
+
+# remove Cutthroat
+DFO_df_all <- DFO_df_all[!cond_ct,]
+nrow(DFO_df_all) # 35016
+
+# Meta data:
+# https://waves-vagues.dfo-mpo.gc.ca/Library/144345.pdf
+# - STOCK_TYPE_CODE: H (hatchery) W (wild) M (mixed) and U (Unkonwn) C ?!
+# - REARING_TYPE_CODE: H (hatchery, seapen, lakepen, rearing channel), W (wild unfed) F (wild fed) U (unkown)
+
+DFO_df_all$STOCK_TYPE_CODE |> unique()
+
+#'* Import the stream - GFE_ID data file from DFO *
+#' (emailed from Wu Zhipeng, DFO, 09/04/2024)
+#' There are different locations in the 2nd first sheets to we combine them into a unique dataframe
+DFO_All_Streams_Segments <- read_xlsx(paste0(wd_spawner_surveys_data,"/DFO_All_Streams_Segments_20240408.xlsx"),
+                                      sheet = "All Streams")
+
+DFO_All_Streams_Segments2 <- read_xlsx(paste0(wd_spawner_surveys_data,"/DFO_All_Streams_Segments_20240408.xlsx"),
+                                       sheet = "Stream Segments")
+
+columns <- c("NME","ID","X_LONGT","Y_LAT")
+DFO_All_Streams_Segments <- rbind(DFO_All_Streams_Segments[,columns],
+                                  DFO_All_Streams_Segments2[,columns])
+DFO_All_Streams_Segments <- unique(DFO_All_Streams_Segments)
+
+rm(DFO_All_Streams_Segments2)
+
+#'* Check if geo coordinates in DFO hatchery file match ones in NUSEDS$GFE_ID  *
+d <- unique(DFO_df_all[,c("REL_GFE_ID","REL_LATITUDE","REL_LONGITUDE","STOCK_GFE_ID","STOCK_LATITUDE","STOCK_LONGITUDE")])
+d
+
+DFO_df_all$STOCK_LONGITUDE
+
+# Import the NuSEDS data with PSF's cuid
+nuseds <- import_mostRecent_file_fun(wd = paste0(wd_spawner_surveys_output,"/archive"),
+                                     pattern = "nuseds_cuid_streamid_2024-04-19")
+dim(nuseds) # 306823     45
+
+#
+# ATTEMPT TO COMPARE CU-RELATED FIELDS WITH NUSEDS - TO REMOVE EVENTUALLY ------
+#
+
+# recreate the original CU_INDEX from FULL_CU_IN by removing the the acronym for 
+# the species
+# goal: see if we can use CU_INDEX to compare to STOCK_CU_ID --> IT DOES NOT BECAUSE THE LATTER DOES NOT HAVE LETTERS
+for(sp in unique(DFO_df_all$SPECIES_NAME)){
+  print(sp)
+  cond <- DFO_df_all$SPECIES_NAME == sp
+  # print(unique(DFO_df_all[cond,c("STOCK_CU_INDEX")]))
+  print(unique(DFO_df_all[cond,c("STOCK_CU_ID")]))
+  print("")
+}
+
+nuseds$CU_INDEX <- NA # NOTE: THIS IS NOT THE SAME AS STOCK_CU_ID: the latter does not have letters as shown above
+for(fcui in unique(nuseds$FULL_CU_IN)){
+  # fcui <- unique(nuseds$FULL_CU_IN)[1]
+  if(grepl("SE",fcui)){
+    cui <- gsub("SE","",fcui)
+  }else{
+    sp <- strsplit(fcui,"-")[[1]][1]
+    cui <- gsub(paste0(sp,"-"),"",fcui)
+  }
+  cond <- nuseds$FULL_CU_IN == fcui
+  nuseds$CU_INDEX[cond] <- cui
+}
+
+unique(nuseds[,c("CU_INDEX","FULL_CU_IN")]) # |> head()
+
+nuseds_pop <- unique(nuseds[,c("SPECIES","cuid","cu_name_dfo","cu_name_pse","CU_NAME","FULL_CU_IN","CU_INDEX","POP_ID",
+                               "GFE_ID","SYSTEM_SITE","sys_nm_final","X_LONGT","Y_LAT")])
+
+# some exploration:
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_NAME))/nrow(DFO_df_all_pop_NA) * 100,1)
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_POP_NAME))/nrow(DFO_df_all_pop_NA) * 100,1) # 12%
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_GFE_NAME))/nrow(DFO_df_all_pop_NA) * 100,1) # 98.7
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_CU_ID))/nrow(DFO_df_all_pop_NA) * 100,1)    # 0
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_CU_INDEX))/nrow(DFO_df_all_pop_NA) * 100,1)    # 0
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_POP_ID))/nrow(DFO_df_all_pop_NA) * 100,1)   # 12.0
+round(sum(!is.na(DFO_df_all_pop_NA$STOCK_GFE_ID))/nrow(DFO_df_all_pop_NA) * 100,1)   # 98.7
+
+# STOCK_NAME
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_NAME) %in% simplify_string_fun(nuseds_pop$CU_NAME)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_NAME) %in% simplify_string_fun(nuseds$SYSTEM_SITE)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_NAME) %in% simplify_string_fun(nuseds$WATERBODY)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_NAME) %in% simplify_string_fun(nuseds$GAZETTED_NAME)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_NAME) %in% simplify_string_fun(nuseds$LOCAL_NAME_2)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+
+# STOCK_POP_NAME
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_POP_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_POP_NAME) %in% simplify_string_fun(nuseds_pop$CU_NAME)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_POP_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_POP_NAME) %in% simplify_string_fun(nuseds$SYSTEM_SITE)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_POP_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_POP_NAME) %in% simplify_string_fun(nuseds$WATERBODY)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_POP_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_POP_NAME) %in% simplify_string_fun(nuseds$GAZETTED_NAME)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_POP_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_POP_NAME) %in% simplify_string_fun(nuseds$LOCAL_NAME_2)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+
+# STOCK_GFE_NAME
+# - SYSTEM_SITE 66.7% match
+# - WATERBODY 63.6% match
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_GFE_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_GFE_NAME) %in% simplify_string_fun(nuseds_pop$CU_NAME)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_GFE_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_GFE_NAME) %in% simplify_string_fun(nuseds$SYSTEM_SITE)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_GFE_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_GFE_NAME) %in% simplify_string_fun(nuseds$WATERBODY)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_GFE_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_GFE_NAME) %in% simplify_string_fun(nuseds$GAZETTED_NAME)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_GFE_NAME) & simplify_string_fun(DFO_df_all_pop_NA$STOCK_GFE_NAME) %in% simplify_string_fun(nuseds$LOCAL_NAME_2)
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+
+# STOCK_POP_ID vs. POP_ID
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_POP_ID) & DFO_df_all_pop_NA$STOCK_POP_ID %in% nuseds_pop$POP_ID
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+
+# STOCK_CU_ID (ALL NAs) vs. CU_INDEX
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_CU_ID) & DFO_df_all_pop_NA$STOCK_CU_ID %in% nuseds_pop$CU_INDEX
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1) # 0
+
+# STOCK_GFE_ID vs. GFE_ID
+cond <- !is.na(DFO_df_all_pop_NA$STOCK_GFE_ID) & DFO_df_all_pop_NA$STOCK_GFE_ID %in% nuseds_pop$GFE_ID
+round(sum(cond)/nrow(DFO_df_all_pop_NA) * 100,1)
+
+#
+#
+# Find missing coordinates for STOCK and RELISE SITE ------
+#
+#'* 1) Deal with NAs in STOCK_CU_INDEX (= FULL_CU_IN in NuSEDS) *
 #' FOR NOW: --> remove the rows without values for STOCK_CU_INDEX 
 #' TODO: wait to hear from them and adjust accordingly
 #' Eric: "It looks like the last time the data was wrangled we just didn't include
 #' these ones. However, if you're feeling ambitious you can use the STOCK_GFE_ID
-#' to match the GFE_ID here:
-#' https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6/resource/0ba6773e-ddf6-3012-87bf-df707eb1ec4c 
+#' to match the GFE_ID in the NuSEDS data.
 #' (you'll have to translate the SPECIES_QUALIFIED in the opendata file to 
 #' SPECIES_NAME in the PSF_modified_SEP_releases_2023 file e.g. CK-> Chinook)".
-DFO_df <- DFO_df_all
-DFO_df <- DFO_df[!is.na(DFO_df$STOCK_CU_INDEX),]
-nrow(DFO_df) # 32642
+#' 
+#' cf. Pop Team Meeting from December 11, 2024 for discussion on this
+#' 
+#' TODO: TO FINISH
+
+# Number of STOCK_GFE_ID without coordinates
+sum(is.na(DFO_df_all$STOCK_LONGITUDE )) # 453
+STOCK_GFE_IDs <- unique(DFO_df_all[,c("STOCK_GFE_ID","STOCK_LONGITUDE","STOCK_LATITUDE")])
+cond_STOCK_GFE_ID <- !is.na(STOCK_GFE_IDs$STOCK_GFE_ID)
+cond_STOCK_coord <- !is.na(STOCK_GFE_IDs$STOCK_LATITUDE) & !is.na(STOCK_GFE_IDs$STOCK_LONGITUDE)
+sum(cond_STOCK_GFE_ID & !cond_STOCK_coord) # 61
+sum(cond_STOCK_GFE_ID & !cond_STOCK_coord)/sum(cond_STOCK_GFE_ID) # 0.11
+STOCK_GFE_IDs[cond_STOCK_GFE_ID & !cond_STOCK_coord,]
+for(gfe_id in STOCK_GFE_IDs$STOCK_GFE_ID[cond_STOCK_GFE_ID & !cond_STOCK_coord]){
+  
+  X_LONGT <- Y_LAT <- NA
+  
+  cond <- DFO_All_Streams_Segments$ID == gfe_id & !is.na(DFO_All_Streams_Segments$ID)
+  if(any(cond)){
+    X_LONGT <- DFO_All_Streams_Segments$X_LONGT[cond] |> as.numeric()
+    Y_LAT <- DFO_All_Streams_Segments$Y_LAT[cond] |> as.numeric()
+
+  }else{
+    cond <- nuseds$GFE_ID == gfe_id & !is.na(nuseds$GFE_ID)
+    if(any(cond)){
+      X_LONGT <- nuseds$X_LONGT[cond] |> unique()
+      Y_LAT <- nuseds$Y_LAT[cond] |> unique()
+    }else{
+      print("STOCK_GFE_ID not in DFO_All_Streams_Segments nor in NuSEDS")
+    }
+  }
+  
+  if(!is.na(X_LONGT) & !is.na(Y_LAT)){
+    cond <- DFO_df_all$STOCK_GFE_ID == gfe_id & !is.na(DFO_df_all$STOCK_GFE_ID)
+    DFO_df_all$STOCK_LATITUDE[cond] <- Y_LAT
+    DFO_df_all$STOCK_LONGITUDE[cond] <- X_LONGT
+  }
+}
+sum(is.na(DFO_df_all$STOCK_LONGITUDE )) # 220
+
+# same for REL_GFE_ID
+sum(is.na(DFO_df_all$REL_LONGITUDE )) # 4449
+REL_GFE_IDs <- unique(DFO_df_all[,c("REL_GFE_ID","REL_LONGITUDE","REL_LATITUDE")])
+cond_REL_GFE_ID <- !is.na(REL_GFE_IDs$REL_GFE_ID)
+cond_REL_coord <- !is.na(REL_GFE_IDs$REL_LATITUDE) & !is.na(REL_GFE_IDs$REL_LONGITUDE)
+sum(cond_REL_GFE_ID & !cond_REL_coord) # 481
+sum(cond_REL_GFE_ID & !cond_REL_coord)/sum(cond_REL_GFE_ID) # 0.35
+REL_GFE_IDs[cond_REL_GFE_ID & !cond_REL_coord,]
+for(gfe_id in REL_GFE_IDs$REL_GFE_ID[cond_REL_GFE_ID & !cond_REL_coord]){
+  
+  X_LONGT <- Y_LAT <- NA
+  
+  cond <- DFO_All_Streams_Segments$ID == gfe_id & !is.na(DFO_All_Streams_Segments$ID)
+  if(any(cond)){
+    X_LONGT <- DFO_All_Streams_Segments$X_LONGT[cond] |> as.numeric()
+    Y_LAT <- DFO_All_Streams_Segments$Y_LAT[cond] |> as.numeric()
+    
+  }else{
+    cond <- nuseds$GFE_ID == gfe_id & !is.na(nuseds$GFE_ID)
+    if(any(cond)){
+      X_LONGT <- nuseds$X_LONGT[cond] |> unique()
+      Y_LAT <- nuseds$Y_LAT[cond] |> unique()
+    }else{
+      print("REL_GFE_ID not in DFO_All_Streams_Segments nor in NuSEDS")
+    }
+  }
+  
+  if(!is.na(X_LONGT) & !is.na(Y_LAT)){
+    cond <- DFO_df_all$REL_GFE_ID == gfe_id & !is.na(DFO_df_all$REL_GFE_ID)
+    DFO_df_all$REL_LATITUDE[cond] <- Y_LAT
+    DFO_df_all$REL_LONGITUDE[cond] <- X_LONGT
+  }
+}
+sum(is.na(DFO_df_all$REL_LONGITUDE )) # 2825
+
+#
+# Find the missing STOCK_CU_INDEX (== FULL_CU_IN) -------
+#
+
+cond_na <- is.na(DFO_df_all$STOCK_CU_INDEX)
+sum(cond_na) # 2374 2981
+sum(cond_na)/nrow(DFO_df_all) * 100 # 6.8%
+# col_cu <- c("PROGRAM_CODE","PROJ_NAME","SPECIES_NAME","RUN_NAME",
+#             "STOCK_NAME","STOCK_POP_NAME","STOCK_GFE_NAME",
+#             "STOCK_POP_ID","STOCK_CU_ID","STOCK_CU_INDEX",
+#             "STOCK_GFE_ID") 
+col_cu <- c("SPECIES_NAME","STOCK_NAME","STOCK_CU_INDEX","RUN_NAME",
+            "STOCK_GFE_NAME","STOCK_GFE_ID","STOCK_LATITUDE","STOCK_LONGITUDE",
+            "REL_GFE_ID","REL_LATITUDE","REL_LONGITUDE") # DFO_df_all$REL_LATITUDE STOCK_LATITUDE
+
+# Create a dataframe with (1) STOCK_CU_INDEX is NA and (2) unique species, stock/CU,
+# and GFE_ID (= location)
+DFO_df_all_pop_NA <- unique(DFO_df_all[cond_na,col_cu])
+unique(DFO_df_all[!cond_na,col_cu])
+nrow(DFO_df_all_pop_NA) # 382 368 225 268
+nrow(unique(DFO_df_all[,col_cu])) # 3444 3427
+nrow(DFO_df_all_pop_NA)/nrow(unique(DFO_df_all[,col_cu])) * 100 # 11.09 16.6%
+
+head(DFO_df_all_pop_NA)
+sum(is.na(DFO_df_all$STOCK_NAME))   # 0 <- field to use over STOCK_POP_NAME (lots of NAs) and STOCK_GFE_NAME (a few NAs)
+sum(is.na(DFO_df_all$STOCK_GFE_ID)) # 3
+
+library(sf)
+library(sp)     # for spDists() TERRA is the replacement
+
+# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
+# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS)
+# wd_maps_rg <- paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions")
+regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
+  st_transform(crs = 4269)
+unique(regions_shp$regionname)
+sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
+regions_shp_full <- regions_shp
+regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001
+
+plot(st_geometry(regions_shp_full[1,]))
+plot(st_geometry(regions_shp[1,]))
+
+# wd_maps_cu <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
+# wd_maps_cu <- paste0(wd_maps_cu,"/CUs_Master/GDB")
+CUs_gdb <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/pse_conservation_units/pse_conservation_units.gdb")) %>%
+  st_transform(crs = 4269)
+head(CUs_gdb)
+unique(CUs_gdb$species)
+unique(CUs_gdb$region)
+
+CUs_gdb_full <- CUs_gdb      
+CUs_gdb <- st_simplify(x = CUs_gdb_full, dTolerance = .002)
+
+plot(st_geometry(CUs_gdb_full[1,]))
+plot(st_geometry(CUs_gdb[1,]), add = F)
+
+# CUs_gdb <- st_buffer(x = CUs_gdb_full, dist = .1)   # takes too much time       
+
+# plot(CUs_gdb_rg_sp[1], col = alpha("green",.2))
+# plot(st_buffer(x = CUs_gdb_rg_sp,dist = .1)[1])
+# plot(st_simplify(x = CUs_gdb[cond_sp & cond_rg,][1,][1],dTolerance = .001),
+#      col = alpha("red",.2))
+
+# only retain the fields that are useful
+nuseds_pop <- unique(nuseds[,c("SPECIES","cuid","cu_name_dfo","cu_name_pse","CU_NAME","FULL_CU_IN",
+                               "GFE_ID","SYSTEM_SITE","WATERBODY","GAZETTED_NAME","sys_nm_final",
+                               "X_LONGT","Y_LAT")])
+
+nrow(nuseds_pop) # 6848
+
+# proportion STOCK_GFE_ID & STOCK_GFE_NAME is.na
+d <- unique(DFO_df_all_pop_NA[,c("SPECIES_NAME","STOCK_GFE_ID","STOCK_GFE_NAME")])
+round(sum(apply(X = d[,c("STOCK_GFE_ID","STOCK_GFE_NAME")],MARGIN = 1,FUN = function(r){all(!is.na(r))})) / nrow(DFO_df_all_pop_NA) * 100,1) # 46.2 93.9
+
+#' try to find STOCK_CU_INDEX (= FULL_CU_IN in NuSEDS) using:
+#' - STOCK_GFE_ID -->  GFE_ID in NuSEDS
+#' - STOCK_GFE_NAME --> SYSTEM_SITE, WATERBODY, GAZETTED_NAME
+nrow(DFO_df_all_pop_NA) # 368
+
+# check those for which we cannot do anything
+cond <- is.na(DFO_df_all_pop_NA$STOCK_GFE_ID) & 
+  is.na(DFO_df_all_pop_NA$STOCK_LATITUDE) &
+  is.na(DFO_df_all_pop_NA$STOCK_LONGITUDE)
+DFO_df_all_pop_NA[cond,]
+
+# *** GFE_IDs ***
+# how many STOCK_GFE_ID are in NuSEDS
+STOCK_GFE_IDs <- unique(DFO_df_all_pop_NA$STOCK_GFE_ID)
+length(STOCK_GFE_IDs) # 149
+length(STOCK_GFE_IDs[STOCK_GFE_IDs %in% unique(nuseds_pop$GFE_ID)]) # 95
+# are there any NAs? --> use STOCK_NAME fpr them
+cond_NA <- is.na(DFO_df_all_pop_NA$STOCK_GFE_ID)
+DFO_df_all_pop_NA[cond_NA,]
+
+# how many STOCK_GFE_ID are in NuSEDS
+REL_GFE_IDs <- unique(DFO_df_all_pop_NA$REL_GFE_ID)
+length(REL_GFE_IDs) # 255
+length(REL_GFE_IDs[REL_GFE_IDs %in% unique(nuseds_pop$GFE_ID)]) # 132
+# how many STOCK_NAME are in NuSEDS --> none of them do so the field is useless
+STOCK_NAMEs <- simplify_string_fun(unique(DFO_df_all_pop_NA$STOCK_NAME))
+length(REL_GFE_IDs) # 255
+sum(STOCK_NAMEs %in% unique(simplify_string_fun(nuseds_pop$CU_NAME))) # 0
+sum(sapply(STOCK_NAMEs, function(n){grepl(STOCK_NAMEs,unique(simplify_string_fun(nuseds_pop$CU_NAME)))})) # 0
+
+#' Procedure:
+#' 1) use STOCK_GFE_ID and SPECIES_NAME to identify which CUs match in NuSEDS
+#' 2) if 
+
+
+
+#' 1) use STOCK_GFE_ID
+#'  if NA, look if you can find the GFE_ID using STOCK_LATITUDE and STOCK_LONGITUDE
+#' 2) if not try STOCK_NAME
+#' 3) 
+
+# convert 
+
+p_all <- pn_all <- NULL
+DFO_df_all_pop_NA$cuid <- NA
+DFO_df_all_pop_NA$comment <- NA
+for(r in 1:nrow(DFO_df_all_pop_NA)){
+  # r <- 132
+  # r <- which(DFO_df_all_pop_NA$SPECIES_NAME == "Sockeye" & DFO_df_all_pop_NA$STOCK_GFE_ID == 23742)
+  
+  print(r)
+  
+  SPECIES_NAME <- DFO_df_all_pop_NA$SPECIES_NAME[r]
+  STOCK_NAME <- DFO_df_all_pop_NA$STOCK_NAME[r] # field is useless because there is no match at all with NuSEDS
+  STOCK_GFE_ID <- DFO_df_all_pop_NA$STOCK_GFE_ID[r]
+  RUN_NAME <- DFO_df_all_pop_NA$RUN_NAME[r]
+  STOCK_GFE_NAME <- DFO_df_all_pop_NA$STOCK_GFE_NAME[r]
+  STOCK_LONGITUDE <- DFO_df_all_pop_NA$STOCK_LONGITUDE[r]
+  STOCK_LATITUDE <- DFO_df_all_pop_NA$STOCK_LATITUDE[r]
+  # REL_GFE_ID <- DFO_df_all_pop_NA$REL_GFE_ID[r]
+  REL_LONGITUDE <- DFO_df_all_pop_NA$REL_LONGITUDE[r]
+  REL_LATITUDE <- DFO_df_all_pop_NA$REL_LATITUDE[r]
+  
+  # Case that is no solvable
+  keepGoing <- T
+  comment <- NA
+  if(is.na(STOCK_GFE_ID) & is.na(STOCK_LONGITUDE) & is.na(STOCK_LATITUDE)){
+    keepGoing <- F # FAILURE 
+    DFO_df_all_pop_NA$comment[r] <- "no STOCK GFE_ID and coordinates - FAILURE"
+  }
+  
+  #' 1) use STOCK_GFE_ID
+
+  #' 1)1. if there is no GFE_ID but there are coordinates --> try to find the GFE_ID
+  if(is.na(STOCK_GFE_ID) & !is.na(STOCK_LONGITUDE) & !is.na(STOCK_LATITUDE)){
+    
+    # try to find the GFE_ID in NuSEDS
+    cond_coord <- round(as.numeric(nuseds$X_LONGT),4) == round(STOCK_LONGITUDE,4) &
+      !is.na(nuseds$X_LONGT) & 
+      round(as.numeric(nuseds$Y_LAT),4) == round(STOCK_LATITUDE,4) & 
+      !is.na(nuseds$Y_LAT)
+    
+    if(any(cond_coord)){
+      STOCK_GFE_ID <- unique(nuseds$GFE_ID[cond_coord])
+      if(length(STOCK_GFE_ID) > 1){
+        print("More than one GFE_ID in NuSEDS")
+        break
+      }
+      
+    }else{  # try with the GFE_ID stream file provided by DFO (emailed from Wu Zhipeng, DFO, 09/04/2024)
+      
+      cond_coord <- round(as.numeric(DFO_All_Streams_Segments$X_LONGT),4) == round(STOCK_LONGITUDE,4) &
+        !is.na(DFO_All_Streams_Segments$X_LONGT) & 
+        round(as.numeric(DFO_All_Streams_Segments$Y_LAT),4) == round(STOCK_LATITUDE,4) & 
+        !is.na(DFO_All_Streams_Segments$Y_LAT)
+      
+      if(any(cond_coord)){
+        STOCK_GFE_ID <- unique(DFO_All_Streams_Segments$ID[cond_coord])
+        if(length(STOCK_GFE_ID) > 1){
+          print("More than one GFE_ID in DFO_All_Streams_Segments")
+          break
+        }else{
+          comment <- paste(comment,"GFE_ID not found in NuSEDS and DFO streams file", sep = "; ")
+        }
+      }
+    }
+  }
+  
+  #' 1)2. use GFE_ID and species to find the corresponding CU(s)
+  if(!is.na(STOCK_GFE_ID)){ # can be redundant with previous step for cases where GFE_ID had to be found with STOCK coordinates
+    
+    # check if GFE_ID is in NuSEDS
+    cond_gfe_id <- nuseds_pop$GFE_ID == STOCK_GFE_ID
+    
+    if(any(cond_gfe_id)){ # else (i.e. "GFE_ID not in NuSEDS"): need to go to step 2)
+      
+      cond_sp <- nuseds_pop$SPECIES == SPECIES_NAME
+      
+      if(!any(cond_sp & cond_gfe_id)){ # must go to 2)
+        
+        comment <- paste(comment,"no SPECIES & GFE_ID combo in NuSEDS", sep = "; ")
+        
+      }else{
+        
+        FULL_CU_IN <- nuseds_pop$FULL_CU_IN[cond_sp & cond_gfe_id]
+        cuid <- nuseds_pop$cuid[cond_sp & cond_gfe_id]
+        
+        if(length(FULL_CU_IN) > 1 | length(cuid) > 1){
+          
+          if(SPECIES_NAME == "Pink"){ # check if odd or even population
+            
+            cond_pk <- DFO_df_all$SPECIES_NAME == SPECIES_NAME & 
+              DFO_df_all$STOCK_GFE_ID == STOCK_GFE_ID &
+              DFO_df_all$STOCK_NAME == DFO_df_all_pop_NA$STOCK_NAME[r]
+            
+            even <- sum(DFO_df_all$RELEASE_YEAR[cond_pk] %% 2 == 0) > 0
+            
+            if(even){
+              cond <- grepl("PKE",FULL_CU_IN)
+            }else{
+              cond <- grepl("PKO",FULL_CU_IN)
+            }
+            FULL_CU_IN <- FULL_CU_IN[cond]
+            cuid <- cuid[cond]
+          }
+        }
+        
+        if(length(FULL_CU_IN) > 1 | length(cuid) > 1){ # if still > 1
+          
+          cond_1 <- SPECIES_NAME == "Sockeye" & STOCK_GFE_ID == 223 & RUN_NAME == "Summer"
+          #' there are three potential PSE CUs matching this one: 
+          #' - CU 760 (Adams-Early Summer) (previously CU 751 which got split into 760 and 761)
+          #' - CU 739 (Shuswap-Late (cyclic)
+          #' - CU 738 (Momich-Early Summer) --> if using CU geo database
+          #' but actually, STOCK_NAME = "Momich+Cayenne", which corresponds to CU 761: cu_name_pse = Momich-Early Summer
+          if(cond_1){  # r = 132
+            
+            cuid <- 761
+            FULL_CU_IN <- CUs_gdb$FULL_CU_IN[CUs_gdb$CUID == cuid]
+            comment <- paste(comment,"manual attribution to CU 761 Momich-Early Summer",sep = "; ")
+            
+          }else{
+            print("more than one FULL_CU_IN for SPECIES & GFE_ID combo in NuSEDS")
+            break
+            
+            DFO_df_all_pop_NA[r,]
+            cond <- DFO_df_all$SPECIES_NAME == SPECIES_NAME & DFO_df_all$STOCK_GFE_ID == STOCK_GFE_ID & DFO_df_all$RUN_NAME == RUN_NAME
+            DFO_df_all[cond,]
+            DFO_df_all[cond,]$RELEASE_YEAR
+            nuseds_pop[cond_sp & cond_gfe_id,]
+          }
+
+        }
+        
+        if(length(FULL_CU_IN) == 1 | length(cuid) == 1){
+          DFO_df_all_pop_NA$STOCK_CU_INDEX[r] <- FULL_CU_IN
+          DFO_df_all_pop_NA$cuid[r] <- cuid
+          DFO_df_all_pop_NA$comment[r] <- paste(comment,"Matched with GFE_ID and species", sep = "; ")
+          keepGoing <- F # SUCCESS!
+        }
+      }
+    }
+  } # end of trying to find CU with GFE_ID
+  
+  #' 2)1. if step above did not work, use coordinates and shape files
+  if(keepGoing){
+    
+    # if coordinates stock are not available: try to find them in NuSEDS
+    if(!is.na(STOCK_GFE_ID) & (is.na(STOCK_LONGITUDE) | is.na(STOCK_LATITUDE))){
+      
+      # try to find the coordinates in Nuseds
+      cond_gfe_id <- nuseds_pop$GFE_ID == STOCK_GFE_ID
+      
+      if(any(cond_gfe_id)){
+        STOCK_LATITUDE <- nuseds_pop$Y_LAT[cond_gfe_id]
+        STOCK_LONGITUDE <- nuseds_pop$X_LONGT[cond_gfe_id]
+        
+        if(is.na(STOCK_LATITUDE) | is.na(STOCK_LONGITUDE)){
+          comment <- paste(comment,"GFE_ID in NuSEDS but coordinates are NAs", sep = "; ")
+        }else{
+          comment <- paste(comment,"GFE_ID in NuSEDS and coordinates available", sep = "; ")
+        }
+        
+      }else{
+        comment <- paste(comment,"GFE_ID not in NuSEDS", sep = "; ")
+      }
+    }
+    
+    # if coordinates stock are not available: try to find them in DFO streams file
+    if(!is.na(STOCK_GFE_ID) & (is.na(STOCK_LONGITUDE) | is.na(STOCK_LATITUDE))){
+      # 
+      cond_gfe_id <- DFO_All_Streams_Segments$ID == STOCK_GFE_ID
+      
+      if(any(cond_gfe_id)){
+        STOCK_LATITUDE <- as.numeric(DFO_All_Streams_Segments$Y_LAT[cond_gfe_id])
+        STOCK_LONGITUDE <- as.numeric(DFO_All_Streams_Segments$X_LONGT[cond_gfe_id])
+        
+        if(is.na(STOCK_LATITUDE) | is.na(STOCK_LONGITUDE)){
+          comment <- paste(comment,"GFE_ID in DFO streams file but coordinates are NAs - FAILURE", sep = "; ") # # FAILURE
+          DFO_df_all_pop_NA$comment[r] <- comment
+        }else{
+          comment <- paste(comment,"GFE_ID in DFO streams file and coordinates available", sep = "; ")
+        }
+        
+      }else{
+        comment <- paste(comment,"GFE_ID not in DFO streams file - FAILURE", sep = "; ") # FAILURE
+        DFO_df_all_pop_NA$comment[r] <- comment
+      }
+    }
+    
+    if(!is.na(STOCK_LONGITUDE) & !is.na(STOCK_LATITUDE)){
+      
+      DFO_df_all_pop_NA$STOCK_LATITUDE[r] <- STOCK_LATITUDE
+      DFO_df_all_pop_NA$STOCK_LONGITUDE[r] <- STOCK_LONGITUDE
+      
+      # Find the region
+      # https://stackoverflow.com/questions/75669453/r-check-to-see-if-coordinates-fall-inside-outside-of-a-shapefile-polygon
+      point <- st_as_sf(DFO_df_all_pop_NA[r,], 
+                        coords = c("STOCK_LONGITUDE","STOCK_LATITUDE"), crs = 4269)
+      
+      layer_rg <- st_intersects(point, regions_shp)
+      if(length(layer_rg[[1]]) == 0){ # no match, try to buffer
+        layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .1))
+      }
+      if(length(layer_rg[[1]]) == 0){ # still no match, 
+        print("Issue with finding region even after buffering")
+        break
+        
+      }else{
+        layer_rg <- layer_rg[[1]]
+      }
+      rg <- regions_shp$regionname[layer_rg]
+      
+      # check
+      # plot(st_geometry(regions_shp))
+      # plot(st_geometry(regions_shp[layer_rg,]))
+      # plot(st_geometry(point), add = T, col = "red", pch = 16, cex = 3)
+      
+      # filter region and species
+      sp <- SPECIES_NAME
+      if(SPECIES_NAME == "Sockeye"){
+        sp <- c("River sockeye","Lake sockeye")
+      }else if(SPECIES_NAME == "Pink"){
+        sp <- c("Pink odd","Pink even")
+      }
+      
+      cond_rg_sp <- CUs_gdb$region == rg & CUs_gdb$species %in% sp
+      
+      if(!any(cond_rg_sp)){
+        
+        if(SPECIES_NAME == "Steelhead"){
+          comment <- paste(comment,"No region - species combo in CUs_gdb with Steelhead - FAILURE", sep = "; ")
+          DFO_df_all_pop_NA$comment[r] <- comment
+          
+        }else{
+          print("Issue with region - species combo in CUs_gdb")
+          break
+        }
+        
+      }else{
+        
+        CUs_gdb_rg_sp <- CUs_gdb[cond_rg_sp,]
+        
+        layer_CU <- st_intersects(point, CUs_gdb_rg_sp)
+        if(length(layer_CU[[1]]) == 0){ # no match, try to buffer
+          layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = .05))
+        }
+        if(length(layer_CU[[1]]) == 0){ # no match, try to buffer
+          layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = .1))
+        }
+        if(length(layer_CU[[1]]) == 0){ # no match, try to buffer
+          layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = .2))
+        }
+        if(length(layer_CU[[1]]) == 0){ # no match, try to buffer
+          layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = .3)) # r = 163
+        }
+        # if(length(layer_CU[[1]]) == 0){ # no match, try to buffer
+        #   layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = .95)) # r = 195
+        #   it was decided to not do anything for this SH CU: see cond_1 just below
+        # }
+        
+        if(length(layer_CU[[1]]) == 0){ # still no match, 
+          
+          # in the case below (r = 195), dist must = .95 to intersect. It is probably a rainbow trout, so to exclude
+          cond_1 <- SPECIES_NAME == "Steelhead" & STOCK_NAME == "Eagle R"
+          
+          # in the case below (r = 284), dist must = .6 to intersect. It is probably a kokanee, so to exclude
+          cond_2 <- SPECIES_NAME == "Sockeye" & STOCK_NAME == "Mission Cr/OKAN"
+          
+          # in the case below (r = 336), dist must = 1.2 to intersect. It is probably a rainbow trout, so to exclude
+          cond_3 <- SPECIES_NAME == "Steelhead" & STOCK_NAME == "Shuswap R Middle"
+          
+          # in the case below (r = 366), dist must = 1.5 to intersect. It is not a kokanee because RUN_NAME = "fall" but location too far from the Slamon River near Shuswap Lake
+          cond_4 <- SPECIES_NAME == "Sockeye" & STOCK_NAME == "Salmon R/UPFR"
+          
+          if(cond_1 | cond_3){
+            comment <- paste(comment,"STOCK coordinates too far from CU area; probably rainbow trout - FAILURE",sep = "; ")
+            DFO_df_all_pop_NA$comment[r] <- comment
+            
+          }else if(cond_2){
+            comment <- paste(comment,"STOCK coordinates too far from CU area; probably Kokanee - FAILURE",sep = "; ")
+            DFO_df_all_pop_NA$comment[r] <- comment
+            
+          }else if(cond_4){
+            comment <- paste(comment,"STOCK coordinates too far from CU area; not a Kokanee but STOCK coordinates too far from potential CU - FAILURE",sep = "; ")
+            DFO_df_all_pop_NA$comment[r] <- comment
+            
+          }else{
+            
+            print("Issue finding CU(s) in CUs_gdb even after buffering")
+            break
+            
+            dist <- 1.5
+            layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = dist)) # 
+            layer_CU
+            layer_CU <- layer_CU[[1]]
+            
+            plot(st_geometry(regions_shp[layer_rg,]))
+            plot(st_geometry(CUs_gdb_rg_sp[layer_CU[1],]), add = T, col = alpha("red",.3))
+            plot(st_geometry(point), add = T, col = "red", pch = 16, cex = 2)
+            plot(st_geometry(st_buffer(CUs_gdb_rg_sp[layer_CU[1],],dist = dist)), 
+                 add = T, col = alpha("green",.3))
+            plot(st_geometry(st_as_sf(DFO_df_all_pop_NA[r,], 
+                                      coords = c("REL_LONGITUDE","REL_LATITUDE"), crs = 4269)),
+                 add = T, col = "black", pch = 17, cex = 2)
+            
+            plot(st_geometry(CUs_gdb_rg_sp[CUs_gdb_rg_sp$CU_NAME == "Shuswap Complex-Late Timing",]), add = T, col = alpha("red",.3))
+            
+            for(i in 1:nrow(CUs_gdb_rg_sp)){
+              plot(st_geometry(CUs_gdb_rg_sp[i,]), add = T, col = alpha("red",.3))
+            }
+
+            DFO_df_all_pop_NA[r,]
+            
+            CUs_gdb_rg_sp[layer_CU,]
+            
+            cond <- DFO_df_all$SPECIES_NAME == SPECIES_NAME & 
+              DFO_df_all$STOCK_GFE_ID == STOCK_GFE_ID &
+              DFO_df_all$STOCK_NAME == STOCK_NAME
+            DFO_df_all[cond,]
+            
+          }
+        }
+        
+        if(length(layer_CU[[1]]) > 0){
+          print(layer_CU)
+          
+          layer_CU <- layer_CU[[1]]
+          # if there is more than one CUs
+          if(length(layer_CU) > 1){
+            
+            # 
+            CU_NAMEs <- sapply(layer_CU,function(l){
+              return(CUs_gdb_rg_sp$CU_NAME[l])
+            })
+            
+            FULL_CU_INs <- sapply(layer_CU,function(l){
+              return(CUs_gdb_rg_sp$FULL_CU_IN[l])
+            })
+            
+            CUIDs <- sapply(layer_CU,function(l){
+              return(CUs_gdb_rg_sp$CUID[l])
+            })
+            
+            cu_name_pses <- sapply(layer_CU,function(l){
+              return(CUs_gdb_rg_sp$cu_name_pse[l])
+            })
+            
+            # about the assumptions:
+            # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1738112709281789?thread_ts=1734047406.340689&cid=CJ5RVHVCG
+            
+            # Assumption 1 (r = 23): Vernon SEL
+            # STOCK_POP_NAME = "SEBALHALL CREEK SOCKEYE"
+            cond_1 <- SPECIES_NAME == "Sockeye" & 
+              CU_NAMEs[1] == "East Vancouver Island & Georgia Strait" & # SER
+              CU_NAMEs[2] == "Vernon"                                   # SEL
+            
+            # Assumption 2 (r = 36):
+            # STOCK_POP_NAME = " MARIE LAKE SOCKEYE"
+            cond_2 <- SPECIES_NAME == "Sockeye" & 
+              CU_NAMEs[1] == "North Haida Gwaii" &  # SER
+              CU_NAMEs[2] == "Marie"                # SEL
+            
+            #' in case the answer is in the RUN_NAME, e.g., 
+            #' CU_NAMEs = "East Vancouver Island Winter" "East Vancouver Island Summer" & RUN_NAME = "Summer"
+            cond_3 <- grepl(simplify_string_fun(DFO_df_all_pop_NA$RUN_NAME[r]),
+                            simplify_string_fun(CU_NAMEs))
+            
+            #' Case with SH Kispiox R, with potential choices:
+            #' - CU_NAME = Kispiox vs. Middle Skeena --> the former
+            cond_4 <- SPECIES_NAME == "Steelhead" & STOCK_NAME == "Kispiox R"
+            
+            # if(all(is.na(FULL_CU_INs))){  # because there are cuid, which ultimately what we want
+            #   layer_CU <- layer_CU[1]
+            #   comment <- paste0(comment,"more than one CUs layer but FULL_CU_INs is NA in both case")
+            # }
+            
+            cond_5 <- SPECIES_NAME == "Sockeye" & STOCK_NAME == "Coquitlam R"
+            # three option:  Widgeon (river-type), Pitt-Early Summer, Coquitlam-Early Summer --> the latter
+
+            if(cond_1 | cond_2){
+              layer_CU <- layer_CU[2]
+              
+            }else if(sum(cond_3) == 1){ # there should one and only one option
+              layer_CU <- layer_CU[cond_3]
+              
+            }else if(cond_4){
+              layer_CU <- layer_CU[grepl("Kispiox",CUs_gdb_rg_sp$CU_NAME[layer_CU])]
+              
+            }else if(cond_5){
+              cond <- grepl("Coquitlam",cu_name_pses)
+              layer_CU <- layer_CU[cond]
+              
+            }else{
+              
+              print("more than one CUs")
+              break
+              
+              plot(st_geometry(regions_shp[layer_rg,]))
+              plot(st_geometry(CUs_gdb_rg_sp[layer_CU[1],]), add = T, col = alpha("red",.3))
+              plot(st_geometry(CUs_gdb_rg_sp[layer_CU[2],]), add = T, col = alpha("blue",.3))
+              plot(st_geometry(CUs_gdb_rg_sp[layer_CU[3],]), add = T, col = alpha("green",.3))
+              plot(st_geometry(point), add = T, col = "red", pch = 16, cex = 1)
+              plot(st_geometry(st_as_sf(DFO_df_all_pop_NA[r,], 
+                                        coords = c("REL_LONGITUDE","REL_LATITUDE"), crs = 4269)),
+                   add = T, col = "black", pch = 17, cex = 2)
+              
+              DFO_df_all_pop_NA[r,]
+              
+              CUs_gdb_rg_sp[layer_CU,]
+              
+              cond <- DFO_df_all$SPECIES_NAME == SPECIES_NAME & 
+                DFO_df_all$STOCK_GFE_ID == STOCK_GFE_ID &
+                DFO_df_all$STOCK_NAME == STOCK_NAME
+              DFO_df_all[cond,]
+              DFO_df_all[cond,]$RELEASE_YEAR
+              
+              cond <- nuseds$SPECIES == SPECIES_NAME & nuseds$CU_NAME %in% CU_NAMEs
+              nuseds[cond,]
+              
+            }
+          }
+
+          CU_NAME <- CUs_gdb_rg_sp$CU_NAME[layer_CU]
+          FULL_CU_IN <- CUs_gdb_rg_sp$FULL_CU_IN[layer_CU]
+          cuid <- CUs_gdb_rg_sp$CUID[layer_CU]
+          
+          if(is.na(cuid)){ # try the decoder
+            # comment <- paste(comment,"Matched with geocoordinates and species but FULL_CU_IN is NA - FAILURE", sep = "; ")
+            print("cuid is NAs from gdb file")
+            break
+          }
+
+          comment <- paste(comment,"Matched with geocoordinates and species", sep = "; ")
+          
+          DFO_df_all_pop_NA$STOCK_CU_INDEX[r] <- FULL_CU_IN
+          DFO_df_all_pop_NA$cuid[r] <- cuid
+          DFO_df_all_pop_NA$comment[r] <- comment
+          keepGoing <- F # SUCCESS!
+          
+          # check
+          # plot(st_geometry(CUs_gdb_rg_sp[layer_CU,]))
+          # plot(st_geometry(point), add = T, col = "red", pch = 16, cex = 3)
+        } # if CU(s) found
+      } # if region - species combo in CUs_gdb
+    } # if coordinates were found
+  }  # end of 2)
+}
+
+DFO_df_all_pop_NA$comment <- gsub("NA; ","",DFO_df_all_pop_NA$comment)
+
+sum(!is.na(DFO_df_all_pop_NA$cuid))/nrow(DFO_df_all_pop_NA) # 0.91
+sum(!is.na(DFO_df_all_pop_NA$STOCK_CU_INDEX))/nrow(DFO_df_all_pop_NA) # 0.92
+unique(DFO_df_all_pop_NA$comment)
+table(DFO_df_all_pop_NA$comment)
+
+# CHECK: the cases below should not have STOCK coordinates --> OK
+cond <- DFO_df_all_pop_NA$comment == "NA; GFE_ID not in NuSEDS; GFE_ID not in DFO streams file - FAILURE" & !is.na(DFO_df_all_pop_NA$comment)
+DFO_df_all_pop_NA[cond,]
+
+# CHECK: there should not be any NA comment --> OK
+cond <- is.na(DFO_df_all_pop_NA$comment)
+DFO_df_all_pop_NA[cond,]
+
+# CHECK:
+#' The two CUs to fix in priority:
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1732751072916579?thread_ts=1729891432.329409&cid=CJ5RVHVCG
+#' - Columbia SEL 1300  Osoyoos SEL-01-01 --> STOCK_NAME = Okanagan R, STOCK_POP_ID = NA, STOCK_CU_INDEX = NA
+#' - Columbia  CK  301 Okanagan      CK-1 --> STOCK_NAME = Okanagan R, STOCK_POP_ID = 48435, STOCK_CU_INDEX = NA
+cond <- DFO_df_all_pop_NA$cuid == 1300 & !is.na(DFO_df_all_pop_NA$cuid)
+DFO_df_all_pop_NA[cond,] # OK
+cond <- DFO_df_all_pop_NA$cuid == 301 & !is.na(DFO_df_all_pop_NA$cuid)
+DFO_df_all_pop_NA[cond,] # OK
+
+
+
+
+
+
+
+
+#'* Attribute SEL-21-02 to the correct CU *
+#' The CU was split in to three: 
+cond <- grepl("SEL-21-02",conservationunits_decoder$cu_index)
+conservationunits_decoder[cond,]
+
+cond <- DFO_df_all$STOCK_CU_INDEX == "SEL-21-02" & !is.na(DFO_df_all$STOCK_CU_INDEX)
+DFO_df_all[cond,c("SPECIES_NAME","RUN_NAME","STOCK_NAME","STOCK_POP_NAME","STOCK_GFE_NAME","STOCK_POP_ID","STOCK_CU_ID","STOCK_CU_INDEX","STOCK_GFE_ID")] |> unique()
+
+
+
 
 #' 2) STOCK_CU_INDEX (CU of the population of origin) and REL_CU_INDEX (CU of 
 #' the releasing site)
 #' Steph and Eric: "we assume that REL_CU_INDEX = STOCK_CU_INDEX when NAs are present 
 #' in REL_CU_INDEX".
-nrow(DFO_df[is.na(DFO_df$REL_CU_INDEX),])
+nrow(DFO_df[is.na(DFO_df$REL_CU_INDEX),]) # 6314
 DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)]
 
 #' 3) "Seapen" released (RELEASE_STAGE_NAME == "Seapen")
@@ -136,7 +959,7 @@ DFO_df$REL_CU_INDEX[is.na(DFO_df$REL_CU_INDEX)] <- DFO_df$STOCK_CU_INDEX[is.na(D
 CUToRemove <- c("CK-9002","CK-9005","CK-9006","CK-9007","CK-9008","SEL-15-03","CM-9004")
 DFO_df <- DFO_df[! DFO_df$STOCK_CU_INDEX %in% CUToRemove,]
 DFO_df <- DFO_df[! DFO_df$REL_CU_INDEX %in% CUToRemove,]
-nrow(DFO_df) # 31830
+nrow(DFO_df) # 31871 31830
 
 
 #' * Import the hatchery template from wd_data as a list *
@@ -248,7 +1071,7 @@ for(sheet_i in 2:length(names(filePSF_l))){   # Skip the 1st sheet
       sheetNew_cut2 <- sheetNew_cut[sheetNew_cut$facilityname == fn_here,]
       sheetNew_cut2 <- unique(sheetNew_cut2)
       if(nrow(sheetNew_cut2) > 1){
-        print(" WARNING: The following facility has multiple coordinate values (and should not):")
+        print("WARNING: The following facility has multiple coordinate values (and should not):")
         print(sheetNew_cut2)
       }
     }
@@ -278,7 +1101,7 @@ for(sheet_i in 2:length(names(filePSF_l))){   # Skip the 1st sheet
     sheetNew <- unique(sheetNew)
     
     # convert CUID (i.e. REL_CU_INDEX) to the PSE cuid
-    sheetNew$CUID <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$cu_index,
+    sheetNew$CUID <- cuid_cu_index_conservation_units_fun(cu_index = sheetNew$cu_index,
                                                          conservation_units = conservationunits_decoder)
     
     # retain the desired columns
@@ -364,9 +1187,9 @@ for(sheet_i in 2:length(names(filePSF_l))){   # Skip the 1st sheet
     sheetNew <- sheetNew[,!colnames(sheetNew) %in% c('program','project','facilityname')]
     
     # replace STOCK_CU_INDEX and REL_CU_INDEX values by the PSF CUID
-    sheetNew$release_site_CUID <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$release_site_CUID, 
+    sheetNew$release_site_CUID <- cuid_cu_index_conservation_units_fun(cu_index = sheetNew$release_site_CUID, 
                                                                       conservation_units = conservationunits_decoder)
-    sheetNew$cuid_broodstock <- cui_cu_index_conservation_units_fun(cu_index = sheetNew$cuid_broodstock, 
+    sheetNew$cuid_broodstock <- cuid_cu_index_conservation_units_fun(cu_index = sheetNew$cuid_broodstock, 
                                                                     conservation_units = conservationunits_decoder)
     
     # reorder columns and rows
@@ -789,6 +1612,20 @@ long_new
 cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bedwell Bay"
 filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -122.9113
 
+
+#'* Add region to DataEntry_releases *
+
+region <- sapply(filePSFnew_l$DataEntry_releases$cuid_broodstock, 
+                 FUN = function(cuid){
+                   cond <- conservationunits_decoder$cuid == cuid
+                   return(conservationunits_decoder$region[cond])
+                 })
+
+DataEntry_releases <- cbind(data.frame(region = region),
+                            filePSFnew_l$DataEntry_releases)
+
+filePSFnew_l$DataEntry_releases <- DataEntry_releases
+colnames(filePSFnew_l$DataEntry_releases)
 
 #
 # Export the file ------

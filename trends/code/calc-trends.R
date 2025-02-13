@@ -408,15 +408,15 @@ dataset391_output_new[cond,]
 #' and so the filter will happen automatically. But for now we do it manually.
 
 cond <- dataset103_output_new$cuid == 980
-sum(cond)
+sum(cond) # 25
 dataset103_output_new <- dataset103_output_new[!cond,]
 
 cond <- dataset202_output_new$cuid == 980
-sum(cond)
+sum(cond) # 1
 dataset202_output_new <- dataset202_output_new[!cond,]
 
 cond <- dataset391_output_new$cuid == 980
-sum(cond)
+sum(cond) # 1
 dataset391_output_new <- dataset391_output_new[!cond,]
 
 #

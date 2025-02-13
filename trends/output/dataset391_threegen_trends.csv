@@ -40,7 +40,7 @@
 "Skeena","Coho","CO",225,"Skeena Estuary",-0.8,-6,-0.007685,23.777,8.361,2006,2014,NA
 "Skeena","Chinook","CK",229,"Zymoetz",-8,-75.8,-0.08355,175.723,8.372,2003,2020,NA
 "Skeena","Coho","CO",231,"Upper Skeena",2.3,20.2,0.023021,-36.744,9.505,2009,2017,NA
-"Skeena","Steelhead","SH",281,"Upper Sustut",1.4,22.1,0.01429,-22.373,6.321,2008,2022,NA
+"Skeena","Steelhead","SH",281,"Upper Sustut",-7.5,-66.6,-0.078359,164.438,6.937,2010,2024,NA
 "Skeena","Steelhead","SH",287,"Bulkley",3.7,66.6,0.036479,-63.322,9.599,1999,2012,NA
 "Skeena","Steelhead","SH",289,"Morice",3.7,66.6,0.036479,-63.322,9.599,1999,2012,NA
 "Skeena","Sockeye","SEL",291,"Prudhomme",-11.1,-80.9,-0.118126,245.552,8.709,2005,2019,NA
@@ -175,8 +175,8 @@
 "Fraser","Sockeye","SER",745,"Harrison River (river-type)",-24.9,-95.7,-0.286484,589.088,12.968,2011,2022,NA
 "Fraser","Coho","CO",749,"Interior Fraser",6.3,63,0.061097,-114.767,8.282,2014,2022,NA
 "Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",-15.7,-84.6,-0.170301,351.105,8.631,2011,2022,NA
-"Fraser","Steelhead","SH",780,"Mid Fraser Summer",-7.9,-68.4,-0.082247,171.18,6.11,2007,2021,NA
-"Fraser","Steelhead","SH",781,"Thompson Summer",-10.9,-80.3,-0.115968,240.055,7.306,2007,2021,NA
+"Fraser","Steelhead","SH",780,"Mid Fraser Summer",-12.9,-85.6,-0.138262,283.985,6.215,2009,2023,NA
+"Fraser","Steelhead","SH",781,"Thompson Summer",-11.6,-82.1,-0.12277,253.768,7.124,2009,2023,NA
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",6,126.6,0.058426,-110.824,5.795,1996,2010,NA
 "Haida Gwaii","Chum","CM",801,"East Haida Gwaii",-5.3,-53.2,-0.054267,120.511,11.597,2007,2021,NA
 "Haida Gwaii","Chum","CM",802,"North Haida Gwaii",-4.6,-48.3,-0.047067,104.248,9.878,2005,2019,NA
@@ -216,9 +216,9 @@
 "Vancouver Island & Mainland Inlets","Chum","CM",977,"Northwest Vancouver Island",5.1,72.5,0.049585,-88.696,10.671,2004,2015,NA
 "Vancouver Island & Mainland Inlets","Chum","CM",978,"Southwest & West Vancouver Island",-6.2,-50.7,-0.064258,141.552,12.779,2004,2015,NA
 "Vancouver Island & Mainland Inlets","Chum","CM",979,"Upper Knight",17.1,469.5,0.158151,-309.17,5.867,1992,2003,NA
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",-1.7,-21.5,-0.017247,40.638,6.023,2007,2021,NA
-"Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",-0.9,-11.5,-0.008695,23.879,6.428,2007,2021,NA
-"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",5.3,105.9,0.051585,-98.81,4.567,2004,2018,NA
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",-4.7,-48.9,-0.047909,102.43,6.18,2009,2023,NA
+"Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",-7.1,-64.2,-0.073464,154.375,6.786,2009,2023,NA
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",-7.6,-67.1,-0.079362,164.967,5.45,2010,2024,NA
 "Northern Transboundary","Chinook","CK",1004,"Alsek",0.2,3.5,0.002434,3.426,8.317,2009,2023,NA
 "Northern Transboundary","Sockeye","SEL",1026,"Tahltan",-2.4,-28.7,-0.024118,58.078,9.625,2009,2023,NA
 "Northern Transboundary","Sockeye","SEL",1027,"Kuthai",-10.8,-79.9,-0.114514,237.043,6.985,2009,2023,NA

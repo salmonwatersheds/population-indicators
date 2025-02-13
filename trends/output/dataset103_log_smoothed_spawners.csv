@@ -2275,6 +2275,8 @@
 "Skeena","Steelhead","SH",281,"Upper Sustut",2020,6.38116638202702
 "Skeena","Steelhead","SH",281,"Upper Sustut",2021,5.8953554676546
 "Skeena","Steelhead","SH",281,"Upper Sustut",2022,5.55250630980913
+"Skeena","Steelhead","SH",281,"Upper Sustut",2023,5.42745235817776
+"Skeena","Steelhead","SH",281,"Upper Sustut",2024,5.40803179209399
 "Skeena","Steelhead","SH",287,"Bulkley",1999,NA
 "Skeena","Steelhead","SH",287,"Bulkley",2000,NA
 "Skeena","Steelhead","SH",287,"Bulkley",2001,NA
@@ -8858,6 +8860,8 @@
 "Fraser","Steelhead","SH",780,"Mid Fraser Summer",2019,5.0591454027932
 "Fraser","Steelhead","SH",780,"Mid Fraser Summer",2020,4.57956634823352
 "Fraser","Steelhead","SH",780,"Mid Fraser Summer",2021,4.18888618407663
+"Fraser","Steelhead","SH",780,"Mid Fraser Summer",2022,3.731552256539
+"Fraser","Steelhead","SH",780,"Mid Fraser Summer",2023,3.84235913215844
 "Fraser","Steelhead","SH",781,"Thompson Summer",1978,NA
 "Fraser","Steelhead","SH",781,"Thompson Summer",1979,NA
 "Fraser","Steelhead","SH",781,"Thompson Summer",1980,NA
@@ -8902,6 +8906,8 @@
 "Fraser","Steelhead","SH",781,"Thompson Summer",2019,5.72065070434295
 "Fraser","Steelhead","SH",781,"Thompson Summer",2020,5.48141865142512
 "Fraser","Steelhead","SH",781,"Thompson Summer",2021,5.36683904094345
+"Fraser","Steelhead","SH",781,"Thompson Summer",2022,5.33838907034381
+"Fraser","Steelhead","SH",781,"Thompson Summer",2023,5.56478076247161
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",1957,NA
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",1958,NA
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",1959,NA
@@ -11354,25 +11360,27 @@
 "Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2000,NA
 "Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2001,NA
 "Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2002,NA
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2003,5.95721757307659
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2004,5.93865137586801
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2005,5.90099357921405
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2006,5.86548588054338
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2007,5.76071485573211
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2008,5.8187660710215
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2009,5.91747742077893
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2010,5.92875557624991
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2011,5.86414246098169
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2012,6.05097503230975
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2013,6.10940917193673
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2014,6.15164836751535
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2015,6.21886820189338
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2016,6.19929704389263
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2017,6.02746163394148
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2018,5.87492391425892
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2019,5.69828575756936
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2020,5.55127414233424
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2021,5.35942278878272
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2003,6.01700570314072
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2004,5.86857664983042
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2005,5.89010278266889
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2006,5.87417397005691
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2007,5.82859764022711
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2008,5.85708747333642
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2009,5.9458902289815
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2010,5.94315046010987
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2011,5.90481211109356
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2012,5.94485028089432
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2013,6.06791794539462
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2014,6.06623017166545
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2015,6.20759937664907
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2016,6.20035683875011
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2017,6.14035751736605
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2018,5.82742665540462
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2019,5.7902832262456
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2020,5.62630344900579
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2021,5.37919180039664
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2022,5.24114460632614
+"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",2023,5.38552983534814
 "Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",1985,NA
 "Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",1986,NA
 "Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",1987,NA
@@ -11410,6 +11418,8 @@
 "Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",2019,6.15726023142607
 "Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",2020,6.02452595894068
 "Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",2021,5.61639485561174
+"Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",2022,5.38843034414879
+"Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",2023,5.32609482854719
 "Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",1976,NA
 "Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",1977,NA
 "Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",1978,NA
@@ -11453,6 +11463,12 @@
 "Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2016,5.10492285268301
 "Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2017,4.97573255483828
 "Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2018,4.94401154880295
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2019,4.82278438808888
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2020,4.73332194448015
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2021,4.50106526535397
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2022,4.23349686980719
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2023,4.37828063765253
+"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",2024,4.30649161915787
 "Northern Transboundary","Chinook","CK",1004,"Alsek",1976,NA
 "Northern Transboundary","Chinook","CK",1004,"Alsek",1977,NA
 "Northern Transboundary","Chinook","CK",1004,"Alsek",1978,NA

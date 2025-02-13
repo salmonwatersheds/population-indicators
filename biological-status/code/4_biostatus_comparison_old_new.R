@@ -137,14 +137,14 @@ benchmarks_old <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                              pattern = "dataset102_benchmarks",
                                              second_last = T)
 
-# TOREMOVE --> just this one time: last pdates pushed to the PSE:
-biostatus_old <- read.csv(paste0(wd_output,"/archive/",
-                                 "dataset101_biological_status_2024-09-13.csv"),
-                          header = T)
-
-benchmarks_old <- read.csv(paste0(wd_output,"/archive/",
-                                 "dataset102_benchmarks_2024-09-13.csv"),
-                          header = T)
+# # TOREMOVE --> just this one time: last pdates pushed to the PSE:
+# biostatus_old <- read.csv(paste0(wd_output,"/archive/",
+#                                  "dataset101_biological_status_2024-09-13.csv"),
+#                           header = T)
+# 
+# benchmarks_old <- read.csv(paste0(wd_output,"/archive/",
+#                                  "dataset102_benchmarks_2024-09-13.csv"),
+#                           header = T)
 
 colnames(biostatus_old)[colnames(biostatus_old) == "species_abbr"] <- "species_qualified"
 colnames(benchmarks_old)[colnames(benchmarks_old) == "species_abbr"] <- "species_qualified"
@@ -197,13 +197,13 @@ biostatus_old$curr_spw_start_year <- sapply(biostatus_old$cuid,function(cuid){
 #' #'* Import the current spawner abundance (for generation length) *
 datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
-cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
 #'* Import dataset390_output for survey_quality (for catch_method quality and decision tree) *
-dataset390_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[18],
+dataset390_output <- datasets_database_fun(nameDataSet = "dataset390_data_quality.csv", # see datasetsNames_database$name_CSV for names
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
@@ -212,14 +212,14 @@ dataset390_output <- datasets_database_fun(nameDataSet = datasetsNames_database$
 #                                                 pattern = "dataset390_data_quality")
 # dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_quality")]
 # colnames(dataset390_output)[colnames(dataset390_output) == "catch_quality"] <- "catch_method"
-dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
+dataset390_output <- dataset390_output[ , c("region","species_name","cuid","cu_name_pse","catch_method")]
 head(dataset390_output)
 
 
 nrow(dataset390_output) # 463 465 466
 
 #'* Import conservationunits_decoder for generation length *
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)

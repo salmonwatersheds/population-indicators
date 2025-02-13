@@ -213,18 +213,21 @@ generationLengthEstiamte_df <- data.frame(species   = c("CM","CK","CO","SX","PK"
 # name_dataset <- "Appdata.vwdl_conservationunits_decoder" # conservationunits_decoder.csv (has generation length for current spawner abundance calc)
 # name_dataset <- "Appdata.vwdl_dataset1cu_output"         # cuspawnerabundance.csv (has CU-level spawner abundance for calculating current spawner abundance for biostatus assessment)
 # name_dataset <- "Appdata.vwdl_dataset5_output"           # recruitsperspawner.csv (has R-S data for fitting HBSR models for benchmarks)
+
 retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
-                                               dsn_hostname = "data.salmonwatersheds.ca",
+                                               dsn_hostname = "3.99.23.175", # "data.salmonwatersheds.ca", # , # change: https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1739293987758589
                                                dsn_port = "5432",
                                                dsn_uid = "salmonwatersheds",
                                                name_dataset){
   
-  require(RPostgreSQL)
+  # require(RPostgreSQL) #  "RPostgreSQL" that is outdated and doesn't support SCRAM (Katy, slack database_library, 11 Feb 2025)
+  require(RPostgres)
   
-  dsn_pwd <- readline(prompt="Enter database password: " )
+  dsn_pwd <- readline(prompt = "Enter database password: " )
   
   tryCatch({
-    drv <- dbDriver("PostgreSQL")
+    # drv <- dbDriver("PostgreSQL")
+    drv <- RPostgres::Postgres()
     print("Connecting to Database...")
     connec <- dbConnect(drv,
                         dbname = dsn_database,

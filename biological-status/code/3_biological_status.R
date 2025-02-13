@@ -83,7 +83,7 @@ source("Code/functions.R")
 #' - if true the HBSR Ricker model was applied to the cyclic CUs to determine 
 #' their biostatus
 #' - if false, these CUs have a psf_status_code 5 = not-assessed
-cyclic_biostatus <- F
+cyclic_biostatus <- T
 
 #
 # Import Datasets -----
@@ -212,7 +212,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
 
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv", datasetsNames_database$name_CSV[1],
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
@@ -222,10 +222,10 @@ length(unique(conservationunits_decoder$pooledcuid)) # 463
 length(unique(conservationunits_decoder$cuid)) # 469
 
 #'* Import dataset390_data_quality (dataset390_output) for survey_quality *
-dataset390_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[18],
-                                    fromDatabase = fromDatabase,
-                                    update_file_csv = update_file_csv,
-                                    wd = wd_pop_indic_data_input_dropbox)
+dataset390_output <- datasets_database_fun(nameDataSet = "dataset390_data_quality.csv", # datasetsNames_database$name_CSV[19],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
 dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
 
 # TEMPORARY (11/09/2024)
@@ -263,7 +263,7 @@ nrow(dataset390_output) # 463 465 466
 #' For Rule 1: is there at least one data point with the last year of the data
 #' availability in a region and this yeqr - generation length + 1
 #' 
-cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv", # datasetsNames_database$name_CSV[2],
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
@@ -285,7 +285,7 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database
 #                                           "no estimates of spawner abundance in the most recent generation",
 #                                           "no spawner estimates available"))
 
-code_PSF_Status <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[20],
+code_PSF_Status <- datasets_database_fun(nameDataSet = "ssp.biologicalstatuscodes.csv", # datasetsNames_database$name_CSV[21],
                                          fromDatabase = fromDatabase,
                                          update_file_csv = update_file_csv,
                                          wd = wd_pop_indic_data_input_dropbox)
@@ -863,7 +863,7 @@ biological_status_merged <- biological_status_merged[,c("region","species_name",
                                                         col_status)]
 head(biological_status_merged)
 
-# Check if the psf code of cyclic communities: should be 5
+# Check if the psf code of cyclic communities: should be 5 or not depending on biostatus_cyclic
 biological_status_merged[grepl("cyclic",biological_status_merged$cu_name_pse),]
 biological_status_merged[grepl("5",biological_status_merged$psf_status_code_all),]
 
@@ -1157,10 +1157,6 @@ for(i in 1:nrow(biological_status_merged)){ # It should not print anything
 # MANUAL CHANGES: for Fraser CO and SH -----
 # From population meeting in 18/12/2024
 # 
-
-# check that cyclic CU are not-assessed
-cond_cyclic <- grepl("cyclic",biological_status_merged$cu_name_pse)
-biological_status_merged[cond_cyclic,]
 
 # Set to not assessed the 5 Fraser CO CUs for now until we figure out what to do 
 # with them (the fit looks weird)

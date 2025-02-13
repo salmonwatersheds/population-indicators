@@ -95,7 +95,6 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species and last year for current spawner abundance
 #------------------------------------------------------------------------------#
@@ -186,7 +185,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 3
+      # i_sp <- 5
       
       # Import the HBSRM outputs, i.e., the posterior distributions of:
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)
@@ -318,6 +317,7 @@ for(i_rg in 1:length(region)){
         
         # i <- 1
         # i <- which(cuids == 185)
+        # i <- which(CUs == "Kitsumkalum")
         
         #----------------------
         #' biological status probability with the average spawner abundance over
@@ -377,6 +377,7 @@ for(i_rg in 1:length(region)){
                                                 cuspawnerabundance = cuspawnerabundance, 
                                                 yearCurrentAbundance = yearCurrentAbundance, 
                                                 CU_genLength = CU_genLength)
+        
         yrInitial <- csa_df$yr_withData_start
         yrFinal <-  csa_df$yr_withData_end
         currentSpawnerData_available <- csa_df$curr_spw_available

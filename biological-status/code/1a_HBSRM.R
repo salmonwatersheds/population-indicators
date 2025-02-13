@@ -75,7 +75,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 #' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
-fromDatabase <- update_file_csv <- F
+fromDatabase <- update_file_csv <- T
 
 recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
                                             fromDatabase = fromDatabase,

@@ -98,6 +98,123 @@ printFig <- F
 options(warn = 0)
 
 #
+# Figures showing the spawner abundance time series and the benchmarks -------
+#' - make new figures show the spawner abundance time series and the thresholds
+#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
+
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#' Import the recruitsperspawner.csv 
+# recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
+#                                             fromDatabase = fromDatabase,
+#                                             update_file_csv = update_file_csv,
+#                                             wd = wd_pop_indic_data_input_dropbox)
+
+#' Import the cuspawnerabundance.csv
+spawnerabundance_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+                                             fromDatabase = fromDatabase,
+                                             update_file_csv = update_file_csv,
+                                             wd = wd_pop_indic_data_input_dropbox)
+
+# Import the current biostatus from the database (dataset101_output) NOT NEEDED ?
+biological_status_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
+                                              fromDatabase = fromDatabase,
+                                              update_file_csv = update_file_csv,
+                                              wd = wd_pop_indic_data_input_dropbox)
+
+# In case the file on the database is not updated:
+# biological_status_cu <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+#                                      header = T)
+biological_status_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                   pattern = "dataset101_biological_status")
+
+# biological_status <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+#                               header = T)
+
+# Import the current biostatus from the database (dataset102_output)
+benchmarks_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[19],
+                                       fromDatabase = fromDatabase,
+                                       update_file_csv = update_file_csv,
+                                       wd = wd_pop_indic_data_input_dropbox)
+
+# In case the file on the database is not updated:
+# benchmarks_cu <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
+#                                  header = T)
+benchmarks_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                            pattern = "dataset102_benchmarks")
+
+# Import the conservationunits_decoder.csv
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+# Import dataset103_output for the smooth spawner abundance:
+# cuspawnerabund_smooth <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
+#                                                fromDatabase = fromDatabase,
+#                                                update_file_csv = update_file_csv,
+#                                                wd = wd_pop_indic_data_input_dropbox)
+
+
+# find CUs with biostatus:
+cond <- biological_status_cu$psf_status_code %in% 1:3
+cuid_biostat <- biological_status_cu$cuid[cond]
+
+cond <- grepl("cyclic",biological_status_cu$cu_name_pse)
+cuid_biostat <- biological_status_cu$cuid[cond]
+
+figure_print <- F
+percent <- 0
+for(cuid in cuid_biostat){
+  # cuid <- 599
+  plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
+                                       cuspawnerabundance = spawnerabundance_cu, 
+                                       dataset101_biological_status = biological_status_cu, 
+                                       dataset102_benchmarks = benchmarks_cu, 
+                                       #dataset103_output = cuspawnerabund_smooth,
+                                       conservationunits_decoder = conservationunits_decoder, 
+                                       figure_print = figure_print, # figure_print, 
+                                       wd_figures = wd_figures)
+  
+  progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100
+  if(progress > percent){
+    percent <- percent + 10
+    print(paste0("Progess: ",round(progress),"%"))
+  }
+}
+
+#' Check the CUs with HBSR benchmarks and a different outcome when using the 
+#' probabilities and the benchmarks:
+
+cond <- biological_status_cu$psf_status_type == 'sr' & !is.na(biological_status_cu$psf_status_type)
+cuid_sr <- biological_status_cu$cuid[cond]
+
+bs_check <- biological_status_cu[cond,c("region","cuid","species_abbr","cu_name_pse","sr_status")]
+bs_check$sr_status_2 <- NA
+
+for(r in 1:nrow(bs_check)){
+  # r <- 1
+  cuid <- bs_check$cuid[r]
+  cond <- benchmarks_cu$cuid %in% cuid
+  csa <- benchmarks_cu$curr_spw[cond]
+  Sgen <- benchmarks_cu$sgen[cond]
+  Smsy <- benchmarks_cu$smsy[cond]
+  if(csa <= Sgen){
+    status <- "poor"
+  }else if(csa <= Smsy){
+    status <- "fair"
+  }else{
+    status <- "good"
+  }
+  bs_check$sr_status_2[r] <- status
+}
+
+cond <- bs_check$sr_status != bs_check$sr_status_2
+bs_check[cond,]
+
+#
 # Import datasets TO CLEAN ------
 #
 
@@ -422,7 +539,7 @@ plot_biostatus_summary_fun <- function(biostatus_data,n_width = 10, n_height = N
     col_here <- psf_status_col[s]
     cond_s <- biostatus_data$psf_status == s
     
-    if(sum(cond_s)){
+    if(sum(cond_s) > 0){
       for(c in 1:biostatus_data$count[cond_s]){
         # c <- 1
         if(length(1:count_tot) > (y * n_width)){
@@ -1100,120 +1217,7 @@ bioStatus_merged_diff[bioStatus_merged_diff$sr_status == "good" &
                         bioStatus_merged_diff$percentile_status == "poor",]
 
 #
-# Figures showing the spawner abundance time series and the benchmarks -------
-#' - make new figures show the spawner abundance time series and the thresholds
-#' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
 
-datasetsNames_database <- datasetsNames_database_fun()
-
-fromDatabase <- update_file_csv <- F
-
-#' Import the recruitsperspawner.csv 
-# recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
-#                                             fromDatabase = fromDatabase,
-#                                             update_file_csv = update_file_csv,
-#                                             wd = wd_pop_indic_data_input_dropbox)
-
-#' Import the cuspawnerabundance.csv
-spawnerabundance_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
-
-# Import the current biostatus from the database (dataset101_output) NOT NEEDED ?
-biological_status_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
-                                           fromDatabase = fromDatabase,
-                                           update_file_csv = update_file_csv,
-                                           wd = wd_pop_indic_data_input_dropbox)
-
-# In case the file on the database is not updated:
-# biological_status_cu <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-#                                      header = T)
-biological_status_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
-                                                   pattern = "dataset101_biological_status")
-
-# biological_status <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
-#                               header = T)
-
-# Import the current biostatus from the database (dataset102_output)
-benchmarks_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[19],
-                                    fromDatabase = fromDatabase,
-                                    update_file_csv = update_file_csv,
-                                    wd = wd_pop_indic_data_input_dropbox)
-
-# In case the file on the database is not updated:
-# benchmarks_cu <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
-#                                  header = T)
-benchmarks_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
-                                            pattern = "dataset102_benchmarks")
-
-# Import the conservationunits_decoder.csv
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
-                                                   fromDatabase = fromDatabase,
-                                                   update_file_csv = update_file_csv,
-                                                   wd = wd_pop_indic_data_input_dropbox)
-
-# Import dataset103_output for the smooth spawner abundance:
-# cuspawnerabund_smooth <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
-#                                                fromDatabase = fromDatabase,
-#                                                update_file_csv = update_file_csv,
-#                                                wd = wd_pop_indic_data_input_dropbox)
-
-
-# find CUs with biostatus:
-cond <- biological_status_cu$psf_status_code %in% 1:3
-cuid_biostat <- biological_status_cu$cuid[cond]
-
-figure_print <- F
-percent <- 0
-for(cuid in cuid_biostat){
-  # cuid <- 599
-  plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
-                                       cuspawnerabundance = spawnerabundance_cu, 
-                                       dataset101_biological_status = biological_status_cu, 
-                                       dataset102_benchmarks = benchmarks_cu, 
-                                       #dataset103_output = cuspawnerabund_smooth,
-                                       conservationunits_decoder = conservationunits_decoder, 
-                                       figure_print = figure_print, # figure_print, 
-                                       wd_figures = wd_figures)
-  
-  progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100
-  if(progress > percent){
-    percent <- percent + 10
-    print(paste0("Progess: ",round(progress),"%"))
-  }
-}
-
-#' Check the CUs with HBSR benchmarks and a different outcome when using the 
-#' probabilities and the benchmarks:
-
-cond <- biological_status_cu$psf_status_type == 'sr' & !is.na(biological_status_cu$psf_status_type)
-cuid_sr <- biological_status_cu$cuid[cond]
-
-bs_check <- biological_status_cu[cond,c("region","cuid","species_abbr","cu_name_pse","sr_status")]
-bs_check$sr_status_2 <- NA
-
-for(r in 1:nrow(bs_check)){
-  # r <- 1
-  cuid <- bs_check$cuid[r]
-  cond <- benchmarks_cu$cuid %in% cuid
-  csa <- benchmarks_cu$curr_spw[cond]
-  Sgen <- benchmarks_cu$sgen[cond]
-  Smsy <- benchmarks_cu$smsy[cond]
-  if(csa <= Sgen){
-    status <- "poor"
-  }else if(csa <= Smsy){
-    status <- "fair"
-  }else{
-    status <- "good"
-  }
-  bs_check$sr_status_2[r] <- status
-}
-
-cond <- bs_check$sr_status != bs_check$sr_status_2
-bs_check[cond,]
-
-#
 # Effect of changing rule 1 (at least one data point in most recent generation) on biostatus -----
 #
 

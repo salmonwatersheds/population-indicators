@@ -1861,7 +1861,12 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   if(nchar(cu_name_pse) > file_name_nchar){   # the figure can't print if the number of characters is too large
     cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = file_name_nchar) 
   }
-  species_abbr <- conservationunits_decoder$species_abbr[cond]
+  
+  if(any("species_quaified" == colnames(conservationunits_decoder))){
+    species_abbr <- conservationunits_decoder$species_qualified[cond]
+  }else{
+    species_abbr <- conservationunits_decoder$species_abbr[cond]
+  }
   
   cu_file_name <- paste0(c(region,species_abbr,cu_name_pse),collapse = " - ")
   cu_file_name <- gsub("/",".",cu_file_name)
@@ -1887,18 +1892,30 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   # Find the benchmark values
   polygons_show <- T
   if(biostatus$psf_status_type == "sr"){
-    benchmark_low <- benchmarks$sgen
-    benchmark_low_025 <- benchmarks$sgen_lower
-    benchmark_low_975 <- benchmarks$sgen_upper
-    
+
     if(any(grepl("smsy80",colnames(benchmarks)))){
       benchmark_up <- benchmarks$smsy80
       benchmark_up_025 <- benchmarks$smsy80_lower
       benchmark_up_975 <- benchmarks$smsy80_upper
-    }else{                                           # should still be smsy80
+      
+      benchmark_low <- benchmarks$sgen
+      benchmark_low_025 <- benchmarks$sgen_lower
+      benchmark_low_975 <- benchmarks$sgen_upper
+    }else if(any(grepl("smsy_",colnames(benchmarks)))){   # should still be smsy80
       benchmark_up <- benchmarks$smsy
       benchmark_up_025 <- benchmarks$smsy_lower
       benchmark_up_975 <- benchmarks$smsy_upper
+      
+      benchmark_low <- benchmarks$sgen
+      benchmark_low_025 <- benchmarks$sgen_lower
+      benchmark_low_975 <- benchmarks$sgen_upper
+    }else{
+      benchmark_low <- benchmarks$sr_lower
+      benchmark_low_025 <- benchmarks$sr_lower_025
+      benchmark_low_975 <- benchmarks$sr_lower_975
+      benchmark_up <- benchmarks$sr_upper
+      benchmark_up_025 <- benchmarks$sr_upper_025
+      benchmark_up_975 <- benchmarks$sr_upper_975
     }
     method <- "HBSR"
     status <- biostatus$sr_status
@@ -1912,13 +1929,20 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
       benchmark_up <- benchmarks$X75._spw              # `75%_spw`
       benchmark_up_025 <- benchmarks$X75._spw_lower    # `75%_spw_lower`
       benchmark_up_975 <- benchmarks$X75._spw_upper    # `75%_spw_upper`
-    }else{
+    }else if(any(grepl("25%_spw",colnames(biostatus)))){
       benchmark_low <- benchmarks$`25%_spw`
       benchmark_low_025 <- benchmarks$`25%_spw_lower`
       benchmark_low_975 <- benchmarks$`25%_spw_upper`
       benchmark_up <- benchmarks$`75%_spw`
       benchmark_up_025 <- benchmarks$`75%_spw_lower`
       benchmark_up_975 <- benchmarks$`75%_spw_upper`
+    }else{
+      benchmark_low <- benchmarks$percentile_lower
+      benchmark_low_025 <- benchmarks$percentile_lower_025
+      benchmark_low_975 <- benchmarks$percentile_lower_975
+      benchmark_up <- benchmarks$percentile_upper
+      benchmark_up_025 <- benchmarks$percentile_upper_025
+      benchmark_up_975 <- benchmarks$percentile_upper_975
     }
     
     method <- "Percentiles"

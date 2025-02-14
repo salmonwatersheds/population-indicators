@@ -556,6 +556,21 @@ unique(DFO_df$REL_CU_INDEX[cond2]) #
 DFO_df$REL_CU_INDEX[cond2] <- "SEL-21-02-F"
 
 
+# Update: it was decided in Pop meeting of 2025/02/12 to associate Pinkut population
+# to CU Babine (enhanced) cuid = 203 SEL-21-02-F
+cond <- DFO_df$SPECIES_NAME == "Sockeye" & grepl("Pinkut",DFO_df$STOCK_NAME)
+DFO_df[cond,]$STOCK_CU_INDEX <- "SEL-21-02-F"
+DFO_df[cond,]$STOCK_GFE_ID |> unique() # 501255   2114   2115
+DFO_df[cond,]$REL_GFE_ID |> unique()   # 501255   2114   2115
+
+cond2 <- DFO_df$SPECIES_NAME == "Sockeye" &
+  DFO_df$STOCK_CU_INDEX == "SEL-21-02-F" & !is.na(DFO_df$STOCK_CU_INDEX) &
+  DFO_df$REL_GFE_ID %in% unique(DFO_df[cond,]$STOCK_GFE_ID) & !is.na(DFO_df$REL_GFE_ID)
+unique(DFO_df$REL_GFE_ID[cond2])   # 501254   2111   2110
+unique(DFO_df$REL_CU_INDEX[cond2]) # "SEL-21-02"
+DFO_df$REL_CU_INDEX[cond2] <- "SEL-21-02-F"
+
+
 #'* 2) attribute the cuid to STOCK_CU_IN and REL_CU_IN and vice versa *
 #' 2.a STOCK_CU_INDEX --> cuid_broodstock
 cols_here <- c("cuid_broodstock","STOCK_CU_INDEX")
@@ -646,7 +661,6 @@ sum(is.na(DFO_df_all$REL_CU_INDEX))  # 8548
 
 cond <- is.na(DFO_df$cuid_release_site) & !is.na(DFO_df$REL_CU_INDEX)
 unique(DFO_df[,c("cuid_broodstock","STOCK_CU_INDEX","cuid_release_site","REL_CU_INDEX")])
-
 
 
 #'* 3) remaining REL_CU_INDEX and cuid_release_site with NA <-- STOCK_CU_INDEX & cuid_broodstock *
@@ -792,7 +806,7 @@ for(sheet_i in 2:length(names(filePSF_l))){   # Skip the 1st sheet
     
     #
     field_DFO <- c("PROGRAM_CODE","PROJ_NAME","FACILITY_NAME","FACILITY_LATITUDE","FACILITY_LONGITUDE","START_DATE","END_DATE")
-    field_PSF <- c("program","project","facilityname","facility_latitude","facility_longitude","startyear","endyear" )
+    field_PSF <- c("program","project","facilityname","facility_latitude","facility_longitude","startyear","endyear")
     
     # sheetNew <- DFO_df[,field_DFO] |> unique()
     sheetNew <- DFO_df[,field_DFO] |> unique()
@@ -1049,6 +1063,18 @@ for(sheet_i in 2:length(names(filePSF_l))){   # Skip the 1st sheet
     
     nrow(sheetNew_sum) # 24239 22441
     sheetNew <- sheetNew_sum
+    sheetNew$region <- sapply(sheetNew$cuid_broodstock, 
+                              FUN = function(cuid){
+                                cond <- conservationunits_decoder$cuid == cuid
+                                return(conservationunits_decoder$region[cond] |> unique())
+                              })
+    
+    # order columns
+    cols <- c("region","species_name","cuid_broodstock","cuid_release_site",
+              "release_site_name","release_site_GFE_ID","release_site_latitude","release_site_longitude",
+              "facilityid","release_date","total_release","release_stage")
+    sheetNew <- sheetNew[,cols]
+    
   }
   filePSFnew_l[[sheet_i]] <- as.data.frame(sheetNew)
 }
@@ -1073,9 +1099,12 @@ fields_toCorrect <- data.frame(sheet = c(rep("DataEntry_facilities",2),"DataEntr
 
 for(s in unique(fields_toCorrect$sheet)){
   # s <-  unique(fields_toCorrect$sheet)[2]
-  cond <- fields_toCorrect$sheet == s
-  for(f in fields_toCorrect$field[cond]){
-    # f <- fields_toCorrect$field[cond][1]
+  cond_s <- fields_toCorrect$sheet == s
+  for(f in fields_toCorrect$field[cond_s]){
+    
+    print(paste(s,f,sep = " - "))
+    
+    # f <- fields_toCorrect$field[cond_s][1]
     # filePSFnew_l[[s]][,f]
     
     # cond <- grepl("/",filePSFnew_l[[s]][,f])
@@ -1087,6 +1116,7 @@ for(s in unique(fields_toCorrect$sheet)){
     cond <- grepl("Comm H",filePSFnew_l[[s]][,f])
     filePSFnew_l[[s]][,f][cond] <- gsub("Comm H","Community Hall",filePSFnew_l[[s]][,f][cond])
     
+    # "+" --> " + "
     cond <- grepl("\\+",filePSFnew_l[[s]][,f]) & !grepl(" \\+ ",filePSFnew_l[[s]][,f])
     filePSFnew_l[[s]][,f][cond] <- gsub("\\+"," \\+ ",filePSFnew_l[[s]][,f][cond])
     
@@ -1192,12 +1222,21 @@ for(s in unique(fields_toCorrect$sheet)){
 
 # Check
 r <- 1
-unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
+fields_toCorrect[r,]
+f <- unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
+sum(grepl("  ",f))
+
 r <- 2
-unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
+fields_toCorrect[r,]
+f <- unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
+f
+sum(grepl("  ",f))
+
 r <- 3
-unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
-# 
+fields_toCorrect[r,]
+f <- unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
+f
+sum(grepl("  ",f))
 
 # Remaining potential acronym/abbreviations to change:
 
@@ -1213,12 +1252,28 @@ unique(filePSFnew_l[[fields_toCorrect$sheet[r]]][,fields_toCorrect$field[r]])
 # - Thornton Creek Vols – volunteers (not entirely confident in this. It was end dated in 2002 so there’s nobody around to confirm)
 
 # For FACILITY_NAME
-# - "Inc" (e.g. Cougar Canyon Creek Inc) – Inc refers to instream incubation --> BSC: only "Incumbation" for us
+# - "Inc" (e.g. Cougar Canyon Creek Inc) – Inc refers to instream incubation --> BSC: only "Incubation" for us
 # - "H" (e.g. Ayum Creek H) – H is for hatchery
 
 # For RELEASE_SITE_NAME"
 # - Br 100 Swamp – Shows up in the Salmon River Estuary (-50.378061, -125.944523) in JSt. The lat/longs are not always exact locations where the fish are released. It looks like it was only used for 1999 Salmon R coho. It could be a bridge?
 # - Little Edith Lake C – no lat/long exists in EPAD for this. Looks like it was only used for 1996 Quatse R coho. I want to say it’s a Channel off of the lake? It is connected to the Little Edith Lake geofeature_ID.
+
+#
+# Ad column release_type_pse in DataEntry_releases ------ 
+#' Cf. Pop meeting April 3rd 2024
+#' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
+
+release_type_df <- release_type_pse_fun()
+
+filePSFnew_l$DataEntry_releases$release_type_pse <- NA
+
+for(i in 1:nrow(release_type_df)){
+  rs <- release_type_df$release_stage[i]
+  rss <- release_type_df$release_type_pse[i]
+  cond <- filePSFnew_l$DataEntry_releases$release_stage == rs
+  filePSFnew_l$DataEntry_releases$release_type_pse[cond] <- rss
+}
 
 #
 # Place release sites and facilities without coordinates in new sheets  ------
@@ -1247,22 +1302,6 @@ DataEntry_facilitiescuids_NA <- filePSFnew_l$DataEntry_facilitiescuids[!cond,]
 
 filePSFnew_l$DataEntry_facilitiescuids <- DataEntry_facilitiescuids_noNA
 filePSFnew_l$DataEntry_facilitiescuids_NAcoord <- DataEntry_facilitiescuids_NA
-
-#
-# Ad column release_type_pse in DataEntry_releases ------ 
-#' Cf. Pop meeting April 3rd 2024
-#' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
-
-release_type_df <- release_type_pse_fun()
-
-filePSFnew_l$DataEntry_releases$release_type_pse <- NA
-
-for(i in 1:nrow(release_type_df)){
-  rs <- release_type_df$release_stage[i]
-  rss <- release_type_df$release_type_pse[i]
-  cond <- filePSFnew_l$DataEntry_releases$release_stage == rs
-  filePSFnew_l$DataEntry_releases$release_type_pse[cond] <- rss
-}
 
 #
 # Add location_name_pse to sheet DataEntry_releases in SWP_hatchery_data_20240404.xlsx TO REMOVE ??? DOES NOTHING -----
@@ -1336,7 +1375,7 @@ unique(DataEntry_release$location_name_pse)
 
 
 # Check 
-View(unique(data.frame(DataEntry_release$location_name_pse)))
+# View(unique(data.frame(DataEntry_release$location_name_pse)))
 
 # QUESTION: what to do with these ones?
 # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1714522371999499?thread_ts=1712267027.385489&cid=C03LB7KM6JK
@@ -1353,77 +1392,12 @@ View(unique(data.frame(DataEntry_release$location_name_pse)))
 # unique(DataEntry_release[cond,c("location_name_pse","release_site_latitude","release_site_longitude")])
 
 #
-# Export remove DataEntry_release_noTBR_DATE.csv NOT NEEDED (cf. Data PSE Check in August 22 2024) -------- 
-#
-cuid_toRemove <- conservationunits_decoder$cuid[conservationunits_decoder$region == "Transboundary"]
-DataEntry_release <- DataEntry_release[! DataEntry_release$cuid_broodstock %in% cuid_toRemove,]
-
-# date <- Sys.Date()
-# date <- gsub(pattern = "-",replacement = "",x = date)
-# write.csv(DataEntry_release,paste0(wd_output,"/DataEntry_release_noTBR_",date,".csv"),
-#           row.names = F)
-
-#
-# Correct coordinates for two locations (Katy) -----
-# details in PSE Data Check-In Meeting Notes ; 2024-09-05
-#
-
-filePSFnew_l <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
-                                           pattern = "SWP_hatchery_data")
-
-# release_site_name  release_site_latitude	release_site_longitude
-# Bentinck Arm North                  52.3                 -128.97
- 
-# project	                   facilityname	facility_latitude	facility_longitude
-# Snootli Creek	Bentinck Arm North Seapen	             #N/A             	#N/A
-
-# release_site_name  release_site_latitude	release_site_longitude
-#       Bedwell Bay                  49.32	               -126.97
-
-# project	facilityname	facility_latitude	facility_longitude
-# Bedwell Bay	Bedwell Bay Seapen	49.31983	-122.91132
-
-#'* Manual fix for Bentinck Arm North *
-# - the change was made by locating "Bentinck Arm North" in Google Map and 
-# minimizing the number of digit to modify: adding +2 to the longitude provided
-# a location vert close to the gogle maps's pin.
-cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bentinck Arm North"
-long_new <- filePSFnew_l$DataEntry_releases$release_site_longitude[cond] + 2
-long_new
-# -126.97
-filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -126.97
-
-
-#'* Manual fix for Bedwell Bay *
-# - the change was made by locating "BBedwell Bay" in Google Map and 
-# minimising the number of digit to modify. Here it seems that the 
-# filePSFnew_l$DataEntry_facilities$facility_longitude value match the location 
-# very well.
-cond <- grepl("Bedwell Bay",filePSFnew_l$DataEntry_facilities$facilityname)
-long_new <- filePSFnew_l$DataEntry_facilities$facility_longitude[cond]
-long_new
-# -122.9113
-cond <- filePSFnew_l$DataEntry_releases$release_site_name == "Bedwell Bay"
-filePSFnew_l$DataEntry_releases$release_site_longitude[cond] <- -122.9113
-
-
-#'* Add region to DataEntry_releases *
-
-region <- sapply(filePSFnew_l$DataEntry_releases$cuid_broodstock, 
-                 FUN = function(cuid){
-                   cond <- conservationunits_decoder$cuid == cuid
-                   return(conservationunits_decoder$region[cond])
-                 })
-
-DataEntry_releases <- cbind(data.frame(region = region),
-                            filePSFnew_l$DataEntry_releases)
-
-filePSFnew_l$DataEntry_releases <- DataEntry_releases
-colnames(filePSFnew_l$DataEntry_releases)
-
 #
 # Export the file ------
 #
+
+head(filePSFnew_l$DataEntry_releases_NAcoord)
+head(filePSFnew_l$DataEntry_releases)
 
 date <- Sys.Date()
 
@@ -1478,7 +1452,7 @@ for(sh_i in 1:length(names(filePSFnew_l))){
 
 
 
-# Notes for Katy
+# Notes for Katy OLD
 # - 1) I implemented a CHECK to check that facilityname have a unique combination of facility_latitude and facility_longitude --> they do
 # - 2) I implemented a CHECK to check that release_site_name have a unique combination of release_site_latitude and release_site_longitude --> they do
 # - 3) I sum total_release for a same combination of (i) release_site_name, (ii) release_stage, (iii) release_site_CUID and (iv) release_date
@@ -1486,6 +1460,110 @@ for(sh_i in 1:length(names(filePSFnew_l))){
 # - 5) In sheet DataEntry_releases, I removed the row with NA values for release_site_latitude and release_site_longitude and places these in a new additional sheet called DataEntry_releases_NAcoord
 # - 6) In sheet DataEntry_facilitiescuids, I removed the facilites (i.e., facilityID) that do not have coordinate in sheet DataEntry_facilities and placed these in a new additional sheet called DataEntry_facilitiescuids_NAcoord
 # - 7) I cannot do anything about the 1st sheet ??? progratically, it has to be copy pasted by hand from the template and then filled by hand
+
+#
+# Compare old vs. new dataset ------
+#
+
+datasetsNames_database <- datasetsNames_database_fun()
+
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+                                                   fromDatabase = F,
+                                                   update_file_csv = F,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+hatchery_data_new <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                pattern = "SWP_hatchery_data_")
+
+hatchery_data_old <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                pattern = "SWP_hatchery_data_", 
+                                                second_last = T)
+
+unique(hatchery_data_new$DataEntry_facilitiescuids$region)
+# "Central Coast" "Vancouver Island & Mainland Inlets" "Skeena" "Fraser"  "Nass" 
+# "Haida Gwaii" "Northern Transboundary"  "Columbia"  "Yukon"                             
+
+unique(hatchery_data_new$DataEntry_releases$region)
+# "Central Coast" "Vancouver Island & Mainland Inlets" "Skeena" "Fraser"  "Nass" 
+# "Haida Gwaii" "Northern Transboundary"  "Columbia"  "Yukon"
+
+unique(hatchery_data_new$DataEntry_releases$species_name)
+# "Sockeye"   "Chum"      "Coho"      "Chinook"   "Pink"      "Steelhead"
+
+unique(hatchery_data_old$DataEntry_releases$species)
+# "Sockeye" "Chum"    "Coho"    "Chinook" "Pink" 
+
+
+
+#'* DataEntry_facilities *
+nrow(hatchery_data_new$DataEntry_facilities) # 567
+nrow(hatchery_data_old$DataEntry_facilities) # 558
+program_new <- hatchery_data_new$DataEntry_facilities$program
+program_old <- hatchery_data_old$DataEntry_facilities$program
+program_new[! program_new %in% program_old]
+program_old[! program_old %in% program_new]
+
+project_new <- hatchery_data_new$DataEntry_facilities$project
+project_old <- hatchery_data_old$DataEntry_facilities$project
+project_new[! project_new %in% project_old]
+# "Okanagan Nation Alliance" "Devereux Creek" "Charlie Hartie Creek"  "Chown Brook"                             
+# "Cypress Creek/Strait of Georgia Mainland" "Geckie Creek" "Port Hardy F&W"
+project_old[! project_old %in% project_new]
+
+facilityname_new <- hatchery_data_new$DataEntry_facilities$facilityname
+facilityname_old <- hatchery_data_old$DataEntry_facilities$facilityname
+facilityname_new[! facilityname_new %in% facilityname_old]
+# "Egmont Point Seapen"  "Kl cp' elk' stim' Hatchery" "Devereux Creek Hatchery"
+# "Charlie Hartie Creek Incubation" "Chown Brook Hatchery"  "Cypress Creek Incubation"       
+# "Geckie Creek Hatchery"  "Port Hardy Fish & Wild Hatchery"
+facilityname_old[! facilityname_old %in% facilityname_new]
+
+
+#'* DataEntry_releases & DataEntry_releases_NAcoord *
+nrow(hatchery_data_new$DataEntry_releases) # 22274
+nrow(hatchery_data_old$DataEntry_releases) # 18895
+nrow(hatchery_data_new$DataEntry_releases) - nrow(hatchery_data_old$DataEntry_releases)
+# 3379
+
+nrow(hatchery_data_new$DataEntry_releases_NAcoord) # 22274
+nrow(hatchery_data_old$DataEntry_releases_NAcoord) # 18895
+nrow(hatchery_data_new$DataEntry_releases_NAcoord) - nrow(hatchery_data_old$DataEntry_releases_NAcoord)
+# -1141
+
+cuid_broodstock_new <- unique(hatchery_data_new$DataEntry_releases$cuid_broodstock)
+cuid_broodstock_old <- unique(hatchery_data_old$DataEntry_releases$cuid_broodstock)
+cuid_broodstock_new[! cuid_broodstock_new %in% cuid_broodstock_old]
+cuid_broodstock_old[! cuid_broodstock_old %in% cuid_broodstock_new]
+cuids <- cuid_broodstock_new[! cuid_broodstock_new %in% cuid_broodstock_old]
+sapply(cuids,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$region[cond]))
+}) |> table()
+
+cond <- hatchery_data_new$DataEntry_releases$cuid_broodstock %in% cuids
+hatchery_data_new$DataEntry_releases[cond,] |> View()
+
+#
+cuid_broodstock_new <- unique(c(hatchery_data_new$DataEntry_releases$cuid_broodstock,
+                                hatchery_data_new$DataEntry_releases_NAcoord$cuid_broodstock))
+cuid_broodstock_old <- unique(c(hatchery_data_old$DataEntry_releases$cuid_broodstock,
+                                hatchery_data_old$DataEntry_releases_NAcoord$cuid_broodstock))
+cuid_broodstock_old <- cuid_broodstock_old[!is.na(cuid_broodstock_old)]
+cuid_broodstock_new[! cuid_broodstock_new %in% cuid_broodstock_old]
+cuid_broodstock_old[! cuid_broodstock_old %in% cuid_broodstock_new]
+cuids <- cuid_broodstock_new[! cuid_broodstock_new %in% cuid_broodstock_old]
+sapply(cuids,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$region[cond]))
+}) |> table()
+
+# check several time series:
+
+
+
+
+
+
 
 #
 # Edit dataset dataset384_output release_type_pse for Transboundary and steelhead (ONE TIME FIX) -----------
@@ -1750,7 +1828,13 @@ DataEntry_release_TB[cond,]
 # CHECK: Pink odd vs. even year release issue -------
 # https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1723670303736409
 
-conservationunits_decoder
+datasetsNames_database <- datasetsNames_database_fun()
+
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+                                                   fromDatabase = F,
+                                                   update_file_csv = F,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
 
 hatchery_data <- import_mostRecent_file_fun(wd = wd_output, pattern = "SWP_hatchery_data_")
 

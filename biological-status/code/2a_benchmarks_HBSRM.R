@@ -185,7 +185,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 5
+      # i_sp <- 3
       
       # Import the HBSRM outputs, i.e., the posterior distributions of:
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)

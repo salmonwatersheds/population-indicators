@@ -105,24 +105,7 @@ options(warn = 0)
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717565600400059?thread_ts=1717434872.482819&cid=CJ5RVHVCG
 # 
 
-#'* Import the old biostatus & benchmarks from legacy site (appendix 4) *
-# Query the data from the the database at appdata.vwdl_setr_appendix4
-# biostatus_old <- retrieve_data_from_PSF_databse_fun(dsn_database = "salmondb_legacy",
-#                                                     name_dataset = "appdata.vwdl_setr_appendix4")
-
-# write.csv(biostatus_old,
-#           paste0(wd_pop_indic_data_input_dropbox,"/biostatus_legacy_appendix4_2024-09-05.csv"),
-#           row.names = F)
-
-# biostatus_old <- read.csv(paste0(wd_pop_indic_data_input_dropbox,
-#                                  "/biostatus_legacy_appendix4_2024-09-05.csv"),
-#                           header = T)
-# add psf_status_type to biostatus_old
-# biostatus_old$psf_status_type <- NA
-# cond <- !is.na(biostatus_old$sr_status)     # I assumed that is not NA then it is "sr"
-# biostatus_old$psf_status_type[cond] <- "sr"
-# cond <- is.na(biostatus_old$sr_status) & !is.na(biostatus_old$percentile_status)
-# biostatus_old$psf_status_type[cond] <- "percentile"
+#'* Import the old biostatus & benchmarks from legacy site *
 
 biostatus_old <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
                                             pattern = "dataset101_biological_status",
@@ -137,22 +120,15 @@ benchmarks_old <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                              pattern = "dataset102_benchmarks",
                                              second_last = T)
 
-# # TOREMOVE --> just this one time: last pdates pushed to the PSE:
-# biostatus_old <- read.csv(paste0(wd_output,"/archive/",
-#                                  "dataset101_biological_status_2024-09-13.csv"),
-#                           header = T)
-# 
-# benchmarks_old <- read.csv(paste0(wd_output,"/archive/",
-#                                  "dataset102_benchmarks_2024-09-13.csv"),
-#                           header = T)
+# Old format updates - TO keep in case there is a new to compare datasets before
+# the 2024-12-18 version
+# colnames(biostatus_old)[colnames(biostatus_old) == "species_abbr"] <- "species_qualified"
+# colnames(benchmarks_old)[colnames(benchmarks_old) == "species_abbr"] <- "species_qualified"
 
-colnames(biostatus_old)[colnames(biostatus_old) == "species_abbr"] <- "species_qualified"
-colnames(benchmarks_old)[colnames(benchmarks_old) == "species_abbr"] <- "species_qualified"
-
-biostatus_old$species_name[grepl("[S|s]ockeye",biostatus_old$species_name)] <- "Sockeye"
-biostatus_old$species_name[grepl("Pink",biostatus_old$species_name)] <- "Pink"
-benchmarks_old$species_name[grepl("[S|s]ockeye",benchmarks_old$species_name)] <- "Sockeye"
-benchmarks_old$species_name[grepl("Pink",benchmarks_old$species_name)] <- "Pink"
+# biostatus_old$species_name[grepl("[S|s]ockeye",biostatus_old$species_name)] <- "Sockeye"
+# biostatus_old$species_name[grepl("Pink",biostatus_old$species_name)] <- "Pink"
+# benchmarks_old$species_name[grepl("[S|s]ockeye",benchmarks_old$species_name)] <- "Sockeye"
+# benchmarks_old$species_name[grepl("Pink",benchmarks_old$species_name)] <- "Pink"
 
 
 #'* Import the new biostatus *
@@ -207,14 +183,9 @@ dataset390_output <- datasets_database_fun(nameDataSet = "dataset390_data_qualit
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
-# TEMPORARY (11/09/2024)
-# dataset390_output <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
-#                                                 pattern = "dataset390_data_quality")
-# dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_quality")]
-# colnames(dataset390_output)[colnames(dataset390_output) == "catch_quality"] <- "catch_method"
-dataset390_output <- dataset390_output[ , c("region","species_name","cuid","cu_name_pse","catch_method")]
-head(dataset390_output)
 
+dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
+head(dataset390_output)
 
 nrow(dataset390_output) # 463 465 466
 
@@ -256,12 +227,6 @@ biostatus_merge <- biostatus_merge[,c("region","species_name","species_qualified
                                       "psf_status_code_old","psf_status_code_new",
                                       "psf_status_code_all_old","psf_status_code_all_new")]
 
-# add the new psf_status_code_all
-biostatus_merge$psf_status_code_all_new <- sapply(biostatus_merge$cuid,function(cuid){
-  cond <- biostatus_new$cuid == cuid
-  return(biostatus_new$psf_status_code_all[cond])
-})
-
 
 #'* CUs in old but not in new dataset and vice versa *
 cuid_old <- biostatus_old$cuid
@@ -269,6 +234,8 @@ cuid_new <- biostatus_new$cuid
 cuid_old[!cuid_old %in% cuid_new] # none 241 188 521 751
 cond <- biostatus_old$cuid %in% cuid_old[!cuid_old %in% cuid_new]
 biostatus_old[cond,] 
+
+# Old comments:
 # 188 Swan/Club: all good, was supposed to be removed
 # https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1713985785863399?thread_ts=1709839326.139849&cid=CKNVB4MCG
 
@@ -294,25 +261,27 @@ biostatus_merge[cond,]
 
 #'* Condition same status *
 cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
-sum(cond_same) # 378 432 370 369 362 346
+sum(cond_same) # 442 378 432 370 369 362 346
 biostatus_merge[cond_same,] # |> View()
 
 # with biostatus assessed:
 cond_123 <- biostatus_merge$psf_status_old[cond_same] %in% c("poor","fair","goog")
-sum(cond_123) # 76 87 48 44
+sum(cond_123) # 88 76 87 48 44
 
 # with same method used:
 cond_method_same <- biostatus_merge[cond_same,][cond_123,]$psf_status_type_old ==  biostatus_merge[cond_same,][cond_123,]$psf_status_type_new
-sum(cond_method_same) # 70 85 46 43
+sum(cond_method_same) # 88 70 85 46 43
 
 biostatus_merge[cond_same,][cond_123,][cond_method_same,]
 biostatus_merge[cond_same,][cond_123,][!cond_method_same,]
 
 #'* Different status *
 cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
-sum(cond_diff) # 41 31 93 103 120
+sum(cond_diff) # 21 41 31 93 103 120
 
-biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse","psf_status_old","psf_status_new")]
+biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
+                            "psf_status_old","psf_status_new",
+                            "psf_status_code_old","psf_status_code_new")]
 
 cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
 cases
@@ -327,7 +296,7 @@ biostatus_merge_diff$explanation <- "?"
 
 cuid_diff <- biostatus_merge_diff$cuid
 
-#'* Different methods (and diff status) and why (7 out of 103) *
+#'* Different status: Different methods and why (7 out of 103) *
 cond_method_NA_new <- is.na(biostatus_merge$psf_status_type_new)
 cond_method_NA_old <- is.na(biostatus_merge$psf_status_type_old)
 cond_sr_new <- biostatus_merge$psf_status_type_new == "sr" & !cond_method_NA_new
@@ -388,7 +357,7 @@ cuid_catchLow <- dataset390_output[cond_390_cuid,]$cuid[cond_cuid_catchLow]
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid_catchLow
 biostatus_merge_diff$explanation[cond_cuid] <- "rule 2: catch method quality != 1 ?"
 
-#'* Biostatus improved or worsened (same method) (23 + 11 out of 103) *
+#'* Different status & Biostatus improved or worsened (same method) (23 + 11 out of 103) *
 
 cond_same_method <- (cond_sr_old & cond_sr_new) | (cond_percent_old & cond_percent_new)
 
@@ -402,7 +371,6 @@ biostatus_merge[cond_same_method & cond_diff_status123_improve,] # |> View()
 cuid <- biostatus_merge[cond_same_method & cond_diff_status123_improve,]$cuid
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "same method, biostatus improved"
-
 
 # Worsened biostatus
 cond_diff_status123_worsened <- (biostatus_merge$psf_status_new == "poor" & 
@@ -462,7 +430,7 @@ biostatus_merge_diff$explanation[cond] <- explanation
 
 # Other potential reasons: ?
 
-#'* data-deficient --> status (12) *
+#'*  Different status: data-deficient --> status (12) *
 cond_dataDeff_biostatus <- biostatus_merge$psf_status_old == "data-deficient" & 
   biostatus_merge$psf_status_new %in% c("poor","fair","good")
 sum(cond_dataDeff_biostatus) # 5 12 13 42
@@ -483,7 +451,7 @@ biostatus_merge_diff$explanation[cond_cuid]
 
 count <- count + sum(cond_dataDeff_biostatus)
 
-#'* data-deficient --> not-assessed (17) *
+#'*  Different status: data-deficient --> not-assessed (17) *
 cond <- biostatus_merge$psf_status_old == "data-deficient" & 
   biostatus_merge$psf_status_new == "not-assessed"
 sum(cond) # 17 27
@@ -501,7 +469,24 @@ biostatus_merge_diff$explanation[cond_cuid] <- "new terminology for rule 5 and 6
 
 count <- count + sum(cond)
 
-#'* extinct --> status (1)*
+
+#'*  Different status: not-assessed --> data-deficient  *
+cond <- biostatus_merge$psf_status_new == "data-deficient" & 
+  biostatus_merge$psf_status_old == "not-assessed"
+sum(cond) # 17 27
+biostatus_merge[cond,]
+
+biostatus_merge$psf_status_code_all_new[cond] |> unique() # make sense
+cuid_dataDeff_notAssess <- biostatus_merge$cuid[cond]
+
+cond_cuid <- biostatus_merge_diff$cuid %in% cuid_dataDeff_notAssess
+biostatus_merge_diff$type_diff[cond_cuid] <- " not-assessed to data-deficient"
+biostatus_merge_diff$explanation[cond_cuid] <- "rule 6 and rule 8 --> rule 8"
+
+count <- count + sum(cond)
+
+
+#'*  Different status: extinct --> status (1)*
 cond <- biostatus_merge$psf_status_old == "extinct" & 
   biostatus_merge$psf_status_new %in% c("poor","fair","good")
 sum(cond) # 1
@@ -514,7 +499,7 @@ biostatus_merge_diff$explanation[cond_cuid] <- "de novo"
 
 count <- count + sum(cond)
 
-#'* extinct --> data-deficient (2)*
+#'* Different status: extinct --> data-deficient (2)*
 cond <- biostatus_merge$psf_status_old == "extinct" & 
   biostatus_merge$psf_status_new == "data-deficient"
 sum(cond) # 2 1
@@ -530,7 +515,7 @@ biostatus_merge_diff$explanation[cond_cuid] <- "no longer extinct but not enough
 count <- count + sum(cond)
 
 
-#'* status --> data-deficient (21)*
+#'* Different status: status --> data-deficient (21)*
 cond <- biostatus_merge$psf_status_old %in% c("poor","fair","good") & 
   biostatus_merge$psf_status_new == "data-deficient"
 sum(cond) # 21

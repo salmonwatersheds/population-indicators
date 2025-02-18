@@ -571,20 +571,12 @@ pattern <- "dataset202"
 
 # Most recent dataset:
 trend_allgen <- import_mostRecent_file_fun(wd = wd, pattern = pattern)
-nrow(trend_allgen) # 234
+nrow(trend_allgen) # 238
 
 # Second most recent dataset:
-files_c <- list.files(wd)
-files_c <- files_c[grepl(x = files_c, pattern = pattern)]
-file.mtime <- file.mtime(paste(wd,files_c,sep="/"))
-files_c <- files_c[order(file.mtime)] |> rev()
-file <- files_c[2]
-print(paste0("File imported: ",file," ; Date modified: ", max(file.mtime)))
-
-
-trend_allgen_old <- read.csv(paste0(wd_output,"/archive/",file),header = T)
-head(trend_allgen_old)
-nrow(trend_allgen_old) # 232
+trend_allgen_old <- import_mostRecent_file_fun(wd = wd, pattern = pattern, 
+                                               second_last = T)
+nrow(trend_allgen_old) # 238
 
 #
 identical(trend_allgen,trend_allgen_old)

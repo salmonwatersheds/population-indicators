@@ -155,7 +155,7 @@ yearCurrentAbundance <- NA # was 2021
 # Number of iterations for the bootstrapping process to calculate thresholds
 nBoot <- 5000
 
-print_fig <- F
+print_fig <- T
 
 #
 for(i_rg in 1:length(region)){

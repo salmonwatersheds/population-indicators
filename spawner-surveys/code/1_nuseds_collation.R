@@ -183,11 +183,9 @@ fields_def <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbo
 fields_def$all_areas_nuseds$AREA
 fields_def$cu_system_sites$IS_INDICATOR
 
-
 #' * Import  list for the fields in NUSEDS and CUSS that are associated to unique IndexId and GFE_ID *
 fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
                                       conservation_unit_system_sites = conservation_unit_system_sites)
-
 
 #' * Create a dataframe with the species names and the different acronymes *
 sp_salmon_detail <- c("Chum", "Chinook", "Coho", "Pink even","Pink odd","Sockeye lake","Sockeye river")

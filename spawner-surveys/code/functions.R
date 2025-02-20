@@ -1938,7 +1938,7 @@ distance_condition_fun <- function(conditions_l,streamlocationids,
 #' but same coordinates in conservation_system_sites.
 #' Additional fields are created: X_LONGT_new and Y_LAT_new to fill after when 
 #' attributing new coordinates for certain rows. 
-locations_duplicated_group_fun <- function(locations_duplicated){
+locations_duplicated_group_fun <- function(locations_duplicated,return_dist = F){
   
   #' Sort the dataset with the distance from a unique (random) location, and create
   #' a group column
@@ -1964,8 +1964,17 @@ locations_duplicated_group_fun <- function(locations_duplicated){
   }
   
   locations_duplicated$X_LONGT_new <- locations_duplicated$Y_LAT_new <- NA
-  return(locations_duplicated)
+  
+  cols <- colnames(locations_duplicated)
+  if(!return_dist){
+    cols <- cols[cols != "dist"]
+  }
+  
+  return(locations_duplicated[,cols])
 }
+
+
+
 
 
 

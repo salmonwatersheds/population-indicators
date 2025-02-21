@@ -113,7 +113,6 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
-
 source("code/functions.R")
 
 options(digits = 9)
@@ -122,21 +121,26 @@ options(digits = 9)
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- F  
+export_datasets <- T
 
 # Decision in ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 # If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 
 # If FALSE, time series only composed of NAs are removed from NUSEDS.
-remove_timeSeries_zeros_too <- F # 
+remove_timeSeries_zeros_too <- T 
 
 # Used just after NUSEDS and CUSS are merged: to decide if we want to replace
 # all the remainning 0s by NAs.
 replace_zeros_byNAs <- T
+
+# To avoid having to wait too much time where executing the code multiple times.
+# Should be set to FALSE by default.
+import_file_locally_TEMPORARY <- F
+
 ```
 
 # Import datasets
 
-The NuSEDS (all_areas_nuseds) and CUSS (conservation_unit_system_sites) datasets are imported and duplicated rows are removed. The columns considered for NuSEDS are related to the population, location, fish counts and year of assessment:
+The **NUSEDS** (all_areas_nuseds) and **CUSS** (conservation_unit_system_sites) datasets are imported and duplicated rows are removed. The columns considered for NuSEDS are related to the population, location, fish counts and year of assessment:
 
 ```{r,include=FALSE}
 #'* Import the all_areas_nuseds data ("NUSEDS) *
@@ -260,6 +264,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 ```
+
 ```{r, echo=FALSE}
 head(conservationunits_decoder[,c("region","species_name","species_abbr","cuid","cu_name_pse","cu_name_dfo","cu_index")])
 ```
@@ -317,7 +322,6 @@ head(DFO_All_Streams_Segments)
 # }
 ```
 
-
 # Initial modidifications
 
 ```{r, include=FALSE}
@@ -326,7 +330,10 @@ head(DFO_All_Streams_Segments)
 
 row_remove <- all_areas_nuseds$SPECIES %in% c("Steelhead","Atlantic","Kokanee")
 nb_rows_NUSEDS <- sum(row_remove)
+nb_rows_NUSEDS # 967 941
+
 nb_POP_ID_NUSEDS <- length(unique(all_areas_nuseds$POP_ID[row_remove]))
+nb_POP_ID_NUSEDS # 133
 
 all_areas_nuseds <- all_areas_nuseds[!row_remove,]
 
@@ -344,7 +351,7 @@ conservation_unit_system_sites <- conservation_unit_system_sites[!row_remove,]
 
 ```
 
-We remove from NUSEDS and CUSS data related to steelhead, Atlantic salmon and Kokanee salmon, corresponding to `r nb_rows_NUSEDS` rows and `r nb_POP_ID_NUSEDS` populations (`POP_ID`) in NUSEDS and `r nb_rows_CUSS` in CUSS.
+We remove from NUSEDS and CUSS data related to steelhead, Atlantic salmon and Kokanee salmon, corresponding to `r nb_rows_NUSEDS` rows and `r nb_POP_ID_NUSEDS` populations (`POP_ID`) in **NUSEDS** and `r nb_rows_CUSS` in **CUSS**.
 
 
 ```{r, include=FALSE}
@@ -424,7 +431,6 @@ all_areas_nuseds[all_areas_nuseds$IndexId == "CO_46240",]$StatArea <- "29"    # 
 all_areas_nuseds[all_areas_nuseds$IndexId == "PKO_51094",]$StatArea <- "12"  # BSC: there is one ""
 all_areas_nuseds[all_areas_nuseds$IndexId == "SX_45495",]$StatArea <- "120"  # BSC: already "120"
 ```
-
 
 
 ```{r, include=F}
@@ -531,12 +537,11 @@ We create the column `MAX_ESTIMATE` which is the maximum value of the fish count
 var_in_MAX_ESTIMATE
 ```
 
-
 # Fixes on NUSEDS and CUSS
 
 ```{r, include=F}
 all_areas_nuseds_all <- all_areas_nuseds
-nrow(all_areas_nuseds_all) # 412492
+nrow(all_areas_nuseds_all) # 415230 412492
 
 conservation_unit_system_sites_all <- conservation_unit_system_sites
 nrow(conservation_unit_system_sites_all) # 7145
@@ -899,7 +904,7 @@ locations_duplicated$X_LONGT_new[cond][i_toChange] <- X_Y[2]
 locations_duplicated[cond,c("GFE_ID","SYSTEM_SITE","Y_LAT","X_LONGT","Y_LAT_new","X_LONGT_new")]
 ```
 
-The fields `X_LONGT` and `Y_LAT` are updated in CUSS, and the new field `coordinates_changed` is added to indicate which locations are concerned.
+The fields `X_LONGT` and `Y_LAT` are updated in **CUSS**, and the new field `coordinates_changed` is added to indicate which locations are concerned.
 
 ```{r, include=F}
 # Replace these values in CUSS
@@ -937,25 +942,35 @@ nrow(coord_duplicated) # 0
 ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 
 ```{r, include=FALSE}
-
 nrow_before <- nrow(all_areas_nuseds)
 
-# Use package parallel To optimize the (take up to 20 minutes otherwise)
-# TEMPORARY: to comment out when done (takes a bit of time)
-# detectCores()
-# detectCores(logical = FALSE)
-# cores_nb <- 10
-# all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
-#                                                              zeros_too = remove_timeSeries_zeros_too, # to consider 0s as well
-#                                                              cores_nb = cores_nb)
+# If all_areas_nuseds without NAs and 0s already produced; to save time
+if(import_file_locally_TEMPORARY){
+  
+  all_areas_nuseds <- read.csv(paste0(wd_data,"/all_areas_nuseds_noNA0s_TEMP.csv"),
+                              header = T)
+}else{
+  # Use package parallel To optimize the (take up to 20 minutes otherwise)
+  # detectCores()
+  # detectCores(logical = FALSE)
+  cores_nb <- 10
+  
+  # Note: Passing remove_timeSeries_zeros_too as an argument in remove_series_nodata_nuseds_parallel_fun(zeros_too = ) does not work
+  if(remove_timeSeries_zeros_too){
+      all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
+                                                                   zeros_too = T, # to consider time series with only NAs and/or 0s
+                                                                   cores_nb = cores_nb)
+  }else{
+      all_areas_nuseds <- remove_series_nodata_nuseds_parallel_fun(all_areas_nuseds = all_areas_nuseds,
+                                                                   zeros_too = F, # only consider time series with only NAs
+                                                                   cores_nb = cores_nb)
+  }
+  
+  write.csv(all_areas_nuseds,paste0(wd_data,"/all_areas_nuseds_noNA0s_TEMP.csv"),
+            row.names = F)
+}
 
-# TEMPORARY: to save time, delete
-# write.csv(all_areas_nuseds,paste0(wd_data,"/all_areas_nuseds_noNA0s_TEMP.csv"),
-#           row.names = F)
-all_areas_nuseds <- read.csv(paste0(wd_data,"/all_areas_nuseds_noNA0s_TEMP.csv"),
-                             header = T)
-
-nrow(all_areas_nuseds) # 309647
+nrow(all_areas_nuseds) # 312331 309647
 
 nrow_after <- nrow(all_areas_nuseds)
 ```
@@ -965,16 +980,16 @@ This procedure removes `r nrow_before - nrow_after` rows in **NUSEDS**, correspo
 ```{r, include = F}
 # Record the series that were removed and why:
 IndexId_GFE_ID_all <- unique(all_areas_nuseds_all[,c("IndexId","GFE_ID")])
-nrow(IndexId_GFE_ID_all) # 11553
+nrow(IndexId_GFE_ID_all) # 11568 11553
 
 IndexId_GFE_ID <- unique(all_areas_nuseds[,c("IndexId","GFE_ID")])
-nrow(IndexId_GFE_ID) # 7062
+nrow(IndexId_GFE_ID) # 7084 7062
 
 IndexId_GFE_ID_all <- paste(IndexId_GFE_ID_all$IndexId,IndexId_GFE_ID_all$GFE_ID,sep = "&")
 IndexId_GFE_ID <- paste(IndexId_GFE_ID$IndexId,IndexId_GFE_ID$GFE_ID,sep = "&")
 
 IndexId_GFE_ID_removed_c <- IndexId_GFE_ID_all[! IndexId_GFE_ID_all %in% IndexId_GFE_ID]
-length(IndexId_GFE_ID_removed_c) # 4491
+length(IndexId_GFE_ID_removed_c) # 4484 4491
 IndexId_GFE_ID_removed <- data.frame(IndexId = rep(NA,length(IndexId_GFE_ID_removed_c)),
                                      GFE_ID = rep(NA,length(IndexId_GFE_ID_removed_c)))
 
@@ -1004,7 +1019,7 @@ removed_all$comment <- comment
 # plot_IndexId_GFE_ID_fun(IndexIds = removed_all$IndexId[i],
 #                         GFE_IDs = removed_all$GFE_ID[i],
 #                         all_areas_nuseds = all_areas_nuseds_all)
-nrow(removed_all) # 4491
+nrow(removed_all) # 4484 4491
 ```
 
 The data removed concerns `r nrow(removed_all)` time series, which are referenced in `removed_all`:
@@ -1013,8 +1028,7 @@ The data removed concerns `r nrow(removed_all)` time series, which are reference
 head(removed_all)
 ```
 
-
-Note that we do not remove these series in CUSS at this stage because they could be alternative series for the series in NUSEDS that do not appear in CUSS. It is only once series in NUSEDS absent in CUSS were found alternative series for, that we remove series in CUSS that have only NAs and/or 0s in NUSEDS.
+Note that we do not remove these series in **CUSS** at this stage because they could be alternative series for the series in NUSEDS that do not appear in CUSS. It is only once series in NUSEDS absent in CUSS were found alternative series for, that we remove series in CUSS that have only NAs and/or 0s in **NUSEDS**.
 
 
 ## Fix time series in CUSS that are not in NUSEDS
@@ -1031,22 +1045,24 @@ The procedure returns a simple data frame with the `IndexId` & `GFE_ID` series c
 
 ```{r, include=FALSE}
 
-# 
-# TEMPORARY: to comment out when done (takes a bit of time)
-# cores_nb <- 10
-# trackRecord <- cuss_nuseds_match_parallel_fun(conservation_unit_system_sites = conservation_unit_system_sites,
-#                                               all_areas_nuseds = all_areas_nuseds, 
-#                                               cores_nb = cores_nb)
+# If trackRecord_TEMP.csv already produced: to save time
+if(import_file_locally_TEMPORARY){
+  
+  trackRecord <- read.csv(paste0(wd_data,"/trackRecord_TEMP.csv"), header = T)
 
-# TEMPORARY: to save time, delete
-# write.csv(trackRecord,paste0(wd_data,"/trackRecord_TEMP.csv"), row.names = F)
-trackRecord <- read.csv(paste0(wd_data,"/trackRecord_TEMP.csv"), header = T)
+}else{
+  
+  trackRecord <- cuss_nuseds_match_parallel_fun(conservation_unit_system_sites = conservation_unit_system_sites,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                cores_nb = cores_nb)
+  write.csv(trackRecord,paste0(wd_data,"/trackRecord_TEMP.csv"), row.names = F)
+}
 
 nrow(trackRecord) # 7145
 
 # Number of time series present in CUSS but not in NUSEDS:
 cond <- trackRecord$in_nused == "no"
-sum(cond) # 259
+sum(cond) # 254 259
 
 head(trackRecord[cond,])
 
@@ -1451,7 +1467,7 @@ rownames(show) <- NULL
 show
 ```
 
-### Multiple GFE_IDs for a same IndexId in CUSS
+### Multiple GFE_IDs for a same IndexId (POP_ID) in CUSS
 
 There should not be any `InsexId` associated to multiple `GFE_ID` (it is a MANY TO ONE relationship).
 
@@ -1588,12 +1604,12 @@ The goal is to look for each `IndexId` & `GFE_ID` series in **NUSEDS** that are 
 series_nuseds <- paste(all_areas_nuseds$IndexId,
                        all_areas_nuseds$GFE_ID,sep = "&")
 series_nuseds <- unique(series_nuseds)
-length(series_nuseds) # 7060
+length(series_nuseds) # 7082 7060
 
 series_cuss <- paste(conservation_unit_system_sites$IndexId,
                      conservation_unit_system_sites$GFE_ID,sep = "&")
 series_cuss <- unique(series_cuss)
-length(series_cuss) # 6889
+length(series_cuss) # 6894 6889
 
 #' Now all the series in CUSS are in all_areas_nuseds.
 series_cuss[! series_cuss %in% series_nuseds]
@@ -1601,7 +1617,8 @@ series_cuss[! series_cuss %in% series_nuseds]
 # Number of series in NUSEDS not in CUSS:
 series_Nuseds_noCuss <- series_nuseds[! series_nuseds %in% series_cuss]
 series_Nuseds_noCuss <- series_Nuseds_noCuss[order(series_Nuseds_noCuss)]
-n <- length(series_Nuseds_noCuss) # 171
+n <- length(series_Nuseds_noCuss) # 188 171
+n
 ```
 
 There are `r n` `IndexId` & `GFE_ID` references in **NUSEDS** that are not present in **CUSS**, for instance:
@@ -1733,7 +1750,7 @@ for(i in 1:nrow(trackRecord_nuseds)){
 }
 #View(trackRecord_nuseds)
 head(trackRecord_nuseds)
-nrow(trackRecord_nuseds) # 171
+nrow(trackRecord_nuseds) # 188 171
 rownames(trackRecord_nuseds) <- NULL
 ```
 
@@ -1746,7 +1763,7 @@ head(trackRecord_nuseds[,c("IndexId","GFE_ID","nb_dataPt","alternative_IndexId",
 ```{r, include=FALSE}
 cond_3 <- trackRecord_nuseds$nb_dataPt < 4
 trackRecord_nuseds_3 <- trackRecord_nuseds[cond_3,]
-nrow(trackRecord_nuseds_3) # 94
+nrow(trackRecord_nuseds_3) # 105 94
 ```
 
 There are `r nrow(trackRecord_nuseds_3)` populations removed because they have < 4 data points; for instance:
@@ -1771,10 +1788,10 @@ removed$comment <- paste("Only",trackRecord_nuseds_3$nb_dataPt,
 all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds, 
                                            toRemove = removed, 
                                            fields = c("IndexId","GFE_ID"))
-nrow(all_areas_nuseds) # 308250
+nrow(all_areas_nuseds) # 310846 308250
 
 removed_all <- rbind(removed_all,removed)
-nrow(removed_all) # 4593
+nrow(removed_all) # 4597 4593
 
 nrow_after <- nrow(all_areas_nuseds)
 ```
@@ -1782,7 +1799,7 @@ nrow_after <- nrow(all_areas_nuseds)
 The procedure removes `r nrow_before - nrow_after` rows in **NUSEDS**.
 
 
-###  Alternative IndexId AND no alternative GFE_ID
+###  Alternative IndexId (POP_ID) AND no alternative GFE_ID
 
 The section concerns focal `IndexId` & `GFE_ID` time series in **NUSEDS** that are not in **CUSS** and for which there are alternative series in **CUSS** with the same `IndexId` but a different `GFE_ID`.  The goal is to compare the focal vs. the alternative time series and take the following actions:
 
@@ -1808,8 +1825,7 @@ row.names(show) <- NULL
 show
 ```
 
-The figures below show for each of these cases the decision made. The figures also show the `CU_MAME` of focal and alternative `IndexId`. The `i` at the bottom left of each plot is used after to reference the figures when fixing time series manually. Several cases are set aside to be manually fixed after.
-
+The figures below show for each of these cases the decision made. The figures also show the `POPULATION` of focal and alternative `IndexId`. The `i` at the bottom left of each plot is used after to reference the figures when fixing time series manually. Several cases are set aside to be manually fixed after.
 
 ```{r, echo=FALSE, fig.width = 14, fig.height = 8}
 removed <- removed_all[F,]
@@ -2183,8 +2199,6 @@ toAdd <- data.frame(IndexId = iid,
 added_all <- rbind(added_all,toAdd)
 
 
-
-
 # edit indexId - related fields in CUSS 
 conservation_unit_system_sites <- fields_edit_NUSEDS_CUSS_fun(edit_CUSS = T, 
                                                 IndexId_focal = iid_alter,   # yes here the one to change is iid_alter 
@@ -2244,6 +2258,66 @@ all_areas_nuseds <- remove_rows_fields_fun(dataframe = all_areas_nuseds,
 ```
 
 
+```{r, include=FALSE}
+i <- 7
+iid <- trackRecord_nuseds_iid$IndexId[i]
+iid_alter <- trackRecord_nuseds_iid$alternative_IndexId[i]
+gfeid <- trackRecord_nuseds_iid$GFE_ID[i]
+
+
+# It is decided to not merge the focal series to the alternative because POPULATION 
+# indicates that they belong to different CU.
+# Decision: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1740166630290809
+cond <- conservation_unit_system_sites$IndexId == iid_alter
+CU_NAME_alter <- conservation_unit_system_sites$CU_NAME[cond] |> unique()
+CU_NAME_alter
+# "FRASER-EARLY SUMMER TIMING"
+
+cond <- conservation_unit_system_sites$IndexId == iid_alter
+FULL_CU_IN_alter <- conservation_unit_system_sites$FULL_CU_IN[cond] |> unique()
+FULL_CU_IN_alter
+# "SEL-06-06"
+
+cond <-  all_areas_nuseds$IndexId == iid_alter
+POPULATION_alter <- all_areas_nuseds$POPULATION[cond] |> unique()
+POPULATION_alter
+# "Ormond Creek (Prince George) Summer Sockeye"
+
+FULL_CU_IN_other <- "SEL-06-07"
+cond <- conservation_unit_system_sites$FULL_CU_IN == FULL_CU_IN_other
+CU_NAME_other <- conservation_unit_system_sites$CU_NAME[cond] |> unique()
+# "FRANCOIS/FRASER-SUMMER TIMING"
+
+cond <-  all_areas_nuseds$IndexId == iid
+POPULATION_focal <- all_areas_nuseds$POPULATION[cond] |> unique()
+POPULATION_focal
+# "Ormond Creek (Prince George) Early Summer Sockeye"
+```
+
+In the case `i =` `r i` above, `r paste(iid,gfeid,sep = " - ")` time series is merged to the alternative series (`indexId` is changed from `r iid` to `r iid_alter` in **NUSEDS**) because the focal `POPULATION` (= `r POPULATION_focal`) is compatible with the alternative `CU_NAME` (= `r CU_NAME_alter`).
+
+```{r, echo = FALSE}
+# Remove alternative series from CUSS and NUSEDS
+toRemove <- data.frame(IndexId = iid, 
+                       GFE_ID = gfeid, 
+                       dataset = "NUSEDS")
+toRemove$comment <- paste0("Merged to series IndexId = ",iid_alter," - GFE_ID = ",gfeid," because 100% compatible")
+removed_all <- rbind(removed_all,toRemove)
+
+# merge series in all_areas_nuseds by changing CN_48442 for CN_7809
+all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T,
+                                                IndexId_focal = iid,   # yes here the one to change is iid_alter 
+                                                IndexId_alter = iid_alter,
+                                                GFE_ID_focal = gfeid,
+                                                GFE_ID_alter = gfeid,
+                                                all_areas_nuseds = all_areas_nuseds,
+                                                conservation_unit_system_sites = conservation_unit_system_sites)
+
+```
+
+Note that could be a mismatch between the alternative `POPULATION` (= `r POPULATION_alter`) and its its own `CU_NAME` (= `r CU_NAME_alter`) (`FULL_CU_IN` = `r FULL_CU_IN_alter`), and could instead be better associated with the CU with `CU_NAME` = `r CU_NAME_other` (`FULL_CU_IN` = `r FULL_CU_IN_other`). We are not making any change in that regard.
+
+
 ### Alternative GFE_ID
 
 The focal time series (i.e., a unique `IndexId` - `GFE_ID` not in **CUSS**) are compared to alternative series with a different `GFE_ID` and potentially a different `IndexId` (but of the same species). 
@@ -2255,7 +2329,7 @@ cond <- trackRecord_nuseds$alternative_GFE_ID != "none" &
 trackRecord_nuseds_gfeid <- trackRecord_nuseds[cond,]
 trackRecord_nuseds_gfeid <- trackRecord_nuseds_gfeid[order(trackRecord_nuseds_gfeid$IndexId),]
 trackRecord_nuseds_gfeid
-nrow(trackRecord_nuseds_gfeid) # 34
+nrow(trackRecord_nuseds_gfeid) # 35 34
 trackRecord_nuseds_gfeid$i <- NA
 ```
 
@@ -2978,11 +3052,11 @@ DFO_All_Streams_Segments[cond,]
 #' https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40888721.pdf
 #' to define these coordinates manually.
 DFO_streams_here <- DFO_All_Streams_Segments[cond,] |> as.data.frame()
-DFO_streams_here[1,c("Y_LAT","X_LONGT")] <- c(51.598602,-119.889197) 
-DFO_streams_here[2,c("Y_LAT","X_LONGT")] <- c(52.345236,-119.177796)  
-DFO_streams_here[3,c("Y_LAT","X_LONGT")] <- c(51.593091,-119.701668) 
-DFO_streams_here[4,c("Y_LAT","X_LONGT")] <- c(51.579465,-119.810014) 
-DFO_streams_here[5,c("Y_LAT","X_LONGT")] <- c(52.281312,-119.173514)
+DFO_streams_here[DFO_streams_here$NME == "BIRCH ISLAND CHANNEL",c("Y_LAT","X_LONGT")] <- c(51.598602,-119.889197) 
+DFO_streams_here[DFO_streams_here$NME == "UPPER NORTH THOMPSON RIVER MAINSTEM",c("Y_LAT","X_LONGT")] <- c(52.345236,-119.177796)  
+DFO_streams_here[DFO_streams_here$NME == "MIDDLE NORTH THOMPSON RIVER MAINSTEM",c("Y_LAT","X_LONGT")] <- c(51.593091,-119.701668) 
+DFO_streams_here[DFO_streams_here$NME == "PIG CHANNEL COMBINED",c("Y_LAT","X_LONGT")] <- c(51.579465,-119.810014) 
+DFO_streams_here[DFO_streams_here$NME == "UPPER NORTH THOMPSON RIVER-MILEDGE CONFLUENCE",c("Y_LAT","X_LONGT")] <- c(52.281312,-119.173514)
 
 for(gfeid in trackRecord_nuseds_gfeid$GFE_ID[cond_i]){
   # gfeid <- trackRecord_nuseds_gfeid$GFE_ID[cond_i][1]
@@ -3012,7 +3086,7 @@ for(gfeid in trackRecord_nuseds_gfeid$GFE_ID[cond_i]){
 }
 ```
 
-In case i = `r i`: all five focal series are added to **CUSS**. Their `GFE_ID` are present in the DFO streams but the coordinates are not:
+In case i = `r i`: all `r nrow(DFO_streams_here)` focal series are added to **CUSS**. Their `GFE_ID` are present in the DFO streams but the coordinates are missing for most of them:
 
 ```{r,echo=FALSE}
 cond <- DFO_All_Streams_Segments$ID %in% trackRecord_nuseds_gfeid$GFE_ID[cond_i]
@@ -3376,7 +3450,8 @@ cond <- trackRecord_nuseds$alternative_GFE_ID == "none" &
   trackRecord_nuseds$alternative_IndexId == "none" &
   !cond_3
 trackRecord_nuseds_nocuss <- trackRecord_nuseds[cond,]
-nb_rows <- nrow(trackRecord_nuseds_nocuss) # 37
+nb_rows <- nrow(trackRecord_nuseds_nocuss) # 41 37
+nb_rows
 rownames(trackRecord_nuseds_nocuss) <- NULL
 ```
 
@@ -3470,12 +3545,12 @@ for(r in 1:nrow(trackRecord_nuseds_nocuss)){
 series_nuseds <- paste(all_areas_nuseds$IndexId,
                        all_areas_nuseds$GFE_ID,sep = "&")
 series_nuseds <- unique(series_nuseds)
-length(series_nuseds) # 6911
+length(series_nuseds) # 6917 6911
 
 series_cuss <- paste(conservation_unit_system_sites$IndexId,
                      conservation_unit_system_sites$GFE_ID,sep = "&")
 series_cuss <- unique(series_cuss)
-length(series_cuss) # 6911
+length(series_cuss) # 6917 6911
 
 #' Now all the series in CUSS are in all_areas_nuseds.
 series_cuss[! series_cuss %in% series_nuseds]
@@ -3518,8 +3593,8 @@ nuseds_final <- base::merge(x = all_areas_nuseds[,c(col_common,col_nuseds)],
 ```
 
 ```{r, include=FALSE}
-nrow(nuseds_final)     # 307217
-nrow(all_areas_nuseds) # 307217
+nrow(nuseds_final)     # 309727 307217
+nrow(all_areas_nuseds) # 309727 307217
 ```
 
 
@@ -3536,7 +3611,6 @@ So far we have not been able to determine which zeros are actual 0s and those wh
 Decision made:
 
 ```{r, echo=FALSE}
-
 if(replace_zeros_byNAs){
   nuseds_final$MAX_ESTIMATE[cond] <- NA
   print("Zeros are replaced by NAs.")

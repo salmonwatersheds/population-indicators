@@ -789,7 +789,7 @@ remove_series_nodata_nuseds_parallel_fun <- function(all_areas_nuseds,
     cl <- makeCluster(cores_nb)
     
     clusterExport(cl,"all_areas_nuseds")
-    #clusterExport(cl,"zeros_too")
+    # clusterExport(cl,"zeros_too")
     
     #clusterExport(cl,"indexId_GFE_ID")
     #clusterExport(cl,"toremove")

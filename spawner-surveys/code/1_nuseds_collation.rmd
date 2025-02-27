@@ -134,7 +134,7 @@ export_datasets <- F
 remove_timeSeries_zeros_too <- T 
 
 # Used just after NUSEDS and CUSS are merged: to decide if we want to replace
-# all the remainning 0s by NAs.
+# all the remaining 0s by NAs.
 replace_zeros_byNAs <- T
 
 # To avoid having to wait too much time where executing the code multiple times.
@@ -4751,7 +4751,9 @@ if(export_datasets){
   
   
   # Edit the log file
-  log_file <- read.csv(paste0(wd_output,"/1_log_file.csv"),header = T)
+  logfile_path <- paste0(getwd(),"/spawner-surveys/output/1_log_file.csv")
+  logfile_path <- gsub("spawner-surveys/code/","",logfile_path)
+  log_file <- read.csv(logfile_path,header = T)
   log_file_new <- log_file[1,]
   log_file_new$date_export <- date
   log_file_new$all_areas_nuseds_file_name <- all_areas_nuseds_file_name
@@ -4760,8 +4762,7 @@ if(export_datasets){
   log_file_new$replace_zeros_byNAs <- replace_zeros_byNAs
   
   log_file <- rbind(log_file,log_file_new)
-  write.csv(log_file,paste0(wd_output,"/1_log_file.csv"),row.names = T)
+  write.csv(log_file,paste0(wd_output,"/1_log_file.csv"),row.names = F)
   
 }
-
 ```

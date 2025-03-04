@@ -1404,10 +1404,10 @@ update_for_FULL_CU_IN_l <- function(){
   
   # nilkitkwa
   i <- i + 1
-  out[[i]] <- c(49359,49364,49369,49374,49457,
+  out[[i]] <- c(49359,49364,49369,49374,    # 49457, --> this one is a CM ! wait and sea what to do: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1741049966220869
                 45457)
   names(out)[i] <-  "SEL-21-02-LW"
-  # TO ADD
+  # TO ADD - DONE
   # BABINE      SEL-21-02          Current  45457         BABINE RIVER - SECTION 5    --> should be 
   
   # tahlo/morrison NOT DO IT ANY MORE BECAUWE DFO CORRECTED IT
@@ -1422,6 +1422,7 @@ update_for_FULL_CU_IN_l <- function(){
   names(out)[i] <- "SEL-21-02-F"
   # BABINE      SEL-21-02          Current  45477        PINKUT CREEK - ABOVE WEIR
   
+
   ### bella coola chum
   # Corrections in CU assignment for central coast chum from Carrie Holt
   # https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
@@ -1435,7 +1436,7 @@ update_for_FULL_CU_IN_l <- function(){
   ### bella coola river-late
   i <- i + 1
   out[[i]] <- c(351783)
-  names(out)[i] <- "CM-17"
+  names(out)[i] <- "CM-17" # instead of "CM-16" ; note that there is no data at all in NuSEDS Feb 2025
   
   return(out)
 }

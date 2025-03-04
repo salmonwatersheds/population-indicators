@@ -1,0 +1,389 @@
+---
+title: "2_nuseds_cuid_pse"
+author: "Bruno S. Carturan"
+date: "2025-02-27"
+output: 
+  html_document:
+    toc: true                  # Adds a table of contents to the document
+    toc_float: true           # Makes the table of contents float on the side as the reader scrolls.
+    toc_collapsed: true        # Starts the table of contents in a collapsed state.
+    toc_depth: 3               # Specifies the depth of headers (e.g., ##, ###) to include in the table of contents.
+    number_sections: true      # 
+    theme: journal  # lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+The goal of the script is to associate each population (defined by the fields `POP_ID` = `IndexId`, the latter also specifying the species acronym) in the **cleaned NuSEDS** dataset (i.e., *NuSEDS_escapement_data_collated_DATE.csv*) to the conservation unit identidication number `cuid`, as defined in the Pacific Salmon explorer ([PSE](https://www.salmonexplorer.ca/)). The cleaning procedure is coded in the script *1_nuseds_collation.rmd* and is visible in [1_nuseds_collation.html](https://bookdown.org/salmonwatersheds/nuseds_cleaning_procedure/1_nuseds_collation.html).
+
+
+```{r,include=FALSE}
+
+#'******************************************************************************
+#' The goal of the script is to 
+#' 
+#' Previous script: Fraser_salmon_CU_updates.Rmd
+#' 
+#' 
+#' Files imported (from dropbox):
+#' - streamlocationids.csv
+#' - conservationunits_decoder.csv
+#' - streamspawnersurveys_output.csv
+#' - 1_NuSEDS_escapement_data_collated_DATE.csv
+#'
+#' Files produced: 
+#' - 2_nuseds_cuid_streamid_DATE.csv
+#' 
+#'******************************************************************************
+
+rm(list = ls())
+graphics.off()
+
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
+
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("code/functions_set_wd.R")
+source("code/functions_general.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$spawner_surveys,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_project <- wds_l$wd_project
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                               wds_l$wd_project_dropbox,
+                               "references",sep="/")
+
+wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                         wds_l$wd_project_dropbox,
+                         "data",sep="/")
+
+wd_documents <- paste(wd_project,"documents",sep="/")
+
+wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                                         wds_l$wd_population_indicator_data_input_dropbox,
+                                         sep = "/")
+
+wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
+
+# Loading packages & functions
+library(tidyr)
+library(dplyr) # for arrange()
+library(sf)
+library(sp)     # for spDists() TERRA is the replacement
+library(scales)
+
+source("code/functions.R")
+
+
+#'* !!! DECISIONS TO MAKE !!! *
+
+# Set tp true to update the datasets
+export_datasets <- F
+
+#' Decision made in 1_nuseds_collation.rmd: ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
+#' If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 
+#' If FALSE, time series only composed of NAs are removed from NUSEDS.
+#' Setting to T or F will import the corresponding dataset.
+remove_timeSeries_zeros_too <- T 
+
+#' Decision made in 1_nuseds_collation.rmd: Used just after NUSEDS and CUSS are merged,
+#'to decide if we want to replace all the remaining 0s by NAs.
+#' Setting to T or F will import the corresponding dataset.
+replace_zeros_byNAs <- T
+
+```
+
+# Import datasets
+
+Import the cleaned NuSEDS dataset with the following decisions made concerning zeros:
+
+```{r, include=FALSE}
+
+#'* Import the log file *
+logfile_path <- paste0(getwd(),"/spawner-surveys/output/1_log_file.csv")
+logfile_path <- gsub("spawner-surveys/code/","",logfile_path)
+log_file <- read.csv(logfile_path,header = T)
+
+# selected the rows corresponding to the decision made concerning including or 
+# not the 0s:
+cond <- log_file$remove_timeSeries_zeros_too == remove_timeSeries_zeros_too & 
+  log_file$replace_zeros_byNAs == replace_zeros_byNAs
+# select the most recent date:
+date_export <- max(log_file[cond,]$date_export)
+
+
+#'* Import the most recent NuSEDS_escapement_data_collated file *
+# nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
+#                                      pattern = "NuSEDS_escapement_data_collated")
+
+nuseds <- read.csv(paste0(wd_output,"/archive/1_NuSEDS_escapement_data_collated_",date_export,".csv"),header = T)
+
+head(nuseds)
+nrow(nuseds) # 310255 309338 306823 306999
+
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6892 6854 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6892 6854 6868
+
+sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 0
+sum(is.na(nuseds$MAX_ESTIMATE)) # 157808 157264 155984
+```
+
+```{r,echo=FALSE}
+
+if(remove_timeSeries_zeros_too){
+  print("Time series only composed of NAs AND/OR zeros were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd.")
+}else{
+  print("Time series only composed of NAs were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd, zeros were left.")
+}
+
+if(replace_zeros_byNAs){
+  print("Zeros were replaced by NAs in the late cleaning process in 1_nuseds_collation.rmd.")
+}else{
+  print("Zeros were NOT replaced by NAs in the late cleaning process in 1_nuseds_collation.rmd.")
+}
+
+```
+The PSE file *conservationunits_decoder.csv* is imported; this is the file containing the current `cuid` associated to NuSEDS's `FULL_CU_IN` (named `cu_index` in the decoder file).
+
+```{r,include=FALSE}
+
+#'Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#'* Import the conservationunits_decoder.csv *
+#' from population-indicators/data_input or download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+head(conservationunits_decoder)
+
+# check the CUs with is.na(cu_index):
+sum(is.na(conservationunits_decoder$cu_index))    # 45
+sum(is.na(conservationunits_decoder$cu_name_pse))
+cond <- is.na(conservationunits_decoder$cu_index)
+conservationunits_decoder[cond,]
+```
+
+The CUs' shape files are imported. These represent the CUs' geographic boundaries as displayed in the PSE.
+
+```{r, include=FALSE}
+#'* Import the shape files for the Region boundaries  *
+# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
+# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS)
+# wd_maps_rg <- paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions")
+regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
+  st_transform(crs = 4269)
+unique(regions_shp$regionname)
+sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
+regions_shp_full <- regions_shp
+regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001 # to reduce computation time
+```
+
+
+# Updates on FULL_CU_IN/cu_index
+
+## In conservationunits_decoder (TEMPORARY)
+
+The updates below are done here until the changes are made directly in *conservationunits_decoder.csv*.
+
+```{r, echo=FALSE}
+
+d_fixes <- data.frame(cuid = c(528,756,758,759,760,761,763,1022),
+                      cu_index_old = c("SX_528","","","","","","","SER-023"),
+                      cu_index_new = c("SEL-16-01","SEL-03-07","SEL-05-01","SEL-06-19",
+                                        "SEL-09-04","SEL-09-05","SEL-10-02","SER-23"))
+
+for(r in 1:nrow(d_fixes)){
+  cuid <- d_fixes$cuid[r]
+  cu_index_new <- d_fixes$cu_index_new[r]
+  cond <- conservationunits_decoder$cuid == cuid
+  conservationunits_decoder$cu_index[cond] <- cu_index_new
+}
+
+d_fixes
+```
+
+## In NuSEDS
+
+The `FULL_CU_IN` of several population is updated to reflect (1) partition of the Sockeye CU `FULL_CU_IN` = "SEL-21-02" into sub-groups (EW: 'Early Wild', for Babine/Onerka; LW: 'Late Wild' for Nilkitkwa, and F: Fulton and Pinkut) as in [DFO 2023](https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/41102356.pdf); (2) recent corrections for the Bella Coola River-Late CU (CM-17) and Bella Coola-Dean Rivers (CM-16) (personal communication from Carrie Holt, DFO, May 2023).
+
+```{r, echo=FALSE}
+#'* Edit FULL_CU_IN for several POP_IDs * 
+# Corrections in CU assignment for central coast chum from Carrie Holt
+# https://salmonwatersheds.slack.com/archives/C017N5NSCJY/p1683774240661029?thread_ts=1683735939.696999&cid=C017N5NSCJY
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1705426563165399?thread_ts=1705344122.088409&cid=CJ5RVHVCG
+
+nuseds$FULL_CU_IN_PSF <- nuseds$FULL_CU_IN
+
+#' Import the corrections:
+full_cu_l <- update_for_FULL_CU_IN_l()
+
+show <- NULL
+for(i in 1:length(full_cu_l)){
+  # i <- 5
+  FULL_CU_IN_here <- names(full_cu_l)[i]
+  # print(FULL_CU_IN_here)
+  
+  POP_IDs_here <- full_cu_l[[i]]
+  
+  #
+  cond_nuseds <- nuseds$POP_ID %in% POP_IDs_here
+  
+  if(any(cond_nuseds)){
+    show_here <- unique(nuseds[cond_nuseds,c("POP_ID","FULL_CU_IN")])
+  
+    cond_decoder <- conservationunits_decoder$cu_index == FULL_CU_IN_here &
+      !is.na(conservationunits_decoder$cu_index)
+  
+    if(!any(cond_decoder)){
+      print("not match for FULL_CU_IN_here in decoder - BREAL")
+      break
+    
+    }else{
+      show_here$region <- unique(conservationunits_decoder$region[cond_decoder])
+      show_here$species_name <- unique(conservationunits_decoder$species_name[cond_decoder])
+      show_here$FULL_CU_IN_PSF <- FULL_CU_IN_here
+      show_here <- show_here[,c(3,4,1,2,5)]
+      rownames(show_here) <- NULL
+    
+      if(is.null(show)){
+        show <- show_here
+      }else{
+        show <- rbind(show,show_here)
+      }
+      
+      nuseds$FULL_CU_IN_PSF[cond_nuseds] <- FULL_CU_IN_here
+    }
+  }
+}
+
+show
+```
+
+The `CU_NAME` of the river Sockeye at `SYSTEM` = "BELLA COOLA RIVER" (`GFE_ID` = 968) is changed from:
+
+```{r, echo=FALSE}
+#'* FIX: South Atnarko Lakes *
+#' GFE_ID 968 for sockeye should be attributed to South Atnarko Lakes CU 
+#' (cf. Population meeting from 05/03/2024)
+cond <- nuseds$GFE_ID == 968 & nuseds$SPECIES_QUALIFIED %in% c("SEL","SER")
+# unique(nuseds$CU_NAME[cond]) # "NORTHERN COASTAL FJORDS"
+# unique(nuseds$SPECIES_QUALIFIED[cond]) # SER
+# unique(nuseds$SYSTEM_SITE[cond]) # "BELLA COOLA RIVER"
+
+show <- unique(nuseds[cond,c("SPECIES_QUALIFIED","CU_NAME","SYSTEM_SITE","GFE_ID")])
+rownames(show) <- NULL
+show
+```
+
+to:
+
+```{r, echo=FALSE}
+nuseds$CU_NAME[cond] <- toupper("South Atnarko Lakes")
+show <- unique(nuseds[cond,c("SPECIES_QUALIFIED","CU_NAME","SYSTEM_SITE","GFE_ID")])
+rownames(show) <- NULL
+show
+```
+
+BRUNO IS HERE
+
+# Create stream_survey_quality from ESTIMATE_CLASSIFICATION
+
+
+```{r}
+#'* Create stream_survey_quality from ESTIMATE_CLASSIFICATION *
+#' cf. Table 4.5 in section 4.1.3 of the Tech Report
+estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
+estim_class_nuseds
+unique(streamspawnersurveys_output$stream_survey_quality)
+
+nuseds$stream_survey_quality <- NA
+for(ecn in estim_class_nuseds){
+  # ecn <- estim_class_nuseds[1]
+  cond_nuseds <- nuseds$ESTIMATE_CLASSIFICATION == ecn
+  
+  if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
+    out <- "High"
+  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
+    out <- "Medium-High"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
+    out <- "Medium"
+  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-4)"){
+    out <- "Medium-Low"
+  }else if(ecn %in% c("RELATIVE ABUNDANCE (TYPE-5)",
+                      "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
+    out <- "Low"
+  }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
+                      "PRESENCE-ABSENCE (TYPE-6)",
+                      "RELATIVE: VARYING MULTI-YEAR METHODS")){
+    out <- "Low"
+  }else if(ecn == "UNKNOWN"){
+    out <- "Unknown"
+  }else if(ecn %in% c("","NO SURVEY THIS YEAR","NO SURVEY")){
+    out <- NA
+  }else{
+    print(ecn)
+  }
+  #print(out)
+  nuseds$stream_survey_quality[cond_nuseds] <- out
+}
+```
+
+
+```{r}
+#'* Fixes in the methods *
+# Katy's request:
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1712611492405689?thread_ts=1712252256.802999&cid=C03LB7KM6JK
+
+unique(nuseds$ESTIMATE_METHOD)
+
+nuseds$ESTIMATE_METHOD <- gsub("Cummulative","Cumulative",nuseds$ESTIMATE_METHOD)
+
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Unknown"] <-  "Unknown Estimate Method"
+
+#' Additional changes requested (cf. Population meeting April 9th 2024)
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Fixed Site Census"] <-  "Fence Count"
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Aerial"] <- "Aerial Survey"
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Fence"] <- "Fence Count"
+nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Insufficient Information"] <- "Unknown Estimate Method"
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

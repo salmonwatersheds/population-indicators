@@ -59,11 +59,17 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
+wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
+
 # Loading packages & functions
 library(tidyr)
 library(dplyr) # for arrange()
+library(sf)
+library(sp)     # for spDists() TERRA is the replacement
+library(scales)
 
 source("code/functions.R")
+
 
 # Import files ------
 #
@@ -73,13 +79,13 @@ nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                      pattern = "NuSEDS_escapement_data_collated")
 
 head(nuseds)
-nrow(nuseds) # 306823 306999
+nrow(nuseds) # 310255 309338 306823 306999
 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6868
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6892 6854 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6892 6854 6868
 
 sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 0
-sum(is.na(nuseds$MAX_ESTIMATE)) # 155984
+sum(is.na(nuseds$MAX_ESTIMATE)) # 157808 157264 155984
 
 
 #'* Files from PSF database *
@@ -91,7 +97,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
 
 #' Import streamlocationids to obtain the streamID 
-streamlocationids <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[8],
+streamlocationids <- datasets_database_fun(nameDataSet = "streamlocationids.csv", # datasetsNames_database$name_CSV[9],
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
@@ -116,9 +122,9 @@ conservationunits_decoder[cond,]
 #' Import the streamspawnersurveys_output from population-indicators/data_input or 
 #' download it from the PSF database.
 streamspawnersurveys_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
-                                                   fromDatabase = fromDatabase,
-                                                   update_file_csv = update_file_csv,
-                                                   wd = wd_pop_indic_data_input_dropbox)
+                                                     fromDatabase = fromDatabase,
+                                                     update_file_csv = update_file_csv,
+                                                     wd = wd_pop_indic_data_input_dropbox)
 
 #' Import 
 # surveystreams <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[9],
@@ -129,24 +135,61 @@ streamspawnersurveys_output <- datasets_database_fun(nameDataSet = datasetsNames
 head(streamspawnersurveys_output)
 
 # fields regions and region to nuseds_cuid_location using cuid
-regionsid_df <- unique(merge(x = unique(streamspawnersurveys_output[,c("region","streamid")]),
-                             y = unique(streamlocationids[,c("regionid","streamid")]),
-                             by = "streamid")[,c("region","regionid")])
-#                             region regionid
-#                             Skeena        1
-#                               Nass        2
-#                      Central Coast        3
-# Vancouver Island & Mainland Inlets        5
-#                             Fraser        4
-#                        Haida Gwaii        6
-#                           Columbia        7
-#                      Transboundary       10
-#                              Yukon        8
+regionsid_df <- unique(conservationunits_decoder[,c("region","regionid")])
 rownames(regionsid_df) <- NULL
-regionsid_df <- regionsid_df[!is.na(regionsid_df$regionid),]
+regionsid_df
+#                               region regionid
+# 1                             Skeena        1
+# 2                               Nass        2
+# 3                      Central Coast        3
+# 4                             Fraser        4
+# 5 Vancouver Island & Mainland Inlets        5
+# 6                        Haida Gwaii        6
+# 7                           Columbia        7
+# 8                              Yukon        8
+# 9             Northern Transboundary       10
+
+#'* Import the shape files for the Region boundaries  *
+# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
+# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS)
+# wd_maps_rg <- paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions")
+regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
+  st_transform(crs = 4269)
+unique(regions_shp$regionname)
+sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
+regions_shp_full <- regions_shp
+regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001 # to reduce computation time
 
 #
 # Edit the NUSEDS dataset for the PSE ----
+
+
+#'* Edit conservationunits_decoder for several POP_IDs * 
+#' TEMPORARY: these changes should be incorporated in conservationunits_decoder 
+#' eventually:
+#' cf. PSE Data Check-In fomr Feb 13 2025:
+# cuid old cu_index New cu_index
+# 528        SX_528    SEL-16-01     + cf. Anna Douglas-Morris' emails from Feb 2025 
+# 756                  SEL-03-07   
+# 758                  SEL-05-01
+# 759                  SEL-06-19
+# 760                  SEL-09-04
+# 761                  SEL-09-05
+# 763                  SEL-10-02
+# 1022     SER-023        SER-23
+
+d_fixes <- data.frame(cuid = c(528,756,758,759,760,761,763,1022),
+                      cu_index_old = c("SX_528","","","","","","","SER-023"),
+                      cu_index_new = c("SEL-16-01","SEL-03-07","SEL-05-01","SEL-06-19",
+                                        "SEL-09-04","SEL-09-05","SEL-10-02","SER-23"))
+
+for(r in 1:nrow(d_fixes)){
+  cuid <- d_fixes$cuid[r]
+  cu_index_new <- d_fixes$cu_index_new[r]
+  cond <- conservationunits_decoder$cuid == cuid
+  conservationunits_decoder$cu_index[cond] <- cu_index_new
+}
+
 
 #'* Edit FULL_CU_IN for several POP_IDs * 
 # Corrections in CU assignment for central coast chum from Carrie Holt
@@ -244,6 +287,110 @@ nuseds$ESTIMATE_METHOD[nuseds$ESTIMATE_METHOD == "Insufficient Information"] <- 
 #' CU names:
 #' - replace "  ", "-", "<<BIN>>" and "<<EXTIRPATED>>" by ""
 #' - to lower case
+
+#' 1) find cuid using cu_index & FULL_CU_IN_PSF
+nuseds$cuid <- NA
+FULL_CU_IN_PSF <- unique(nuseds$FULL_CU_IN_PSF)
+length(FULL_CU_IN_PSF) # 411
+sum(is.na(FULL_CU_IN_PSF)) # 0
+cuid_cu_index <- data.frame(FULL_CU_IN_PSF = FULL_CU_IN_PSF)
+cuid_cu_index$cuid <- NA
+cuid_cu_index$CU_NAME <- NA
+for(r in 1:nrow(cuid_cu_index)){
+  fci <- cuid_cu_index$FULL_CU_IN_PSF[r]
+  cond <- conservationunits_decoder$cu_index == fci & !is.na(conservationunits_decoder$cu_index)
+  cond2 <- nuseds$FULL_CU_IN_PSF == fci
+  CU_NAME <- paste(unique(nuseds$CU_NAME[cond2]), collapse = "; ") # the upates done above creates three instance where more than one CU_NAME is returned for one unique FULL_CU_IN_PSF in nuseds
+  cuid_cu_index$CU_NAME[r] <- CU_NAME
+  
+  if(length(unique(nuseds$CU_NAME[cond2])) > 1){
+    print(cuid_cu_index[r,])
+    print(unique(nuseds$CU_NAME[cond2]))
+    print("***")
+  }
+  
+  if(any(cond)){
+    cuid <- unique(conservationunits_decoder$cuid[cond])
+    nuseds$cuid[cond2] <- cuid
+    cuid_cu_index$cuid[r] <- cuid
+  }
+}
+
+
+#'* Check the FULL_CU_IN not in the decoder: *
+cond_NA <- is.na(cuid_cu_index$cuid)
+head(cuid_cu_index)
+sum(cond_NA) # 23
+
+cu_index_NA <- cuid_cu_index[cond_NA,]
+colnames(cu_index_NA)[colnames(cu_index_NA) == "FULL_CU_IN_PSF"] <- "FULL_CU_IN"
+
+rownames(cu_index_NA) <- NULL
+
+# Find the coordinates
+cu_index_NA$CU_LAT <- sapply(cu_index_NA$FULL_CU_IN,function(cui){
+  cond <- nuseds$FULL_CU_IN == cui
+  return(unique(nuseds$CU_LAT[cond]))
+})
+
+cu_index_NA$CU_LONGT <- sapply(cu_index_NA$FULL_CU_IN,function(cui){
+  cond <- nuseds$FULL_CU_IN == cui
+  return(unique(nuseds$CU_LONGT[cond]))
+})
+
+#' Find the corresponding region:
+cu_index_NA$region <- NA
+for(r in 1:nrow(cu_index_NA)){
+  # r <- 1
+  point <- st_as_sf(cu_index_NA[r,], 
+                    coords = c("CU_LONGT","CU_LAT"), crs = 4269)
+  
+  layer_rg <- st_intersects(point, regions_shp)
+  if(length(layer_rg[[1]]) == 0){ # no match, try to buffer
+    layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .001))
+  }
+  
+  if(length(layer_rg[[1]]) == 0){ # no match, try to buffer
+    layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .002))
+  }
+  
+  if(length(layer_rg[[1]]) == 0){ # no match, try to buffer
+    print("Still no region found - BREAK")
+    break
+  }
+  
+  if(length(layer_rg[[1]]) > 1){ # 
+    print("More than one region found - BREAK")
+    break
+  }
+  
+  layer_rg <- layer_rg[[1]]
+  cu_index_NA$region[r] <- regions_shp$regionname[layer_rg]
+}
+
+head(cu_index_NA)
+
+# produce figure time series
+for(r in 1:nrow(cu_index_NA)){
+  # r <- 1
+  FULL_CU_IN <- cu_index_NA$FULL_CU_IN[r]
+  cond <- nuseds$FULL_CU_IN == FULL_CU_IN
+  IndexId_GFE_ID <- unique(nuseds[cond,c("IndexId","GFE_ID")])
+  
+  main <- paste(cu_index_NA$CU_NAME[r],
+                cu_index_NA$FULL_CU_IN[r],
+                sep = " - ")
+  
+  plot_IndexId_GFE_ID_fun(IndexIds = IndexId_GFE_ID$IndexId,
+                          GFE_IDs = IndexId_GFE_ID$GFE_ID,
+                          all_areas_nuseds = nuseds, 
+                          main = c(cu_index_NA$region[r],main))
+  legend("topright",paste0("r = ",r), bty = "n")
+}
+
+
+BRUNO IS HERE
+
 
 fields_nuseds_CU <- c("CU_NAME","SPECIES_QUALIFIED","FULL_CU_IN",
                       "FULL_CU_IN_PSF","CU_TYPE")

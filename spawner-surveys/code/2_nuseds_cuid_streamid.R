@@ -388,10 +388,6 @@ for(r in 1:nrow(cu_index_NA)){
   legend("topright",paste0("r = ",r), bty = "n")
 }
 
-
-BRUNO IS HERE
-
-
 fields_nuseds_CU <- c("CU_NAME","SPECIES_QUALIFIED","FULL_CU_IN",
                       "FULL_CU_IN_PSF","CU_TYPE")
 
@@ -654,7 +650,7 @@ nrow(nuseds_location) # 2312
 
 # Manual fix 1st:
 #'-  "BARRI\xc8RE RIVER" --> "BARRIERE RIVER"
-#'- "FRAN\xc7OIS LAKE" --> ""FRANCOIS LAKE"
+#'- "FRAN\xc7OIS LAKE" --> "FRANCOIS LAKE"
 #'
 cond <- nuseds_location$SYSTEM_SITE == "BARRIERE RIVER"
 nuseds_location$LOCAL_NAME_1[cond] <- "BARRIERE RIVER"

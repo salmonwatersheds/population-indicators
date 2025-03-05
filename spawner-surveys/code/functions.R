@@ -1404,7 +1404,7 @@ update_for_FULL_CU_IN_l <- function(){
   
   # nilkitkwa
   i <- i + 1
-  out[[i]] <- c(49359,49364,49369,49374,    # 49457, --> this one is a CM ! wait and sea what to do: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1741049966220869
+  out[[i]] <- c(49359,49364,49369,49374,    # 49457, --> this one is a CM ! was supposed to be 45457: https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1741049966220869 ; https://salmonwatersheds.ca/document_library_files/lib_384.pdf
                 45457)
   names(out)[i] <-  "SEL-21-02-LW"
   # TO ADD - DONE

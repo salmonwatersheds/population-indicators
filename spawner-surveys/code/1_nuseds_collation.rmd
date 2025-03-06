@@ -1,6 +1,6 @@
 ---
 title: "1_nuseds_collation"
-author: "Bruno S. Carturan"
+author: "Bruno S. Carturan, Eric Hertz, Stephanie J. Peacock"
 date: "2025-01-24"
 output: 
   html_document:

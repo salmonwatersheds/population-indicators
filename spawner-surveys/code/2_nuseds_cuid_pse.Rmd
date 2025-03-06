@@ -1,6 +1,6 @@
 ---
 title: "2_nuseds_cuid_pse"
-author: "Bruno S. Carturan"
+author: "Bruno S. Carturan, Eric Hertz, Stephanie J. Peacock"
 date: "2025-02-27"
 output: 
   html_document:

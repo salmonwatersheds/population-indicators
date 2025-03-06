@@ -424,7 +424,7 @@ for(i_rg in 1:length(region)){
           status_Smsy_prob <- round(table(factor(status_Smsy,levels = c("red","amber","green")))/length(status_Smsy)*100,4)
           status_Smsy80_prob <- round(table(factor(status_Smsy80,levels = c("red","amber","green")))/length(status_Smsy80)*100,4)
           
-          comment <- ""
+          comment <- "Biostatus calculated"
           
         }else{
           
@@ -432,7 +432,7 @@ for(i_rg in 1:length(region)){
           names(status_Smsy_prob) <- names(status_Smsy80_prob) <- c("red","amber","green")
           
           if(!currentSpawnerData_available){
-            comment <- "Only NAs in cuspawnerabundance.csv for this CU"
+            comment <- "No estimated_count data in cuspawnerabundance.csv"
           }else if(!currentSpawnerData_availableRecentEnough){
             comment <- paste0("Not recent enough data: last year with data is ",yrFinal," while generation length = ",CU_genLength," years and current year = ",yearCurrentAbundance)
           }
@@ -511,6 +511,7 @@ for(i_rg in 1:length(region)){
         benchSummary_df$m <- c(benchSummary$Sgen[,"m"],benchSummary$Smsy[,"m"])
         benchSummary_df$CI025 <- c(benchSummary$Sgen[,2],benchSummary$Smsy[,2])
         benchSummary_df$CI975 <- c(benchSummary$Sgen[,3],benchSummary$Smsy[,3])
+        benchSummary_df$comment = comment
         
         # add it to benchSummary_region_species_df
         if(is.null(benchSummary_region_species_df)){

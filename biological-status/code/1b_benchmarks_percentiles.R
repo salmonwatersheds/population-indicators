@@ -93,7 +93,7 @@ region <- c(
   regions_df$Haida_Gwaii,
   regions_df$Central_coast)
 
-region <- regions_df$Central_coast
+region <- regions_df$Fraser
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -160,7 +160,7 @@ print_fig <- T
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 3
+  # i_rg <- 1
   cond_csa_rg <- cuspawnerabundance$region == region[i_rg]
   
   if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
@@ -183,7 +183,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(species_acro)){
       
-      # i_sp <- 4
+      # i_sp <- 1
       
       speciesAcroHere <- species_acro[i_sp]
       
@@ -241,8 +241,6 @@ for(i_rg in 1:length(region)){
           spawnerAbundance[spawnerAbundance <= 0] <- NA
           names(spawnerAbundance) <- cuspawnerabundance$year[cond_csa_rg_sp_cu]
           
-          comment <- ""
-          
           # Simulate the time series to obtain the 95% CI for the percentile 
           # benchmarks
           numLags <- 1
@@ -268,14 +266,7 @@ for(i_rg in 1:length(region)){
           benchSummary_df$CI975 <- modelCI$CI[2,]
           benchSummary_df$benchmarks <- rep(paste(benchmarks,collapse = "-"),length(benchmarks))
           benchSummary_df$dataPointNb <- sum(!is.na(spawnerAbundance))
-          benchSummary_df$comment <- comment
-          
-          if(is.null(benchSummary_region_species_df)){
-            benchSummary_region_species_df <- benchSummary_df
-          }else{
-            benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
-                                                    benchSummary_df)
-          }
+
           
           #------------------------------------------------------------------
           #' biological status probability with the average current spawner 
@@ -361,7 +352,7 @@ for(i_rg in 1:length(region)){
               status_percent075 <- status_percent050 <- "good"
             }
             
-            comment <- ""
+            comment <- "Biostatus calculated"
             
             #' This part of the code below determine the probability of the red, 
             #' yellow and green status using the modelCI$benchmarkBoot.
@@ -454,6 +445,8 @@ for(i_rg in 1:length(region)){
           }else{
             
             status_percent075 <- status_percent050 <- NA
+            status_percent_prob_05 <- status_percent_prob_075 <- rep(NA,3)
+            names(status_percent_prob_05) <- names(status_percent_prob_05) <- c("red","amber","green")
             
             if(!currentSpawnerData_available){
               comment <- paste0("No estimated_count data in cuspawnerabundance.csv")
@@ -491,6 +484,16 @@ for(i_rg in 1:length(region)){
           }else{
             biologicalStatus_region_species_df <- rbind(biologicalStatus_region_species_df,
                                                         biologicalStatus_df)
+          }
+          
+          # add the comment to benchSummary_df
+          benchSummary_df$comment <- comment
+          
+          if(is.null(benchSummary_region_species_df)){
+            benchSummary_region_species_df <- benchSummary_df
+          }else{
+            benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
+                                                    benchSummary_df)
           }
 
         } # end of loop for the CUs

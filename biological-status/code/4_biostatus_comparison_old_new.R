@@ -279,12 +279,36 @@ biostatus_merge[cond_same,][cond_123,][!cond_method_same,]
 cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
 sum(cond_diff) # 21 41 31 93 103 120
 
-biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
+show <- biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
                             "psf_status_old","psf_status_new",
                             "psf_status_code_old","psf_status_code_new")]
 
+show$curr_spw_end_year <- sapply(show$cuid,function(cuid){
+  cond <- benchmarks_new$cuid == cuid
+  curr_spw_end_year_new <- benchmarks_new$curr_spw_end_year[cond]
+  cond <- benchmarks_old$cuid == cuid
+  curr_spw_end_year_old <- benchmarks_old$curr_spw_end_year[cond]
+  if(curr_spw_end_year_new != curr_spw_end_year_old){
+    out <- "different curr_spw_end_year !!!"
+  }else{
+   out <- curr_spw_end_year_old
+  }
+  return(out)
+})
+
+show$gen_length <- sapply(show$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  out <- conservationunits_decoder$gen_length[cond]
+  return(out)
+})
+
+show
+
+
+
 cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
 cases
+
 
 count <- 0
 count_max <- sum(cond_diff) 

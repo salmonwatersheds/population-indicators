@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
-The goal of the script is to fix issues in NuSEDS and to merge the two constituent datasets **all_areas_nuseds** (referred to as **NUSEDS**) and **conservation_unit_system_sites** (referred to as **CUSS**).
+The goal of the script is to merge the two constituent datasets **all_areas_nuseds** (referred to as **NUSEDS**) and **conservation_unit_system_sites** (referred to as **CUSS**) so each time series in **NUSEDS** (i.e., fish counts associated to a unique populations, characterized by a unique `IndexId`/`POP_ID` & `GFE_ID` association) can be attributed to a unique conservation unit (CU) in **CUSS** (characterized by `CU_NAME` and `FULL_CU_IN`). But there are multiple inconsistencies between the two datasets that lead to discard a significant amount of data points in **NUSEDS**, unless fixes are implemented. This script is a attempt to implement such fixes.
 
 The dataset version corresponding to this script is:
 
@@ -610,6 +610,29 @@ conservation_unit_system_sites_all <- conservation_unit_system_sites
 nrow(conservation_unit_system_sites_all) # 7145
 ```
 
+
+```{r, include=FALSE}
+GFE_ID_IndexId_NUSEDS <- unique(all_areas_nuseds_all[,c("IndexId","GFE_ID")])
+nrow(GFE_ID_IndexId_NUSEDS) # 11568
+
+GFE_ID_IndexId_CUSS <- unique(conservation_unit_system_sites_all[,c("IndexId","GFE_ID")])
+nrow(GFE_ID_IndexId_CUSS) # 7145
+
+
+GFE_ID_IndexId_NUSEDS_collapse <- apply(GFE_ID_IndexId_NUSEDS,1, paste, collapse = "_")
+GFE_ID_IndexId_NUSEDS_collapse <- gsub(" ","",GFE_ID_IndexId_NUSEDS_collapse)
+
+
+GFE_ID_IndexId_CUSS_collapse <- apply(GFE_ID_IndexId_CUSS,1, paste, collapse = "_")
+GFE_ID_IndexId_CUSS_collapse <- gsub(" ","",GFE_ID_IndexId_CUSS_collapse)
+
+
+sum(!GFE_ID_IndexId_NUSEDS_collapse %in% GFE_ID_IndexId_CUSS_collapse) # 4428
+sum(!GFE_ID_IndexId_CUSS_collapse %in% GFE_ID_IndexId_NUSEDS_collapse) # 5
+
+```
+
+The major issue in NuSEDS is the discrepancy between the two datasets. Normally, there should be the same population references (i.e., unique `IndexId`/`POP_ID` & `GFE_ID` combinations). But there are `r nrow(GFE_ID_IndexId_NUSEDS)` unique population references in **NUSEDS** and only `r nrow(GFE_ID_IndexId_CUSS)` in **CUSS**. Additionally, there are `r sum(!GFE_ID_IndexId_NUSEDS_collapse %in% GFE_ID_IndexId_CUSS_collapse)` references in **NUSEDS** that are not in **CUSS** and `r sum(!GFE_ID_IndexId_CUSS_collapse %in% GFE_ID_IndexId_NUSEDS_collapse)` that are in **CUSS** but not in **NUSEDS**. This section consists in solving these discrepancies so that the same population references are present in both datasets.
 
 ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 

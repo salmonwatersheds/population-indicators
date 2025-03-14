@@ -3699,8 +3699,8 @@ for(r in 1:nrow(trackRecord_nuseds_nocuss)){
       conservation_unit_system_sites <- rbind(conservation_unit_system_sites,
                                               cuss_new)
     
-      toAdd <- data.frame(IndexId = trackRecord_nuseds_nocuss$IndexId[cond_i],
-                          GFE_ID = trackRecord_nuseds_nocuss$GFE_ID[cond_i],
+      toAdd <- data.frame(IndexId = trackRecord_nuseds_nocuss$IndexId[r],
+                          GFE_ID = trackRecord_nuseds_nocuss$GFE_ID[r],
                           dataset = "CUSS",
                           CU_NAME = cuss_new$CU_NAME,
                           comment = "No alternative series found but CU found using the PSE's CU shape files")

@@ -881,10 +881,12 @@ unique(all_areas_nuseds$POPULATION[cond])
 cond <- conservation_unit_system_sites$GFE_ID == as.numeric(gfeids[2])
 Y_LAT_focal <- conservation_unit_system_sites$Y_LAT[cond] |> unique()
 X_LONGT_focal <- conservation_unit_system_sites$X_LONGT[cond] |> unique()
+SYSTEM_SITE_focal <- conservation_unit_system_sites$SYSTEM_SITE[cond] |> unique()
 
 cond <- conservation_unit_system_sites$GFE_ID == as.numeric(gfeids[1])
 Y_LAT <- conservation_unit_system_sites$Y_LAT[cond] |> unique()
 X_LONGT <- conservation_unit_system_sites$X_LONGT[cond] |> unique()
+SYSTEM_SITE <- conservation_unit_system_sites$SYSTEM_SITE[cond] |> unique()
 
 # c(Y_LAT_focal,X_LONGT_focal)
 # c(Y_LAT,X_LONGT)
@@ -897,9 +899,30 @@ pt_alternative <- SpatialPoints(coords = data.frame(x = X_LONGT, y = Y_LAT),
 dist <- spDists(x = pt_focal,y = pt_alternative, longlat = T) # distance in km
 # spDists(x = pt_focal,y = pt_alternative, longlat = F) # Euclidian distance in ???
 dist <- round(as.numeric(dist),2)
+
 ```
 
-The distance between the two locations (i.e., the two `GFE_ID`) is `r dist` km.
+Below are the focal and alternative location, and the distance between the two `GFE_ID` is `r dist` km:
+
+```{r,echo=FALSE}
+cond <- conservation_unit_system_sites$GFE_ID %in% as.numeric(gfeids)
+show <- unique(conservation_unit_system_sites[cond,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT")])
+rownames(show) <- NULL
+show
+```
+
+```{r, include=FALSE}
+# Some checks on ESTIMATE_CLASSIFICATION
+
+cond <- all_areas_nuseds$GFE_ID == as.numeric(gfeids[1]) & all_areas_nuseds$IndexId == iids[1]
+unique(all_areas_nuseds$ESTIMATE_CLASSIFICATION[cond])
+
+cond <- all_areas_nuseds$GFE_ID == as.numeric(gfeids[2]) & all_areas_nuseds$IndexId == iids[2]
+unique(all_areas_nuseds$ESTIMATE_CLASSIFICATION[cond])
+
+show <- unique(all_areas_nuseds[cond,c("SPECIES","GFE_ID","WATERBODY","ESTIMATE_CLASSIFICATION","Year","MAX_ESTIMATE")])
+show <- show[order(show$Year),]
+```
 
 ```{r, include=F}
 #' TODO: replace CN_46842 & GFE_ID = 2463 and CN_46841 & GFE_ID = 285 by 
@@ -2330,9 +2353,10 @@ show <- as.data.frame(show)
 show
 ```
 
-We consequently attribute coordinates to this location using Google Maps. We selecte the location just above Stamp Falls, on the left of the Stamp river fish ladder:
-
 ```{r, include=FALSE}
+
+# We consequently attribute coordinates to this location using Google Maps. We select the location just above Stamp Falls, on the left of the Stamp river fish ladder:
+
 #' Take GIS coordinates from Google map just above the Stamp falls (on the left of 
 #' the Stamp river fish ladder):
 #' Google uses the World Geodetic System WGS84 standard. --> same as in CUSS
@@ -4337,9 +4361,20 @@ There are many cases where a CU in a given location (i.e., a unique `GFE_ID`) is
 
 The figures below show the time series before and after correction with the action made (i.e., "MERGED", "DELETED", "SUMMED") indicated 
 
-There are three instance where a special fix is done, as indicated below in the corresponding figures.
+There are three instances where a special fix is done, as indicated below in the corresponding figures.
+
+In the few instances where data points are summed, we define the `ESTIMATE_CLASSIFICATION` (e.g., "RELATIVE ABUNDANCE (TYPE-3)") as the value corresponding to the highest `MAX_ESTIMATE` value between the two data points. In these cases, a table follows the figure and show the data points that are summed with their corresponding `Year` and `ESTIMATE_CLASSIFICATION`.
 
 ```{r, echo=FALSE, fig.width=15, fig.height=15}
+
+# removed_all_copy <- removed_all
+# all_areas_nuseds_copy <- all_areas_nuseds
+# conservation_unit_system_sites_copy <- conservation_unit_system_sites
+# 
+# removed_all <- removed_all_copy
+# all_areas_nuseds <- all_areas_nuseds_copy
+# conservation_unit_system_sites <- conservation_unit_system_sites_copy
+
 # Short cut for trouble shooting
 # write.csv(all_areas_nuseds,paste0(wd_data,"/all_areas_nuseds_TEMP.csv"), row.names = F)
 # write.csv(conservation_unit_system_sites,paste0(wd_data,"/conservation_unit_system_sites_TEMP.csv"), row.names = F)
@@ -4383,6 +4418,12 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
   # r <- 1124 # "correct_exception" with  IndexId_focal == "CM_50537" & GFE_ID_here == 816
   # r <- 1422 #  "Case 3 - CN_2483 & GFE_ID_here == 142": there are three time series 
   # r <-  # "delete_exception" with  IndexId_focal == "CN_50619" & GFE_ID_here == 824
+  # r <- which(nuseds_CU_GFI_ID$GFE_ID == 800 & 
+  #            nuseds_CU_GFI_ID$CU_NAME == "GEORGIA STRAIT" & 
+  #            nuseds_CU_GFI_ID$SPECIES_QUALIFIED == "CM")
+  # r <- which(nuseds_CU_GFI_ID$GFE_ID == 817 &
+  #            nuseds_CU_GFI_ID$CU_NAME == "BUTE INLET" &
+  #            nuseds_CU_GFI_ID$SPECIES_QUALIFIED == "CM")
 
   CU_NAME_here <- nuseds_CU_GFI_ID$CU_NAME[r]
   GFE_ID_here <- nuseds_CU_GFI_ID$GFE_ID[r]
@@ -4491,7 +4532,7 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       }
       
 #' - Case 2: the shorter series is 100% duplicated --> removed
-    }else if(comparison$nb_dataPt == comparison$duplicate | delete_exception){ 
+    }else if(comparison$nb_dataPt == comparison$duplicate | delete_exception){
       
       nuseds_final <- nuseds_final[!cond_focal,]
       
@@ -4516,6 +4557,23 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
     }else if(correct_exception){
       
+      # show the difference in ESTIMATE_CLASSIFICATION when summing data points
+      d_focal <- nuseds_final[cond_focal,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+      d_compare <- nuseds_final[cond_compare,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+        
+      show <- base::merge(x = d_focal,y = d_compare, by = c("GFE_ID","Year"), all = T)
+      show <- show[order(show$Year),]
+      show <- show[!is.na(show$MAX_ESTIMATE.x),]
+        
+      cond <- grepl("\\.x",colnames(show))
+      colnames(show)[cond] <- gsub("\\.x","_s1",colnames(show)[cond])
+      cond <- grepl("\\.y",colnames(show))
+      colnames(show)[cond] <- gsub("\\.y","_s2",colnames(show)[cond])
+      rownames(show) <- NULL
+        
+      show <- show[!is.na(show$MAX_ESTIMATE_s1),]
+      show <- show[!is.na(show$MAX_ESTIMATE_s2),]
+      
       # 1st find the 9 data points that are duplicated with series_compare
       # return the years with matching abundances
       years_toRemove <- c()
@@ -4532,6 +4590,9 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       years_toRemove <- as.numeric(years_toRemove)
       years_toRemove <- years_toRemove[years_toRemove < 1960] # there is one duplicated points for later years but it looks legit
       
+      # edit show
+      show <- show[!show$Year %in% years_toRemove,]
+      
       cond_focal_YrtoRemove <- cond_focal & nuseds_final$Year %in% years_toRemove
       
       # 2nd merge the rest of the series by summing the data
@@ -4542,6 +4603,16 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       }
       # sum MAX_ESTIMATE in duplicated year
       cond_sum <- (cond_focal & !cond_focal_YrtoRemove) | cond_compare
+      
+      # to check the ESTIMATE_CLASSIFICATION
+      # d_focal <- nuseds_final[cond_focal & !cond_focal_YrtoRemove,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+      # d_compare <- nuseds_final[cond_compare,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+      # 
+      # show <- base::merge(x = d_focal,y = d_compare, by = c("GFE_ID","Year"), all = T)
+      # show <- show[order(show$Year),]
+      # show <- show[!is.na(show$MAX_ESTIMATE.x),]
+      # View(show)
+      
       yr_duplicated <- nuseds_final[cond_sum,]$Year[duplicated(nuseds_final[cond_sum,]$Year)]
       for(yr in yr_duplicated){
         # yr <- yr_duplicated[1]
@@ -4550,6 +4621,16 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         if(any(!is.na(vals))){
           val <- sum(vals,na.rm = T)
           nuseds_final$MAX_ESTIMATE[cond_here] <- val
+          
+          # if indeed counts were added up (i.e. not just one value)
+          if(sum(!is.na(vals)) > 1){
+              
+            # SUMMED <- T not used in this unique case
+            
+            # define ESTIMATE_CLASSIFICATION: select the value corresponding to the higher MAX_ESTIMATE
+            val <- ESTIMATE_CLASSIFICATIONs[vals == max(vals, na.rm = T)]
+            nuseds_final$ESTIMATE_CLASSIFICATION[cond_here] <- val
+          }
         }
       }
       
@@ -4575,6 +4656,10 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       if(correct_exception){
         print("Special fix (above): the blue points before 1950 are deleted, the other ones are summed to the red series.")
       }
+      
+      # pring show
+      print("Below is MAX_ESTIMATE and ESTIMATE_CLASSIFICATION for the data points summed:")
+      print(show)
       
 #' - Case 3: on the rest of the series, 
 #'    - points that are conflictual or duplicated are added
@@ -4637,6 +4722,23 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         
       }else{
         
+        # show the difference in ESTIMATE_CLASSIFICATION when summing
+        d_focal <- nuseds_final[cond_focal,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+        d_compare <- nuseds_final[cond_compare,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+        
+        show <- base::merge(x = d_focal,y = d_compare, by = c("GFE_ID","Year"), all = T)
+        show <- show[order(show$Year),]
+        show <- show[!is.na(show$MAX_ESTIMATE.x),]
+        
+        cond <- grepl("\\.x",colnames(show))
+        colnames(show)[cond] <- gsub("\\.x","_s1",colnames(show)[cond])
+        cond <- grepl("\\.y",colnames(show))
+        colnames(show)[cond] <- gsub("\\.y","_s2",colnames(show)[cond])
+        rownames(show) <- NULL
+        
+        show <- show[!is.na(show$MAX_ESTIMATE_s1),]
+        show <- show[!is.na(show$MAX_ESTIMATE_s2),]
+        
         # 1st change the IndexId of focal series to the compared one
         for(f in fields_IndexId){
           # f <- fields_IndexId[1]
@@ -4650,10 +4752,21 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
           # yr <- yr_duplicated[1]
           cond_here <- (cond_focal | cond_compare) & nuseds_final$Year == yr
           vals <- nuseds_final$MAX_ESTIMATE[cond_here]
+          ESTIMATE_CLASSIFICATIONs <- nuseds_final$ESTIMATE_CLASSIFICATION[cond_here]
+          
           if(any(!is.na(vals))){
             val <- sum(vals,na.rm = T)
             nuseds_final$MAX_ESTIMATE[cond_here] <- val
-            SUMMED <- T
+            
+            # if indeed counts were added up (i.e. not just one value)
+            if(sum(!is.na(vals)) > 1){
+              
+              SUMMED <- T
+            
+              # define ESTIMATE_CLASSIFICATION: select the value corresponding to the higher MAX_ESTIMATE
+              val <- ESTIMATE_CLASSIFICATIONs[vals == max(vals, na.rm = T)]
+              nuseds_final$ESTIMATE_CLASSIFICATION[cond_here] <- val
+            }
           }
         }
         
@@ -4669,6 +4782,12 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
           legend("topright",legend = "MERGED & SUMMED",bty = 'n')
         }else{
           legend("topright",legend = "MERGED",bty = 'n')
+        }
+        
+        #
+        if(SUMMED){
+          print("Below is MAX_ESTIMATE and ESTIMATE_CLASSIFICATION for the data points summed:")
+          print(show)
         }
         
         removed <- data.frame(IndexId = IndexId_focal,
@@ -4773,7 +4892,7 @@ if(export_datasets){
   write.csv(added_all,paste0(wd_output,"/archive/1_series_added_",date,".csv"),row.names = F)
   
   
-  # Edit the log file
+  # Edit the log file locally (needs to be pushed to github)
   logfile_path <- paste0(getwd(),"/spawner-surveys/output/1_log_file.csv")
   logfile_path <- gsub("spawner-surveys/code/","",logfile_path)
   log_file <- read.csv(logfile_path,header = T)
@@ -4785,7 +4904,11 @@ if(export_datasets){
   log_file_new$replace_zeros_byNAs <- replace_zeros_byNAs
   
   log_file <- rbind(log_file,log_file_new)
-  write.csv(log_file,paste0(wd_output,"/1_log_file.csv"),row.names = F)
+  
+  wd_output_local <- getwd()
+  wd_output_local <- gsub("code","output",wd_output_local)
+  
+  write.csv(log_file,paste0(wd_output_local,"/1_log_file.csv"),row.names = F)
   
 }
 ```

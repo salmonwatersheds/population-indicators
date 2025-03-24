@@ -126,7 +126,7 @@ options(digits = 9)
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- F
+export_datasets <- T
 
 # Decision in ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 # If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 
@@ -1532,6 +1532,9 @@ plot_IndexId_GFE_ID_fun(IndexIds = trackRecord_nuseds_3$IndexId[i],
                         all_areas_nuseds = all_areas_nuseds_all)
 ```
 
+TODO: Flag the time series with data point more recent than 2020
+
+
 ```{r, include = FALSE}
 
 nrow_before <- nrow(all_areas_nuseds)
@@ -2074,7 +2077,11 @@ all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(edit_NUSEDS = T,
 Note that could be a mismatch between the alternative `POPULATION` (= `r POPULATION_alter`) and its its own `CU_NAME` (= `r CU_NAME_alter`) (`FULL_CU_IN` = `r FULL_CU_IN_alter`), and could instead be better associated with the CU with `CU_NAME` = `r CU_NAME_other` (`FULL_CU_IN` = `r FULL_CU_IN_other`). We are not making any change in that regard.
 
 
-### Alternative GFE_ID
+
+
+
+
+
 
 The focal time series (i.e., a unique `IndexId` - `GFE_ID` not in **CUSS**) are compared to alternative series with a different `GFE_ID` and potentially a different `IndexId` (but of the same species). 
 
@@ -2329,7 +2336,7 @@ gfeid_a <-  trackRecord_nuseds_gfeid$alternative_GFE_ID[cond_i]
 
 In case i = `r i`: series `r paste(iid,gfeid,sep = " - ")` is not merged to alternative series `r paste(iid,gfeid_a,sep = " - ")` because these chum salmon would not be able to make it up the fall. Consequently, the reference of the focal series is added to **CUSS**. 
 
-Note that `GFE_ID` = `r gfeid_a` is present in DFO streams file (under `ID`) but coordinates are not:
+Note that `GFE_ID` = `r gfeid_a` is present in the DFO streams file (under `ID`) but coordinates are not:
 
 ```{r, echo=FALSE}
 cuss_new <- CUSS_newRow_fun(IndexId = iid, 
@@ -2604,8 +2611,15 @@ added_all <- rbind(added_all,toAdd)
 #' --> combined in the PSE same in the PSE: Middle Fraser River Spring 
 #' TODO: merge the the blue series to the red
 #' --> change GFE_ID 2464 to 142
+
 #' CORRECTION: we do not do the change above but instead create a new row in 
 #' conservation_unit_system_sites
+
+#' UPDATE: It was decided to merge CN_47277 - 142 to  CN_47277 - 2464 and to add 
+#' CN_47277 - 2464 to CUSS 
+#' REASON: will would have to deal with an issue after merging NUSEDS and CUSS otherwise
+#' with the series 
+
 i <- 6
 cond_i <- trackRecord_nuseds_gfeid$i == i
 trackRecord_nuseds_gfeid$IndexId[cond_i]
@@ -2613,8 +2627,66 @@ trackRecord_nuseds_gfeid$GFE_ID[cond_i]
 trackRecord_nuseds_gfeid$alternative_GFE_ID[cond_i]
 
 series_MAX_ESTIMATE[i]
+```
 
-# add to CUSS
+In case i = `r i`: it is a special situation deserving more attention. There are two different issues related to `CN_47277`: (1) it is associated to two locations (`GFE_IDs`) and (2) in one location (`GFE_ID = 142`), there is another time series with `IndexId = CN_2483`, which belong to the same CU:
+
+```{r,echo=FALSE,  fig.width = 15, fig.height = 12}
+layout(matrix(1:2, nrow = 2)) 
+par(mar = c(5,5,.5,.5))
+plot_IndexId_GFE_ID_fun(IndexIds = rep("CN_47277",2),
+                        GFE_IDs = c(142,2464),
+                        all_areas_nuseds = all_areas_nuseds, 
+                        main = "")
+legend("top",paste0(c("PROBLEM:","Same POP_ID in two locations")),bty = "n")
+
+plot_IndexId_GFE_ID_fun(IndexIds = c("CN_47277","CN_2483"),
+                        GFE_IDs = c(142,142),
+                        all_areas_nuseds = all_areas_nuseds, 
+                        main = "")
+legend("top",paste0(c("PROBLEM:","Two POP_IDs of same CU in same location")),bty = "n")
+
+cond <- conservation_unit_system_sites$IndexId %in% c("CN_47277","CN_2483")
+CU_NAMES <- (conservation_unit_system_sites$CU_NAME[cond])
+legend("topright",CU_NAMES,bty = "n")
+mtext(text = "CU_NAME",side = 3,adj = 1)
+```
+
+
+
+```{r,echo=FALSE}
+cond <- conservation_unit_system_sites$GFE_ID %in% c(2464,142)
+show <- conservation_unit_system_sites[cond,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT")] |> unique()
+rownames(show) <- NULL
+```
+
+The `SYSTEM_SITE` for `GFE_ID` = 142 is:
+
+```{r, echo=FALSE}
+show
+```
+The `GFE_ID = 2464` is not in **CUSS** but it is in the DFO streams file but does not have coordinates:
+
+```{r,echo=FALSE}
+cond <- DFO_All_Streams_Segments$ID == 2464
+show <- DFO_All_Streams_Segments[cond,]
+rownames(show) <- NULL
+show
+```
+Notice above that the `NME` (= `SYSTEM_SITE`) for `ID` (= `GFE_ID`) `= 2464` matches the `POPULATION` of `CN_47277`, which is not the case for `GFE_ID = 142`:
+
+```{r,echo=FALSE}
+cond <- all_areas_nuseds$IndexId %in% c("CN_47277","CN_2483")
+show <- unique(all_areas_nuseds[cond,c("IndexId","POPULATION")])
+rownames(show) <- NULL
+show
+```
+
+
+**DECISION**: we decide to merge the alternative series `CN_47277 - 142` to the focal series `CN_47277 - 2464` in **NUSEDS** and to add `CN_47277 - 2464` to **CUSS**:
+
+```{r, include=FALSE}
+# add CN_47277 - 2464 to CUSS
 cuss_new <- CUSS_newRow_fun(IndexId = "CN_47277", 
                             GFE_ID = 2464,
                             conservation_unit_system_sites = conservation_unit_system_sites,
@@ -2637,26 +2709,45 @@ toAdd <- data.frame(IndexId ="CN_47277",
                     GFE_ID = 2464,
                     dataset = "CUSS",
                     CU_NAME = cuss_new$CU_NAME,
-                    comment = "GFE_ID not in CUSS")
+                    comment = "GFE_ID not in CUSS, series CN_47277 - 142 was merged to it")
 
 added_all <- rbind(added_all,toAdd)
+
+
+# merge `CN_47277 - 142` to the focal series `CN_47277 - 2464` in **NUSEDS**
+cond_CN_47277 <- all_areas_nuseds$IndexId == "CN_47277"
+cond_gfe_id_142 <- all_areas_nuseds$GFE_ID == 142
+cond_gfe_id_2464 <- all_areas_nuseds$GFE_ID == 2464
+for(f in fields_l$NUSEDS$GFE_ID){
+  all_areas_nuseds[,f][cond_gfe_id_142 & cond_CN_47277] <- unique(all_areas_nuseds[,f][cond_gfe_id_2464 & cond_CN_47277])
+}
+
+plot_IndexId_GFE_ID_fun(IndexIds = c("CN_47277","CN_47277"),
+                        GFE_IDs = c(2464,142),
+                        all_areas_nuseds = all_areas_nuseds)
+
+# edit removed_all
+removed <- data.frame(IndexId = c("CN_47277"),
+                      GFE_ID = c(142))
+removed$dataset <- "NUSEDS"
+removed$comment <- "Merged to series CN_47277 & GFE_ID = 2464 to match POPULATION and SYSTEM_SITE and avoid issue of multiple time series of same CU in same location"
+removed_all <- rbind(removed_all,removed)
+
 ```
-
-In case i = `r i`: the focal series `r paste("CN_47277","2464",sep = " - ")` in blue is not merged to the alternative series `r paste("CN_47277","142",sep = " - ")` in red ; it is instead added to **CUSS**. 
-
-The `GFE_ID` is present in the DFO streams file but coordinates are not:
 
 ```{r, echo=FALSE}
-cond <- DFO_All_Streams_Segments$ID == 2464
-DFO_All_Streams_Segments[cond,]
+plot_IndexId_GFE_ID_fun(IndexIds = c("CN_47277","CN_47277"),
+                        GFE_IDs = c(2464,142),
+                        all_areas_nuseds = all_areas_nuseds)
 ```
 
-The coordinate for this location are consequently defined manually using Google Maps; they corresponds to the mouth of Cottonwood river:
+As show above, there is no coordinates for the location with `GFE_ID = 2464`. We consequently defined them manually using Google Maps; they corresponds to the mouth of Cottonwood river:
 
 ```{r, echo=FALSE}
 rownames(cuss_new) <- NULL
 cuss_new[,c("SYSTEM_SITE","GFE_ID","X_LONGT","Y_LAT")]
 ```
+
 
 ```{r, include=FALSE}
 #' Cases with NICOLA RIVER (i = 7)
@@ -4291,7 +4382,7 @@ At this stage **NUSEDS** and **CUSS** have the same `r length(series_cuss)` time
 ```{r}
 col_common <- c("IndexId","POP_ID","GFE_ID")
 
-col_nuseds <- c("SPECIES","WATERBODY","AREA","Year","MAX_ESTIMATE",
+col_nuseds <- c("SPECIES","POPULATION","WATERBODY","AREA","Year","MAX_ESTIMATE",
                 "ENUMERATION_METHODS",            # 
                 "ESTIMATE_CLASSIFICATION",
                 "ESTIMATE_METHOD",
@@ -4312,10 +4403,10 @@ nuseds_final <- base::merge(x = all_areas_nuseds[,c(col_common,col_nuseds)],
 ```
 
 ```{r, include=FALSE}
-nrow(nuseds_final)     # 310538 309727 307217
-nrow(all_areas_nuseds) # 310538 309727 307217
+nrow(nuseds_final)     # 310644 310644 310538 309727 307217
+nrow(all_areas_nuseds) # 310644 310644 310538 309727 307217
+nrow(conservation_unit_system_sites) # 6955
 ```
-
 
 # Additional fixes
 
@@ -4359,9 +4450,12 @@ There are many cases where a CU in a given location (i.e., a unique `GFE_ID`) is
   
   - points that are complementary are merged
 
-The figures below show the time series before and after correction with the action made (i.e., "MERGED", "DELETED", "SUMMED") indicated 
 
-There are three instances where a special fix is done, as indicated below in the corresponding figures.
+By summing data points in a few cases, we assum that the different runs (e.g., “Chinook Run 1” and “Chinook Run 2”) can be considered a single population. For example, the Bridge River has Summer and Late run sockeye surveys, but these are both in the MIDDLE FRASER river-type sockeye CU and are summed to yield the Bridge River survey for that CU in the PSE.
+
+The figures below show the time series before and after correction with the action made (i.e., "MERGED", "DELETED", "SUMMED") indicated.
+
+There are a few instances where a special fix is done, as indicated below in the corresponding figures.
 
 In the few instances where data points are summed, we define the `ESTIMATE_CLASSIFICATION` (e.g., "RELATIVE ABUNDANCE (TYPE-3)") as the value corresponding to the highest `MAX_ESTIMATE` value between the two data points. In these cases, a table follows the figure and show the data points that are summed with their corresponding `Year` and `ESTIMATE_CLASSIFICATION`.
 
@@ -4421,9 +4515,10 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
   # r <- which(nuseds_CU_GFI_ID$GFE_ID == 800 & 
   #            nuseds_CU_GFI_ID$CU_NAME == "GEORGIA STRAIT" & 
   #            nuseds_CU_GFI_ID$SPECIES_QUALIFIED == "CM")
-  # r <- which(nuseds_CU_GFI_ID$GFE_ID == 817 &
-  #            nuseds_CU_GFI_ID$CU_NAME == "BUTE INLET" &
-  #            nuseds_CU_GFI_ID$SPECIES_QUALIFIED == "CM")
+  # r <- 1432
+  # r <- which(nuseds_CU_GFI_ID$GFE_ID == 142 &
+  #            nuseds_CU_GFI_ID$CU_NAME == "MIDDLE FRASER RIVER_SP_1.3" &
+  #            nuseds_CU_GFI_ID$SPECIES_QUALIFIED == "CK")
 
   CU_NAME_here <- nuseds_CU_GFI_ID$CU_NAME[r]
   GFE_ID_here <- nuseds_CU_GFI_ID$GFE_ID[r]
@@ -4434,16 +4529,21 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
     nuseds_final$SPECIES_QUALIFIED == SPECIES_QUALIFIED_here
   
   IndexId_here <- unique(nuseds_final$IndexId[cond_nuseds])
+  POPULATION_here <- unique(nuseds_final$POPULATION[cond_nuseds])
   
   if(length(IndexId_here) > 1){
     
     plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                             GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
                             all_areas_nuseds = nuseds_final, 
-                            main = "BEFORE")
-    legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
-    legend("topright",legend = c(paste0("count = ",count),
+                            main = "")
+    # legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
+    legend("top",legend = POPULATION_here,bty = 'n')
+    legend("bottomleft",legend = c(paste0("count = ",count),
                                  paste0("r = ",r)),bty = 'n')
+    
+    mtext(text = paste("CU_NAME:",CU_NAME_here), side = 3, line = 1,adj = 0)
+    mtext(text ="BEFORE", side = 3, line = 1,adj = 1, cex = 1.2, font = 2)
     
     # select the two time series:
     cond_nuseds_1 <- cond_nuseds & nuseds_final$IndexId == IndexId_here[1]
@@ -4476,7 +4576,8 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
     # series_compare[order(as.numeric(names(series_compare)))]
     
     # some extra cases spotted by eye
-    delete_exception <- IndexId_focal == "CN_50619" & GFE_ID_here == 824 # here one data point is a duplicate, the other one almost is
+    delete_exception1 <- IndexId_focal == "CN_50619" & GFE_ID_here == 824 # here one data point is a duplicate, the other one almost is
+    delete_exception2 <- IndexId_focal == "CN_275" & GFE_ID_here == 220 # here one data point is a duplicate, the other one almost is
     correct_exception <- IndexId_focal == "CM_50537" & GFE_ID_here == 816
     
 #' - Case 1: if one data point
@@ -4508,10 +4609,14 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                                 GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
                                 all_areas_nuseds = nuseds_final, 
-                                main = "AFTER")
-        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
-        legend("topright",legend = "MERGED",bty = 'n')
+                                main = "")
         
+        legend("topright",legend = "MERGED",bty = 'n')
+        legend("top",legend = POPULATION_here,bty = 'n')
+        mtext(text ="AFTER", side = 3, line = 1,adj = 1, cex = 1.2, font = 2)
+        mtext(text = paste("CU_NAME:",CU_NAME_here), side = 3, line = 1,adj = 0)
+        
+
       }else{ # discard it
         
         nuseds_final <- nuseds_final[!cond_focal,]
@@ -4526,13 +4631,16 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
         
         plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                                 GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final,main = "AFTER")
-        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
+                                all_areas_nuseds = nuseds_final,main = "")
+        mtext(text ="AFTER", side = 3, line = 1,adj = 1, cex = 1.2, font = 2)
+        mtext(text = paste("CU_NAME:",CU_NAME_here), side = 3, line = 1,adj = 0)
         legend("topright",legend = "DELETED",bty = 'n')
+        legend("top",legend = POPULATION_here,bty = 'n')
+        
       }
       
 #' - Case 2: the shorter series is 100% duplicated --> removed
-    }else if(comparison$nb_dataPt == comparison$duplicate | delete_exception){
+    }else if(comparison$nb_dataPt == comparison$duplicate | delete_exception1 | delete_exception2){
       
       nuseds_final <- nuseds_final[!cond_focal,]
       
@@ -4547,12 +4655,37 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
       plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                               GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                              all_areas_nuseds = nuseds_final,main = "AFTER")
-      legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
+                              all_areas_nuseds = nuseds_final,main = "")
+      mtext(text ="AFTER", side = 3, line = 1,adj = 1, cex = 1.2, font = 2)
+      mtext(text = paste("CU_NAME:",CU_NAME_here), side = 3, line = 1,adj = 0)
       legend("topright",legend = "DELETED",bty = 'n')
+      legend("top",legend = POPULATION_here,bty = 'n')
+
       
-      if(delete_exception){
+      if(delete_exception1){
         print("Special fix (above): the two blue points are deleted; one is a duplicate, there other one is very close to be one.")
+        
+      }else if(delete_exception2){
+        
+        print("Special fix (above): the two red points are deleted; one is a duplicate, there other one has 'UNKNOWN' ESTIMATE_CLASSIFICATION:")
+        
+        # show the difference in ESTIMATE_CLASSIFICATION when summing data points
+        d_focal <- nuseds_final[cond_focal,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+        d_compare <- nuseds_final[cond_compare,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+          
+        show <- base::merge(x = d_focal,y = d_compare, by = c("GFE_ID","Year"), all = T)
+        show <- show[order(show$Year),]
+        show <- show[!is.na(show$MAX_ESTIMATE.x),]
+          
+        cond <- grepl("\\.x",colnames(show))
+        colnames(show)[cond] <- gsub("\\.x","_s1",colnames(show)[cond])
+        cond <- grepl("\\.y",colnames(show))
+        colnames(show)[cond] <- gsub("\\.y","_s2",colnames(show)[cond])
+        rownames(show) <- NULL
+          
+        show <- show[!is.na(show$MAX_ESTIMATE_s1),]
+        show <- show[!is.na(show$MAX_ESTIMATE_s2),]
+        print(show)
       }
       
     }else if(correct_exception){
@@ -4649,9 +4782,12 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
       
       plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
                               GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                              all_areas_nuseds = nuseds_final,main = "AFTER")
-      legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
-      legend("topright",legend = "DELETED & MERGED",bty = 'n')
+                              all_areas_nuseds = nuseds_final,main = "")
+      legend("topright",legend = "DELETED & SUMMED & MERGED",bty = 'n')
+      mtext(text ="AFTER", side = 3, line = 1,adj = 1, cex = 1.2, font = 2)
+      mtext(text = paste("CU_NAME:",CU_NAME_here), side = 3, line = 1,adj = 0)
+      legend("top",legend = POPULATION_here,bty = 'n')
+
       
       if(correct_exception){
         print("Special fix (above): the blue points before 1950 are deleted, the other ones are summed to the red series.")
@@ -4664,139 +4800,85 @@ for(r in 1:nrow(nuseds_CU_GFI_ID)){
 #' - Case 3: on the rest of the series, 
 #'    - points that are conflictual or duplicated are added
 #'    - points that are complementary are merged
-    }else{ 
-
-      # plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
-      #                         GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-      #                         all_areas_nuseds = nuseds_final,main = "AFTER")
-      # legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
+    }else{
       
-      if("CN_2483" %in% IndexId_here & GFE_ID_here == 142){
+      # show the difference in ESTIMATE_CLASSIFICATION when summing
+      d_focal <- nuseds_final[cond_focal,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
+      d_compare <- nuseds_final[cond_compare,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
         
-        # print("Case 3 - CN_2483 & GFE_ID_here == 142")
+      show <- base::merge(x = d_focal,y = d_compare, by = c("GFE_ID","Year"), all = T)
+      show <- show[order(show$Year),]
+      show <- show[!is.na(show$MAX_ESTIMATE.x),]
         
-        # - 1) merge CN_47277 - 142 to CN_2483 - 142
-        # - 2) remove the point CN_47278 - 142
+      cond <- grepl("\\.x",colnames(show))
+      colnames(show)[cond] <- gsub("\\.x","_s1",colnames(show)[cond])
+      cond <- grepl("\\.y",colnames(show))
+      colnames(show)[cond] <- gsub("\\.y","_s2",colnames(show)[cond])
+      rownames(show) <- NULL
+      
+      show <- show[!is.na(show$MAX_ESTIMATE_s1),]
+      show <- show[!is.na(show$MAX_ESTIMATE_s2),]
         
-        # 1) 
-        # change the IndexId of focal series to the compared one
-        cond_focal <- nuseds_final$IndexId == "CN_47277" & 
-          nuseds_final$GFE_ID == 142
-        cond_compare <- nuseds_final$IndexId == "CN_2483" & 
-          nuseds_final$GFE_ID == 142
+      # 1st change the IndexId of focal series to the compared one
+      for(f in fields_IndexId){
+        # f <- fields_IndexId[1]
+        nuseds_final[cond_focal,f] <- unique(nuseds_final[cond_compare,f])
+      }
         
-        for(f in fields_IndexId){
-          # f <- fields_IndexId[1]
-          nuseds_final[cond_focal,f] <- unique(nuseds_final[cond_compare,f])
-        }
-        
-        removed <- data.frame(IndexId = "CN_47277",
-                              GFE_ID = 142)
-        removed$dataset <- "nuseds_final"
-        removed$comment <- paste0("Series merged to series ",IndexId_compare,
-                                  " & GFE_ID = ",GFE_ID_here," of the same CU: ",
-                                  CU_NAME_here)
-        removed_all_new <- rbind(removed_all_new,removed)
-        
-        # 2)
-        cond_toRemove <- nuseds_final$IndexId == "CN_47278" & 
-          nuseds_final$GFE_ID == 142
-        
-        nuseds_final <- nuseds_final[!cond_toRemove,]
-        
-        removed <- data.frame(IndexId = "CN_47278",
-                              GFE_ID = 142)
-        removed$dataset <- "nuseds_final"
-        removed$comment <- paste0("The series had only one point in confict or duplicating the series ",
-                                  IndexId_compare," & GFE_ID = ",GFE_ID_here,
-                                  " of the same CU: ",CU_NAME_here)
-        removed_all_new <- rbind(removed_all_new,removed)
-        
-        plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
-                                GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final, main = "AFTER")
-        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
-        legend("topright",legend = "MERGED & DELETED",bty = 'n')
-        
-        print("Special fix (above): the blue points is deleted, the green series is merged to the red one.")
-        
-      }else{
-        
-        # show the difference in ESTIMATE_CLASSIFICATION when summing
-        d_focal <- nuseds_final[cond_focal,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
-        d_compare <- nuseds_final[cond_compare,c("IndexId","GFE_ID","Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")]
-        
-        show <- base::merge(x = d_focal,y = d_compare, by = c("GFE_ID","Year"), all = T)
-        show <- show[order(show$Year),]
-        show <- show[!is.na(show$MAX_ESTIMATE.x),]
-        
-        cond <- grepl("\\.x",colnames(show))
-        colnames(show)[cond] <- gsub("\\.x","_s1",colnames(show)[cond])
-        cond <- grepl("\\.y",colnames(show))
-        colnames(show)[cond] <- gsub("\\.y","_s2",colnames(show)[cond])
-        rownames(show) <- NULL
-        
-        show <- show[!is.na(show$MAX_ESTIMATE_s1),]
-        show <- show[!is.na(show$MAX_ESTIMATE_s2),]
-        
-        # 1st change the IndexId of focal series to the compared one
-        for(f in fields_IndexId){
-          # f <- fields_IndexId[1]
-          nuseds_final[cond_focal,f] <- unique(nuseds_final[cond_compare,f])
-        }
-        
-        # 2nd sum MAX_ESTIMATE values for duplicated years
-        SUMMED <- F
-        yr_duplicated <- nuseds_final[cond_focal | cond_compare,]$Year[duplicated(nuseds_final[cond_focal | cond_compare,]$Year)]
-        for(yr in yr_duplicated){
-          # yr <- yr_duplicated[1]
-          cond_here <- (cond_focal | cond_compare) & nuseds_final$Year == yr
-          vals <- nuseds_final$MAX_ESTIMATE[cond_here]
-          ESTIMATE_CLASSIFICATIONs <- nuseds_final$ESTIMATE_CLASSIFICATION[cond_here]
+      # 2nd sum MAX_ESTIMATE values for duplicated years
+      SUMMED <- F
+      yr_duplicated <- nuseds_final[cond_focal | cond_compare,]$Year[duplicated(nuseds_final[cond_focal | cond_compare,]$Year)]
+      for(yr in yr_duplicated){
+        # yr <- yr_duplicated[1]
+        cond_here <- (cond_focal | cond_compare) & nuseds_final$Year == yr
+        vals <- nuseds_final$MAX_ESTIMATE[cond_here]
+        ESTIMATE_CLASSIFICATIONs <- nuseds_final$ESTIMATE_CLASSIFICATION[cond_here]
           
-          if(any(!is.na(vals))){
-            val <- sum(vals,na.rm = T)
-            nuseds_final$MAX_ESTIMATE[cond_here] <- val
+        if(any(!is.na(vals))){
+          val <- sum(vals,na.rm = T)
+          nuseds_final$MAX_ESTIMATE[cond_here] <- val
             
-            # if indeed counts were added up (i.e. not just one value)
-            if(sum(!is.na(vals)) > 1){
+          # if indeed counts were added up (i.e. not just one value)
+          if(sum(!is.na(vals)) > 1){
               
-              SUMMED <- T
-            
-              # define ESTIMATE_CLASSIFICATION: select the value corresponding to the higher MAX_ESTIMATE
-              val <- ESTIMATE_CLASSIFICATIONs[vals == max(vals, na.rm = T)]
-              nuseds_final$ESTIMATE_CLASSIFICATION[cond_here] <- val
-            }
+            SUMMED <- T
+          
+            # define ESTIMATE_CLASSIFICATION: select the value corresponding to the higher MAX_ESTIMATE
+            val <- ESTIMATE_CLASSIFICATIONs[vals == max(vals, na.rm = T)]
+            nuseds_final$ESTIMATE_CLASSIFICATION[cond_here] <- val
           }
         }
-        
-        # 3rd remove the rows with duplicated years in the focal
-        cond_toDelete <- cond_focal & nuseds_final$Year %in% yr_duplicated
-        nuseds_final <- nuseds_final[!cond_toDelete,]
-        
-        plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
-                                GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
-                                all_areas_nuseds = nuseds_final, main = "AFTER")
-        legend("top",legend = c("CU_NAME",CU_NAME_here),bty = 'n')
-        if(SUMMED){
-          legend("topright",legend = "MERGED & SUMMED",bty = 'n')
-        }else{
-          legend("topright",legend = "MERGED",bty = 'n')
-        }
-        
-        #
-        if(SUMMED){
-          print("Below is MAX_ESTIMATE and ESTIMATE_CLASSIFICATION for the data points summed:")
-          print(show)
-        }
-        
-        removed <- data.frame(IndexId = IndexId_focal,
-                              GFE_ID = GFE_ID_here)
-        removed$dataset <- "nuseds_final"
-        removed$comment <- paste0("Series merged by summing to series ",IndexId_compare," & GFE_ID = ",GFE_ID_here," of the same CU: ",CU_NAME_here)
-        removed_all_new <- rbind(removed_all_new,removed)
-        
       }
+        
+      # 3rd remove the rows with duplicated years in the focal
+      cond_toDelete <- cond_focal & nuseds_final$Year %in% yr_duplicated
+      nuseds_final <- nuseds_final[!cond_toDelete,]
+        
+      plot_IndexId_GFE_ID_fun(IndexIds = IndexId_here,
+                              GFE_IDs = rep(GFE_ID_here,length(IndexId_here)),
+                              all_areas_nuseds = nuseds_final, main = "")
+      mtext(text = paste("CU_NAME:",CU_NAME_here), side = 3, line = 1,adj = 0)
+      mtext(text = "AFTER", side = 3, line = 1,adj = 1, cex = 1.2, font = 2)
+      legend("top",legend = POPULATION_here,bty = 'n')
+        
+      if(SUMMED){
+        legend("topright",legend = "MERGED & SUMMED",bty = 'n')
+      }else{
+        legend("topright",legend = "MERGED",bty = 'n')
+      }
+
+      #
+      if(SUMMED){
+        print("Below is MAX_ESTIMATE and ESTIMATE_CLASSIFICATION for the data points summed:")
+        print(show)
+      }
+      
+      removed <- data.frame(IndexId = IndexId_focal,
+                            GFE_ID = GFE_ID_here)
+      removed$dataset <- "nuseds_final"
+      removed$comment <- paste0("Series merged by summing to series ",IndexId_compare," & GFE_ID = ",GFE_ID_here," of the same CU: ",CU_NAME_here)
+      removed_all_new <- rbind(removed_all_new,removed)
+
     }
     count <- count + 1
     print("***")

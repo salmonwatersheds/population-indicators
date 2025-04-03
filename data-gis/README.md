@@ -3,12 +3,12 @@ This repository contains (1) the shape files of the different regions shown in t
 
 Regions boundaries:
 
-"https://api.salmonwatersheds.ca/Data-Library/Download.aspx?file=~/ServerFiles/ExportedData/Shapefiles/se_boundary_regions.zip"
+[https://data.salmonwatersheds.ca/result?datasetid=518](https://data.salmonwatersheds.ca/result?datasetid=518)
 
 
-CUs boumdaries:
+CUs boundaries:
 
-https://api.salmonwatersheds.ca/Data-Library/Download.aspx?file=~/ServerFiles/ExportedData/Shapefiles/pse_conservation_units.zip
+[https://data.salmonwatersheds.ca/result?datasetid=104](https://data.salmonwatersheds.ca/result?datasetid=104)
 
 
 These files are manually pasted to the dropbox population-indicators/data-gis repository.

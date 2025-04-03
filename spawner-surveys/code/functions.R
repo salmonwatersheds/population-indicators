@@ -1057,7 +1057,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
              'WATERSHED_CDE','WATERBODY_ID','GFE_ID')
     
     if(newFieldsIncluded){
-      out <- c(out,'StatArea')
+      # out <- c(out,'StatArea') # field not create in script 1 anymore
       out <- unique(out)
     }
   }
@@ -1177,7 +1177,6 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
       
       field_comm <- fields_l$CUSS$IndexId[fields_l$CUSS$IndexId %in% fields_l$NUSEDS$IndexId]
       field_comm <- field_comm[field_comm != "IndexId"]
-      
       
       for(f in field_comm){
         cuss_new[,f] <- unique(all_areas_nuseds[,f][cond_nuseds_iid])

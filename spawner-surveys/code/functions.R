@@ -69,9 +69,10 @@ datasets_NuSEDS_fun <- function(name_dataSet, from_NuSEDS_website = F, wd){
 #' (https://www.pac.dfo-mpo.gc.ca/fm-gp/maps-cartes/areas-secteurs/index-eng.html)
 #' into???
 Convert2StatArea <- function(area){
-  StatArea <- as.character(area)
-  StatArea[area %in% c("3A", "3B")] <- 3
-  StatArea[area %in% c("4A", "4B", "4C", "4D")] <- 4
+  # StatArea <- as.character(area)
+  StatArea <- area
+  StatArea[area %in% c("3A", "3B")] <- "3"
+  StatArea[area %in% c("4A", "4B", "4C", "4D")] <- "4"
   valHere <- c("1", "2W", "3", "4", "5", "6", "7", "8", "9")
   StatArea[area %in% valHere] <- paste0("0", StatArea[area %in% valHere])
   return(StatArea)

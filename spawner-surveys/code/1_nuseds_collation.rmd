@@ -125,7 +125,7 @@ options(digits = 9)
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- F
+export_datasets <- T
 
 # Decision in ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 # If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 
@@ -134,11 +134,12 @@ remove_timeSeries_zeros_too <- T
 
 # Used just after NUSEDS and CUSS are merged: to decide if we want to replace
 # all the remaining 0s by NAs.
+#' TODO: this does not have to be done in this script!!!
 replace_zeros_byNAs <- T
 
 # To avoid having to wait too much time when executing the code multiple times.
 # Should be set to FALSE by default.
-import_file_locally_TEMPORARY <- T
+import_file_locally_TEMPORARY <- F
 
 # To prevent different locations (with different GFE_ID) to have exactly the same coordinates
 update_coordinates <- T
@@ -3997,22 +3998,28 @@ In case i = `r i`: the focal series `r paste("CN_48448","443",sep = " - ")` in b
 # CM_46984
 i <- i + 1 # 27
 cond_i <- trackRecord_nuseds_gfeid$i == i
-iid <- trackRecord_nuseds_gfeid$IndexId[cond_i] |> unique()
-gfeid <- trackRecord_nuseds_gfeid$GFE_ID[cond_i] |> unique()
+iid <- trackRecord_nuseds_gfeid$IndexId[cond_i] |> unique()  # CM_46984
+gfeid <- trackRecord_nuseds_gfeid$GFE_ID[cond_i] |> unique() # 2529
 gfeid_a <- trackRecord_nuseds_gfeid$alternative_GFE_ID[cond_i] |> unique()
 
 cond <- conservation_unit_system_sites$GFE_ID %in% c(gfeid,gfeid_a)
 conservation_unit_system_sites[cond,c("SYSTEM_SITE","GFE_ID","Y_LAT","X_LONGT")] |> unique()
 
-cond <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == gfeid
-cond2 <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == gfeid_a
-cols <- c("Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")
-check <- merge(x = all_areas_nuseds[cond,cols],
-               y =  all_areas_nuseds[cond2,cols],
-               by = "Year",all = T)
-check
+# cond <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == gfeid
+# cond2 <- all_areas_nuseds$IndexId == iid & all_areas_nuseds$GFE_ID == gfeid_a
+# cols <- c("Year","MAX_ESTIMATE","ESTIMATE_CLASSIFICATION")
+# check <- merge(x = all_areas_nuseds[cond,cols],
+#                y =  all_areas_nuseds[cond2,cols],
+#                by = "Year",all = T)
+# check
 
 # add to conservation_unit_system_sites
+
+cuss_new <- CUSS_newRow_fun(IndexId = iid,
+                            GFE_ID = gfeid,
+                            conservation_unit_system_sites = conservation_unit_system_sites,
+                            all_areas_nuseds = all_areas_nuseds)
+
 conservation_unit_system_sites <- rbind(conservation_unit_system_sites,
                                         cuss_new)
 
@@ -4025,7 +4032,7 @@ toAdd <- data.frame(IndexId = iid,
 added_all <- rbind(added_all,toAdd)
 ```
 
-In case i = `r i`: the focal series `r paste("CN_48448","443",sep = " - ")` is added to **CUSS** instead of being merged to the alternative series because the two series are not compatible and in two different locations.
+In case i = `r i`: the focal series `r paste("CM_46984","2529",sep = " - ")` is added to **CUSS** instead of being merged to the alternative series because the two series are not compatible and in two different locations.
 
 ```{r, include=FALSE}
 # CM_46984

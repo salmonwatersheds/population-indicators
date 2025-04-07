@@ -39,7 +39,7 @@ The goal of the script is to associate each population (defined by the fields `P
 #' 
 #'******************************************************************************
 
-# rm(list = ls())
+rm(list = ls())
 graphics.off()
 
 # reset the wd to head using the location of the current script
@@ -90,6 +90,7 @@ library(dplyr) # for arrange()
 library(sf)
 library(sp)     # for spDists() TERRA is the replacement
 library(scales)
+library(readxl)
 
 source("code/functions.R")
 
@@ -120,14 +121,15 @@ Import the cleaned NuSEDS dataset with the following decisions made concerning z
 ```{r, include=FALSE}
 
 #'* Import the log file *
-logfile_path <- paste0(getwd(),"/spawner-surveys/output/1_log_file.csv")
+logfile_path <- paste0(getwd(),"/spawner-surveys/output/log_file.csv")
 logfile_path <- gsub("spawner-surveys/code/","",logfile_path)
 log_file <- read.csv(logfile_path,header = T)
 
 # selected the rows corresponding to the decision made concerning including or 
 # not the 0s:
 cond <- log_file$remove_timeSeries_zeros_too == remove_timeSeries_zeros_too & 
-  log_file$replace_zeros_byNAs == replace_zeros_byNAs
+  log_file$replace_zeros_byNAs == replace_zeros_byNAs & 
+  grepl("NuSEDS_escapement_data_collated",log_file$main_dataset_exported)
 # select the most recent date:
 date_export <- max(log_file[cond,]$date_export)
 
@@ -139,13 +141,13 @@ date_export <- max(log_file[cond,]$date_export)
 nuseds <- read.csv(paste0(wd_output,"/archive/1_NuSEDS_escapement_data_collated_",date_export,".csv"),header = T)
 
 head(nuseds)
-nrow(nuseds) # 310255 309338 306823 306999
+nrow(nuseds) # 311566 310255 309338 306823 306999
 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6892 6854 6868
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6892 6854 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6972 6892 6854 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6972 6892 6854 6868
 
 sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 0
-sum(is.na(nuseds$MAX_ESTIMATE)) # 157808 157264 155984
+sum(is.na(nuseds$MAX_ESTIMATE)) # 158986 157808 157264 155984
 ```
 
 ```{r,echo=FALSE}
@@ -188,14 +190,30 @@ sum(is.na(conservationunits_decoder$cu_index))    # 45
 sum(is.na(conservationunits_decoder$cu_name_pse))
 cond <- is.na(conservationunits_decoder$cu_index)
 conservationunits_decoder[cond,]
+
+# temporary fix to do (until the source file is corrected)
+d_fixes <- data.frame(cuid = c(528,756,758,759,760,761,763,1022),
+                      cu_index_old = c("SX_528","","","","","","","SER-023"),
+                      cu_index_new = c("SEL-16-01","SEL-03-07","SEL-05-01","SEL-06-19",
+                                       "SEL-09-04","SEL-09-05","SEL-10-02","SER-23"))
+
+for(r in 1:nrow(d_fixes)){
+  cuid <- d_fixes$cuid[r]
+  cu_index_new <- d_fixes$cu_index_new[r]
+  cond <- conservationunits_decoder$cuid == cuid
+  conservationunits_decoder$cu_index[cond] <- cu_index_new
+}
+
+d_fixes
 ```
 
 Import the *streamlocationids.csv* to access the location names, coordinates and identification number for maintaining consistency.
 
-**TEMPORARY**: change the name of the field `streamid` to `stream_cu_id` because the latter is the unique association between a CU (`cuid`) and a location/stream (`GFE_ID`).
-
-```{r, include=FALSE}
+```{r, echo=FALSE}
 #'* Files from PSF database *
+
+# NOT DONE FOR NOW:
+# **TEMPORARY**: change the name of the field `streamid` to `populationid` because the latter is the unique association between a CU (`cuid`) and a location/stream (`GFE_ID`).
 
 #'Import the name of the different datasets in the PSF database and their 
 #' corresponding CSV files.
@@ -213,7 +231,7 @@ streamlocationids$sys_nm <- gsub("\\\\","'",streamlocationids$sys_nm)
 streamlocationids$sys_nm <- gsub("  "," ",streamlocationids$sys_nm)
 
 rownames(streamlocationids) <- NULL
-colnames(streamlocationids)[colnames(streamlocationids) == "streamid"] <- "stream_cu_id"
+# colnames(streamlocationids)[colnames(streamlocationids) == "streamid"] <- "populationid"
 
 # add the field region from the decoder
 streamlocationids$region <- NA
@@ -226,13 +244,13 @@ for(rg_i in unique(streamlocationids$regionid)){
 }
 
 # remove unnecessary and confusing fields
-streamlocationids <- streamlocationids[,c("region","sys_nm","GFE_ID","latitude","longitude","cu_name_pse","cuid","stream_cu_id")]
+streamlocationids <- streamlocationids[,c("region","sys_nm","GFE_ID","latitude","longitude","cu_name_pse","cuid","streamid")]
 rownames(streamlocationids) <- NULL
 
 head(streamlocationids)
 ```
 
-Import the regions' shape files are imported. These represent the geographic boundaries as displayed in the PSE.
+Import the regions' shape files. These represent the geographic boundaries as displayed in the PSE.
 
 ```{r, include=FALSE}
 #'* Import the shape files for the Region boundaries  *
@@ -248,31 +266,57 @@ regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001 # to reduc
 
 ```
 
+# Modifications
 
-# Updates on FULL_CU_IN/cu_index
+## Add the field StatArea
 
-## In conservationunits_decoder (TEMPORARY)
-
-The updates below are done here until the changes are made directly in *conservationunits_decoder.csv*.
+This new `StatArea` field is equivalent to the original field `AREA` with the following changes made:
 
 ```{r, echo=FALSE}
 
-d_fixes <- data.frame(cuid = c(528,756,758,759,760,761,763,1022),
-                      cu_index_old = c("SX_528","","","","","","","SER-023"),
-                      cu_index_new = c("SEL-16-01","SEL-03-07","SEL-05-01","SEL-06-19",
-                                       "SEL-09-04","SEL-09-05","SEL-10-02","SER-23"))
+# Note: this was done in script 1 previously but messed up with the correction process because
+# StatArea is a - GFE_ID field but the change below are done for certain populations which creates a 
+# bug.
 
-for(r in 1:nrow(d_fixes)){
-  cuid <- d_fixes$cuid[r]
-  cu_index_new <- d_fixes$cu_index_new[r]
-  cond <- conservationunits_decoder$cuid == cuid
-  conservationunits_decoder$cu_index[cond] <- cu_index_new
-}
+#'* Add the field StatArea to NUSEDS * 
+#' Old code, not sure how important this is.
+nuseds$StatArea <- Convert2StatArea(nuseds$AREA)
 
-d_fixes
+# remove the 0 that were added in Convert2StatArea so we can compare to AREA
+# StatArea_compare <-  nuseds$StatArea
+# StatArea_compare <- sapply(StatArea_compare,function(c){
+#   if(substring(c, 1, 1) == "0"){
+#     out <- substring(c, 2)
+#   }else{
+#     out <- c
+#   }
+#   return(out)
+# })
+cond <- nuseds$AREA != nuseds$StatArea
+show <- unique(nuseds[cond,c("AREA","StatArea")])
+show <- show[order(show$AREA),]
+rownames(show) <- NULL
+show
 ```
 
-## In NuSEDS
+We also make the following changes for certain `IndexId/POP_ID`:
+
+```{r}
+# Make corrections for populations with discrepancies in area assignments #
+# These errors become apparent when merging data frames later on #
+nuseds[nuseds$IndexId == "CO_46240",]$StatArea <- "29"    # vs. "29J" "29K"
+nuseds[nuseds$IndexId == "PKO_51094",]$StatArea <- "12"  # BSC: there is one ""
+nuseds[nuseds$IndexId == "SX_45495",]$StatArea <- "120"  # BSC: already "120"
+
+cond <- nuseds$IndexId %in% c("CO_46240","PKO_51094","SX_45495")
+cond2 <- nuseds$AREA != nuseds$StatArea
+
+show <- nuseds[cond & cond2,c("IndexId","AREA","StatArea")]|> unique()
+rownames(show) <- NULL
+show
+```
+
+## Add the field FULL_CU_IN_PSE
 
 The `FULL_CU_IN` of several population is updated to reflect (1) partition of the Sockeye CU `FULL_CU_IN` = "SEL-21-02" into sub-groups (EW: 'Early Wild', for Babine/Onerka; LW: 'Late Wild' for Nilkitkwa, and F: Fulton and Pinkut) as in [DFO 2023](https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/41102356.pdf); (2) recent corrections for the Bella Coola River-Late CU (CM-17) and Bella Coola-Dean Rivers (CM-16) (personal communication from Carrie Holt, DFO, May 2023). The field `FULL_CU_IN_PSE` is created to reflect these changes.
 
@@ -301,6 +345,8 @@ for(i in 1:length(full_cu_l)){
   if(any(cond_nuseds)){
     show_here <- unique(nuseds[cond_nuseds,c("POP_ID","FULL_CU_IN")])
   
+    CU_NAME <- unique(nuseds[cond_nuseds,c("CU_NAME")])
+    
     cond_decoder <- conservationunits_decoder$cu_index == FULL_CU_IN_here &
       !is.na(conservationunits_decoder$cu_index)
   
@@ -311,8 +357,10 @@ for(i in 1:length(full_cu_l)){
     }else{
       show_here$region <- unique(conservationunits_decoder$region[cond_decoder])
       show_here$species_name <- unique(conservationunits_decoder$species_name[cond_decoder])
+      show_here$CU_NAME <- CU_NAME
+      show_here$cu_name_pse <- unique(conservationunits_decoder$cu_name_pse[cond_decoder])
       show_here$FULL_CU_IN_PSE <- FULL_CU_IN_here
-      show_here <- show_here[,c(3,4,1,2,5)]
+      show_here <- show_here[,c("region","species_name","CU_NAME","cu_name_pse","FULL_CU_IN","FULL_CU_IN_PSE")] |> unique()
       rownames(show_here) <- NULL
     
       if(is.null(show)){
@@ -328,6 +376,8 @@ for(i in 1:length(full_cu_l)){
 
 show
 ```
+
+## CU_NAME updates
 
 Additionally, the `CU_NAME` of the river Sockeye at `SYSTEM` = "BELLA COOLA RIVER" (`GFE_ID` = 968) is changed from:
 
@@ -354,11 +404,9 @@ rownames(show) <- NULL
 show
 ```
 
-# Edits on Methods
+## Add the field stream_survey_quality
 
-## Create stream_survey_quality & survey_score
-
-We create the field `stream_survey_quality` and survey_score from `ESTIMATE_CLASSIFICATION` such as:
+We create the field `stream_survey_quality` from `ESTIMATE_CLASSIFICATION` such as:
 
 ```{r, echo=FALSE}
 
@@ -401,43 +449,43 @@ for(ecn in estim_class_nuseds){
 # cf. Table 4.5 in section 4.1.3 of the Tech Report
 # nuseds <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
 #                                      pattern = "nuseds_cuid_streamid_")
-estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
-estim_class_nuseds
+# estim_class_nuseds <- unique(nuseds$ESTIMATE_CLASSIFICATION)
+# estim_class_nuseds
+# 
+# nuseds$survey_score <- NA
+# for(ecn in estim_class_nuseds){
+#   # ecn <- estim_class_nuseds[1]
+#   cond_nuseds <- nuseds$ESTIMATE_CLASSIFICATION == ecn
+#   
+#   if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
+#     out <- "1"
+#   }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
+#     out <- "2"
+#   }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
+#     out <- "3"
+#   }else if(ecn == "RELATIVE ABUNDANCE (TYPE-4)"){
+#     out <- "4"
+#   }else if(ecn %in% c("RELATIVE ABUNDANCE (TYPE-5)",
+#                       "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
+#     out <- "5"
+#   }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
+#                       "PRESENCE-ABSENCE (TYPE-6)",
+#                       "RELATIVE: VARYING MULTI-YEAR METHODS")){
+#     out <- "6"
+#   }else if(ecn == "UNKNOWN"){
+#     out <- "Unknown"
+#   }else if(ecn %in% c("","NO SURVEY THIS YEAR","NO SURVEY")){
+#     out <- NA
+#   }else{
+#     print(ecn)
+#   }
+#   #print(out)
+#   nuseds$survey_score[cond_nuseds] <- out
+# }
+# 
+# nuseds$survey_score |> unique()
 
-nuseds$survey_score <- NA
-for(ecn in estim_class_nuseds){
-  # ecn <- estim_class_nuseds[1]
-  cond_nuseds <- nuseds$ESTIMATE_CLASSIFICATION == ecn
-  
-  if(ecn == "TRUE ABUNDANCE (TYPE-1)"){
-    out <- "1"
-  }else if(ecn == "TRUE ABUNDANCE (TYPE-2)"){
-    out <- "2"
-  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-3)"){
-    out <- "3"
-  }else if(ecn == "RELATIVE ABUNDANCE (TYPE-4)"){
-    out <- "4"
-  }else if(ecn %in% c("RELATIVE ABUNDANCE (TYPE-5)",
-                      "RELATIVE: CONSTANT MULTI-YEAR METHODS")){
-    out <- "5"
-  }else if(ecn %in% c("PRESENCE/ABSENCE (TYPE-6)",
-                      "PRESENCE-ABSENCE (TYPE-6)",
-                      "RELATIVE: VARYING MULTI-YEAR METHODS")){
-    out <- "6"
-  }else if(ecn == "UNKNOWN"){
-    out <- "Unknown"
-  }else if(ecn %in% c("","NO SURVEY THIS YEAR","NO SURVEY")){
-    out <- NA
-  }else{
-    print(ecn)
-  }
-  #print(out)
-  nuseds$survey_score[cond_nuseds] <- out
-}
-
-nuseds$survey_score |> unique()
-
-show <- unique(nuseds[,c("ESTIMATE_CLASSIFICATION","stream_survey_quality","survey_score")])
+show <- unique(nuseds[,c("ESTIMATE_CLASSIFICATION","stream_survey_quality")])
 rownames(show) <- NULL
 
 ESTIMATE_CLASSIFICATION <- c("TRUE ABUNDANCE (TYPE-1)",
@@ -453,10 +501,11 @@ ESTIMATE_CLASSIFICATION <- c("TRUE ABUNDANCE (TYPE-1)",
 
 order <- order(factor(x = show$ESTIMATE_CLASSIFICATION, levels = ESTIMATE_CLASSIFICATION))
 show <- show[order,]
+rownames(show) <- NULL
 show
 ```
 
-## Fixes in ESTIMATE_METHOD 
+## Fixes on ESTIMATE_METHOD 
 
 We make the following corrections to the field `ESTIMATE_METHOD`:
 
@@ -473,9 +522,6 @@ estMeth <- data.frame(ESTIMATE_METHOD = c("Cummulative","Unknown","Fixed Site Ce
                       correction = c("Cumulative","Unknown Estimate Method","Fence Count",
                                      "Aerial Survey","Fence Count","Unknown Estimate Method"))
 
-
-estMeth
-
 for(r in 1:nrow(estMeth)){
   # r <- 2
   if(estMeth$ESTIMATE_METHOD[r] == "Cummulative"){
@@ -486,18 +532,8 @@ for(r in 1:nrow(estMeth)){
   }
 }
 
+estMeth
 ```
-
-## Create survey_score 
-
-# Add the survey_score field -------
-
-```{r, echo=FALSE}
-
-```
-
-
-
 
 # Find the cuid from FULL_CU_IN_PSE
 
@@ -514,32 +550,28 @@ nuseds$cu_name_dfo <- NA
 nuseds$region <- NA
 nuseds$regionid <- NA
 
-FULL_CU_IN_PSE <- unique(nuseds$FULL_CU_IN_PSE)
-# length(FULL_CU_IN_PSE) # 411
-# sum(is.na(FULL_CU_IN_PSE)) # 0
-
-cuid_cu_index <- data.frame(FULL_CU_IN_PSE = FULL_CU_IN_PSE)
+cuid_cu_index <- unique(unique(nuseds[,c("CU_NAME","FULL_CU_IN_PSE")]))
+nrow(cuid_cu_index)
 cuid_cu_index$cuid <- NA
-cuid_cu_index$CU_NAME <- NA
 for(r in 1:nrow(cuid_cu_index)){
   fci <- cuid_cu_index$FULL_CU_IN_PSE[r]
-  cond <- conservationunits_decoder$cu_index == fci & !is.na(conservationunits_decoder$cu_index)
-  cond2 <- nuseds$FULL_CU_IN_PSE == fci
-  CU_NAME <- paste(unique(nuseds$CU_NAME[cond2]), collapse = "; ") # the upates done above creates three instance where more than one CU_NAME is returned for one unique FULL_CU_IN_PSE in nuseds
-  cuid_cu_index$CU_NAME[r] <- CU_NAME
+  cond_nuseds <- nuseds$FULL_CU_IN_PSE == fci
   
-  # if(length(unique(nuseds$CU_NAME[cond2])) > 1){ # check ; but these are due to the changes made above with update_for_FULL_CU_IN_l()
-  #   print(cuid_cu_index[r,])
-  #   print(unique(nuseds$CU_NAME[cond2]))
-  #   print("***")
-  # }
+  if(fci ==  "No FULL_CU_in but cuid = 242"){
+    # there is one instance where a time series (one data point) could not be associated to a FULL_CU_IN in CUSS
+    # because the Cu is simply not present, but it is in the PSE
+    cond_decoder <- conservationunits_decoder$cuid == 242
+  }else{
+    cond_decoder <- conservationunits_decoder$cu_index == fci & !is.na(conservationunits_decoder$cu_index)
+  }
   
-  if(any(cond)){
-    cuid_cu_index$cuid[r] <- unique(conservationunits_decoder$cuid[cond])
-    nuseds$cuid[cond2] <- unique(conservationunits_decoder$cuid[cond])
-    nuseds$cu_name_pse[cond2] <- unique(conservationunits_decoder$cu_name_pse[cond])
-    nuseds$cu_name_dfo[cond2] <- unique(conservationunits_decoder$cu_name_dfo[cond])
-    nuseds$region[cond2] <- unique(conservationunits_decoder$region[cond])
+  if(any(cond_decoder)){
+    cuid_cu_index$cuid[r] <- unique(conservationunits_decoder$cuid[cond_decoder])
+    
+    nuseds$cuid[cond_nuseds] <- unique(conservationunits_decoder$cuid[cond_decoder])
+    nuseds$cu_name_pse[cond_nuseds] <- unique(conservationunits_decoder$cu_name_pse[cond_decoder])
+    nuseds$cu_name_dfo[cond_nuseds] <- unique(conservationunits_decoder$cu_name_dfo[cond_decoder])
+    nuseds$region[cond_nuseds] <- unique(conservationunits_decoder$region[cond_decoder])
   }
 }
 ```
@@ -628,8 +660,7 @@ nuseds[cond_751 , c("cuid","WATERBODY","Y_LAT","X_LONGT")] |> unique()
 #   751        CAYENNE CREEK       51.32071       -119.3197 --> 761 Momich-Early Summer
 ```
 
-The CU above with `FULL_CU_IN` = `r unique(nuseds[cond_751,]$FULL_CU_IN)` is separated into the two following CUs to reflect COSEWIC's grouping (note the creation of the field `cu_name_pse`):
-
+The CU above with `FULL_CU_IN` = `r unique(nuseds[cond_751,]$FULL_CU_IN)` is split into the two following CUs to reflect COSEWIC's grouping (note the creation of the field `cu_name_pse`):
 
 ```{r, echo=FALSE}
 # UPDATE: 2024-11-21: the CU Fraser Sockeye Adams & Momich Lakes-Early Summer  
@@ -700,9 +731,7 @@ for(r in 1:nrow(cu_index_NA)){
 
 These time series are kept in the dataset but will be removed in the next step/script.
 
-
 # Work on locations
-
 
 ## Corrections
 
@@ -806,12 +835,13 @@ rownames(change_all) <- NULL
 ```
 
 ```{r, echo=FALSE}
-change_all[, c("SYSTEM_SITE","sys_nm","GFE_ID")]
+show <- change_all[, c("SYSTEM_SITE","sys_nm","GFE_ID")]
+rownames(show) <- NULL
+show
 ```
 
 
 ```{r, include=FALSE}
-
 # add the field the nuseds
 nuseds$sys_nm <- nuseds$SYSTEM_SITE
 for(r in 1:nrow(change_all)){
@@ -823,157 +853,94 @@ for(r in 1:nrow(change_all)){
 }
 ```
 
-##  Attribute stream_cu_id to nuseds
+##  Attribute streamid to nuseds
 
-The field `stream_cu_id` is a unique combination between a stream (`GFE_ID`) and CU (`cuid`). We use the PSE file *streamlocationids* to match the existing `stream_cu_id`, for instance: 
+The field `streamid` is a unique combination between a stream (`GFE_ID`) and CU (`cuid`). We use the PSE file *streamlocationids.csv* to match the existing `streamid`, for instance: 
 
 ```{r, echo=FALSE}
-head(streamlocationids)
-```
-
-```{r include=FALSE}
-nuseds$stream_cu_id <- NA
-
-for(r in 1:nrow(streamlocationids)){
-  # r <- 1
-  cond <- !is.na(streamlocationids$GFE_ID[r]) &
-    nuseds$GFE_ID == streamlocationids$GFE_ID[r] &
-    !is.na(nuseds$cuid) & 
-     nuseds$cuid == streamlocationids$cuid[r]
-  
-  if(any(cond)){
-    nuseds$stream_cu_id[cond] <- streamlocationids$stream_cu_id[r]
-  }
-}
-
-check <- unique(nuseds[,c("GFE_ID","sys_nm","cuid","cu_name_pse","stream_cu_id")])
-nrow(check) # 6880
-
-cond <- is.na(check$stream_cu_id) & !is.na(check$cuid)
-show <- check[cond,]
+show <- head(streamlocationids)
 rownames(show) <- NULL
-```
-
-There remains `r sum(is.na(check$stream_cu_id))` unique stream (`GFE_ID`) and CU (`cuid`) combinations without an existing `stream_cu_id` (not accounting for the time series in **nuseds** without a `cuid`):
-
-```{r, echo=FALSE}
 show
 ```
 
-We give them a new `stream_cu_id` value by simply incrementing from the maximum current `stream_cu_id` value.
+We match the locations using `GFE_ID` if available in **streamlocationids**, and `SYSTEM_SITE`, `Y_LAT` and `X_LONGT` otherwise. In case of the latter, the matched locations are shown below:
+
+```{r, echo = FALSE}
+nuseds$streamid <- NA
+
+for(r in 1:nrow(streamlocationids)){
+  # r <- 1
+  
+  cond_cuid <- nuseds$cuid == streamlocationids$cuid[r] & !is.na(nuseds$cuid)
+  cond_location <- rep(F,length(cond_cuid))
+  
+  if(!is.na(streamlocationids$GFE_ID[r])){
+    cond_location <- nuseds$GFE_ID == streamlocationids$GFE_ID[r] &
+      !is.na(nuseds$cuid) & 
+      nuseds$cuid == streamlocationids$cuid[r]
+    
+  }else{ # try matching with name of the system and coordinates
+    cond_location <- simplify_string_fun(nuseds$SYSTEM_SITE) == simplify_string_fun(streamlocationids$sys_nm[r]) &
+      round(nuseds$Y_LAT,4) == round(streamlocationids$latitude[r],4) &
+      round(nuseds$X_LONGT,4) == round(streamlocationids$longitude[r],4)
+    
+    if(any(cond_location)){
+
+      show1 <- nuseds[cond_location,c("SYSTEM_SITE","GFE_ID","Y_LAT","X_LONGT")] |> unique()
+      show2 <- streamlocationids[r,c("sys_nm","GFE_ID","latitude","longitude")] |> unique()
+        
+      colnames(show1) <- c("location","GFE_ID","latitude","longitude")
+      colnames(show2) <- c("location","GFE_ID","latitude","longitude")
+        
+      show <- rbind(show1,show2)
+      show$dataset <- c("NuSEDS","streamlocationids")
+      show <- show[,c("dataset","location","GFE_ID","latitude","longitude")]
+      rownames(show) <- NULL
+      print(show)
+      print("")
+    }
+  }
+  
+  if(any(cond_cuid & cond_location)){
+    nuseds$streamid[cond_cuid & cond_location] <- streamlocationids$streamid[r]
+  }
+}
+
+check <- unique(nuseds[,c("region","GFE_ID","sys_nm","cuid","cu_name_pse","streamid")])
+# nrow(check) # 6959 6880
+```
+
+There remains `r sum(is.na(check$streamid))` unique stream (`GFE_ID`) and CU (`cuid`) combinations without an existing `streamid` (not accounting for the time series in **nuseds** without a `cuid`):
+
+```{r, echo=FALSE}
+cond_NA <- is.na(check$streamid) & !is.na(check$cuid)
+show <- check[cond_NA,]
+show <- show[order(show$region),]
+rownames(show) <- NULL
+show
+```
+
+We give them a new `streamid` value by simply incrementing from the maximum current `streamid` value.
 
 ```{r, include=FALSE}
-val <- max(streamlocationids$stream_cu_id)
+val <- max(streamlocationids$streamid)
 for(r in 1:nrow(show)){
   val <- val + 1
-  show$stream_cu_id[r] <- val
+  show$streamid[r] <- val
   
   cond <- nuseds$GFE_ID == show$GFE_ID[r] &
     nuseds$cuid == show$cuid[r] & !is.na(nuseds$cuid)
   
-  nuseds$stream_cu_id[cond] <- show$stream_cu_id[r] 
+  nuseds$streamid[cond] <- show$streamid[r] 
 }
 ```
 
-
-
-```{r, include=FALSE}
-# Katy's request to check 
-# https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1741726887009909?thread_ts=1741129100.647379&cid=CJG0SHWCW
-
-stream_cu_ids_check <- c(640,381,2500,2741,2653,2742,2725,2785,4014,4260,930,727)
-
-cond <- streamlocationids$stream_cu_id %in% stream_cu_ids_check
-streamlocationids[cond,]
-
-GFE_ID_to_check <- unique(streamlocationids[cond,]$GFE_ID)
-GFE_ID_to_check 
-length(GFE_ID_to_check) # 8
-
-streampse <- unique(streamlocationids[cond,c("region","sys_nm","GFE_ID","latitude","longitude")]) |> 
-  arrange(region,sys_nm)
-
-r_odd <- 1:nrow(streampse)
-r_odd <- r_odd[r_odd %% 2 == 1]
-for(r in r_odd){
-  # r <- r_odd[1]
-  GFE_ID_here <- streampse$GFE_ID[c(r,r + 1)]
-  
-  d_here <- data.frame(dataset = "streamlocationids",
-                       region = streampse$region[c(r,r + 1)],
-                       location_name = streampse$sys_nm[c(r,r + 1)],
-                       GFE_ID =  streampse$GFE_ID[c(r,r + 1)],
-                       latitude = streampse$latitude[c(r,r + 1)],
-                       longitude = streampse$longitude[c(r,r + 1)])
-  
-   # nuseds
-   cond1 <- nuseds$GFE_ID %in% GFE_ID_here
-   d <- unique(nuseds[cond1,c("region","sys_nm","GFE_ID","Y_LAT","X_LONGT")])
-   d$dataset <- "nuseds"
-   d <- d[,c("dataset","region","sys_nm","GFE_ID","Y_LAT","X_LONGT")]
-   colnames(d) <- c("dataset","region","location_name","GFE_ID","latitude","longitude")
-   d_here <- rbind(d_here,d)
-   
-   # DFO_All_Streams_Segments
-   cond1 <- DFO_All_Streams_Segments$ID %in% GFE_ID_here
-   d <- unique(DFO_All_Streams_Segments[cond1,c("NME","ID","Y_LAT","X_LONGT")])
-   d$dataset <- "DFO_All_Streams_Segments"
-   d$region <- NA
-   d <- d[,c("dataset","region","NME","ID","Y_LAT","X_LONGT")]
-   colnames(d) <- c("dataset","region","location_name","GFE_ID","latitude","longitude")
-   d_here <- rbind(d_here,d)
-   
-   # 
-   for(gfeid in GFE_ID_here){
-     # gfeid <- GFE_ID_here[1]
-     
-     # check in STOCK_GFE_ID
-     cond1 <- DFO_hatchery$STOCK_GFE_ID %in% gfeid
-     cond2 <- DFO_hatchery$REL_GFE_ID %in% gfeid
-     if(any(cond1)){
-       
-       d <- unique(DFO_hatchery[cond1,c("STOCK_GFE_NAME","STOCK_GFE_ID","STOCK_LATITUDE","STOCK_LONGITUDE")])
-       d$dataset <- "DFO_hatchery"
-       d$region <- NA
-       d <- d[,c("dataset","region","STOCK_GFE_NAME","STOCK_GFE_ID","STOCK_LATITUDE","STOCK_LONGITUDE")]
-       colnames(d) <- c("dataset","region","location_name","GFE_ID","latitude","longitude")
-       
-     }else if(any(cond2)){
-       
-       d <- unique(DFO_hatchery[cond2,c("REL_WATERBODY_NAME","REL_GFE_ID","REL_LATITUDE","REL_LONGITUDE")])
-       d$dataset <- "DFO_hatchery"
-       d$region <- NA
-       d <- d[,c("dataset","region","REL_WATERBODY_NAME","REL_GFE_ID","REL_LATITUDE","REL_LONGITUDE")] # RELEASE_SITE_NAME
-       colnames(d) <- c("dataset","region","location_name","GFE_ID","latitude","longitude")
-       
-     }else{
-       
-       d <- data.frame(dataset = "DFO_hatchery",location_name = NA, GFE_ID = gfeid)
-       d$region <- d$latitude <- d$longitude <- NA
-       
-     }
-     
-     d_here <- rbind(d_here,d)
-   }
-
-   d_here$latitude <- round(as.numeric(d_here$latitude),6)
-   d_here$longitude <- round(as.numeric(d_here$longitude),6)
-   
-   d_here <- d_here[order(d_here$GFE_ID),]
-   
-   rownames(d_here) <- NULL
-   
-   print(d_here)
-   print("")
-}
-
-```
 
 # Export datasets
 
 The following files are exported:
 
-- *2_nuseds_cuid_streamid__DATE.csv*: the cleaned NuSEDS dataset with the PSE's field: `cuid`, `stream_cu_id`, `cu_name_pse`, etc.
+- *2_nuseds_cuid_streamid__DATE.csv*: the cleaned NuSEDS dataset with the PSE's field: `cuid`, `streamid`, `cu_name_pse`, etc.
 
 - *log_file.csv*: the log file reporting the name of the main file exported, the date of the export, the name of the present script, the name of the original **NUSEDS** or **CUSS** files and the choices related to removing zeros or not.
 
@@ -1010,25 +977,263 @@ if(export_datasets){
   write.csv(log_file,paste0(wd_output_local,"/log_file.csv"),row.names = F)
   
 }
+```
+
+# Check: compared with previous version
+
+```{r, echo=FALSE}
+# selected the rows corresponding to the decision made concerning including or 
+# not the 0s:
+cond <- log_file$remove_timeSeries_zeros_too == remove_timeSeries_zeros_too & 
+  log_file$replace_zeros_byNAs == replace_zeros_byNAs & 
+  grepl("nuseds_cuid_streamid",log_file$main_dataset_exported)
+
+# select the second most recent date:
+dates <- log_file[cond,]$date_export
+if(length(dates) == 1){
+  date_2 <- sort(dates, decreasing = T)[1]
+}else{
+  date_2 <- sort(dates, decreasing = T)[2]
+}
+
+date_2 <- "2024-04-19"
+
+#'* Import the previous NuSEDS_escapement_data_collated file *
+nuseds_old <- read.csv(paste0(wd_output,"/archive/2_nuseds_cuid_streamid_",date_2,".csv"),header = T)
+#colnames(nuseds_old)[colnames(nuseds_old) == "streamid"] <- "streamid"
+
+#'* Import the last 1_series_added_DATE *
+series_added_new <- read.csv(paste0(wd_output,"/archive/1_series_added_",date_export,".csv"), header = T)
+
+#'* Import the previous 1_series_added_DATE *
+series_added_old <- read.csv(paste0(wd_output,"/archive/series_added_",gsub("-","",date_2),".csv"), header = T)
+
+#'* Import the last 1_series_removed_DATE *
+series_removed_new <- read.csv(paste0(wd_output,"/archive/1_series_removed_",date_export,".csv"), header = T)
+
+#'* Import the previous 1_series_added_DATE *
+series_removed_old <- read.csv(paste0(wd_output,"/archive/series_removed_",gsub("-","",date_2),".csv"), header = T)
+```
+
+Import the previous clean NuSEDS dataset, exported in `r date_2`.
+
+```{r, echo=FALSE}
+cond_na <- is.na(nuseds$cuid)
+timeseries_new <- unique(nuseds[!cond_na,c("IndexId","cuid","GFE_ID")])
+# nrow(timeseries_new) # 6810
+timeseries_new$IndexId_GFE_ID <- paste(timeseries_new$IndexId,timeseries_new$GFE_ID, sep = "_")
+
+cond_na <- is.na(nuseds_old$cuid)
+timeseries_old <- unique(nuseds_old[!cond_na,c("IndexId","cuid","GFE_ID")])
+# nrow(timeseries_old) # 6766
+timeseries_old$IndexId_GFE_ID <- paste(timeseries_old$IndexId,timeseries_old$GFE_ID, sep = "_")
+
+if(nrow(timeseries_new) > nrow(timeseries_old)){
+  print(paste("There are",nrow(timeseries_new) - nrow(timeseries_old),"more time series in the updated cleaned NuSEDS dataset"))
+}else if(nrow(timeseries_new) < nrow(timeseries_old)){
+  print(paste("There are",nrow(timeseries_old) - nrow(timeseries_new),"less tinme series in the updated cleaned NuSEDS dataset"))
+}else{
+  print(paste("There is the same number of time series (n =",nrow(timeseries_new),") the updated cleaned NuSEDS dataset"))
+}
 
 ```
 
+**Check the locations:**
+  
+```{r, echo=FALSE}
+cond_GFE_ID_new <- ! timeseries_new$GFE_ID %in% timeseries_old$GFE_ID
 
+if(any(cond_GFE_ID_new)){
+  
+  GFE_ID_new <- timeseries_new$GFE_ID[cond_GFE_ID_new]
+  cond <- nuseds$GFE_ID %in% GFE_ID_new
+  
+  print(paste0("There are ",sum(cond_GFE_ID_new)," new locations in the updated NuSEDS:"))
+  show <- unique(nuseds[cond,c("region","sys_nm","GFE_ID","Y_LAT","X_LONGT")])
+  rownames(show) <- NULL
+  show <- show[order(show$region),]
+  print(show)
+  
+}else{
+  print("There is no new location in the updated NuSEDS")
+}
+```
 
+```{r, echo=FALSE}
+cond_GFE_ID_old <- ! timeseries_old$GFE_ID %in% timeseries_new$GFE_ID
 
+if(any(cond_GFE_ID_old)){
+  
+  GFE_ID_old <- timeseries_old$GFE_ID[cond_GFE_ID_old]
+  cond <- nuseds_old$GFE_ID %in% GFE_ID_old
+  
+  print(paste0("There are ",sum(cond_GFE_ID_old)," locations in the previous cleaned NuSEDS not in the updated one:"))
+  show <- unique(nuseds[cond,c("region","sys_nm","GFE_ID","Y_LAT","X_LONGT")])
+  rownames(show) <- NULL
+  show <- show[order(show$region),]
+  print(show)
+  
+}else{
+  print("There is no location in the previous cleaned NuSEDS that is not in the updated one")
+}
+```
 
+**Check the populations:**
+  
+```{r, echo=FALSE}
+cond_IndexId_new <- ! timeseries_new$IndexId %in% timeseries_old$IndexId
 
+if(any(cond_IndexId_new)){
+  
+  IndexId_new <- timeseries_new$IndexId[cond_IndexId_new]
+  cond <- nuseds$IndexId %in% IndexId_new
+  
+  print(paste0("There are ",sum(cond_IndexId_new)," new IndexId (POP_ID) in the updated NuSEDS:"))
+  show <- unique(nuseds[cond,c("region","IndexId","POPULATION","cuid","cu_name_pse")])
+  rownames(show) <- NULL
+  show <- show[order(show$region),]
+  print(show)
+  
+}else{
+  print("There is no new IndexId (POP_ID) in the updated NuSEDS")
+}
+```
 
+```{r, echo=FALSE}
+cond_IndexId_old <- ! timeseries_old$IndexId %in% timeseries_new$IndexId
 
+if(any(cond_IndexId_old)){
+  
+  IndexId_old <- timeseries_old$IndexId[cond_IndexId_old]
+  cond <- nuseds_old$IndexId %in% IndexId_old
+  
+  print(paste0("There are ",sum(cond_IndexId_old)," IndexId (POP_ID) in the previous cleaned NuSEDS not in the updated one:"))
+  show <- unique(nuseds[cond,c("region","IndexId","POPULATION","cuid","cu_name_pse")])
+  rownames(show) <- NULL
+  show <- show[order(show$region),]
+  print(show)
+  
+}else{
+  print("There is no new IndexId (POP_ID) in the previous cleaned NuSEDS that is not in the updated one")
+}
+```
 
+**Check the time series:**
+  
+```{r, echo=FALSE}
+cond_new_only <- !timeseries_new$IndexId_GFE_ID %in% timeseries_old$IndexId_GFE_ID
+timeseries_new_only <- timeseries_new$IndexId_GFE_ID[cond_new_only]
 
+cond_old_only <- !timeseries_old$IndexId_GFE_ID %in% timeseries_new$IndexId_GFE_ID
+timeseries_old_only <- timeseries_old$IndexId_GFE_ID[cond_old_only]
+```
 
+There are `r sum(cond_new_only)` time series only found in the updated NuSEDS:
+  
+```{r, echo=FALSE, fig.height=8, fig.width=12}
+if(any(cond_new_only)){
+  for(r in 1:nrow(timeseries_new[cond_new_only,])){
+    # r <- 1
+    cuid <- timeseries_new[cond_new_only,]$cuid[r]
+    GFE_ID <- timeseries_new[cond_new_only,]$GFE_ID[r]
+    IndexId <- timeseries_new[cond_new_only,]$IndexId[r]
+    
+    cond <- nuseds$IndexId == IndexId 
+    region <- unique(nuseds$region[cond])
+    cu_name_pse <- unique(nuseds$cu_name_pse[cond])
+    
+    plot_IndexId_GFE_ID_fun(IndexIds = IndexId,
+                            GFE_IDs = GFE_ID,
+                            all_areas_nuseds = nuseds, 
+                            main = paste(region," - ",cu_name_pse," (",cuid,")",sep=""))
+    
+    cond_IndexId <- IndexId == nuseds_old$IndexId
+    cond_GFE_ID <- GFE_ID == nuseds_old$GFE_ID
+    
+    
+    if(!any(cond_IndexId) & any(cond_GFE_ID)){
+      m <- "IndexId not in old cleaned NuSEDS"
+      
+    }else if(any(cond_IndexId) & !any(cond_GFE_ID)){
+      m <- "GFE_ID not in old cleaned NuSEDS"
+      
+    }else if(!any(cond_IndexId) & !any(cond_GFE_ID)){
+      m <- "IndexId and GFE_ID are not in old cleaned NuSEDS"
+      
+    }else if(!any(cond_IndexId & cond_GFE_ID)){
+      m <- "The IndexId & GFE_ID is not in old cleaned NuSEDS"
+      
+    }else{
+      m <- "???"
+    }
+    
+    legend("topright",m,bty = "n")
+    legend("bottomleft",paste0("r = ",r),bty = "n")
+    
+    # find the reason
+    cond <- series_added_new$IndexId == IndexId & series_added_new$GFE_ID == GFE_ID
+    if(any(cond)){
+      print(paste0("For series ",IndexId," - ",GFE_ID,": ",series_added_new$comment[cond]))
+      
+    }else{
+      cond <- series_removed_old$IndexId == IndexId & series_removed_old$GFE_ID == GFE_ID
+      
+      if(any(cond)){
+        print(paste0("For series ",IndexId," - ",GFE_ID,": it was previously:",series_removed_old$comment[cond]))
+      }else{
+        print("NOT SURE WHY IT APPEARS NOW AND NOT PREVIOUSLY")
+      }
+    }
+  }
+}
 
+```
 
+There are `r sum(cond_old_only)` time series only found in the previous NuSEDS:
+  
+```{r, echo=FALSE, fig.height=8, fig.width=12}
 
+if(any(cond_old_only)){
+  for(r in 1:nrow(timeseries_old[cond_old_only,])){
+    # r <- 4
+    cuid <- timeseries_old[cond_old_only,]$cuid[r]
+    GFE_ID <- timeseries_old[cond_old_only,]$GFE_ID[r]
+    IndexId <- timeseries_old[cond_old_only,]$IndexId[r]
+    
+    cond <- nuseds$IndexId == IndexId 
+    region <- unique(nuseds$region[cond])
+    cu_name_pse <- unique(nuseds$cu_name_pse[cond])
+    
+    plot_IndexId_GFE_ID_fun(IndexIds = IndexId,
+                            GFE_IDs = GFE_ID,
+                            all_areas_nuseds = nuseds, 
+                            main = paste(region," - ",cu_name_pse," (",cuid,")",sep=""))
+    
+    cond_IndexId <- IndexId == nuseds_new$IndexId
+    cond_GFE_ID <- GFE_ID == nuseds_new$GFE_ID
+    
+    if(!any(cond_IndexId) & any(cond_GFE_ID)){
+      m <- "IndexId not in old cleaned NuSEDS"
+      
+    }else if(any(cond_IndexId) & !any(cond_GFE_ID)){
+      m <- "GFE_ID not in old cleaned NuSEDS"
+      
+    }else if(!any(cond_IndexId) & !any(cond_GFE_ID)){
+      m <- "IndexId and GFE_ID are not in old cleaned NuSEDS"
+      
+    }else if(!any(cond_IndexId & cond_GFE_ID)){
+      m <- "The IndexId & GFE_ID is not in old cleaned NuSEDS"
+      
+    }else{
+      m <- "???"
+    }
+    
+    legend("topright",m,bty = "n")
+    legend("bottomleft",paste0("r = ",r),bty = "n")
+  }
+}
 
-
-
+```
 
 
 

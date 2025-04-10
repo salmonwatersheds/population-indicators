@@ -1,0 +1,872 @@
+---
+title: "4_datasets_for_PSE"
+author: "Bruno S. Carturan, Eric Hertz, Stephanie J. Peacock"
+date: "2025-03-26"
+output: 
+  html_document:
+    toc: true                  # Adds a table of contents to the document
+    toc_float: true           # Makes the table of contents float on the side as the reader scrolls.
+    toc_collapsed: true        # Starts the table of contents in a collapsed state.
+    toc_depth: 3               # Specifies the depth of headers (e.g., ##, ###) to include in the table of contents.
+    number_sections: true      # 
+    theme: journal  # lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+The goal of the script is to associate each population (defined by the fields `POP_ID` = `IndexId`, the latter also specifying the species acronym) in the **cleaned NuSEDS** dataset (i.e., *NuSEDS_escapement_data_collated_DATE.csv*) to the conservation unit identidication number `cuid`, as defined in the Pacific Salmon explorer ([PSE](https://www.salmonexplorer.ca/)). The cleaning procedure is coded in the script *1_nuseds_collation.rmd* and is visible in [1_nuseds_collation.html](https://bookdown.org/salmonwatersheds/nuseds_cleaning_procedure/1_nuseds_collation.html).
+
+
+```{r,include=FALSE}
+
+#'******************************************************************************
+#' The goal of the script is to 
+#' 
+#' Previous script: Fraser_salmon_CU_updates.Rmd
+#' 
+#' 
+#' Files imported (from dropbox):
+#' - streamlocationids.csv
+#' - conservationunits_decoder.csv
+#' - streamspawnersurveys_output.csv
+#' - 1_NuSEDS_escapement_data_collated_DATE.csv
+#'
+#' Files produced: 
+#' - 2_nuseds_cuid_streamid_DATE.csv
+#' 
+#'******************************************************************************
+
+rm(list = ls())
+graphics.off()
+
+# reset the wd to head using the location of the current script
+path <- rstudioapi::getActiveDocumentContext()$path
+dirhead <- "population-indicators"
+path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
+wd_head <- paste0(path_ahead,dirhead)
+setwd(wd_head)
+
+# Now import functions related to directories.
+# Note that the script cannot be called again once the directory is set to the 
+# subdirectory of the project (unless setwd() is called again).
+source("code/functions_set_wd.R")
+source("code/functions_general.R")
+
+# return the name of the directories for the different projects:
+subDir_projects <- subDir_projects_fun()
+
+wds_l <- set_working_directories_fun(subDir = subDir_projects$spawner_surveys,
+                                     Export_locally = F)
+wd_head <- wds_l$wd_head
+wd_project <- wds_l$wd_project
+wd_code <- wds_l$wd_code
+wd_data <- wds_l$wd_data
+wd_figures <- wds_l$wd_figures
+wd_output <- wds_l$wd_output
+wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+
+wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                               wds_l$wd_project_dropbox,
+                               "references",sep="/")
+
+wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                         wds_l$wd_project_dropbox,
+                         "data",sep="/")
+
+wd_documents <- paste(wd_project,"documents",sep="/")
+
+wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                                         wds_l$wd_population_indicator_data_input_dropbox,
+                                         sep = "/")
+
+wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
+
+# Loading packages & functions
+library(tidyr)
+library(dplyr) # for arrange()
+library(sf)
+library(sp)     # for spDists() TERRA is the replacement
+library(scales)
+library(readxl)
+
+source("code/functions.R")
+
+
+#'* !!! DECISIONS TO MAKE !!! *
+
+# Set tp true to update the datasets
+export_datasets <- F
+
+#' Decision made in 1_nuseds_collation.rmd: 
+#' Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
+#' If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 
+#' If FALSE, time series only composed of NAs are removed from NUSEDS.
+#' Setting to T or F will import the corresponding dataset.
+remove_timeSeries_zeros_too <- T 
+
+#' Decision made in 1_nuseds_collation.rmd: Used just after NUSEDS and CUSS are merged,
+#'to decide if we want to replace all the remaining 0s by NAs.
+#' Setting to T or F will import the corresponding dataset.
+replace_zeros_byNAs <- T
+
+#' Import the views the database vs.from population-indicators/data_input
+fromDatabase <- update_file_csv <- F
+
+```
+
+# Import datasets
+
+Import the latest *nuseds_cuid_streamid.csv* dataset with the following decisions made concerning zeros:
+
+```{r, include=FALSE}
+
+#'* Import the log file *
+logfile_path <- paste0(getwd(),"/spawner-surveys/output/log_file.csv")
+logfile_path <- gsub("spawner-surveys/code/","",logfile_path)
+log_file <- read.csv(logfile_path,header = T)
+
+# selected the rows corresponding to the decision made concerning including or 
+# not the 0s:
+cond <- log_file$remove_timeSeries_zeros_too == remove_timeSeries_zeros_too & 
+  log_file$replace_zeros_byNAs == replace_zeros_byNAs & 
+  grepl("nuseds_cuid_streamid",log_file$main_dataset_exported)
+# select the most recent date:
+date_export <- max(log_file[cond,]$date_export)
+
+#'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
+nuseds_cuid_streamid <- read.csv(paste0(wd_output,"/archive/2_nuseds_cuid_streamid_",date_export,".csv"),
+                                 header = T)
+
+#'* Import the conservationunits_decoder.csv *
+datasetsNames_database <- datasetsNames_database_fun()
+
+
+#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
+
+#' * Import stream level data quality (dataset386_output) *
+# dataset386_output <- datasets_database_fun(nameDataSet = "dataset386_output.csv",
+#                                            fromDatabase = fromDatabase,
+#                                            update_file_csv = update_file_csv,
+#                                            wd = wd_pop_indic_data_input_dropbox)
+# 
+# # TEMPORARY SOLUTION cause the code above does not work
+# dataset386_output <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
+#                                                 pattern = "dataset386")
+# 
+# head(dataset386_output)
+
+```
+
+```{r,echo=FALSE}
+
+if(remove_timeSeries_zeros_too){
+  print("Time series only composed of NAs AND/OR zeros were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd.")
+}else{
+  print("Time series only composed of NAs were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd, zeros were left.")
+}
+
+if(replace_zeros_byNAs){
+  print("Zeros were replaced by NAs in the late cleaning process in 1_nuseds_collation.rmd.")
+}else{
+  print("Zeros were NOT replaced by NAs in the late cleaning process in 1_nuseds_collation.rmd.")
+}
+
+```
+
+The *conservationunits_decoder.csv* dataset is imported.
+
+Import the *streamlocationids.csv* to access the location names, coordinates and identification number for maintaining consistency.
+
+```{r, echo=FALSE}
+#'* Files from PSF database *
+
+# NOT DONE FOR NOW:
+# **TEMPORARY**: change the name of the field `streamid` to `populationid` because the latter is the unique association between a CU (`cuid`) and a location/stream (`GFE_ID`).
+
+#'Import the name of the different datasets in the PSF database and their 
+#' corresponding CSV files.
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- F
+
+#' Import streamlocationids to obtain the streamID 
+streamlocationids <- datasets_database_fun(nameDataSet = "streamlocationids.csv", # datasetsNames_database$name_CSV[9],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+
+streamlocationids$sys_nm <- gsub("\\\\","'",streamlocationids$sys_nm)
+streamlocationids$sys_nm <- gsub("  "," ",streamlocationids$sys_nm)
+
+rownames(streamlocationids) <- NULL
+# colnames(streamlocationids)[colnames(streamlocationids) == "streamid"] <- "populationid"
+
+# add the field region from the decoder
+streamlocationids$region <- NA
+for(rg_i in unique(streamlocationids$regionid)){
+  cond <- conservationunits_decoder$drv_regionid == rg_i
+  region <- unique(conservationunits_decoder$region[cond])
+  
+  cond <- streamlocationids$regionid == rg_i
+  streamlocationids$region[cond] <- region
+}
+
+# remove unnecessary and confusing fields
+streamlocationids <- streamlocationids[,c("region","sys_nm","GFE_ID","latitude","longitude","cu_name_pse","cuid","streamid")]
+rownames(streamlocationids) <- NULL
+
+head(streamlocationids)
+```
+
+The DFO file of the stream locations and coordinates (emailed from Wu Zhipeng, DFO, 09/04/2024) is imported. The columns `NME` and `ID` correspond to `SYSTEM_SITE` and `GFE_ID` in NuSEDS, respectively.
+
+```{r, include=FALSE}
+#'* Import the stream - GFE_ID data file from DFO *
+#' (emailed from Wu Zhipeng, DFO, 09/04/2024)
+#' There are different locations in the 2nd first sheets to we combine them into a unique dataframe
+DFO_All_Streams_Segments <- read_xlsx(paste0(wd_data_dropbox,"/DFO_All_Streams_Segments_20240408.xlsx"),
+                                      sheet = "All Streams")
+
+DFO_All_Streams_Segments2 <- read_xlsx(paste0(wd_data_dropbox,"/DFO_All_Streams_Segments_20240408.xlsx"),
+                                      sheet = "Stream Segments")
+
+# Emailed as "GFE_IDs.xlsx"
+# DFO_All_Streams_Segments3 <- read_xlsx(paste0(wd_data_dropbox,"/DFO_GFE_IDs_list_1.xlsx"),
+#                                       sheet = "Export Worksheet")
+
+# Emailed as "GFE_IDs_20240305.xlsx"
+# DFO_All_Streams_Segments4 <- read_xlsx(paste0(wd_data_dropbox,"/DFO_GFE_IDs_list_2.xlsx"),
+#                                        sheet = "Export Worksheet")
+
+columns <- c("NME","ID","X_LONGT","Y_LAT")
+DFO_All_Streams_Segments <- rbind(DFO_All_Streams_Segments[,columns],
+                                  DFO_All_Streams_Segments2[,columns]
+                                  # DFO_All_Streams_Segments3[,columns],
+                                  # DFO_All_Streams_Segments4[,columns]
+                                  )
+DFO_All_Streams_Segments <- unique(DFO_All_Streams_Segments)
+
+DFO_All_Streams_Segments$X_LONGT <- as.numeric(DFO_All_Streams_Segments$X_LONGT)
+DFO_All_Streams_Segments$Y_LAT <- as.numeric(DFO_All_Streams_Segments$Y_LAT)
+
+rm(DFO_All_Streams_Segments2)
+head(DFO_All_Streams_Segments)
+```
+
+
+The spawner survey data for Northern **Transboundary** (TBR) is imported:
+
+```{r, echo=FALSE}
+#' * TBR *
+# wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Transboundary/Data & Assessments/transboundary-data/output") # not -status
+# TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset_1part2")
+
+# Notes from srong 2025:
+# - TBR & Steelhead: it is in this file and not the Steelhead dataset!
+# - Steelhead: for all region EXCEPT for the TBR
+
+wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/transboundary-data/output/archive")
+TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset2_spawner-surveys")
+colnames(TBR_data)[colnames(TBR_data) == "survey_qual"] <- "survey_quality"
+# 2025-01-09
+# head(TBR_data)
+
+TBR_data$species_qualified <- sapply(TBR_data$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$species_qualified[cond]))
+})
+
+TBR_data$GFE_ID <- NA
+TBR_data$source_id <- NA
+
+colnames(TBR_data)[colnames(TBR_data) == "survey_quality"] <- "stream_survey_quality"
+colnames(TBR_data)[colnames(TBR_data) == "survey_method"] <- "stream_survey_method"
+
+TBR_data$region <- "Northern Transboundary" # is "Transboundary"
+
+# Old, still relevant?
+# https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1723659667266449
+
+show <- unique(TBR_data[,c("region","species_name","cuid","cu_name_pse")])
+show <- show[order(show$species_name),]
+rownames(show) <- NULL
+show
+```
+
+Note that the TBR data set is the only one containing the steelhead data (the SH data is in the SH data source for the other regions):
+
+```{r, echo=TRUE}
+cond <- TBR_data$species_name == "Steelhead"
+show <- unique(TBR_data[cond,c("region","species_name","cuid","cu_name_pse","stream_name_pse")])
+show <- show[order(show$species_name),]
+rownames(show) <- NULL
+show
+```
+
+The spawner survey data for **Steelhead** is imported:
+
+```{r, echo=FALSE}
+#' * SH *
+wd_SH <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/steelhead-data/output")
+SH_data <- import_mostRecent_file_fun(wd = wd_SH, pattern = "dataset2_spawner-surveys_Steelhead")
+
+SH_data$GFE_ID <- NA
+
+SH_data$species_qualified <- sapply(SH_data$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$species_qualified[cond]))
+})
+
+show <- unique(SH_data[,c("region","species_name","cuid","cu_name_pse")])
+show <- show[order(show$region),]
+rownames(show) <- NULL
+show
+```
+
+```{r, echo=FALSE}
+# notice that that there is TBR data in the SH data set; add a warning in case the 
+# data is not identical
+
+cond <- TBR_data$species_name == "Steelhead"
+TBR_SH <- TBR_data[cond,]
+# nrow(TBR_SH) # 29
+
+cond <- SH_data$region == "Northern Transboundary"
+SH_TBR <- SH_data[cond,]
+# nrow(SH_TBR) # 29
+
+if(!identical(TBR_SH$stream_observed_count,SH_TBR$stream_observed_count)){
+  print("!!! THE SH DATA IN TBR_data != SH_data !!!")
+  
+}else{ # remove the SH data from TBR_data
+  print("The SH data for TBR is present in both the SH and the TBR datasets; the data is identical; the data is removed from te TBR dataset.")
+  
+  cond <- TBR_data$species_name == "Steelhead"
+  TBR_data <- TBR_data[!cond,]
+}
+
+# plot(x = TBR_SH$stream_observed_count, y = SH_TBR$stream_observed_count)
+# abline(a = 0,1)
+```
+
+The spawner survey data for **Columbia**: NONE (beside for SH).
+
+```{r, echo=FALSE}
+# wd_columbia <- paste0(wd_X_Drive1_PROJECTS,"/1_Active//Population Methods and Analysis/population-data/columbia-data/output/archive")
+# SH_Columbia_data <- import_mostRecent_file_fun(wd = wd_columbia, pattern = "dataset2_spawner-surveys_ColumbiaSteelhead")
+# SH_Columbia_data$source_id <- "Columbia"
+
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1743027879229179
+# it is in SH_data
+```
+
+The spawner survey data for **Central Coast** is imported. This data source only concerns one Sockeye CU:
+
+```{r, echo=FALSE}
+# South Atnarko Lake CU (cuid 528)
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1743696717590829
+wd_CC <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/central-coast-data/output")
+CC_data <- import_mostRecent_file_fun(wd = wd_CC, pattern = "dataset2_spawner-surveys")
+CC_data$species_qualified <- sapply(CC_data$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$species_qualified[cond]))
+})
+CC_data$GFE_ID <- NA
+
+show <- unique(CC_data[,c("region","species_name","cuid","cu_name_pse")])
+show <- show[order(show$region),]
+rownames(show) <- NULL
+show
+```
+
+The spawner survey data for **Yukon** is imported:
+
+```{r, echo=FALSE}
+#' * Yukon *
+# wd_yukon <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Yukon/Data & Assessments/yukon-status/output")
+# Yukon_data <- import_mostRecent_file_fun(wd = wd_yukon, pattern = "dataset_1part2")
+wd_yukon <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/yukon-data/output/archive")
+Yukon_data <- import_mostRecent_file_fun(wd = wd_yukon, pattern = "dataset2_spawner_surveys_Yukon")
+Yukon_data$species_qualified <- sapply(Yukon_data$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$species_qualified[cond]))
+})
+Yukon_data$GFE_ID <- NA
+
+show <- unique(Yukon_data[,c("region","species_name","cuid","cu_name_pse")])
+show <- show[order(show$species_name),]
+rownames(show) <- NULL
+show
+```
+
+## Combine the other datasets together and find the streamid
+
+FOR FUTURE UPDATE: find the GFE_ID (if it exists) 1st and then streamid.
+
+
+```{r, include=FALSE}
+cols <- c("region","species_name","species_qualified","cuid","cu_name_pse","streamid","stream_name_pse",
+          "GFE_ID","indicator","latitude","longitude","year","stream_observed_count",
+          "stream_survey_method","stream_survey_quality","source_id")
+
+OtherSources_data <- rbind(SH_data[,cols],
+                           Yukon_data[,cols],
+                           CC_data[,cols],
+                           TBR_data[,cols])
+
+cuid_GFE_ID_otherSources <- unique(OtherSources_data[,c("region","GFE_ID","stream_name_pse","latitude","longitude","cuid","streamid")])
+nrow(cuid_GFE_ID_otherSources) # 155
+
+for(r in 1:nrow(cuid_GFE_ID_otherSources)){
+  
+  decimal <- 4
+  
+  # match location
+  cond_location_coord <- streamlocationids$region == cuid_GFE_ID_otherSources$region[r] &
+    streamlocationids$sys_nm == cuid_GFE_ID_otherSources$stream_name_pse[r] &
+    round(streamlocationids$longitude,decimal) == round(cuid_GFE_ID_otherSources$longitude[r],decimal) &
+    round(streamlocationids$latitude,decimal) == round(cuid_GFE_ID_otherSources$latitude[r],decimal)
+  
+  if(any(cond_location_coord)){
+    GFE_ID <- streamlocationids$GFE_ID[cond_location_coord] |> unique()
+    
+    cond_otherSources_location <- OtherSources_data$region == cuid_GFE_ID_otherSources$region[r] &
+      OtherSources_data$stream_name_pse == cuid_GFE_ID_otherSources$stream_name_pse[r] &
+      OtherSources_data$latitude == cuid_GFE_ID_otherSources$latitude[r] &
+      OtherSources_data$longitude == cuid_GFE_ID_otherSources$longitude[r]
+
+    OtherSources_data$GFE_ID[cond_otherSources_location] <- GFE_ID
+    cuid_GFE_ID_otherSources$GFE_ID[r] <- GFE_ID
+    
+  }
+  
+  # match cuid
+  cond_cuid <- streamlocationids$cuid == cuid_GFE_ID_otherSources$cuid[r]
+  
+  if(any(cond_otherSources_location & cond_cuid)){
+    streamid <- streamlocationids$streamid[cond_location_coord] |> unique()
+    
+    cond_otherSources_location_cuid <- cond_otherSources_location &
+      OtherSources_data$cuid == cuid_GFE_ID_otherSources$cuid[r]
+    
+    OtherSources_data$streamid[cond_otherSources_location_cuid] <- streamid
+    cuid_GFE_ID_otherSources$streamid[r] <- streamid
+  }
+}
+
+# ***** BEGINNING OF WORK FOR FINDING GFE_ID *****
+# for(r in 1:nrow(cuid_GFE_ID_otherSources)){
+#   # r <- 1
+#   
+#   cuid_GFE_ID_otherSources[r,]
+#   
+#   decimal <- 4
+#   
+#   GFE_ID <- Y_LAT <- X_LONGT <- NA
+#   cond_final <- F
+#   
+#   # Try with the cleaned NuSEDS
+#   cond_location <- nuseds_cuid_streamid$region == cuid_GFE_ID_otherSources$region[r] &
+#     nuseds_cuid_streamid$sys_nm == cuid_GFE_ID_otherSources$stream_name_pse[r] 
+#   
+#   cond_location_coord <- nuseds_cuid_streamid$region == cuid_GFE_ID_otherSources$region[r] &
+#     nuseds_cuid_streamid$sys_nm == cuid_GFE_ID_otherSources$stream_name_pse[r] &
+#     round(nuseds_cuid_streamid$X_LONGT,decimal) == round(cuid_GFE_ID_otherSources$longitude[r],decimal) &
+#     round(nuseds_cuid_streamid$Y_LAT,decimal) == round(cuid_GFE_ID_otherSources$latitude[r],decimal)
+#   
+#   if(any(cond_location_coord)){
+#     
+#      cond_final <- cond_location_coord
+#     
+#   }else if(any(cond_location)){
+#     print("region and stream_name_pse match but not the coordinates. The coordinates in nuseds_cuid_streamid are retained. Below is the difference:")
+#     
+#     show_nuseds <- unique(nuseds_cuid_streamid[cond_location,c("region","sys_nm","GFE_ID","Y_LAT","X_LONGT")])
+#     row.names(show_nuseds) <- NULL
+#     
+#     show_otherSources <- cuid_GFE_ID_otherSources[r,c("region","stream_name_pse","latitude","longitude")]
+#     row.names(show_otherSources) <- NULL
+#     
+#     print(show_nuseds)
+#     print(show_otherSources)
+#     
+#     cond_final <- cond_location
+#     
+#   }
+#   
+#   if(any(cond_final)){
+#     
+#     GFE_ID <- nuseds_cuid_streamid$GFE_ID[cond_final] |> unique()
+#     Y_LAT <- nuseds_cuid_streamid$Y_LAT[cond_final] |> unique()
+#     X_LONGT <- nuseds_cuid_streamid$X_LONGT[cond_final] |> unique()
+#     
+#   }
+#   
+#   # Try with DFO_All_Streams_Segments
+#   if(!any(cond_final)){ 
+#     
+#     cond_location <- DFO_All_Streams_Segments$NME == cuid_GFE_ID_otherSources$stream_name_pse[r]
+#   
+#     cond_location_coord <- DFO_All_Streams_Segments$NME == cuid_GFE_ID_otherSources$stream_name_pse[r] &
+#       round(DFO_All_Streams_Segments$X_LONGT,decimal) == round(cuid_GFE_ID_otherSources$longitude[r],decimal) &
+#       round(DFO_All_Streams_Segments$Y_LAT,decimal) == round(cuid_GFE_ID_otherSources$latitude[r],decimal)
+#     
+#     if(any(cond_location_coord)){
+#     
+#       cond_final <- cond_location_coord
+#     
+#     }else if(any(cond_location)){
+#       
+#       print("region and stream_name_pse match but not the coordinates. The coordinates in nuseds_cuid_streamid are retained. Below is the difference:")
+#       
+#       show_dfoStreams <- unique(DFO_All_Streams_Segments[cond_location,c("NME","ID","Y_LAT","X_LONGT")])
+#       row.names(show_nuseds) <- NULL
+#       
+#       show_otherSources <- cuid_GFE_ID_otherSources[r,c("region","stream_name_pse","latitude","longitude")]
+#       row.names(show_otherSources) <- NULL
+#       
+#       print(show_nuseds)
+#       print(show_otherSources)
+#       
+#       cond_final <- cond_location
+#       
+#     }
+#     
+#   }
+#   
+#   
+#   if(any(cond_final)){
+#     
+# 
+#     
+#   }else{
+#     print("!any(cond_final) - BREAK")
+#     break
+#   }
+#   
+#   if(length(GFE_ID) == 1){
+#     
+#     cond_otherSources <- OtherSources_data$region == cuid_GFE_ID_otherSources$region[r] &
+#       OtherSources_data$stream_name_pse == cuid_GFE_ID_otherSources$stream_name_pse[r] &
+#       OtherSources_data$latitude == cuid_GFE_ID_otherSources$latitude[r] &
+#       OtherSources_data$longitude == cuid_GFE_ID_otherSources$longitude[r]
+#     
+#     OtherSources_data$GFE_ID[cond_otherSources] <- GFE_ID
+#     OtherSources_data$latitude[cond_otherSources] <- Y_LAT
+#     OtherSources_data$longitude[cond_otherSources] <- X_LONGT
+#     
+#   }else{
+#     print("lrngth(GFE_ID) != 1 - BREAK")
+#   }
+#   
+# }
+```
+
+
+There remains `r sum(is.na(cuid_GFE_ID_otherSources$streamid))` `streamid` with NA, out of `r nrow(cuid_GFE_ID_otherSources)`. These populations will be attributed a `streamid` value below.
+
+# dataset2_spawner_surveys
+
+We create the final **dataset2_spawner_surveys** dataset. 
+
+## Edit and select colnames
+
+We update the following fields:
+
+```{r, echo=FALSE}
+dataset2_spawner_surveys <- nuseds_cuid_streamid
+
+field_toChange <- c("SPECIES","SPECIES_QUALIFIED","IS_INDICATOR","Year",
+                    "MAX_ESTIMATE","ESTIMATE_METHOD","stream_survey_quality",
+                    "sys_nm","Y_LAT","X_LONGT")
+
+fields_new <- c("species_name","species_qualified","indicator","year",
+                "stream_observed_count","stream_survey_method","stream_survey_quality",
+                "stream_name_pse","latitude","longitude")
+
+for(i in 1:length(field_toChange)){
+  colnames(dataset2_spawner_surveys)[colnames(dataset2_spawner_surveys) == field_toChange[i]] <- fields_new[i]
+}
+
+show <- as.data.frame(cbind(field_toChange,fields_new))
+colnames(show) <- c("old","new")
+rownames(show) <- NULL
+show
+```
+
+We define the field `sourceid` for **dataset2_spawner_surveys**:
+
+```{r}
+dataset2_spawner_surveys$source_id <- "NuSEDS"
+```
+
+We only keep the following fields:
+
+```{r,echo=FALSE}
+cols <- c("region","species_name","species_qualified","cuid","cu_name_pse","streamid","stream_name_pse",
+          "GFE_ID","indicator","latitude","longitude","year","stream_observed_count",
+          "stream_survey_method","stream_survey_quality","source_id")
+
+dataset2_spawner_surveys <- dataset2_spawner_surveys[,cols]
+
+cols
+```
+
+## Replace the data in NuSEDS with other sources
+
+### Steelhead-data
+
+```{r, include=FALSE}
+
+# Check : IN FUTURE MAY BE
+# cond_SH <- dataset2_spawner_surveys$species_name == "Steelhead"
+# 
+# # Is there a region in nuSEDS with SH data that is not present in SH_data
+# nuseds_rg <- unique(dataset2_spawner_surveys$region)
+# 
+# for(rg in unique(SH_data$region)){
+#   # rg <- unique(SH_data$region)[1]
+#   
+#   cond_SH_rg <- dataset2_spawner_surveys$region == rg & cond_SH
+# }
+# SH_data
+
+```
+
+```{r, include=FALSE}
+cond_SH <- OtherSources_data$species_name == "Steelhead"
+SH_data <- OtherSources_data[cond_SH,]
+
+cond_SH <- dataset2_spawner_surveys$species_name == "Steelhead"
+sum(cond_SH)
+dataset2_spawner_surveys <- dataset2_spawner_surveys[!cond_SH,]
+
+dataset2_spawner_surveys <- rbind(dataset2_spawner_surveys,SH_data[,cols])
+```
+
+There are `r sum(cond_SH)` row removed in **dataset2_spawner_surveys**, and `r nrow(SH_data)` were added from the **Steelhead dataset**. Note that there were not any SH data in **dataset2_spawner_surveys** because those were removed early on in script *1_nuseds_collation.rmd*.
+
+### Northern Transboundary
+
+```{r, include=FALSE}
+cond_TBR <- OtherSources_data$region == "Northern Transboundary" & OtherSources_data$species_name != "Steelhead"
+TBR_data <- OtherSources_data[cond_TBR,]
+
+cond_TBR <- dataset2_spawner_surveys$region == "Northern Transboundary" & dataset2_spawner_surveys$species_name != "Steelhead"
+sum(cond_TBR)
+
+dataset2_spawner_surveys <- dataset2_spawner_surveys[!cond_TBR,]
+
+dataset2_spawner_surveys <- rbind(dataset2_spawner_surveys,TBR_data[,cols])
+```
+
+There are `r sum(cond_TBR)` row removed in **dataset2_spawner_surveys**, and `r nrow(TBR_data)` were added from the **TBR dataset**.
+
+### Yukon
+
+```{r, include=FALSE}
+cond_Yukon <- OtherSources_data$region == "Yukon" & OtherSources_data$species_name != "Steelhead"
+Yukon_data <- OtherSources_data[cond_Yukon,]
+
+cond_Yukon <- dataset2_spawner_surveys$region == "Yukon" & dataset2_spawner_surveys$species_name != "Steelhead"
+sum(cond_Yukon)
+
+dataset2_spawner_surveys <- dataset2_spawner_surveys[!cond_Yukon,]
+
+dataset2_spawner_surveys <- rbind(dataset2_spawner_surveys,Yukon_data[,cols])
+```
+
+There are `r sum(cond_Yukon)` row removed in **dataset2_spawner_surveys**, and `r nrow(Yukon_data)` were added from the **Yukon dataset**.
+
+
+### Central Coast South Atnarko Lake SEL
+
+```{r, include=FALSE}
+cond_CC <- OtherSources_data$region == "Central Coast" & OtherSources_data$species_name != "Steelhead"
+CC_data <- OtherSources_data[cond_CC,]
+
+cond_CC <- dataset2_spawner_surveys$cuid == unique(CC_data$cuid) & !is.na(dataset2_spawner_surveys$cuid)
+sum(cond_CC)
+
+dataset2_spawner_surveys <- dataset2_spawner_surveys[!cond_CC,]
+
+dataset2_spawner_surveys <- rbind(dataset2_spawner_surveys,CC_data[,cols])
+```
+
+There are `r sum(cond_CC)` row removed in **dataset2_spawner_surveys**, and `r nrow(CC_data)` were added from the **Yukon dataset**.
+
+
+## Remove the data without cuid
+
+```{r, include=FALSE}
+cond_NA <- is.na(nuseds_cuid_streamid$cuid)
+show <- unique(nuseds_cuid_streamid[cond_NA,c("region","SPECIES","cuid","FULL_CU_IN","CU_NAME")])
+show <- arrange(show, region, SPECIES)
+rownames(show) <- NULL
+```
+
+There are `r nrow(show)` `CU_NAME` in *nuseds_cuid_streamid.csv* that are not associated to a `cuid`, which corresponds to `r sum(cond_NA)` data points:
+
+```{r, echo=FALSE}
+show
+```
+
+These data points are removed from **dataset2_spawner_surveys**.
+
+```{r, include=FALSE}
+cond_NA <- is.na(dataset2_spawner_surveys$cuid)
+dataset2_spawner_surveys <- dataset2_spawner_surveys[!cond_NA,]
+```
+
+## Attribute missing streamid
+
+```{r, include=FALSE}
+cond_NA <- is.na(dataset2_spawner_surveys$streamid)
+
+show <- unique(dataset2_spawner_surveys[cond_NA,c("region","species_name","cuid","cu_name_pse","stream_name_pse","latitude","longitude","streamid")])
+show <- arrange(show,region,species_name)
+rownames(show) <- NULL
+```
+
+There remains `r nrow(show)` population(s) without a `streamid`:
+
+```{r, echo=FALSE}
+show
+```
+
+We provide them a new value by incrementing from the maximum `streamid` already present in the dataset.
+
+```{r, include=FALSE}
+val_max <- max(dataset2_spawner_surveys$streamid, na.rm = T)
+for(r in 1:nrow(show)){
+  
+  val_max <- val_max + 1
+  
+  cond <- dataset2_spawner_surveys$region == show$region[r] &
+     dataset2_spawner_surveys$cuid == show$cuid[r] &
+     dataset2_spawner_surveys$stream_name_pse == show$stream_name_pse[r]
+
+  dataset2_spawner_surveys$streamid[cond] <- val_max
+}
+
+sum(is.na(dataset2_spawner_surveys$streamid))
+```
+
+# Export the data
+
+The *dataset2_spawner_surveys_DATE.csv* is exported to `/output/archive` in Dropbox; the *dataset2_spawner_surveys_DATE_dummy.csv* is exported locally in `/output` to be pushed to Github.
+
+```{r, include=FALSE}
+if(export_datasets){
+  date <- Sys.Date()
+  write.csv(dataset2_spawner_surveys,paste0(wd_output,"/archive/dataset2_spawner_surveys_",date,".csv"),
+            row.names = F)
+  
+  # Produce a dummy datasets in the loca; /ouput repo to push to github
+  wd_output_local <- gsub("code","",getwd())
+  
+  write.csv(dataset2_spawner_surveys[1,],
+            paste0(wd_output_local,"/output/dataset2_spawner_surveys_dummy.csv"))
+}
+```
+
+# Check with online dataset2_spawner_surveys
+
+The view *streamspawnersurveys_output.csv* is imported (from the database) to be compared to the updated data. 
+
+```{r, echo=FALSE}
+#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' # To obtain the generation length and calculate the the "current spawner abundance".
+dataset2_spawner_surveys_old <- datasets_database_fun(nameDataSet = "streamspawnersurveys_output.csv",
+                                                      fromDatabase = fromDatabase,
+                                                      update_file_csv = update_file_csv,
+                                                      wd = wd_pop_indic_data_input_dropbox)
+
+cuid <- unique(dataset2_spawner_surveys$cuid)
+cuid_old <- unique(dataset2_spawner_surveys_old$cuid)
+```
+
+Number of additional rows in the updated **dataset2_spawner_surveys** = `r nrow(dataset2_spawner_surveys) - nrow(dataset2_spawner_surveys_old)`
+
+```{r, echo=FALSE}
+cuid_gained <- cuid[!cuid %in% cuid_old]
+
+cond <- dataset2_spawner_surveys$cuid %in% cuid_gained
+show <- unique(dataset2_spawner_surveys[cond,c("region","species_name","cuid","cu_name_pse")])
+rownames(show) <- NULL
+```
+
+There are `r nrow(show)` CUs gained:
+
+```{r, echo=FALSE}
+show
+```
+
+
+```{r, echo=FALSE}
+cuid_lost <- cuid_old[!cuid_old %in% cuid]
+
+cond <- dataset2_spawner_surveys_old$cuid %in% cuid_lost
+show <- unique(dataset2_spawner_surveys_old[cond,c("region","species_name","cuid","cu_name_pse")])
+rownames(show) <- NULL
+```
+
+There are `r nrow(show)` CUs lost:
+
+```{r, echo=FALSE}
+show
+```
+
+```{r, include=FALSE}
+streamid_new <- dataset2_spawner_surveys$streamid[!dataset2_spawner_surveys$streamid %in% dataset2_spawner_surveys_old$streamid] |> unique()
+
+cond <- !dataset2_spawner_surveys$cuid %in% cuid_gained & dataset2_spawner_surveys$streamid %in% streamid_new
+show <- unique(dataset2_spawner_surveys[cond,c("region","species_name","cuid","cu_name_pse","stream_name_pse","GFE_ID","streamid")])
+show <- arrange(show,region,species_name,cuid)
+rownames(show) <- NULL
+```
+
+There are `r nrow(show)` new `streamid` gained (other than the one related to the CU gained):
+
+```{r, echo=FALSE}
+show
+```
+
+```{r, include=FALSE}
+streamid_lost <- dataset2_spawner_surveys_old$streamid[!dataset2_spawner_surveys$streamid %in% dataset2_spawner_surveys$streamid] |> unique()
+
+cond <- !dataset2_spawner_surveys_old$cuid %in% cuid_lost & dataset2_spawner_surveys_old$streamid %in% streamid_lost
+show <- unique(dataset2_spawner_surveys_old[cond,c("region","species_name","cuid","cu_name_pse","stream_name_pse","streamid")])
+show <- arrange(show,region,species_name,cuid)
+rownames(show) <- NULL
+```
+
+There are `r nrow(show)` new `streamid` lost (other than the one related to the CU lost):
+
+```{r, echo=FALSE}
+show
+```
+
+
+
+
+
+
+
+
+
+
+
+

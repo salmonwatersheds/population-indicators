@@ -644,6 +644,16 @@ cu_index_NA
 ```
 
 ```{r, include=FALSE}
+# Attribute the region in nuseds
+for(r in 1:nrow(cu_index_NA)){
+  
+  cond <- nuseds$FULL_CU_IN == cu_index_NA$FULL_CU_IN[r] 
+  nuseds$region[cond] <- cu_index_NA$region[r] 
+}
+```
+
+
+```{r, include=FALSE}
 # used to be cuid 751
 cond_751 <- grepl(simplify_string_fun("Adams and Momich Lakes_Early Summer"),
               simplify_string_fun(nuseds$CU_NAME))

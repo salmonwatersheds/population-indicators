@@ -76,6 +76,7 @@ options(warn = 0)
 options(digits = 9) ## 7
 
 # Import files -------
+#
 
 #'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
 nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
@@ -84,7 +85,6 @@ nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archi
 #'* Import the cleaned Reynolds Lab cleaned data *
 Reynolds_data <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                             pattern = "data_extra_Reynolds_lab")
-
 
 # check columns names:
 colnames(nuseds_cuid_streamid)[!colnames(nuseds_cuid_streamid) %in% colnames(Reynolds_data)]
@@ -459,14 +459,14 @@ Yukon_data$region <- "Yukon"
 
 
 #' * Import stream level data quality (dataset386_output) *
-# datasetsNames_database <- datasetsNames_database_fun()
-# 
-# fromDatabase <- update_file_csv <- F
-# 
-# dataset386_output <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[22],
-#                                            fromDatabase = fromDatabase,
-#                                            update_file_csv = update_file_csv,
-#                                            wd = wd_pop_indic_data_input_dropbox)
+datasetsNames_database <- datasetsNames_database_fun()
+
+fromDatabase <- update_file_csv <- T
+
+dataset386_output <- datasets_database_fun(nameDataSet = "dataset386_output.csv",
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
 
 # TEMPORARY SOLUTION cause the code above does not work
 dataset386_output <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,

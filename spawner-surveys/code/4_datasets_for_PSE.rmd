@@ -133,8 +133,20 @@ log_file <- read.csv(logfile_path,header = T)
 cond <- log_file$remove_timeSeries_zeros_too == remove_timeSeries_zeros_too & 
   log_file$replace_zeros_byNAs == replace_zeros_byNAs & 
   grepl("nuseds_cuid_streamid",log_file$main_dataset_exported)
-# select the most recent date:
+# select the most recent date for 2_nuseds_cuid_streamid_DATE:
 date_export <- max(log_file[cond,]$date_export)
+
+# get the date at which the corresponding original all_area_nuseds-DATE.csv was imported
+r <- which(log_file[cond,]$date_export == max(log_file[cond,]$date_export)) # there can be more than one row
+date_nuseds_source <- unique(log_file[cond,]$all_areas_nuseds_file_name[r])
+if(length(date_nuseds_source) > 1){
+  print("!!! MORE THAN ONE SOURCE DATE FOR NUSEDS !!! - Break")
+  print(date_nuseds_source)
+  break
+}else{
+  date_nuseds_source <- gsub("all_areas_nuseds_","",date_nuseds_source)
+  date_nuseds_source <- gsub(".csv","",date_nuseds_source)
+}
 
 #'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
 nuseds_cuid_streamid <- read.csv(paste0(wd_output,"/archive/2_nuseds_cuid_streamid_",date_export,".csv"),
@@ -278,20 +290,11 @@ The spawner survey data for Northern **Transboundary** (TBR) is imported:
 
 wd_TBR <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-data/transboundary-data/output/archive")
 TBR_data <- import_mostRecent_file_fun(wd = wd_TBR, pattern = "dataset2_spawner-surveys")
-colnames(TBR_data)[colnames(TBR_data) == "survey_qual"] <- "survey_quality"
-# 2025-01-09
-# head(TBR_data)
 
 TBR_data$species_qualified <- sapply(TBR_data$cuid,function(cuid){
   cond <- conservationunits_decoder$cuid == cuid
   return(unique(conservationunits_decoder$species_qualified[cond]))
 })
-
-TBR_data$GFE_ID <- NA
-TBR_data$source_id <- NA
-
-colnames(TBR_data)[colnames(TBR_data) == "survey_quality"] <- "stream_survey_quality"
-colnames(TBR_data)[colnames(TBR_data) == "survey_method"] <- "stream_survey_method"
 
 TBR_data$region <- "Northern Transboundary" # is "Transboundary"
 
@@ -306,9 +309,9 @@ show
 
 Note that the TBR data set is the only one containing the steelhead data (the SH data is in the SH data source for the other regions):
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 cond <- TBR_data$species_name == "Steelhead"
-show <- unique(TBR_data[cond,c("region","species_name","cuid","cu_name_pse","stream_name_pse")])
+show <- unique(TBR_data[cond,c("region","species_name","cuid","cu_name_pse","stream_name_pse","source_id")])
 show <- show[order(show$species_name),]
 rownames(show) <- NULL
 show
@@ -328,7 +331,7 @@ SH_data$species_qualified <- sapply(SH_data$cuid,function(cuid){
   return(unique(conservationunits_decoder$species_qualified[cond]))
 })
 
-show <- unique(SH_data[,c("region","species_name","cuid","cu_name_pse")])
+show <- unique(SH_data[,c("region","species_name","cuid","cu_name_pse","source_id")])
 show <- show[order(show$region),]
 rownames(show) <- NULL
 show
@@ -338,22 +341,27 @@ show
 # notice that that there is TBR data in the SH data set; add a warning in case the 
 # data is not identical
 
-cond <- TBR_data$species_name == "Steelhead"
-TBR_SH <- TBR_data[cond,]
+cond_TBR <- TBR_data$species_name == "Steelhead"
+TBR_SH <- TBR_data[cond_TBR,]
 # nrow(TBR_SH) # 29
 
-cond <- SH_data$region == "Northern Transboundary"
-SH_TBR <- SH_data[cond,]
+cond_SH <- SH_data$region == "Northern Transboundary"
+SH_TBR <- SH_data[cond_SH,]
 # nrow(SH_TBR) # 29
 
 if(!identical(TBR_SH$stream_observed_count,SH_TBR$stream_observed_count)){
   print("!!! THE SH DATA IN TBR_data != SH_data !!!")
   
 }else{ # remove the SH data from TBR_data
-  print("The SH data for TBR is present in both the SH and the TBR datasets; the data is identical; the data is removed from te TBR dataset.")
+  print("The SH data for TBR is present in both the SH and the TBR datasets; the data is identical; the data is removed from the TBR dataset.")
+  print("The source_id field is filled in the TBR dataset and not in the SH one, so the data in the former replaces the data in the latter.")
   
-  cond <- TBR_data$species_name == "Steelhead"
-  TBR_data <- TBR_data[!cond,]
+  SH_data <- SH_data[!cond_SH,]
+  
+  SH_data <- rbind(SH_data,
+                   TBR_SH[,colnames(SH_data)])
+
+  TBR_data <- TBR_data[!cond_TBR,]
 }
 
 # plot(x = TBR_SH$stream_observed_count, y = SH_TBR$stream_observed_count)
@@ -607,8 +615,11 @@ show
 
 We define the field `sourceid` for **dataset2_spawner_surveys**:
 
-```{r}
-dataset2_spawner_surveys$source_id <- "NuSEDS"
+```{r, echo=FALSE}
+source_id_here <- paste0("NuSEDS_",date_nuseds_source)
+source_id_here <- gsub("-","",source_id_here)
+dataset2_spawner_surveys$source_id <- source_id_here
+source_id_here
 ```
 
 We only keep the following fields:
@@ -768,6 +779,9 @@ sum(is.na(dataset2_spawner_surveys$streamid))
 The *dataset2_spawner_surveys_DATE.csv* is exported to `/output/archive` in Dropbox; the *dataset2_spawner_surveys_DATE_dummy.csv* is exported locally in `/output` to be pushed to Github.
 
 ```{r, include=FALSE}
+
+dataset2_spawner_surveys <- arrange(dataset2_spawner_surveys,region,species_name,cu_name_pse,stream_name_pse,year)
+
 if(export_datasets){
   date <- Sys.Date()
   write.csv(dataset2_spawner_surveys,paste0(wd_output,"/archive/dataset2_spawner_surveys_",date,".csv"),

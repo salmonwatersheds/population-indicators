@@ -1,2 +1,2 @@
 "","region","species_name","species_qualified","cuid","cu_name_pse","streamid","stream_name_pse","GFE_ID","indicator","latitude","longitude","year","stream_observed_count","stream_survey_method","stream_survey_quality","source_id"
-"1","Fraser","Chum","CM",701,"Lower Fraser",1,"HOPEDALE SLOUGH",67,"Y",49.092977,-122.03223,1999,10302,"Unknown Estimate Method","Unknown","NuSEDS"
+"111881","Central Coast","Chinook","CK",512,"Bella Coola-Bentinck",1998,"ATNARKO RIVER",970,"N",52.376564,-126.094356,1950,NA,"Not Applicable","Unknown","NuSEDS_20250221"

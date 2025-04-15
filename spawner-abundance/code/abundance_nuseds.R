@@ -76,12 +76,19 @@ library(tidyr)
 #'  dataset2_spawner_surveys_YYYY-MM-DD.csv, previously dataset_1part2.csv
 datasetsNames_database <- datasetsNames_database_fun()
 
-fromDatabase <- update_file_csv <- F
-spawnersurveys <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
-                                        fromDatabase = fromDatabase,
-                                        update_file_csv = update_file_csv,
-                                        wd = wd_pop_indic_data_input_dropbox)
+# fromDatabase <- update_file_csv <- FALSE
+# spawnersurveys <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
+#                                         fromDatabase = fromDatabase,
+#                                         update_file_csv = update_file_csv,
+#                                         wd = wd_pop_indic_data_input_dropbox)
+# head(spawnersurveys)
+
+#' Alternatively, import the most recent dataset produced in 
+#' /spawner-surveys
+spawnersurveys <- import_mostRecent_file_fun(wd = paste0(wd_output_sp_surveys,"/archive"),
+                                             pattern = "dataset2_spawner-surveys")  # TODO: replace eventually by dataset2_spawner_surveys
 head(spawnersurveys)
+
 
 # Arrange the rows for easier comparison and check up
 spawnersurveys <- spawnersurveys  %>% 
@@ -93,44 +100,56 @@ spawnersurveys <- spawnersurveys  %>%
           cu_name_pse,
           year)
 
-#' Alternatively, import the most recent dataset produced in 
-#' /spawner-surveys
-dataset_1part2 <- import_mostRecent_file_fun(wd = paste0(wd_output_sp_surveys,"/archive"),
-                                             pattern = "dataset_1part2")  # TODO: replace eventually by dataset2_spawner_surveys
-head(spawnersurveys)
 
+#' #'* Import dataset1cu_output.csv from the database *
+#' 
+#' #' = dataset1_spawner_abundance_YYYY-MM-DD.csv, previously dataset_1part1
+#' #' It is imported to see the format of the dataset that need to be exported.
+#' dataset_1part1_old <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[15],
+#'                                             fromDatabase = fromDatabase,
+#'                                             update_file_csv = update_file_csv,
+#'                                             wd = wd_pop_indic_data_input_dropbox)
+#' head(dataset_1part1_old)
+#' 
+#' dataset_1part1_old <- dataset_1part1_old  %>% 
+#'   arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
+#'                                     "Skeena","Central Coast",
+#'                                     "Vancouver Island & Mainland Inlets",
+#'                                     "Fraser","Columbia")),
+#'           species_name,
+#'           cu_name_pse,
+#'           year)
+#' 
+#' 
 
-#'* Import dataset1cu_output.csv from the database *
-#' = dataset1_spawner_abundance_YYYY-MM-DD.csv, previously dataset_1part1
-#' It is imported to see the format of the dataset that need to be exported.
-dataset_1part1_old <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[15],
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
-head(dataset_1part1_old)
-
-dataset_1part1_old <- dataset_1part1_old  %>% 
-  arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
-                                    "Skeena","Central Coast",
-                                    "Vancouver Island & Mainland Inlets",
-                                    "Fraser","Columbia")),
-          species_name,
-          cu_name_pse,
-          year)
-
-#
 # Produce dataset1_spawner_abundance_YYYY-MM-DD.csv (dataset_1part1_DATE.csv) -----
 #
 
 #'* Sum spawnersurveys per cuid and year *
 
+#------------------------------------------------------------------------------
+# Remove two spawner surveys that are duplicates (Seee 5.4.1 Observed Spawner Abundance)
+#------------------------------------------------------------------------------
+
+if(unique(spawnersurveys$stream_name_pse[which(spawnersurveys$streamid == 10138)]) != "Nesketahin Lake"){
+  stop("Not Nesketahin Lake")
+}
+
+if(unique(spawnersurveys$stream_name_pse[which(spawnersurveys$streamid == 10271)]) != "INKANEEP CREEK"){
+  stop("Not INKANEEP CREEK")
+}
+
+spawnersurveys <- spawnersurveys[- which(spawnersurveys$streamid %in% c(1038, 10271)), ]
+
+
+#------------------------------------------------------------------------------
 # sum stream_observed_count per per year and cuid
-dataset_1part1 <- spawnersurveys %>%
-  # group_by(region,species_name,species_abbr,cuid,cu_name_pse,year) %>%
-  group_by(region,species_name,cuid,cu_name_pse,year) %>%
+#------------------------------------------------------------------------------
+dataset1_observed <- spawnersurveys %>%
+  group_by(region, species_name, species_qualified, cuid, cu_name_pse, year) %>%
   summarise(observed_spawners = sum(stream_observed_count))
 
-dataset_1part1 <- dataset_1part1  %>% 
+dataset1_observed <- dataset1_observed  %>% 
   arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
                                     "Skeena","Central Coast",
                                     "Vancouver Island & Mainland Inlets",
@@ -141,25 +160,21 @@ dataset_1part1 <- dataset_1part1  %>%
 
 head(dataset_1part1)
 
-# Rename observed_spawners to observed_count
-colnames(dataset_1part1)[colnames(dataset_1part1) == "observed_spawners"] <- "observed_count"
+# Rename observed_spawners to observed_count (to be changed when dataset paramters are finalized)
+colnames(dataset1_observed)[colnames(dataset1_observed) == "observed_spawners"] <- "observed_count"
 
-# Add columns estimated_count and total_run
-dataset_1part1$estimated_count <- dataset_1part1$total_run <- NA
-
-# Re-order columns
-dataset_1part1 <- dataset_1part1[,colnames(dataset_1part1_old)]
-
-head(dataset_1part1)
+head(dataset1_observed)
 
 # Export to /archive folder on dropbox:
 date <- as.character(Sys.Date())
-write.csv(dataset_1part1,paste0(wd_output,"/archive/dataset1_spawner_abundance_",date,".csv"), # dataset_1part1_ previously
-          row.names = F)
+write.csv(dataset1_observed,
+          paste0(wd_output,"/archive/dataset1_observed-spawners_",date,".csv"), # dataset_1part1_ previously
+          row.names = FALSE)
 
 # Export to /output locally to push to github
-write.csv(dataset_1part1,paste0(paste0(getwd(),"/output"),"/dataset1_spawner_abundance.csv"), # dataset_1part1_ previously
-          row.names = F)
+write.csv(dataset1_observed,
+          paste0(paste0(getwd(),"/output"),"/dataset1_observed-spawners.csv"), # dataset_1part1_ previously
+          row.names = FALSE)
 
 #
 # Compare spawnersurveys from database vs. dropbox repo -----

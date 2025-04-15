@@ -98,19 +98,19 @@ source("code/functions.R")
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- F
+export_datasets <- T
 
 #' Decision made in 1_nuseds_collation.rmd: 
 #' Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 #' If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 
 #' If FALSE, time series only composed of NAs are removed from NUSEDS.
 #' Setting to T or F will import the corresponding dataset.
-remove_timeSeries_zeros_too <- T 
+remove_timeSeries_zeros_too <- F
 
 #' Decision made in 1_nuseds_collation.rmd: Used just after NUSEDS and CUSS are merged,
 #'to decide if we want to replace all the remaining 0s by NAs.
 #' Setting to T or F will import the corresponding dataset.
-replace_zeros_byNAs <- T
+replace_zeros_byNAs <- F
 
 ```
 
@@ -141,10 +141,10 @@ date_export <- max(log_file[cond,]$date_export)
 nuseds <- read.csv(paste0(wd_output,"/archive/1_NuSEDS_escapement_data_collated_",date_export,".csv"),header = T)
 
 head(nuseds)
-nrow(nuseds) # 311566 310255 309338 306823 306999
+nrow(nuseds) # 312539 311566 310255 309338 306823 306999
 
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 6972 6892 6854 6868
-nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 6972 6892 6854 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY")])) # 7031 6972 6892 6854 6868
+nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","SYSTEM_SITE","WATERBODY","GFE_ID")])) # 7031 6972 6892 6854 6868
 
 sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 0
 sum(is.na(nuseds$MAX_ESTIMATE)) # 158986 157808 157264 155984
@@ -153,15 +153,42 @@ sum(is.na(nuseds$MAX_ESTIMATE)) # 158986 157808 157264 155984
 ```{r,echo=FALSE}
 
 if(remove_timeSeries_zeros_too){
-  print("Time series only composed of NAs AND/OR zeros were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd.")
+  print("Time series only composed of NAs AND zeros are removed (the ones with only NAs were removed in 1_nuseds_collation.rmd).")
+  
+  series <- unique(nuseds[,c("IndexId","GFE_ID")])
+  
+  n_before <- nrow(nuseds)
+  n_series_remnoved <- 0
+  for(r in 1:nrow(series)){
+    # r <- 1
+    IndexId <- series$IndexId[r]
+    GFE_ID <- series$GFE_ID[r]
+    cond <- nuseds$IndexId == IndexId & nuseds$GFE_ID == GFE_ID
+    
+    cond_NA0s <- is.na(nuseds$MAX_ESTIMATE[cond]) | nuseds$MAX_ESTIMATE[cond] == 0
+    
+    if(all(cond_NA0s)){
+      nuseds <- nuseds[!cond,]
+      n_series_remnoved <- n_series_remnoved + 1
+    }
+  }
+  
+  n_after <- nrow(nuseds)
+  print(paste0("Number of series removed: ",n_series_remnoved,"; Number of rows removed: ",n_before - n_after))
+  
 }else{
-  print("Time series only composed of NAs were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd, zeros were left.")
+  print("Time series only composed of NAs were removed from NUSEDS in the early cleaning process in 1_nuseds_collation.rmd, the ones also including zeros are kept.")
 }
 
 if(replace_zeros_byNAs){
-  print("Zeros were replaced by NAs in the late cleaning process in 1_nuseds_collation.rmd.")
+  print("Zeros are replaced by NAs.")
+  cond_0 <- nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)
+  nuseds <- nuseds[!cond_0,]
+  
+  print(paste0("Number of 0s turned into NAs = ",(sum(cond_0))))
+  
 }else{
-  print("Zeros were NOT replaced by NAs in the late cleaning process in 1_nuseds_collation.rmd.")
+  print("Zeros are NOT replaced by NAs.")
 }
 
 ```
@@ -301,7 +328,7 @@ show
 
 We also make the following changes for certain `IndexId/POP_ID`:
 
-```{r}
+```{r, echo=FALSE}
 # Make corrections for populations with discrepancies in area assignments #
 # These errors become apparent when merging data frames later on #
 nuseds[nuseds$IndexId == "CO_46240",]$StatArea <- "29"    # vs. "29J" "29K"
@@ -878,8 +905,11 @@ We match the locations using `GFE_ID` if available in **streamlocationids**, and
 ```{r, echo = FALSE}
 nuseds$streamid <- NA
 
+# GLENLYON RIVER
+
 for(r in 1:nrow(streamlocationids)){
   # r <- 1
+  r <- which(streamlocationids$sys_nm == "GLENLYON RIVER")
   
   cond_cuid <- nuseds$cuid == streamlocationids$cuid[r] & !is.na(nuseds$cuid)
   cond_location <- rep(F,length(cond_cuid))
@@ -917,7 +947,7 @@ for(r in 1:nrow(streamlocationids)){
 }
 
 check <- unique(nuseds[,c("region","GFE_ID","sys_nm","cuid","cu_name_pse","streamid")])
-# nrow(check) # 6959 6880
+# nrow(check) # 7018 6959 6880
 ```
 
 There remains `r sum(is.na(check$streamid))` unique stream (`GFE_ID`) and CU (`cuid`) combinations without an existing `streamid` (not accounting for the time series in **nuseds** without a `cuid`):
@@ -950,7 +980,7 @@ for(r in 1:nrow(show)){
 
 The following files are exported:
 
-- *2_nuseds_cuid_streamid__DATE.csv*: the cleaned NuSEDS dataset with the PSE's field: `cuid`, `streamid`, `cu_name_pse`, etc.
+- *2_nuseds_cuid_streamid_DATE.csv*: the cleaned NuSEDS dataset with the PSE's field: `cuid`, `streamid`, `cu_name_pse`, etc.
 
 - *log_file.csv*: the log file reporting the name of the main file exported, the date of the export, the name of the present script, the name of the original **NUSEDS** or **CUSS** files and the choices related to removing zeros or not.
 
@@ -974,10 +1004,10 @@ if(export_datasets){
   log_file_new$main_dataset_exported <- name_file
   log_file_new$R_script <- "2_nuseds_cuid_pse.rmd"
   log_file_new$date_export <- date
-  log_file_new$all_areas_nuseds_file_name <- log_file$all_areas_nuseds_file_name[cond_date_export]
-  log_file_new$conservation_unit_system_sites_file_name <- log_file$conservation_unit_system_sites_file_name[cond_date_export]
-  log_file_new$remove_timeSeries_zeros_too <- log_file$remove_timeSeries_zeros_too[cond_date_export]
-  log_file_new$replace_zeros_byNAs <- log_file$replace_zeros_byNAs[cond_date_export]
+  log_file_new$all_areas_nuseds_file_name <- log_file$all_areas_nuseds_file_name[cond_date_export] |> unique()
+  log_file_new$conservation_unit_system_sites_file_name <- log_file$conservation_unit_system_sites_file_name[cond_date_export] |> unique()
+  log_file_new$remove_timeSeries_zeros_too <- log_file$remove_timeSeries_zeros_too[cond_date_export] |> unique()
+  log_file_new$replace_zeros_byNAs <- log_file$replace_zeros_byNAs[cond_date_export] |> unique()
   
   log_file <- rbind(log_file,log_file_new)
   
@@ -1219,8 +1249,8 @@ if(any(cond_old_only)){
                             all_areas_nuseds = nuseds, 
                             main = paste(region," - ",cu_name_pse," (",cuid,")",sep=""))
     
-    cond_IndexId <- IndexId == nuseds_new$IndexId
-    cond_GFE_ID <- GFE_ID == nuseds_new$GFE_ID
+    cond_IndexId <- IndexId == nuseds$IndexId
+    cond_GFE_ID <- GFE_ID == nuseds$GFE_ID
     
     if(!any(cond_IndexId) & any(cond_GFE_ID)){
       m <- "IndexId not in old cleaned NuSEDS"

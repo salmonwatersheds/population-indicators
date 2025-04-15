@@ -1,10 +1,10 @@
 
 #'******************************************************************************
 #' The goal of the script is to sum the stream-level observed spawner counts 
-#' (**dataset2_spawner_surveys_YYYY-MM-DD.csv** produced in
+#' (**dataset2_spawner-surveys_YYYY-MM-DD.csv** produced in
 #' **spawner-surveys/code/4_datasets_for_PSE.R**) for each CU and to export the 
 #' results as the field `observed_count` in 
-#' **dataset1_spawner_abundance_YYYY-MM-DD.csv**.
+#' **dataset1_spawner-abundance_YYYY-MM-DD.csv**.
 #' 
 #' 
 #' Files imported (from dropbox):
@@ -176,156 +176,156 @@ write.csv(dataset1_observed,
           paste0(paste0(getwd(),"/output"),"/dataset1_observed-spawners.csv"), # dataset_1part1_ previously
           row.names = FALSE)
 
-#
-# Compare spawnersurveys from database vs. dropbox repo -----
-#' The datasets should be the same except that the database version should have 
-#' values for (1) Yukon, (2) Transboundary and (3) Columbia sockeye (cuid 1300 
-#' streamid 9703) as those were removed from spawnersurveys in 
-#' spawner-surveys/2_nuseds_cuid_streamid.R.
-
-# Import spawnersurveys from database
-datasetsNames_database <- datasetsNames_database_fun()
-fromDatabase <- update_file_csv <- F
-spawnersurveys <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
-                                        fromDatabase = fromDatabase,
-                                        update_file_csv = update_file_csv,
-                                        wd = wd_pop_indic_data_input_dropbox)
-
-# Import spawnersurveys from dropbox
-spawnersurveys_source <- import_mostRecent_file_fun(wd = wd_output_sp_surveys,
-                                                    pattern = "dataset2_spawner_surveys_") # dataset2_spawner_surveys_
-
-# remove Yukon, (2) Transboundary and (3) Columbia sockeye in dataset_1part2
-dataset_1part2 <- dataset_1part2[! dataset_1part2$region %in% c("Transboundary","Yukon"),]
-
-cond <- dataset_1part2$cuid == 1300 &
-  !is.na(dataset_1part2$cuid) &
-  dataset_1part2$streamid == 9703
-spawnersurveys[cond,]
-spawnersurveys <- spawnersurveys[!cond,]
-
-# Compare the two datasets:
-nrow(spawnersurveys)        # 141471
-nrow(spawnersurveys_source) # 140512
-nrow(spawnersurveys)  - nrow(spawnersurveys_source) # 959
-
-sum(is.na(spawnersurveys$year))        # 548
-sum(is.na(spawnersurveys_source$year)) # 0
-
-# check spawnersurveys where year is NA
-cond_yr_NA <- is.na(spawnersurveys$year)
-spawnersurveys[cond_yr_NA,]
-
-
-
-
-spawnersurveys <- spawnersurveys[!is.na(spawnersurveys$year),]
-
-rg_cuid_yr <- unique(spawnersurveys[,c("region","cuid","year")])
-nrow(rg_cuid_yr) # 18486
-
-rg_cuid_yr_source <- unique(spawnersurveys_source[,c("region","cuid","year")])
-nrow(rg_cuid_yr_source) # 18074
-
-rg_cuid <- unique(spawnersurveys[,c("region","cuid")])
-nrow(rg_cuid) # 360
-
-rg_cuid_source <- unique(spawnersurveys_source[,c("region","cuid")])
-nrow(rg_cuid_source) # 345
-
-rg_cuid_merged <- apply(X = rg_cuid, 1, function(r){paste(r,collapse = " - ")})
-rg_cuid_merged_source <- apply(X = rg_cuid_source, 1, function(r){paste(r,collapse = " - ")})
-
-rg_cuid_merged[! rg_cuid_merged %in% rg_cuid_merged_source]
-rg_cuid_merged_source[! rg_cuid_merged_source %in% rg_cuid_merged] # 0
-
-extras <- rg_cuid_merged[! rg_cuid_merged %in% rg_cuid_merged_source]
-rg_cuid_extra <- data.frame(region = rep(NA,length(extras)),
-                            cuid = rep(NA,length(extras)))
-
-for(i in 1:nrow(rg_cuid_extra)){
-  char <- strsplit(x = extras[i],split = " - ")[[1]]
-  rg_cuid_extra$region[i] <- char[1]
-  rg_cuid_extra$cuid[i] <- char[2]
-}
-
-rg_cuid_extra
-
-# check if the time series match for the rest of the data
-rg_cuid_stream <- unique(spawnersurveys[,c("region","cuid","streamid")])
-nrow(rg_cuid_stream) # 6286
-
-rg_cuid_stream_source <- unique(spawnersurveys_source[,c("region","cuid","streamid")])
-nrow(rg_cuid_stream_source) # 6260
-
-rg_cuid_strean_merged <- apply(X = rg_cuid_stream, 1, function(r){paste(r,collapse = " - ")})
-rg_cuid_stream_merged_source <- apply(X = rg_cuid_stream_source, 1, function(r){paste(r,collapse = " - ")})
-
-commons <- rg_cuid_strean_merged[ rg_cuid_strean_merged %in% rg_cuid_stream_merged_source]
-count <- 1
-count_thresh <- 0
-toCkeck <- data.frame()
-for(i in 1:length(commons)){
-  char <- strsplit(x = commons[i],split = " - ")[[1]]
-  region <- char[1]
-  cuid <- as.numeric(char[2])
-  streamid <- as.numeric(char[3])
-  
-  cond <- spawnersurveys$region == region & 
-    spawnersurveys$cuid == cuid &
-    spawnersurveys$streamid == streamid
-  
-  cond_source <- spawnersurveys_source$region == region &
-    spawnersurveys_source$cuid == cuid &
-    spawnersurveys_source$streamid == streamid
-  
-  series <- spawnersurveys[cond,c("stream_observed_count","year")]
-  series_source <- spawnersurveys_source[cond_source,c("stream_observed_count","year")]
-  rownames(series) <- rownames(series_source) <- NULL
-  
-  series$stream_observed_count <- round(series$stream_observed_count,1)
-  series_source$stream_observed_count <- round(series_source$stream_observed_count,1)
-  
-  pointids_source <- unique(spawnersurveys_source$pointid[cond_source])
-  stream_name_pse_here_source <- unique(spawnersurveys_source$stream_name_pse[cond_source])
-  # spawnersurveys_source[cond_source,]
-  
-  if(!identical(series,series_source)){
-    count <- count + 1
-    xmin <- min(c(series$year,series_source$year))
-    xmax <- max(c(series$year,series_source$year))
-    ymin <- min(c(series$stream_observed_count,series_source$stream_observed_count))
-    ymax <- max(c(series$stream_observed_count,series_source$stream_observed_count))
-    plot(NULL,xlim = c(xmin,xmax),ylim = c(ymin,ymax))
-    lines(x = series$year, y = series$stream_observed_count, lwd = 1.5, col = "red")
-    points(x = series$year, y = series$stream_observed_count,  lwd = 1.5, col = "red", pch = 16)
-    lines(x = series_source$year, y = series_source$stream_observed_count, lwd = 1.5, col = "blue", pch = 1)
-    points(x = series_source$year, y = series_source$stream_observed_count,  lwd = 1.5, col = "blue")
-    legend("topright",c("database","source"),fill = c("red","blue"),bty = "n")
-    legend("top",legend = c(paste0("i = ",i),paste0("count = ",count)),bty = "n")
-    legend("topleft",legend = c(paste0("region = ",region),
-                                paste0("cuid = ",cuid),
-                                paste0("streamid = ",streamid),
-                                paste0("pointid = ",paste0(pointids_source,collapse = ", ")),
-                                stream_name_pse_here_source),
-           bty = "n")
-    
-    toCkeck_here <- data.frame(region = region, cuid = cuid, streamid = streamid, 
-                               pointid = paste0(pointids_source,collapse = ", "),
-                               stream_name_pse = stream_name_pse_here_source)
-    if(nrow(toCkeck) == 0){
-      toCkeck <- toCkeck_here
-    }else{
-      toCkeck <- rbind(toCkeck,toCkeck_here)
-    }
-    
-  }
-  progress <- round(i/length(commons)*100,1)
-  if(progress > count_thresh){
-    print(paste0(progress,"%"))
-    count_thresh <- (round(ceiling(progress)/10) + 1) * 10
-  }
-}
-
-toCkeck
+#' #
+#' # Compare spawnersurveys from database vs. dropbox repo -----
+#' #' The datasets should be the same except that the database version should have 
+#' #' values for (1) Yukon, (2) Transboundary and (3) Columbia sockeye (cuid 1300 
+#' #' streamid 9703) as those were removed from spawnersurveys in 
+#' #' spawner-surveys/2_nuseds_cuid_streamid.R.
+#' 
+#' # Import spawnersurveys from database
+#' datasetsNames_database <- datasetsNames_database_fun()
+#' fromDatabase <- update_file_csv <- F
+#' spawnersurveys <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[4],
+#'                                         fromDatabase = fromDatabase,
+#'                                         update_file_csv = update_file_csv,
+#'                                         wd = wd_pop_indic_data_input_dropbox)
+#' 
+#' # Import spawnersurveys from dropbox
+#' spawnersurveys_source <- import_mostRecent_file_fun(wd = wd_output_sp_surveys,
+#'                                                     pattern = "dataset2_spawner_surveys_") # dataset2_spawner_surveys_
+#' 
+#' # remove Yukon, (2) Transboundary and (3) Columbia sockeye in dataset_1part2
+#' dataset_1part2 <- dataset_1part2[! dataset_1part2$region %in% c("Transboundary","Yukon"),]
+#' 
+#' cond <- dataset_1part2$cuid == 1300 &
+#'   !is.na(dataset_1part2$cuid) &
+#'   dataset_1part2$streamid == 9703
+#' spawnersurveys[cond,]
+#' spawnersurveys <- spawnersurveys[!cond,]
+#' 
+#' # Compare the two datasets:
+#' nrow(spawnersurveys)        # 141471
+#' nrow(spawnersurveys_source) # 140512
+#' nrow(spawnersurveys)  - nrow(spawnersurveys_source) # 959
+#' 
+#' sum(is.na(spawnersurveys$year))        # 548
+#' sum(is.na(spawnersurveys_source$year)) # 0
+#' 
+#' # check spawnersurveys where year is NA
+#' cond_yr_NA <- is.na(spawnersurveys$year)
+#' spawnersurveys[cond_yr_NA,]
+#' 
+#' 
+#' 
+#' 
+#' spawnersurveys <- spawnersurveys[!is.na(spawnersurveys$year),]
+#' 
+#' rg_cuid_yr <- unique(spawnersurveys[,c("region","cuid","year")])
+#' nrow(rg_cuid_yr) # 18486
+#' 
+#' rg_cuid_yr_source <- unique(spawnersurveys_source[,c("region","cuid","year")])
+#' nrow(rg_cuid_yr_source) # 18074
+#' 
+#' rg_cuid <- unique(spawnersurveys[,c("region","cuid")])
+#' nrow(rg_cuid) # 360
+#' 
+#' rg_cuid_source <- unique(spawnersurveys_source[,c("region","cuid")])
+#' nrow(rg_cuid_source) # 345
+#' 
+#' rg_cuid_merged <- apply(X = rg_cuid, 1, function(r){paste(r,collapse = " - ")})
+#' rg_cuid_merged_source <- apply(X = rg_cuid_source, 1, function(r){paste(r,collapse = " - ")})
+#' 
+#' rg_cuid_merged[! rg_cuid_merged %in% rg_cuid_merged_source]
+#' rg_cuid_merged_source[! rg_cuid_merged_source %in% rg_cuid_merged] # 0
+#' 
+#' extras <- rg_cuid_merged[! rg_cuid_merged %in% rg_cuid_merged_source]
+#' rg_cuid_extra <- data.frame(region = rep(NA,length(extras)),
+#'                             cuid = rep(NA,length(extras)))
+#' 
+#' for(i in 1:nrow(rg_cuid_extra)){
+#'   char <- strsplit(x = extras[i],split = " - ")[[1]]
+#'   rg_cuid_extra$region[i] <- char[1]
+#'   rg_cuid_extra$cuid[i] <- char[2]
+#' }
+#' 
+#' rg_cuid_extra
+#' 
+#' # check if the time series match for the rest of the data
+#' rg_cuid_stream <- unique(spawnersurveys[,c("region","cuid","streamid")])
+#' nrow(rg_cuid_stream) # 6286
+#' 
+#' rg_cuid_stream_source <- unique(spawnersurveys_source[,c("region","cuid","streamid")])
+#' nrow(rg_cuid_stream_source) # 6260
+#' 
+#' rg_cuid_strean_merged <- apply(X = rg_cuid_stream, 1, function(r){paste(r,collapse = " - ")})
+#' rg_cuid_stream_merged_source <- apply(X = rg_cuid_stream_source, 1, function(r){paste(r,collapse = " - ")})
+#' 
+#' commons <- rg_cuid_strean_merged[ rg_cuid_strean_merged %in% rg_cuid_stream_merged_source]
+#' count <- 1
+#' count_thresh <- 0
+#' toCkeck <- data.frame()
+#' for(i in 1:length(commons)){
+#'   char <- strsplit(x = commons[i],split = " - ")[[1]]
+#'   region <- char[1]
+#'   cuid <- as.numeric(char[2])
+#'   streamid <- as.numeric(char[3])
+#'   
+#'   cond <- spawnersurveys$region == region & 
+#'     spawnersurveys$cuid == cuid &
+#'     spawnersurveys$streamid == streamid
+#'   
+#'   cond_source <- spawnersurveys_source$region == region &
+#'     spawnersurveys_source$cuid == cuid &
+#'     spawnersurveys_source$streamid == streamid
+#'   
+#'   series <- spawnersurveys[cond,c("stream_observed_count","year")]
+#'   series_source <- spawnersurveys_source[cond_source,c("stream_observed_count","year")]
+#'   rownames(series) <- rownames(series_source) <- NULL
+#'   
+#'   series$stream_observed_count <- round(series$stream_observed_count,1)
+#'   series_source$stream_observed_count <- round(series_source$stream_observed_count,1)
+#'   
+#'   pointids_source <- unique(spawnersurveys_source$pointid[cond_source])
+#'   stream_name_pse_here_source <- unique(spawnersurveys_source$stream_name_pse[cond_source])
+#'   # spawnersurveys_source[cond_source,]
+#'   
+#'   if(!identical(series,series_source)){
+#'     count <- count + 1
+#'     xmin <- min(c(series$year,series_source$year))
+#'     xmax <- max(c(series$year,series_source$year))
+#'     ymin <- min(c(series$stream_observed_count,series_source$stream_observed_count))
+#'     ymax <- max(c(series$stream_observed_count,series_source$stream_observed_count))
+#'     plot(NULL,xlim = c(xmin,xmax),ylim = c(ymin,ymax))
+#'     lines(x = series$year, y = series$stream_observed_count, lwd = 1.5, col = "red")
+#'     points(x = series$year, y = series$stream_observed_count,  lwd = 1.5, col = "red", pch = 16)
+#'     lines(x = series_source$year, y = series_source$stream_observed_count, lwd = 1.5, col = "blue", pch = 1)
+#'     points(x = series_source$year, y = series_source$stream_observed_count,  lwd = 1.5, col = "blue")
+#'     legend("topright",c("database","source"),fill = c("red","blue"),bty = "n")
+#'     legend("top",legend = c(paste0("i = ",i),paste0("count = ",count)),bty = "n")
+#'     legend("topleft",legend = c(paste0("region = ",region),
+#'                                 paste0("cuid = ",cuid),
+#'                                 paste0("streamid = ",streamid),
+#'                                 paste0("pointid = ",paste0(pointids_source,collapse = ", ")),
+#'                                 stream_name_pse_here_source),
+#'            bty = "n")
+#'     
+#'     toCkeck_here <- data.frame(region = region, cuid = cuid, streamid = streamid, 
+#'                                pointid = paste0(pointids_source,collapse = ", "),
+#'                                stream_name_pse = stream_name_pse_here_source)
+#'     if(nrow(toCkeck) == 0){
+#'       toCkeck <- toCkeck_here
+#'     }else{
+#'       toCkeck <- rbind(toCkeck,toCkeck_here)
+#'     }
+#'     
+#'   }
+#'   progress <- round(i/length(commons)*100,1)
+#'   if(progress > count_thresh){
+#'     print(paste0(progress,"%"))
+#'     count_thresh <- (round(ceiling(progress)/10) + 1) * 10
+#'   }
+#' }
+#' 
+#' toCkeck
 

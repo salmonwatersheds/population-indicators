@@ -331,6 +331,9 @@ SH_data$species_qualified <- sapply(SH_data$cuid,function(cuid){
   return(unique(conservationunits_decoder$species_qualified[cond]))
 })
 
+# check that there is no -989898 value
+min(SH_data$stream_observed_count, na.rm = T)
+
 show <- unique(SH_data[,c("region","species_name","cuid","cu_name_pse","source_id")])
 show <- show[order(show$region),]
 rownames(show) <- NULL
@@ -784,14 +787,14 @@ dataset2_spawner_surveys <- arrange(dataset2_spawner_surveys,region,species_name
 
 if(export_datasets){
   date <- Sys.Date()
-  write.csv(dataset2_spawner_surveys,paste0(wd_output,"/archive/dataset2_spawner_surveys_",date,".csv"),
+  write.csv(dataset2_spawner_surveys,paste0(wd_output,"/archive/dataset2_spawner-surveys_",date,".csv"),
             row.names = F)
   
   # Produce a dummy datasets in the loca; /ouput repo to push to github
   wd_output_local <- gsub("code","",getwd())
   
   write.csv(dataset2_spawner_surveys[1,],
-            paste0(wd_output_local,"/output/dataset2_spawner_surveys_dummy.csv"))
+            paste0(wd_output_local,"/output/dataset2_spawner-surveys_dummy.csv"))
 }
 ```
 

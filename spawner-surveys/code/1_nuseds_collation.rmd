@@ -125,7 +125,7 @@ options(digits = 9)
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- T
+export_datasets <- F
 
 # Decision in ## Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
 # If TRUE, time series only composed of NAs and/or 0s are removed from NUSEDS; 

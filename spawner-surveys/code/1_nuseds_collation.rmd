@@ -139,7 +139,7 @@ replace_zeros_byNAs <- T
 
 # To avoid having to wait too much time when executing the code multiple times.
 # Should be set to FALSE by default.
-import_file_locally_TEMPORARY <- F
+import_file_locally_TEMPORARY <- T
 
 # To prevent different locations (with different GFE_ID) to have exactly the same coordinates
 update_coordinates <- T

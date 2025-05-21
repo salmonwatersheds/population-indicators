@@ -2327,39 +2327,53 @@ plot_spawnerAbundance_benchmarks_cyclic_percentile_fun <- function(cuid,
       # Find the benchmark values
       polygons_show <- T
       if(biostatus$psf_status_type[1] == "sr"){
-        benchmark_low <- benchmarks$sgen[cond_cl_yr]
-        benchmark_low_025 <- benchmarks$sgen_lower[cond_cl_yr]
-        benchmark_low_975 <- benchmarks$sgen_upper[cond_cl_yr]
+        # benchmark_low <- benchmarks$sgen[cond_cl_yr]
+        # benchmark_low_025 <- benchmarks$sgen_lower[cond_cl_yr]
+        # benchmark_low_975 <- benchmarks$sgen_upper[cond_cl_yr]
+        benchmark_low <- benchmarks$sr_low[cond_cl_yr]
+        benchmark_low_025 <- benchmarks$sr_low_025[cond_cl_yr]
+        benchmark_low_975 <- benchmarks$sr_low_975[cond_cl_yr]
         
-        if(any(grepl("smsy80",colnames(benchmarks)))){
-          benchmark_up <- benchmarks$smsy80[cond_cl_yr]
-          benchmark_up_025 <- benchmarks$smsy80_lower[cond_cl_yr]
-          benchmark_up_975 <- benchmarks$smsy80_upper[cond_cl_yr]
-        }else{
-          benchmark_up <- benchmarks$smsy[cond_cl_yr]
-          benchmark_up_025 <- benchmarks$smsy_lower[cond_cl_yr]
-          benchmark_up_975 <- benchmarks$smsy_upper[cond_cl_yr]
-        }
+        # if(any(grepl("smsy80",colnames(benchmarks)))){
+        #   benchmark_up <- benchmarks$smsy80[cond_cl_yr]
+        #   benchmark_up_025 <- benchmarks$smsy80_lower[cond_cl_yr]
+        #   benchmark_up_975 <- benchmarks$smsy80_upper[cond_cl_yr]
+        # }else{
+        #   benchmark_up <- benchmarks$smsy[cond_cl_yr]
+        #   benchmark_up_025 <- benchmarks$smsy_lower[cond_cl_yr]
+        #   benchmark_up_975 <- benchmarks$smsy_upper[cond_cl_yr]
+        # }
+        
+        benchmark_up <- benchmarks$sr_upper[cond_cl_yr]
+        benchmark_up_025 <- benchmarks$sr_upper_025[cond_cl_yr]
+        benchmark_up_975 <- benchmarks$sr_upper_975[cond_cl_yr]
+        
         method <- "HBSR"
         status <- biostatus$sr_status
         
       }else if(biostatus$psf_status_type[1] == "percentile"){
         
-        if(any(grepl("X25._spw",colnames(biostatus)))){
-          benchmark_low <- benchmarks$X25._spw[cond_cl_yr]             # `25%_spw`
-          benchmark_low_025 <- benchmarks$X25._spw_lower[cond_cl_yr]   # `25%_spw_lower`
-          benchmark_low_975 <- benchmarks$X25._spw_upper[cond_cl_yr]   # `25%_spw_upper`
-          benchmark_up <- benchmarks$X75._spw[cond_cl_yr]              # `75%_spw`
-          benchmark_up_025 <- benchmarks$X75._spw_lower[cond_cl_yr]    # `75%_spw_lower`
-          benchmark_up_975 <- benchmarks$X75._spw_upper[cond_cl_yr]    # `75%_spw_upper`
-        }else{
-          benchmark_low <- benchmarks$`25%_spw`[cond_cl_yr]
-          benchmark_low_025 <- benchmarks$`25%_spw_lower`[cond_cl_yr]
-          benchmark_low_975 <- benchmarks$`25%_spw_upper`[cond_cl_yr]
-          benchmark_up <- benchmarks$`75%_spw`[cond_cl_yr]
-          benchmark_up_025 <- benchmarks$`75%_spw_lower`[cond_cl_yr]
-          benchmark_up_975 <- benchmarks$`75%_spw_upper`[cond_cl_yr]
-        }
+        # if(any(grepl("X25._spw",colnames(biostatus)))){
+        #   benchmark_low <- benchmarks$X25._spw[cond_cl_yr]             # `25%_spw`
+        #   benchmark_low_025 <- benchmarks$X25._spw_lower[cond_cl_yr]   # `25%_spw_lower`
+        #   benchmark_low_975 <- benchmarks$X25._spw_upper[cond_cl_yr]   # `25%_spw_upper`
+        #   benchmark_up <- benchmarks$X75._spw[cond_cl_yr]              # `75%_spw`
+        #   benchmark_up_025 <- benchmarks$X75._spw_lower[cond_cl_yr]    # `75%_spw_lower`
+        #   benchmark_up_975 <- benchmarks$X75._spw_upper[cond_cl_yr]    # `75%_spw_upper`
+        # }else{
+        #   benchmark_low <- benchmarks$`25%_spw`[cond_cl_yr]
+        #   benchmark_low_025 <- benchmarks$`25%_spw_lower`[cond_cl_yr]
+        #   benchmark_low_975 <- benchmarks$`25%_spw_upper`[cond_cl_yr]
+        #   benchmark_up <- benchmarks$`75%_spw`[cond_cl_yr]
+        #   benchmark_up_025 <- benchmarks$`75%_spw_lower`[cond_cl_yr]
+        #   benchmark_up_975 <- benchmarks$`75%_spw_upper`[cond_cl_yr]
+        # }
+        benchmark_low <- benchmarks$percentile_lower[cond_cl_yr]
+        benchmark_low_025 <- benchmarks$percentile_lower_025[cond_cl_yr]
+        benchmark_low_975 <- benchmarks$percentile_lower_975[cond_cl_yr]
+        benchmark_up <- benchmarks$percentile_upper[cond_cl_yr]
+        benchmark_up_025 <- benchmarks$percentile_upper_025[cond_cl_yr]
+        benchmark_up_975 <- benchmarks$percentile_upper_975[cond_cl_yr]
         
         method <- "Percentiles"
         status <- biostatus$percentile_status

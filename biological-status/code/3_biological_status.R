@@ -583,16 +583,23 @@ colCommon <- c("region","species_name","species_qualified","cuid","cu_name_pse",
 #' According to the PSAC meeting of June 2024, we should use the 80% Smsy (vs 100% ) and 
 #' 50% percentile (vs. 75%) for the upper benchmarks.
 
-# colHBSR <- c("status_Smsy_red","status_Smsy_amber","status_Smsy_green",
-#              "status_Smsy")
-colHBSR <- c("status_Smsy80_red","status_Smsy80_amber","status_Smsy80_green",
-             "status_Smsy80")
-# colHBSR <- c("status_Smsy80")
+#' NOTE: from 21/05/2025
+#' We now use: 
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1745963219139359?thread_ts=1745442260.883189&cid=CJ5RVHVCG
+#' Changes made: 
+#' (1) implement a lower absolute abundance benchmark of 1,500
+#' (2) increase the upper benchmark from 80%Smsy/50th percentile to Smsy/75th percentile.
 
-# colPercent <- c("status_percent_075_red","status_percent_075_amber","status_percent_075_green",
-#                 "status_percent075")
-colPercent <- c("status_percent_05_red","status_percent_05_amber","status_percent_05_green",
-                "status_percent050")
+
+colHBSR <- c("status_Smsy_red","status_Smsy_amber","status_Smsy_green",
+             "status_Smsy")
+# colHBSR <- c("status_Smsy80_red","status_Smsy80_amber","status_Smsy80_green",
+#              "status_Smsy80")
+
+colPercent <- c("status_percent_075_red","status_percent_075_amber","status_percent_075_green",
+                "status_percent075")
+# colPercent <- c("status_percent_05_red","status_percent_05_amber","status_percent_05_green",
+#                 "status_percent050")
 # colPercent <- c("status_percent05")
 
 biological_status_merged <- merge(x = biological_status_HBSRM[,c(colCommon,colHBSR)],
@@ -640,10 +647,10 @@ colnames(biological_status_merged) <- gsub("status_Smsy80_","sr_",colnames(biolo
 colnames(biological_status_merged) <- gsub("status_percent_075_","percentile_",colnames(biological_status_merged))
 colnames(biological_status_merged) <- gsub("status_percent_05_","percentile_",colnames(biological_status_merged))
 
-# colnames(biological_status_merged) <- gsub("status_Smsy","sr_status",colnames(biological_status_merged))
-colnames(biological_status_merged) <- gsub("status_Smsy80","sr_status",colnames(biological_status_merged))
-# colnames(biological_status_merged) <- gsub("status_percent075","percentile_status",colnames(biological_status_merged))
-colnames(biological_status_merged) <- gsub("status_percent050","percentile_status",colnames(biological_status_merged))
+colnames(biological_status_merged) <- gsub("status_Smsy","sr_status",colnames(biological_status_merged))
+# colnames(biological_status_merged) <- gsub("status_Smsy80","sr_status",colnames(biological_status_merged))
+colnames(biological_status_merged) <- gsub("status_percent075","percentile_status",colnames(biological_status_merged))
+#colnames(biological_status_merged) <- gsub("status_percent050","percentile_status",colnames(biological_status_merged))
 
 #'* Create psf_status_code_all fields & psf_status_type *
 #' psf_status_code_all: attribute 1 (good), 2 (fair) or 3 (poor) for now
@@ -844,6 +851,31 @@ biological_status_merged$psf_status <- apply(X = biological_status_merged,
                                              })
 
 unique(biological_status_merged$psf_status)
+
+
+#'* Absolute lower benchmark of 1500 *
+#' NOTE: from 21/05/2025
+#' We now use: 
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1745963219139359?thread_ts=1745442260.883189&cid=CJ5RVHVCG
+#' Changes made: 
+#' (1) implement a lower absolute abundance benchmark of 1,500
+#' (2) increase the upper benchmark from 80%Smsy/50th percentile to Smsy/75th percentile.
+
+cond_12 <- biological_status_merged$psf_status_code %in% 1:2
+sum(is.na(biological_status_merged$current_spawner_abundance))
+cond_1500 <- !is.na(biological_status_merged$current_spawner_abundance) &
+  biological_status_merged$current_spawner_abundance < 1500
+
+biological_status_merged[cond_12 & cond_1500,]
+
+# update the fields:
+biological_status_merged$psf_status_code_all[cond_12 & cond_1500] <- paste0(biological_status_merged$psf_status_code_all[cond_12 & cond_1500],", 3")
+biological_status_merged$psf_status_code[cond_12 & cond_1500] <- 3
+biological_status_merged$psf_status[cond_12 & cond_1500] <- "poor"
+biological_status_merged$psf_status_type[cond_12 & cond_1500] <- "Absolute"
+
+unique(biological_status_merged$psf_status_code)
+
 table(biological_status_merged$psf_status)
 # data-deficient        extinct           fair           good   not-assessed           poor 
 #            223              5             51             78             27             67 
@@ -855,10 +887,11 @@ table(biological_status_merged$psf_status)
 #            268              4             37             58             18             64 2024-11-19
 #            265              4             38             60             18             64 
 #            287              4             36             51             12             59 2025-03-05 
+#            287              4             37             32             12             77 2025-05-21: the data is the same but the new rule with 100% Smsy, 75% percentile and <1500 are applied 
 
 #'* Show psf_status_type for CUs with psf_status_code_all == 8 *
 #' Update (2024-11-20 from PSE data meeting): we still show the method used in 
-#' psf_status_type.
+#' psf_status_type for the CU with only data-deficient (no estimates of spawner abundance in the most recent generation)
 #' https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1732225660151029?thread_ts=1732133777.124549&cid=C03LB7KM6JK
 cond_8 <- biological_status_merged$psf_status_code_all == "8"
 cond_sr <- !is.na(biological_status_merged$sr_status)
@@ -903,7 +936,7 @@ for(r in 1:nrow(biological_status_merged)){
   biological_status_merged$hist_green[r] <- hist_green
 }
 
-#'* Drop necessary columns *
+#'* Drop unecessary columns *
 colToDrop <- c("psf_status_code_sr","psf_status_code_percentile")
 biological_status_merged <- biological_status_merged[,!colnames(biological_status_merged) %in% colToDrop]
 
@@ -911,7 +944,7 @@ biological_status_merged <- biological_status_merged[,!colnames(biological_statu
 cond <- is.na(biological_status_merged$current_spawner_abundance)
 unique(biological_status_merged[,c("psf_status_code","psf_status_code_all")][cond,])
 
-# Check that the CUs with status code 6 (high exploitation rate or production rates)
+# Check that the CUs with status code 6 (high exploitation rate or low production rates)
 # with red status are still available
 cond <- grepl("6",biological_status_merged$psf_status_code_all) &
   biological_status_merged$percentile_status == 'poor' &
@@ -932,6 +965,7 @@ biological_status_merged <- biological_status_merged[,c("region","species_name",
 head(biological_status_merged)
 
 # Check if the psf code of cyclic communities: should be 5 or not depending on biostatus_cyclic
+#' if biostatus_cyclic == T" there should not be any CU with "5"
 biological_status_merged[grepl("cyclic",biological_status_merged$cu_name_pse),]
 biological_status_merged[grepl("5",biological_status_merged$psf_status_code_all),]
 
@@ -959,18 +993,22 @@ sum(condition_5_6_7) # 16 229 233 226 (less 6 cyclic CUs) 232 234 38
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
 condition_HBSRM <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "sr"
-sum(condition_HBSRM)                   # 152 117 110 104 97 124 125
-sum(condition_1_2_3 & condition_HBSRM) # 114 125 117 110 (--> + 6 cyclic CUs) 104 97 124 125
+sum(condition_HBSRM)                   # 140 152 117 110 104 97 124 125
+sum(condition_1_2_3 & condition_HBSRM) # 102 114 125 117 110 (--> + 6 cyclic CUs) 104 97 124 125
 sum(condition_8 & condition_HBSRM)     # 38 24 with not enough recent data but psf_status_type still shown
 
 # Number CUs with biostatus assessed with percentile method: 
 condition_Percent <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "percentile"
-sum(condition_Percent)                       # 57 42 39 40 37 72 71 69
-sum(condition_1_2_3 & condition_Percent)     # 37 42 39 40 37 72 71 69
+sum(condition_Percent)                       # 48 57 42 39 40 37 72 71 69
+sum(condition_1_2_3 & condition_Percent)     # 27 37 42 39 40 37 72 71 69
+
+condition_absolute <- !is.na(biological_status_merged$psf_status_type) & 
+  biological_status_merged$psf_status_type == "Absolute"
 
 sum(condition_HBSRM) + 
-  sum(condition_Percent) - 
+  sum(condition_Percent) + 
+  sum(condition_absolute) - 
   sum(condition_HBSRM & condition_8)- 
   sum(condition_Percent & condition_8) == sum(condition_1_2_3) # should be TRUE
 
@@ -1027,33 +1065,33 @@ for(r in 1:nrow(benchmarks_merged)){
     # QUESTION: how to deal with the CI for 80% Smsy:
     # https://salmonwatersheds.slack.com/archives/CJG0SHWCW/p1714495136554939?thread_ts=1701199596.229739&cid=CJG0SHWCW
     
-    benchmarks_merged$sr_upper[r] <- benchmarks_HBSRM$m[cond_cuid & cond_method & cond_Smsy] * 0.8
-    benchmarks_merged$sr_upper_025[r] <- benchmarks_HBSRM$CI025[cond_cuid & cond_method & cond_Smsy] * 0.8
-    benchmarks_merged$sr_upper_975[r] <- benchmarks_HBSRM$CI975[cond_cuid & cond_method & cond_Smsy] * 0.8
+    benchmarks_merged$sr_upper[r] <- benchmarks_HBSRM$m[cond_cuid & cond_method & cond_Smsy] # * 0.8           # not 80% anymore as of 21/05/2025 with new rule implemented (see above)
+    benchmarks_merged$sr_upper_025[r] <- benchmarks_HBSRM$CI025[cond_cuid & cond_method & cond_Smsy] # * 0.8
+    benchmarks_merged$sr_upper_975[r] <- benchmarks_HBSRM$CI975[cond_cuid & cond_method & cond_Smsy] # * 0.8
   }
   
   # get the benchmarks for the percentile method:
   cond_cuid <- benchmarks_percentile$cuid == cuid
   cond_025 <- benchmarks_percentile$benchmark == "benchmark_0.25"
-  # cond_075 <- benchmarks_percentile$benchmark == "benchmark_0.75"
-  cond_05 <- benchmarks_percentile$benchmark == "benchmark_0.5"
+  cond_075 <- benchmarks_percentile$benchmark == "benchmark_0.75"
+  #cond_05 <- benchmarks_percentile$benchmark == "benchmark_0.5"     # # not 50% anymore as of 21/05/2025 with new rule implemented (see above)
 
   benchmarks_merged$percentile_lower[r] <- benchmarks_percentile$m[cond_cuid & cond_025]
   benchmarks_merged$percentile_lower_025[r] <- benchmarks_percentile$CI025[cond_cuid & cond_025]
   benchmarks_merged$percentile_lower_975[r] <- benchmarks_percentile$CI975[cond_cuid & cond_025]
     
-  # benchmarks_merged$percentile_upper[r] <- benchmarks_percentile$m[cond_cuid & cond_075]
-  # benchmarks_merged$percentile_upper_025[r] <- benchmarks_percentile$CI025[cond_cuid & cond_075]
-  # benchmarks_merged$percentile_upper_975[r] <- benchmarks_percentile$CI975[cond_cuid & cond_075]
+  benchmarks_merged$percentile_upper[r] <- benchmarks_percentile$m[cond_cuid & cond_075]
+  benchmarks_merged$percentile_upper_025[r] <- benchmarks_percentile$CI025[cond_cuid & cond_075]
+  benchmarks_merged$percentile_upper_975[r] <- benchmarks_percentile$CI975[cond_cuid & cond_075]
   
   # COMMENT:
   # This is ineeded the 50% percentile and not the 75, despite the name being "75%_spw"
   # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
   # !!!! TO CHANGE !!! --> DONE
   
-  benchmarks_merged$percentile_upper[r] <- benchmarks_percentile$m[cond_cuid & cond_05]
-  benchmarks_merged$percentile_upper_025[r] <- benchmarks_percentile$CI025[cond_cuid & cond_05]
-  benchmarks_merged$percentile_upper_975[r] <- benchmarks_percentile$CI975[cond_cuid & cond_05]
+  # benchmarks_merged$percentile_upper[r] <- benchmarks_percentile$m[cond_cuid & cond_05]
+  # benchmarks_merged$percentile_upper_025[r] <- benchmarks_percentile$CI025[cond_cuid & cond_05]
+  # benchmarks_merged$percentile_upper_975[r] <- benchmarks_percentile$CI975[cond_cuid & cond_05]
 }
 
 #

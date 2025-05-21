@@ -6,6 +6,7 @@
 #' results as the field `observed_count` in 
 #' **dataset1_spawner-abundance_YYYY-MM-DD.csv**.
 #' 
+#' UPDATE: this script WAS in spawner-abundance/code and is now here!!!
 #' 
 #' Files imported (from dropbox):
 #' - streamspawnersurveys_output.csv  # from the database; = dataset2_spawner_surveys_YYYY-MM-DD.csv from spawner-surveys/code/4_datasets_for_PSE.R
@@ -42,7 +43,7 @@ source("code/functions_general.R")
 # return the name of the directories for the different projects:
 subDir_projects <- subDir_projects_fun()
 
-wds_l <- set_working_directories_fun(subDir = subDir_projects$spawner_abundance,
+wds_l <- set_working_directories_fun(subDir = subDir_projects$spawner_surveys, # subDir_projects$spawner_abundance
                                      Export_locally = F)
 wd_head <- wds_l$wd_head
 wd_project <- wds_l$wd_project
@@ -52,7 +53,7 @@ wd_figures <- wds_l$wd_figures
 wd_output <- wds_l$wd_output
 wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
 
-wd_output_sp_surveys <- gsub("spawner-abundance","spawner-surveys",wd_output)
+# wd_output_sp_surveys <- gsub("spawner-abundance","spawner-surveys",wd_output)
 
 wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
                          wds_l$wd_project_dropbox,
@@ -85,7 +86,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 #' Alternatively, import the most recent dataset produced in 
 #' /spawner-surveys
-spawnersurveys <- import_mostRecent_file_fun(wd = paste0(wd_output_sp_surveys,"/archive"),
+spawnersurveys <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), # wd_output_sp_surveys
                                              pattern = "dataset2_spawner-surveys")  # TODO: replace eventually by dataset2_spawner_surveys
 head(spawnersurveys)
 
@@ -147,10 +148,10 @@ spawnersurveys <- spawnersurveys[- which(spawnersurveys$streamid %in% c(1038, 10
 #------------------------------------------------------------------------------
 dataset1_observed <- spawnersurveys %>%
   group_by(region, species_name, species_qualified, cuid, cu_name_pse, year) %>%
-  summarise(observed_spawners = sum(stream_observed_count))
+  summarise(observed_spawners = sum(stream_observed_count, na.rm = T))
 
 dataset1_observed <- dataset1_observed  %>% 
-  arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
+  arrange(factor(region, levels = c("Yukon","Northern Transboundary","Haida Gwaii","Nass",
                                     "Skeena","Central Coast",
                                     "Vancouver Island & Mainland Inlets",
                                     "Fraser","Columbia")),
@@ -158,12 +159,14 @@ dataset1_observed <- dataset1_observed  %>%
           cu_name_pse,
           year)
 
-head(dataset_1part1)
+head(dataset1_observed)
 
 # Rename observed_spawners to observed_count (to be changed when dataset paramters are finalized)
 colnames(dataset1_observed)[colnames(dataset1_observed) == "observed_spawners"] <- "observed_count"
 
 head(dataset1_observed)
+
+min(dataset1_observed$observed_count, na.rm = T)
 
 # Export to /archive folder on dropbox:
 date <- as.character(Sys.Date())

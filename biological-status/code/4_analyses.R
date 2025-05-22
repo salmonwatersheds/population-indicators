@@ -2024,7 +2024,7 @@ biostatus$sr_yellow_prob_after <- sapply(biostatus$cuid,function(cuid){
 
 #'* CU that are concerned with the absolute lower bench of <1500 *
 cond <- !is.na(biostatus$psf_status_type_after) & biostatus$psf_status_type_after == "Absolute"
-sum(cond) # 17
+sum(cond) # 20
 
 biostatus[cond,c("region","species_qualified","cuid","cu_name_pse","curr_spw",
                       "psf_status_type","psf_status","psf_status_after")]

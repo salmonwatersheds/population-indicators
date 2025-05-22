@@ -238,7 +238,8 @@ for(i_rg in 1:length(region)){
           
           # get the count
           spawnerAbundance <- cuspawnerabundance$estimated_count[cond_csa_rg_sp_cu]
-          spawnerAbundance[spawnerAbundance <= 0] <- NA
+          spawnerAbundance[spawnerAbundance < 0] <- NA
+          spawnerAbundance[spawnerAbundance == 0] <- 1
           names(spawnerAbundance) <- cuspawnerabundance$year[cond_csa_rg_sp_cu]
           
           # Simulate the time series to obtain the 95% CI for the percentile 

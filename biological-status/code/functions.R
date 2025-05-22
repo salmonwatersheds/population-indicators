@@ -1725,7 +1725,8 @@ current_spawner_abundance_fun <- function(cuids,
     
     # get the count
     spawnerAbundance <- cusa$estimated_count
-    spawnerAbundance[spawnerAbundance <= 0] <- NA
+    spawnerAbundance[spawnerAbundance == 0] <- 1
+    spawnerAbundance[spawnerAbundance < 0] <- NA
     names(spawnerAbundance) <- cusa$year
     
     # Are there any spawner abundance data?
@@ -2113,7 +2114,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     x <- x[-1]
   }
   
-  y[y == 0 & !is.na(y)] <- 0.01 # replace 0s by 0.01
+  y[y == 0 & !is.na(y)] <- 1 # 0.01 # replace 0s by 0.01
   smooth.y <- rollapply(
     data = log(y), 
     FUN = mean, 

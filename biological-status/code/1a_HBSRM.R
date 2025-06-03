@@ -75,9 +75,9 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 #' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
-fromDatabase <- update_file_csv <- T
+fromDatabase <- update_file_csv <- F
 
-recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
+recruitsperspawner <- datasets_database_fun(nameDataSet = "recruitsperspawner.csv",
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
@@ -85,10 +85,209 @@ recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database
 #' Import the conservationunits_decoder.csv from population-indicators/data_input or 
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
+colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
+
+
+
+#'* External values for prior for Smax *
+
+#'1) Skeena SEL for which prSmax is estimated with a photosynthetic-based
+# approach (from Korman & English 2013; cf. Table SX.1 p. 33)
+cuid_Skeena_SEL <- c(171,191,192,193,175,176,183,177,178,185,197,187)
+
+prior_Korman_English_2013 <- data.frame(cuid = cuid_Skeena_SEL)
+prior_Korman_English_2013$region <- sapply(prior_Korman_English_2013$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(conservationunits_decoder$region[cond])
+})
+prior_Korman_English_2013$species_qualified <- sapply(prior_Korman_English_2013$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(conservationunits_decoder$species_qualified[cond])
+})
+prior_Korman_English_2013$cu_name_pse <- sapply(prior_Korman_English_2013$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(conservationunits_decoder$cu_name_pse[cond])
+})
+
+prior_Korman_English_2013 <- prior_Korman_English_2013[,c("region","species_qualified","cu_name_pse","cuid")]
+
+#' Note1: CU Swan/Club (cuid 188) was also in this list above but the CU
+#' was assigned to the Stephens CU, following DFO update
+#' The change in the PSE was made in August 2024
+#' https://salmonwatersheds.slack.com/archives/CPD76USTU/p1726165574970689
+
+#' Note 2:  There is no values given for Asitika cuid 190 in the report, 
+#' it was removed from the list.
+
+prior_Korman_English_2013$prSmax <- NA
+cond <- prior_Korman_English_2013$cu_name_pse == "Alastair"
+prior_Korman_English_2013$prSmax[cond] <- 23437
+cond <- prior_Korman_English_2013$cu_name_pse == "Azuklotz"
+prior_Korman_English_2013$prSmax[cond] <- 5933
+cond <- prior_Korman_English_2013$cu_name_pse == "Bear"
+prior_Korman_English_2013$prSmax[cond] <- 40532
+cond <- prior_Korman_English_2013$cu_name_pse == "Damshilgwit"
+prior_Korman_English_2013$prSmax[cond] <- 2000
+cond <- prior_Korman_English_2013$cu_name_pse == "Johnston"
+prior_Korman_English_2013$prSmax[cond] <- 4125
+cond <- prior_Korman_English_2013$cu_name_pse == "Kitsumkalum"
+prior_Korman_English_2013$prSmax[cond] <- 20531
+cond <- grepl("Kitwancool",prior_Korman_English_2013$cu_name_pse)
+prior_Korman_English_2013$prSmax[cond] <- 36984
+cond <- prior_Korman_English_2013$cu_name_pse == "Lakelse"
+prior_Korman_English_2013$prSmax[cond] <- 35916
+cond <- grepl("Mcdonell",prior_Korman_English_2013$cu_name_pse)
+prior_Korman_English_2013$prSmax[cond] <- 4072
+cond <- grepl("Morice",prior_Korman_English_2013$cu_name_pse)
+prior_Korman_English_2013$prSmax[cond] <- 191362
+cond <- prior_Korman_English_2013$cu_name_pse == "Stephens"
+prior_Korman_English_2013$prSmax[cond] <- 7069
+cond <- prior_Korman_English_2013$cu_name_pse == "Motase"
+prior_Korman_English_2013$prSmax[cond] <- 1764
+  
+
+# File of prior values for Smax for SEL from Atlas et al. 2025
+# https://github.com/DylanMG/DL-CC-sockeye/blob/main/output/data/SmaxPRs.txt
+prior_Atlas_et_al_2025 <- read.table(paste0(wd_pop_indic_data_input_dropbox,"/SmaxPRs.txt"), 
+                         header = T)
+prior_Atlas_et_al_2025 <- prior_Atlas_et_al_2025[,c("region","population","SmaxPR")]
+prior_Atlas_et_al_2025$population <- gsub("_"," ",prior_Atlas_et_al_2025$population)
+cu_pse_simple <- simplify_string_fun(conservationunits_decoder$cu_name_pse)
+prior_Atlas_et_al_2025$cuid <- sapply(prior_Atlas_et_al_2025$population,function(cu){
+  # cu <- "babine"
+  # cu <- priors$population[1]
+  
+  if(grepl("tuno",cu)){
+    cu <- strsplit(cu," ")[[1]]
+    cu <- paste0(cu[1],"creek",cu[2])
+  }
+  if(grepl("freeda",cu)){
+    cu <- "freeda"
+  }
+  if(grepl("mary cove",cu)){
+    cu <- "mary cove creek"
+  }
+  if(grepl("shawaltan",cu)){
+    cu <- "shawatlan"
+  }
+  if(grepl("babine",cu)){
+    cu <- "babine/onerka"
+  }
+  if(grepl("lowe",cu)){
+    cu <- "Lowe/Simpson/Weir"
+  }
+  cond <- cu_pse_simple == cu & 
+    conservationunits_decoder$species_qualified == "SEL"
+  
+  if(!any(cond)){
+    cond <- grepl(cu,cu_pse_simple) & 
+      conservationunits_decoder$species_qualified == "SEL"
+  }
+  if(!any(cond)){
+    cond <- cu_pse_simple == simplify_string_fun(cu) & 
+      conservationunits_decoder$species_qualified == "SEL"
+  }
+  if(!any(cond)){
+    out <- NA
+  }else if(cu %in% c("babine/onerka","mcdonell","morice")){
+    out <- unique(conservationunits_decoder$pooledcuid[cond])
+  }else{
+    out <- conservationunits_decoder$cuid[cond]
+  }
+  return(out)
+})
+
+cond_NA <- is.na(prior_Atlas_et_al_2025$cuid)
+prior_Atlas_et_al_2025[cond_NA,]
+#      region population SmaxPR cuid
+# low.coastal     hauyat   4906   NA
+#    interior       swan  56574   NA --> to add to Stephens eventually
+
+prior_Atlas_et_al_2025$cu_name_pse <- sapply(prior_Atlas_et_al_2025$cuid,function(cuid){
+  if(is.na(cuid)){
+    out <- NA
+  }else{
+    cond <- conservationunits_decoder$cuid == cuid
+    out <- conservationunits_decoder$cu_name_pse[cond]
+  }
+  return(out)
+})
+
+prior_Atlas_et_al_2025$species_qualified <- sapply(prior_Atlas_et_al_2025$cuid,function(cuid){
+  if(is.na(cuid)){
+    out <- NA
+  }else{
+    cond <- conservationunits_decoder$cuid == cuid
+    out <- conservationunits_decoder$species_qualified[cond]
+  }
+  return(out)
+})
+
+# Remove the one population that does not match
+cond_NA <- is.na(prior_Atlas_et_al_2025$cu_name_pse)
+prior_Atlas_et_al_2025[cond_NA,]
+prior_Atlas_et_al_2025 <- prior_Atlas_et_al_2025[!cond_NA,]
+
+prior_Atlas_et_al_2025$region <- sapply(prior_Atlas_et_al_2025$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  out <- conservationunits_decoder$region[cond]
+  return(out)
+})
+
+# Compare the two datasets
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1748973321001659?thread_ts=1748970773.018779&cid=CJ5RVHVCG
+prior_compare <- merge(x = prior_Korman_English_2013,
+                       y = prior_Atlas_et_al_2025, 
+                       by = c("region","species_qualified","cu_name_pse","cuid"))
+
+par(mar = c(2,4,3,1))
+layout(matrix(1:12,byrow = T, ncol = 4))
+for(r in 1:nrow(prior_compare)){
+  # r <- 1
+  cuid <- prior_compare$cuid[r]
+  cu_name_pse <- prior_compare$cu_name_pse[r]
+  
+  cond <- prior_compare$cuid == cuid
+  S_altas <- prior_compare$SmaxPR[cond]
+  S_Korman <- prior_compare$prSmax[cond]
+  
+  cond <- recruitsperspawner$cuid == cuid
+  S_mean <- mean_geom_fun(x = recruitsperspawner$spawners[cond])
+  S_max <- max(recruitsperspawner$spawners[cond], na.rm = T)
+  
+  hist(x = recruitsperspawner$spawners[cond], xlab = "", 
+       xlim = c(0,max(S_max,S_altas,S_Korman)),
+       main = paste(cu_name_pse,cuid,sep = " - "))
+  segments(x0 = c(S_mean,S_altas,S_Korman),x1 = c(S_mean,S_altas,S_Korman),
+           y0 = 0, y1 = 40, lwd = 2, col = c("black","red","blue"))
+}
+plot.new()
+legend("center",c("geo mean","Atlas et al. 2025","Korman & English 2013"),
+       col = c("black","red","blue"), lwd = 2, bty = "n")
+
+# Decision: We use Atlas et al. 2025 when there is conflict between the two CUs
+prior_Korman_English_2013$source <- "Korman & English 2013"
+prior_Atlas_et_al_2025$source <- "Atlas et al. 2025"
+prior_extra <- prior_Atlas_et_al_2025
+colnames(prior_extra)[colnames(prior_extra) == "SmaxPR"] <- "prSmax" 
+prior_extra <- prior_extra[,c("region","species_qualified","cu_name_pse","cuid","prSmax","source")]
+
+cond <- !prior_Korman_English_2013$cuid %in% prior_extra$cuid
+prior_Korman_English_2013[cond,]
+
+prior_extra <- rbind(prior_extra,prior_Korman_English_2013[cond,])
+
+#' Remove Swan and Stephens TEMPORARY
+#' From Pop meeting 02/06/2025:
+#' the R per S data has not been update as recently as the estimated S and the 
+#' values are low for S in the R per S in comparison.
+cond <- prior_extra$cu_name_pse %in% c("Swan","Stephens")
+prior_extra <- prior_extra[!cond,]
+
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species
@@ -309,7 +508,8 @@ for(i_rg in 1:length(region)){
             
             CUs_priors <- prior_beta_Ricker_fun(cuid = CUs_cuid,
                                                 conservationunits_decoder = conservationunits_decoder,
-                                                Sm = S)
+                                                Sm = S,
+                                                prior_extra = prior_extra) # provide an extra list of CUs with prior available
             
             # Define corresponding parameters to feed the HBSRM:
             prSmax <- CUs_priors$prSmax

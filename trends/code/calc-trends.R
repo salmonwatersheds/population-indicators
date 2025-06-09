@@ -79,7 +79,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
 
 #'* Import cuspawnerabundance:  CU-level spawner abundance data *
-spawners <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+spawners <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                   fromDatabase = fromDatabase,
                                   update_file_csv = update_file_csv,
                                   wd = wd_pop_indic_data_input_dropbox)
@@ -93,15 +93,17 @@ spawners <- spawners %>% filter(!is.na(estimated_count))
 #'* Import conservationunits_decoder.csv *
 # CU list (includes gen length info for running avg) (conservationunits_decoder.csv)
 # cu_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
-#   select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
-cu_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+#   select(region, species_qualified, pooledcuid, cuid, cu_name_pse, gen_length)
+cu_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
                                  fromDatabase = fromDatabase,
                                  update_file_csv = update_file_csv,
                                  wd = wd_pop_indic_data_input_dropbox)
 
-cu_decoder <- cu_decoder  %>%
-  select(region, species_abbr, pooledcuid, cuid, cu_name_pse, gen_length)
+# TEMPORARY
+colnames(cu_decoder)[colnames(cu_decoder) == "species_abbr"] <- "species_qualified"
 
+cu_decoder <- cu_decoder  %>%
+  select(region, species_qualified, pooledcuid, cuid, cu_name_pse, gen_length)
 
 #
 # Fill datasets and produce figures ------------
@@ -127,13 +129,13 @@ species_name <- sapply(species_name, FUN = function(sp){
 cu_list <- data.frame(
   region = cu_decoder$region[match(cuid, cu_decoder$pooledcuid)],
   species_name = species_name,
-  species_qualified = cu_decoder$species_abbr[match(cuid, cu_decoder$pooledcuid)],
+  species_qualified = cu_decoder$species_qualified[match(cuid, cu_decoder$pooledcuid)],
   cuid = cuid,
   cu_name_pse = cu_decoder$cu_name_pse[match(cuid, cu_decoder$pooledcuid)]
 )
 
 # Add year range
-cu_list <- cu_list %>% 
+cu_list <- cu_list %>%
   left_join(
     spawners %>% 
     select(cuid, year, estimated_count) %>%
@@ -150,7 +152,7 @@ for(i in 1:nrow(cu_list)){
   # i <- 8
   # i <- 112
   # i <- which(cu_list$species %in% c("PKE","SER"))[1]
-  # i <- which(cu_list$species_abbr == "CO" & cu_list$cu_name_pse == "North Thompson")
+  # i <- which(cu_list$species_qualified == "CO" & cu_list$cu_name_pse == "North Thompson")
   # i <- which(cu_list$cuid == 734)
   # i <- which(grepl("Pink",cu_list$species_name))[1]
   
@@ -322,7 +324,12 @@ for(i in 1:nrow(cu_list)){
   region_here <- region
   if(region_here ==  "Vancouver Island & Mainland Inlets"){
     region_here <- "VIMI"
+  }else if(region_here ==  "East Vancouver Island & Mainland Inlets"){
+    region_here <- "EVIMI"
+  }else if(region_here ==  "West Vancouver Island"){
+    region_here <- "WVI"
   }
+  
   main <- paste(region_here,species_qualified,cuid,cu_name_pse,sep = "_")
   main <- gsub("/",".",main)
   main <- gsub(" ","_",main)
@@ -495,7 +502,7 @@ lines(x = x, y = (predict(lm_LT, newdata = data.frame(x_LT = x))),
 
 predict(lm_LT, newdata = data.frame(x))
 
-# Check issue with PSE displaying trend lines too low ------
+# Check issue with PSE displaying trend lines too low OLD ------
 # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1722908866770829?thread_ts=1719268108.787009&cid=C03LB7KM6JK
 
 cuid <- 709
@@ -571,25 +578,40 @@ pattern <- "dataset202"
 
 # Most recent dataset:
 trend_allgen <- import_mostRecent_file_fun(wd = wd, pattern = pattern)
-nrow(trend_allgen) # 238
+nrow(trend_allgen) # 246
 
 # Second most recent dataset:
 trend_allgen_old <- import_mostRecent_file_fun(wd = wd, pattern = pattern, 
                                                second_last = T)
 nrow(trend_allgen_old) # 238
 
+#' TEMPORARY
+#' Bring back VIMI to be able to compare to previous dataset
+trend_allgen$region <- sapply(trend_allgen$region,function(rg){
+  if(rg %in% c("East Vancouver Island & Mainland Inlets","West Vancouver Island")){
+    out <- "Vancouver Island & Mainland Inlets"
+  }else{
+    out <- rg
+  }
+  return(out)
+})
+
 #
 identical(trend_allgen,trend_allgen_old)
 
+cuids <- unique(c(trend_allgen$cuid,trend_allgen_old$cuid))
+
 data_compare <- NULL
-for(r in 1:nrow(trend_allgen)){
-  cuid <- trend_allgen$cuid[r]
+for(cuid in cuids){
+  # cuid <- cuids[1]
+  
+  cond_new <- trend_allgen$cuid == cuid
   cond_old <- trend_allgen_old$cuid == cuid
   
   toAdd <- F
   
   if(!any(cond_old)){
-    trend_allgen_old_here <- trend_allgen[r,]
+    trend_allgen_old_here <- trend_allgen[cond_new,]
     trend_allgen_old_here$percent_change <- NA
     trend_allgen_old_here$percent_change_total <- NA
     trend_allgen_old_here$slope <- NA
@@ -597,19 +619,32 @@ for(r in 1:nrow(trend_allgen)){
     trend_allgen_old_here$intercept_start_yr <- NA
     trend_allgen_old_here$start_year <- NA
     trend_allgen_old_here$end_year <- NA
-    data_here <- rbind(trend_allgen[r,],trend_allgen_old_here)
+    data_here <- rbind(trend_allgen[cond_new,],trend_allgen_old_here)
+    data_here$dataset <- c("new","old")
+    toAdd <- T
+    
+  }else if(!any(cond_new)){
+    trend_allgen_new_here <- trend_allgen_old[cond_old,]
+    trend_allgen_new_here$percent_change <- NA
+    trend_allgen_new_here$percent_change_total <- NA
+    trend_allgen_new_here$slope <- NA
+    trend_allgen_new_here$intercept <- NA
+    trend_allgen_new_here$intercept_start_yr <- NA
+    trend_allgen_new_here$start_year <- NA
+    trend_allgen_new_here$end_year <- NA
+    data_here <- rbind(trend_allgen_new_here,trend_allgen_old[cond_old,])
     data_here$dataset <- c("new","old")
     toAdd <- T
     
   }else{
-    cond_diff <- round(trend_allgen$percent_change[r],1) != round(trend_allgen_old$percent_change[cond_old],1) |
-      round(trend_allgen$percent_change_total[r],1) != round(trend_allgen_old$percent_change_total[cond_old],1) |
-      round(trend_allgen$slope[r],6) != round(trend_allgen_old$slope[cond_old],6) |
-      round(trend_allgen$intercept[r],3) != round(trend_allgen_old$intercept[cond_old],3) |
-      trend_allgen$end_year[r] != trend_allgen_old$end_year[cond_old]
+    cond_diff <- round(trend_allgen$percent_change[cond_new],1) != round(trend_allgen_old$percent_change[cond_old],1) |
+      round(trend_allgen$percent_change_total[cond_new],1) != round(trend_allgen_old$percent_change_total[cond_old],1) |
+      round(trend_allgen$slope[cond_new],6) != round(trend_allgen_old$slope[cond_old],6) |
+      round(trend_allgen$intercept[cond_new],3) != round(trend_allgen_old$intercept[cond_old],3) |
+      trend_allgen$end_year[cond_new] != trend_allgen_old$end_year[cond_old]
     
     if(cond_diff){
-      data_here <- rbind(trend_allgen[r,],trend_allgen_old[cond_old,])
+      data_here <- rbind(trend_allgen[cond_new,],trend_allgen_old[cond_old,])
       data_here$dataset <- c("new","old")
       toAdd <- T
     }
@@ -625,16 +660,48 @@ for(r in 1:nrow(trend_allgen)){
   }
 }
 data_compare
-data_compare$cuid |> unique() |> length() # 47
+
+# Number of CUs with differences:
+data_compare$cuid |> unique() |> length() # 17
+
+# Where they are from:
 data_compare$region |> unique()
+
+# Which species:
 data_compare$species_name |> unique()
 
-cond <- is.na(data_compare$slope)
+# New CUs with trends
+cond_NA <- is.na(data_compare$percent_change)
+cond_old <- data_compare$dataset == "old"
+data_compare[cond_NA & cond_old,]
+cuid_NA <- data_compare[cond_NA & cond_old,]$cuid
+
+# CUs that do not have trend anymore
+cond_new <- data_compare$dataset == "new"
+data_compare[cond_NA & cond_new,]
+cuid_NA <- c(cuid_NA, data_compare[cond_NA & cond_new,]$cuid)
+
+# compare the rest of the CUs:
+cuid_NA <- unique(cuid_NA)
+cond <- !data_compare$cuid %in% cuid_NA
 data_compare[cond,]
 
+# check: there are differences for Fraser SH 781 but the start and end year of 
+# the spawning data are the same.
+781 
+pattern <- "cuspawnerabundance.csv"
+spawners_old <- import_mostRecent_file_fun(wd = wd, pattern = pattern, 
+                                           second_last = T)
 
+spawners <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
+                                  fromDatabase = F,
+                                  update_file_csv = update_file_csv,
+                                  wd = wd_pop_indic_data_input_dropbox)
 
-
+spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
+spawners <- spawners[!is.na(spawners$estimated_count),]
+cond_781 <- spawners$cuid == 781
+spawners[cond_781,]
 
 
 

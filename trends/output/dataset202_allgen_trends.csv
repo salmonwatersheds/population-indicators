@@ -64,18 +64,18 @@
 "Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",0.5,26.4,0.005214,-1.405,8.908,1978,2023
 "Fraser","Chinook","CK",318,"North Thompson River (Spring 5-2)",-4.5,-86.8,-0.045995,98.277,7.253,1979,2023
 "Fraser","Chinook","CK",319,"North Thompson River (Summer 5-2)",-1.5,-49.5,-0.015509,39.246,8.554,1979,2023
-"Vancouver Island & Mainland Inlets","Chinook","CK",320,"Southern Mainland-Georgia Strait (Fall x-1)",-2.6,-21.3,-0.026673,59.644,6.058,2009,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",321,"East Vancouver Island-Goldstream (Fall x-1)",-22.8,-97.3,-0.258463,523.368,5.408,2004,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",322,"East Vancouver Island-Cowichan and Koksilah (Fall x-1)",-1.9,-29.9,-0.0187,45.815,8.433,1999,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",324,"East Vancouver Island-Nanaimo and Chemainus (Fall x-1)",2.5,60.6,0.024938,-42.539,7.311,1999,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",325,"East Vancouver Island-Qualicum and Puntledge (Fall x-1)",-0.9,-15.1,-0.008622,26.836,9.601,1999,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",326,"Southern Mainland-Southern Fjords (Fall x-1)",29,1551.3,0.254924,-506.279,5.099,2006,2017
-"Vancouver Island & Mainland Inlets","Chinook","CK",327,"East Vancouver Island-North (Fall x-1)",-4,-43.8,-0.04116,91.806,9.321,2004,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",328,"West Vancouver Island-South (Fall x-1)",-1.5,-25.1,-0.015179,41.161,10.818,1999,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",329,"West Vancouver Island-Nootka and Kyuquot (Fall x-1)",1.2,25.1,0.0118,-13.597,9.992,1999,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",330,"West Vancouver Island-North (Fall x-1)",-0.1,-2.6,-0.001466,10.872,7.94,2000,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",320,"Southern Mainland-Georgia Strait (Fall x-1)",-2.6,-21.3,-0.026673,59.644,6.058,2009,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",321,"East Vancouver Island-Goldstream (Fall x-1)",-22.8,-97.3,-0.258463,523.368,5.408,2004,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",322,"East Vancouver Island-Cowichan and Koksilah (Fall x-1)",-1.9,-29.9,-0.0187,45.815,8.433,1999,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",324,"East Vancouver Island-Nanaimo and Chemainus (Fall x-1)",2.5,60.6,0.024938,-42.539,7.311,1999,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",325,"East Vancouver Island-Qualicum and Puntledge (Fall x-1)",-0.9,-15.1,-0.008622,26.836,9.601,1999,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",326,"Southern Mainland-Southern Fjords (Fall x-1)",29,1551.3,0.254924,-506.279,5.099,2006,2017
+"East Vancouver Island & Mainland Inlets","Chinook","CK",327,"East Vancouver Island-North (Fall x-1)",-4,-43.8,-0.04116,91.806,9.321,2004,2018
+"West Vancouver Island","Chinook","CK",328,"West Vancouver Island-South (Fall x-1)",-1.5,-25.1,-0.015179,41.161,10.818,1999,2018
+"West Vancouver Island","Chinook","CK",329,"West Vancouver Island-Nootka and Kyuquot (Fall x-1)",1.2,25.1,0.0118,-13.597,9.992,1999,2018
+"West Vancouver Island","Chinook","CK",330,"West Vancouver Island-North (Fall x-1)",-0.1,-2.6,-0.001466,10.872,7.94,2000,2018
 "Fraser","Chinook","CK",333,"South Thompson-Adams River Upper",-1.1,-15.8,-0.01148,27.554,4.559,2003,2018
-"Vancouver Island & Mainland Inlets","Chinook","CK",334,"East Vancouver Island-Georgia Strait (Summer 4-1)",0.8,16.7,0.008122,-9.054,7.181,1999,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",334,"East Vancouver Island-Georgia Strait (Summer 4-1)",0.8,16.7,0.008122,-9.054,7.181,1999,2018
 "Nass","Chinook","CK",401,"Portland Sound-Observatory Inlet-Lower Nass",0.3,9.3,0.002765,1.855,7.357,1990,2022
 "Nass","Chinook","CK",402,"Upper Nass",-2,-46.8,-0.019709,49.171,9.95,1990,2022
 "Nass","Chum","CM",404,"Portland Inlet",-1.2,-51.5,-0.011662,33.093,10.27,1957,2019
@@ -145,6 +145,7 @@
 "Central Coast","Pink","PKO",611,"Hecate Strait-Lowlands (odd)",0.4,34.3,0.004466,4.402,13.132,1955,2021
 "Central Coast","Pink","PKO",612,"Hecate Strait-Fjords (odd)",1.9,236.1,0.018369,-22.567,13.344,1955,2021
 "Central Coast","Sockeye","SER",614,"Northern Coastal Fjords (river-type)",-5.4,-96.1,-0.055882,121.897,12.201,1963,2021
+"Fraser","Chum","CM",701,"Lower Fraser",-5.7,-71.1,-0.059146,132.911,14.559,2001,2022
 "Fraser","Coho","CO",705,"Fraser Canyon",-4.1,-78.1,-0.042192,92.736,8.943,1986,2022
 "Fraser","Coho","CO",707,"Lower Thompson",1.5,71.7,0.015011,-21.224,8.587,1986,2022
 "Fraser","Coho","CO",708,"South Thompson",-1.1,-32.4,-0.010859,30.601,9.036,1986,2022
@@ -176,7 +177,7 @@
 "Fraser","Coho","CO",749,"Interior Fraser",1.1,50.6,0.011372,-14.547,8.038,1986,2022
 "Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",-2.9,-71.5,-0.029927,68.385,9.129,1980,2022
 "Fraser","Steelhead","SH",780,"Mid Fraser Summer",-4.9,-90.5,-0.049994,106.248,7.46,1976,2023
-"Fraser","Steelhead","SH",781,"Thompson Summer",-4.3,-83.3,-0.043603,94.338,7.916,1982,2023
+"Fraser","Steelhead","SH",781,"Thompson Summer",-4.4,-84,-0.044654,96.433,7.93,1982,2023
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",-0.7,-27.9,-0.006663,19.808,6.742,1961,2010
 "Haida Gwaii","Chum","CM",801,"East Haida Gwaii",-1.6,-63.7,-0.016072,43.89,12.422,1958,2021
 "Haida Gwaii","Chum","CM",802,"North Haida Gwaii",-3,-84.1,-0.030123,70.267,11.287,1958,2019
@@ -196,29 +197,29 @@
 "Haida Gwaii","Sockeye","SEL",825,"Mercer",-0.9,-40.8,-0.008751,26.007,8.872,1958,2018
 "Haida Gwaii","Sockeye","SEL",826,"Skidegate",-2.1,-74,-0.021359,52.203,10.383,1958,2021
 "Haida Gwaii","Sockeye","SEL",827,"Yakoun",-2.1,-72.1,-0.021301,51.85,10.079,1961,2021
-"Vancouver Island & Mainland Inlets","Chum","CM",900,"Southern Coastal Streams",-5.3,-96.6,-0.054355,116.623,10.305,1956,2018
-"Vancouver Island & Mainland Inlets","Chum","CM",901,"Bute Inlet",1.4,141.5,0.014221,-17.975,9.841,1956,2018
-"Vancouver Island & Mainland Inlets","Chum","CM",902,"Loughborough",-1.1,-49.6,-0.011059,32.13,10.498,1956,2018
-"Vancouver Island & Mainland Inlets","Chum","CM",903,"Northeast Vancouver Island",-0.9,-42.9,-0.009042,28.29,10.603,1956,2018
-"Vancouver Island & Mainland Inlets","Chum","CM",904,"Georgia Strait",1.3,125.9,0.013143,-12.958,12.75,1956,2018
-"Vancouver Island & Mainland Inlets","Chum","CM",905,"Howe Sound-Burrard Inlet",3.4,697.7,0.033493,-54.444,11.068,1956,2018
-"Vancouver Island & Mainland Inlets","Pink","PKE",917,"Georgia Strait (even)",3.2,638.6,0.031243,-50.608,10.441,1954,2018
-"Vancouver Island & Mainland Inlets","Pink","PKE",920,"Southern Fjords (even)",1.4,139.5,0.013644,-13.225,13.436,1954,2018
-"Vancouver Island & Mainland Inlets","Pink","PKO",921,"East Howe Sound-Burrard Inlet (odd)",-0.4,-25.3,-0.004413,19.99,11.372,1953,2019
-"Vancouver Island & Mainland Inlets","Pink","PKO",922,"Georgia Strait (odd)",2.6,459.6,0.026092,-39.209,11.749,1953,2019
-"Vancouver Island & Mainland Inlets","Pink","PKO",923,"East Vancouver Island-Johnstone Strait (odd)",1.4,145.6,0.013614,-16.205,10.383,1953,2019
-"Vancouver Island & Mainland Inlets","Pink","PKO",924,"Nahwitti (odd)",0.1,9.5,0.001375,6.59,9.275,1953,2019
-"Vancouver Island & Mainland Inlets","Pink","PKO",926,"Southern Fjords (odd)",-0.5,-29.9,-0.00539,23.289,12.763,1953,2019
-"Vancouver Island & Mainland Inlets","Sockeye","SEL",933,"Sakinaw",-12.1,-99.8,-0.12925,263.674,9.051,1970,2018
-"Vancouver Island & Mainland Inlets","Sockeye","SEL",939,"Nimpkish",-1,-46.9,-0.010535,31.777,11.16,1957,2017
-"Vancouver Island & Mainland Inlets","Sockeye","SEL",952,"Great Central",-0.5,-18.4,-0.005211,22.557,12.235,1981,2020
-"Vancouver Island & Mainland Inlets","Sockeye","SEL",969,"Sproat",1.6,84.7,0.015731,-19.36,11.802,1981,2020
-"Vancouver Island & Mainland Inlets","Chum","CM",977,"Northwest Vancouver Island",1.1,89.5,0.010834,-10.852,10.338,1956,2015
-"Vancouver Island & Mainland Inlets","Chum","CM",978,"Southwest & West Vancouver Island",-0.5,-25,-0.004877,22.238,12.699,1956,2015
-"Vancouver Island & Mainland Inlets","Chum","CM",979,"Upper Knight",-7,-96.7,-0.072394,151.217,9.615,1956,2003
-"Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",-2,-33.8,-0.020631,47.387,6.064,2003,2023
-"Vancouver Island & Mainland Inlets","Steelhead","SH",984,"West Vancouver Island Summer",-2.3,-54.1,-0.022875,52.329,6.831,1989,2023
-"Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",-1.7,-53.6,-0.017461,39.985,5.413,1980,2024
+"East Vancouver Island & Mainland Inlets","Chum","CM",900,"Southern Coastal Streams",-5.3,-96.6,-0.054355,116.623,10.305,1956,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",901,"Bute Inlet",1.4,141.5,0.014221,-17.975,9.841,1956,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",902,"Loughborough",-1.1,-49.6,-0.011059,32.13,10.498,1956,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",903,"Northeast Vancouver Island",-0.9,-42.9,-0.009042,28.29,10.603,1956,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",904,"Georgia Strait",1.3,125.9,0.013143,-12.958,12.75,1956,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",905,"Howe Sound-Burrard Inlet",3.4,697.7,0.033493,-54.444,11.068,1956,2018
+"East Vancouver Island & Mainland Inlets","Pink","PKE",917,"Georgia Strait (even)",3.2,638.6,0.031243,-50.608,10.441,1954,2018
+"East Vancouver Island & Mainland Inlets","Pink","PKE",920,"Southern Fjords (even)",1.4,139.5,0.013644,-13.225,13.436,1954,2018
+"East Vancouver Island & Mainland Inlets","Pink","PKO",921,"East Howe Sound-Burrard Inlet (odd)",-0.4,-25.3,-0.004413,19.99,11.372,1953,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",922,"Georgia Strait (odd)",2.6,459.6,0.026092,-39.209,11.749,1953,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",923,"East Vancouver Island-Johnstone Strait (odd)",1.4,145.6,0.013614,-16.205,10.383,1953,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",924,"Nahwitti (odd)",0.1,9.5,0.001375,6.59,9.275,1953,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",926,"Southern Fjords (odd)",-0.5,-29.9,-0.00539,23.289,12.763,1953,2019
+"East Vancouver Island & Mainland Inlets","Sockeye","SEL",933,"Sakinaw",-12.1,-99.8,-0.12925,263.674,9.051,1970,2018
+"East Vancouver Island & Mainland Inlets","Sockeye","SEL",939,"Nimpkish",-1,-46.9,-0.010535,31.777,11.16,1957,2017
+"West Vancouver Island","Sockeye","SEL",952,"Great Central",-0.5,-18.4,-0.005211,22.557,12.235,1981,2020
+"West Vancouver Island","Sockeye","SEL",969,"Sproat",1.6,84.7,0.015731,-19.36,11.802,1981,2020
+"West Vancouver Island","Chum","CM",977,"Northwest Vancouver Island",1.1,89.5,0.010834,-10.852,10.338,1956,2015
+"West Vancouver Island","Chum","CM",978,"Southwest & West Vancouver Island",-0.5,-25,-0.004877,22.238,12.699,1956,2015
+"East Vancouver Island & Mainland Inlets","Chum","CM",979,"Upper Knight",-7,-96.7,-0.072394,151.217,9.615,1956,2003
+"East Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",-2,-33.8,-0.020631,47.387,6.064,2003,2023
+"West Vancouver Island","Steelhead","SH",984,"West Vancouver Island Summer",-2.3,-54.1,-0.022875,52.329,6.831,1989,2023
+"East Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",-1.7,-53.6,-0.017461,39.985,5.413,1980,2024
 "Northern Transboundary","Chinook","CK",1004,"Alsek",-3,-72.6,-0.030083,69.058,9.493,1980,2023
 "Northern Transboundary","Sockeye","SEL",1026,"Tahltan",-0.8,-18.4,-0.008113,25.823,9.614,1998,2023
 "Northern Transboundary","Sockeye","SEL",1027,"Kuthai",-7.8,-95.8,-0.080994,169.717,9.025,1984,2023
@@ -227,13 +228,20 @@
 "Northern Transboundary","Sockeye","SEL",1033,"King Salmon",18.8,1478.6,0.172446,-340.108,5.991,2007,2023
 "Northern Transboundary","Sockeye","SEL",1038,"Klukshu",-1.5,-47,-0.014771,38.927,9.681,1980,2023
 "Northern Transboundary","Sockeye","SEL",1039,"Nesketahin",-7,-90.8,-0.072388,152.243,8.19,1990,2023
-"Yukon","Chinook","CK",1201,"Big Salmon",2.5,102.7,0.024361,-39.945,8.534,1990,2019
-"Yukon","Chinook","CK",1203,"Pelly",-0.3,-7.4,-0.002656,14.218,8.933,1990,2019
-"Yukon","Chinook","CK",1204,"Middle Yukon",0.7,21,0.006583,-4.136,8.965,1990,2019
-"Yukon","Chinook","CK",1205,"Stewart",-3.5,-64,-0.035254,78.802,8.646,1990,2019
-"Yukon","Chinook","CK",1206,"White",-0.9,-23.8,-0.009384,27.22,8.545,1990,2019
-"Yukon","Chinook","CK",1207,"Northern Yukon",0.5,16.5,0.005255,-1.781,8.677,1990,2019
-"Yukon","Chinook","CK",1211,"Upper Yukon",0.7,23.4,0.007264,-6.45,8.005,1990,2019
-"Yukon","Chinook","CK",1212,"Teslin",0.2,5.4,0.001807,5.081,8.677,1990,2019
+"Yukon","Chinook","CK",1201,"Big Salmon",-1.1,-32.3,-0.011483,31.514,8.663,1990,2024
+"Yukon","Chinook","CK",1202,"Nordenskiold",2.4,126.6,0.024063,-40.881,7.004,1990,2024
+"Yukon","Chinook","CK",1203,"Pelly",-1.5,-40.8,-0.015427,39.978,9.277,1990,2024
+"Yukon","Chinook","CK",1204,"Middle Yukon",-0.3,-10.5,-0.00325,15.748,9.282,1990,2024
+"Yukon","Chinook","CK",1205,"Stewart",-1.1,-30.5,-0.010695,29.474,8.191,1990,2024
+"Yukon","Chinook","CK",1206,"White",-1.7,-43.7,-0.016872,41.937,8.361,1990,2024
+"Yukon","Chinook","CK",1207,"Northern Yukon",-2.4,-55.7,-0.023919,56.743,9.144,1990,2024
+"Yukon","Chinook","CK",1209,"Porcupine",-30,-83.1,-0.356156,727.413,8.333,2019,2024
+"Yukon","Chinook","CK",1210,"Old Crow",-30,-83.1,-0.356156,727.413,8.333,2019,2024
+"Yukon","Chinook","CK",1211,"Upper Yukon",-16.7,-30.6,-0.182567,376.184,7.033,2022,2024
+"Yukon","Chinook","CK",1212,"Teslin",-2.5,-71.1,-0.024816,55.631,6.645,1974,2024
+"Yukon","Chum","CM",1213,"Middle Yukon",-10.3,-82.3,-0.108358,229.411,11.828,2008,2024
+"Yukon","Chum","CM",1214,"North Yukon",-28.6,-99.5,-0.336844,683.47,7.088,2008,2024
+"Yukon","Chum","CM",1215,"White",-12.8,-88.8,-0.136839,286.59,11.818,2008,2024
+"Yukon","Chum","CM",1219,"Teslin",-2.8,-36.5,-0.02834,63.125,6.217,2008,2024
 "Columbia","Sockeye","SEL",1300,"Osoyoos",1.3,115.7,0.013258,-16.495,9.543,1964,2022
 "Columbia","Steelhead","SH",1380,"Mid Columbia Summer",-13.5,-84.9,-0.145319,296.154,4.062,2010,2023

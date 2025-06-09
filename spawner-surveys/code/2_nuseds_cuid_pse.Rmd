@@ -97,7 +97,7 @@ source("code/functions.R")
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- T
+export_datasets <- F
 
 #' Decision made in 1_nuseds_collation.rmd: 
 #' Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s

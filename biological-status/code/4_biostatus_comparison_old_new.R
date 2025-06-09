@@ -79,7 +79,6 @@ library(tidyr)
 library(dplyr)
 library(xlsx)
 
-
 # Import species names and acronyms
 species_acronym_df <- species_acronym_fun()
 
@@ -170,7 +169,7 @@ biostatus_old$curr_spw_start_year <- sapply(biostatus_old$cuid,function(cuid){
   return(benchmarks_old$curr_spw_start_year[cond])
 })
 
-#' #'* Import the current spawner abundance (for generation length) *
+#'* Import the current spawner abundance (for generation length) *
 datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
 cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
@@ -197,6 +196,29 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
 
 length(unique(conservationunits_decoder$pooledcuid)) # 463
 
+#' TEMPORARY change og the region for VIMI
+unique(biostatus_new$region)
+VIMI_rg <- c("East Vancouver Island & Mainland Inlets",
+             "West Vancouver Island")
+
+cond_rg <- biostatus_new$region %in% VIMI_rg
+biostatus_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+
+cond_rg <- benchmarks_new$region %in% VIMI_rg
+benchmarks_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+
+cond_rg <- cuspawnerabundance$region %in% VIMI_rg
+cuspawnerabundance$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+
+cond_rg <- dataset390_output$region %in% VIMI_rg
+dataset390_output$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+
+cond_rg <- conservationunits_decoder$region %in% VIMI_rg
+conservationunits_decoder$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+
+#'* Import the list of priors for Smax (produced in 1a_HBSRM.R) *
+priors_Smax <- read.csv(paste0(wd_data,"/priors_Smax.csv"),header = T)
+
 #
 # Compare old vs. new biostatus -------
 #
@@ -206,6 +228,7 @@ columns <- c("region","species_name","species_qualified","cuid",
              "cu_name_pse","psf_status","psf_status_type",
              "curr_spw_start_year","curr_spw_end_year",
              "psf_status_code","psf_status_code_all")
+
 biostatus_merge <- merge(x = biostatus_old[,columns],
                          y = biostatus_new[,columns],
                          by = c("region","species_name","species_qualified","cuid","cu_name_pse"))
@@ -226,7 +249,8 @@ biostatus_merge <- biostatus_merge[,c("region","species_name","species_qualified
                                       "curr_spw_end_year_old","curr_spw_end_year_new",
                                       "psf_status_code_old","psf_status_code_new",
                                       "psf_status_code_all_old","psf_status_code_all_new")]
-
+unique(biostatus_merge$region)
+nrow(biostatus_merge) # 463
 
 #'* CUs in old but not in new dataset and vice versa *
 cuid_old <- biostatus_old$cuid
@@ -246,7 +270,6 @@ cuid_new[!cuid_new %in% cuid_old] # none
 # 241 & 751 All good
 # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1725896435990229?thread_ts=1725564850.867719&cid=C03LB7KM6JK
 
-
 #'* cases where curr_spw_end_year_new < curr_spw_end_year_old *
 cond <- biostatus_merge$curr_spw_end_year_new < biostatus_merge$curr_spw_end_year_old &
   !is.na(biostatus_merge$curr_spw_end_year_new) &
@@ -261,35 +284,39 @@ biostatus_merge[cond,]
 
 #'* Condition same status *
 cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
-sum(cond_same) # 442 378 432 370 369 362 346
+sum(cond_same) # 436 442 378 432 370 369 362 346
 biostatus_merge[cond_same,] # |> View()
 
 # with biostatus assessed:
 cond_123 <- biostatus_merge$psf_status_old[cond_same] %in% c("poor","fair","goog")
-sum(cond_123) # 88 76 87 48 44
+sum(cond_123) # 106 88 76 87 48 44
 
-# with same method used:
+# and with same method used:
 cond_method_same <- biostatus_merge[cond_same,][cond_123,]$psf_status_type_old ==  biostatus_merge[cond_same,][cond_123,]$psf_status_type_new
-sum(cond_method_same) # 88 70 85 46 43
+sum(cond_method_same) # 106 88 70 85 46 43
 
 biostatus_merge[cond_same,][cond_123,][cond_method_same,]
 biostatus_merge[cond_same,][cond_123,][!cond_method_same,]
 
 #'* Different status *
 cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
-sum(cond_diff) # 21 41 31 93 103 120
+sum(cond_diff) # 27 21 41 31 93 103 120
 
 show <- biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
                             "psf_status_old","psf_status_new",
                             "psf_status_code_old","psf_status_code_new")]
 
 show$curr_spw_end_year <- sapply(show$cuid,function(cuid){
+  # cuid <- show$cuid[1]
   cond <- benchmarks_new$cuid == cuid
   curr_spw_end_year_new <- benchmarks_new$curr_spw_end_year[cond]
   cond <- benchmarks_old$cuid == cuid
   curr_spw_end_year_old <- benchmarks_old$curr_spw_end_year[cond]
-  if(curr_spw_end_year_new != curr_spw_end_year_old){
-    out <- "different curr_spw_end_year !!!"
+  
+  if(is.na(curr_spw_end_year_old) & !is.na(curr_spw_end_year_new)){
+    out <- "curr_spw_end_year_old is NA"
+  }else if(curr_spw_end_year_new != curr_spw_end_year_old){
+    out <- paste0(curr_spw_end_year_old,"(old) < ",curr_spw_end_year_new," (new)")
   }else{
    out <- curr_spw_end_year_old
   }
@@ -303,15 +330,16 @@ show$gen_length <- sapply(show$cuid,function(cuid){
 })
 
 show
-
-
+nrow(show) # 27
 
 cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
+cases$count <- apply(cases,1,function(r){
+  cond <- biostatus_merge[cond_diff,]$psf_status_old == r["psf_status_old"] &
+    biostatus_merge[cond_diff,]$psf_status_new == r["psf_status_new"]
+  return(sum(cond))
+})
 cases
-
-
-count <- 0
-count_max <- sum(cond_diff) 
+sum(cases$count) # 27
 
 # record the CUs that are different
 biostatus_merge_diff <- biostatus_merge[cond_diff,]
@@ -320,41 +348,49 @@ biostatus_merge_diff$explanation <- "?"
 
 cuid_diff <- biostatus_merge_diff$cuid
 
-#'* Different status: Different methods and why (7 out of 103) *
+#'* Different status: Different methods (psf_status_type) and why *
 cond_method_NA_new <- is.na(biostatus_merge$psf_status_type_new)
 cond_method_NA_old <- is.na(biostatus_merge$psf_status_type_old)
 cond_sr_new <- biostatus_merge$psf_status_type_new == "sr" & !cond_method_NA_new
 cond_sr_old <- biostatus_merge$psf_status_type_old == "sr" & !cond_method_NA_old
 cond_percent_new <- biostatus_merge$psf_status_type_new == "percentile" & !cond_method_NA_new
 cond_percent_old <- biostatus_merge$psf_status_type_old == "percentile" & !cond_method_NA_old
-cond_diff_method <- (cond_sr_new & cond_percent_old) | (cond_sr_old & cond_percent_new)
+cond_absolute_new <- biostatus_merge$psf_status_type_new == "Absolute" & !cond_method_NA_new
+cond_absolute_old <- biostatus_merge$psf_status_type_old == "Absolute" & !cond_method_NA_old
+cond_diff_method <- (cond_sr_new & cond_percent_old) | 
+  (cond_sr_old & cond_percent_new) | 
+  (cond_absolute_new & !cond_absolute_old) | 
+  (!cond_absolute_new & cond_absolute_old)
 
 # nb of CUs with different methods overall:
-sum(cond_diff_method) # 8 2 14 11 16
+sum(cond_diff_method) # 8 8 2 14 11 16
 biostatus_merge[cond_diff_method,c("region","species_qualified","cuid","cu_name_pse",
                                    "psf_status_type_old","psf_status_type_new",
                                    "psf_status_old","psf_status_new","curr_spw_end_year_old","curr_spw_end_year_new")]
 
-biostatus_merge$curr_spw_end_year_old
+# make sense --> Teslin CK & CM we now use other data and percentile
+
+cuid <- biostatus_merge$cuid[cond_diff_method]
+cond <- biostatus_merge_diff$cuid %in% cuid
+biostatus_merge_diff[cond,]
 
 # nb of CUs with different method and output
-sum(cond_diff_method & cond_diff) # 0 7 8
-biostatus_merge[cond_diff_method & cond_diff,]
-
-count <- count + sum(cond_diff_method & cond_diff)
+sum(cond_diff_method) # 8 0 7 8
+biostatus_merge[cond_diff_method,]
 
 # 1) sr to percentile (13 overall, 7 with different biostatus)
 cond_sr_to_percent <- cond_sr_old & cond_percent_new
-sum(cond_sr_to_percent) # 13 10 14
-sum(cond_sr_to_percent & cond_diff) # 7
+sum(cond_sr_to_percent) # 1 13 10 14
+sum(cond_sr_to_percent & cond_diff) # 1 7
 cuid <- biostatus_merge[cond_sr_to_percent & cond_diff,]$cuid
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "sr to percentile"
+biostatus_merge_diff[cond_cuid,] 
 
 # reasons 1: rule 2: catch estimate medium-low or higher : 6 CUs
 cond_390_cuid <- dataset390_output$cuid %in% cuid
 cond_cuid_catchLow <- dataset390_output$catch_method[cond_390_cuid] == 1
-sum(cond_cuid_catchLow) # 3
+sum(cond_cuid_catchLow) # 0 3
 cuid_catchLow <- dataset390_output[cond_390_cuid,]$cuid[cond_cuid_catchLow]
 
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid_catchLow
@@ -364,9 +400,22 @@ biostatus_merge_diff$explanation[cond_cuid] <- "rule 2: catch method quality = 1
 # tree
 # https://www.dropbox.com/scl/fi/slxgndryjp43z3lay2mfh/Status_assessment_flowchart_v15.pptx?rlkey=3qf7cpijleegrm9mpri5qfoxt&dl=0
 
-# 2) percentile to sr (1 overall, 0 with different biostatus)
+# reason 3: for CK Teslin: we decided to use another source of data and the percentile metod
+cond <- biostatus_merge_diff$cuid == 1212
+biostatus_merge_diff[cond,]$explanation <- "used altenative spawner data"
+
+# reason 4: more recent data and absolute benchmark
+cond <- biostatus_merge$psf_status_type_new == "Absolute" & !is.na(biostatus_merge$psf_status_type_new) &
+  biostatus_merge$psf_status_type_old != "Absolute" & !is.na(biostatus_merge$psf_status_type_old)
+cuid <- biostatus_merge[cond & cond_diff,]$cuid
+cond_cuid <- biostatus_merge_diff$cuid %in% cuid
+biostatus_merge_diff[cond_cuid,]
+biostatus_merge_diff$type_diff[cond_cuid] <- "relative to absolute"
+biostatus_merge_diff$explanation[cond_cuid] <- "updated estimated spawner abundance"
+
+# 2) percentile to sr
 cond_percent_to_sr <- cond_sr_new & cond_percent_old
-sum(cond_percent_to_sr) # 1 2
+sum(cond_percent_to_sr) # 0 1 2
 sum(cond_percent_to_sr & cond_diff) # 1
 cuid <- biostatus_merge[cond_percent_to_sr & cond_diff,]$cuid
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
@@ -381,7 +430,7 @@ cuid_catchLow <- dataset390_output[cond_390_cuid,]$cuid[cond_cuid_catchLow]
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid_catchLow
 biostatus_merge_diff$explanation[cond_cuid] <- "rule 2: catch method quality != 1 ?"
 
-#'* Different status & Biostatus improved or worsened (same method) (23 + 11 out of 103) *
+#'* Different status & Biostatus improved or worsened (same method) *
 
 cond_same_method <- (cond_sr_old & cond_sr_new) | (cond_percent_old & cond_percent_new)
 
@@ -390,74 +439,106 @@ cond_diff_status123_improve <- (biostatus_merge$psf_status_old == "poor" &
                                   biostatus_merge$psf_status_new %in% c("fair","good")) |
   (biostatus_merge$psf_status_old == "fair" & 
      biostatus_merge$psf_status_new == "good")
-sum(cond_same_method & cond_diff_status123_improve) # 2 23 21 29
+sum(cond_same_method & cond_diff_status123_improve) # 5 2 23 21 29
 biostatus_merge[cond_same_method & cond_diff_status123_improve,] # |> View()
 cuid <- biostatus_merge[cond_same_method & cond_diff_status123_improve,]$cuid
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "same method, biostatus improved"
+
+biostatus_merge_diff[cond_cuid,]
+
+# check current spawner abundance
+cond_new <- benchmarks_new$cuid %in% cuid
+cond_old <- benchmarks_old$cuid %in% cuid
+merge(x = benchmarks_new[cond_new,c("region","species_qualified","cuid","cu_name_pse","curr_spw")], 
+      y = benchmarks_old[cond_old,c("region","species_qualified","cuid","cu_name_pse","curr_spw")],
+      by = c("region","species_qualified","cuid","cu_name_pse"))
+# --> same... so why is status different?!
+
+# check if it could be because of new priors --> YES
+cuid[cuid %in% priors_Smax$cuid]
+biostatus_merge_diff$explanation[cond_cuid] <- "new priors"
 
 # Worsened biostatus
 cond_diff_status123_worsened <- (biostatus_merge$psf_status_new == "poor" & 
                                    biostatus_merge$psf_status_old %in% c("fair","good")) |
   (biostatus_merge$psf_status_new == "fair" & 
      biostatus_merge$psf_status_old == "good")
-sum(cond_same_method & cond_diff_status123_worsened) # 7 11 12
+sum(cond_same_method & cond_diff_status123_worsened) # 9 7 11 12
 biostatus_merge[cond_same_method & cond_diff_status123_worsened,] # |> View()
 cuid <- biostatus_merge[cond_same_method & cond_diff_status123_worsened,]$cuid
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "same method, biostatus worsened"
+biostatus_merge_diff[cond_cuid,]
+
+# reason 1: new data
+cond_data_more_recent <- biostatus_merge_diff$curr_spw_end_year_new > biostatus_merge_diff$curr_spw_end_year_old
+biostatus_merge_diff[cond_cuid & cond_data_more_recent,]$explanation <- "updated estimated spawner abundance"
+
+# reason 2: new priors?
+cuid_remain <- cuid[!cuid %in% biostatus_merge_diff[cond_cuid & cond_data_more_recent,]$cuid]
+cuid_remain
+cuid_remain[cuid_remain %in% priors_Smax$cuid]
+cuid_prior <- cuid_remain[cuid_remain %in% priors_Smax$cuid]
+cond <- biostatus_merge_diff$cuid %in% cuid_prior
+biostatus_merge_diff$explanation[cond] <- "new priors"
+
+# reason 3 for Stephens: --> because we used a prior before, that was certainly only
+# for Stephens and not Swan, whereas now we determine Smax based on time series of
+# S, which is right because we grouped Stephens and Swan into Stephens
+cond <- biostatus_merge_diff$cuid == 187
+biostatus_merge_diff[cond,]$explanation <- "no more use of (wrong) prior"
 
 # Both
 cond_diff_status123 <- cond_same_method & (cond_diff_status123_improve | cond_diff_status123_worsened)
-sum(cond_diff_status123) # 9 34 32 41
+sum(cond_diff_status123) # 14 9 34 32 41
 biostatus_merge[cond_diff_status123,]
 cuid <- biostatus_merge[cond_diff_status123,]$cuid
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 
-count <- count + sum(cond_diff_status123)
+# Reason 1: updated spawner data --> more recent OLD
+# cond_update <- biostatus_merge_diff$curr_spw_end_year_new[cond_cuid] > biostatus_merge_diff$curr_spw_end_year_old[cond_cuid]
+# sum(cond_update) # 5 20 19
+# biostatus_merge_diff[cond_cuid,]$explanation[cond_update] <- "updated estimated spawner abundance"
 
-# Reason 1: updated spawner data --> more recent (20)
-cond_update <- biostatus_merge_diff$curr_spw_end_year_new[cond_cuid] > biostatus_merge_diff$curr_spw_end_year_old[cond_cuid]
-sum(cond_update) # 20 19
-biostatus_merge_diff[cond_cuid,]$explanation[cond_update] <- "updated estimated spawner abundance"
-
-
-# Reason 2 (not mutually exclusive): wrong number of years considered in current spawner abundance (2)
-sum(!cond_update) # 12 22
-cuid <- biostatus_merge[cond_diff_status123,]$cuid
-wrong_nb_yr <- sapply(cuid, function(c){
-  # c <- cuid[1]
-  cond <- conservationunits_decoder$cuid == c
-  gen_length <- conservationunits_decoder$gen_length[cond]
-  
-  cond <- biostatus_merge_diff$cuid == c
-  curr_spw_start_yr <- biostatus_merge_diff$curr_spw_start_year_old[cond]
-  curr_spw_end_yr <- biostatus_merge_diff$curr_spw_end_year_old[cond]
-  nb_yr <- curr_spw_end_yr - curr_spw_start_yr + 1
-  
-  if(nb_yr != gen_length){
-    out <- T
-  }else{
-    out <- F
-  }
-  return(out)
-})
-
-cuid_wrong <- cuid[wrong_nb_yr]
-cond <- biostatus_merge_diff$cuid %in% cuid_wrong
-biostatus_merge_diff$type_diff[cond]
-explanation <- biostatus_merge_diff$explanation[cond]
-explanation <- paste(explanation,"wrong nb year for curr spw abun",sep = "; ")
-explanation <- gsub("\\?; ","",explanation)
-
-biostatus_merge_diff$explanation[cond] <- explanation
+# Reason 2 (not mutually exclusive): wrong number of years considered in current spawner abundance (2) OLD
+# AND I DO NOT UNDERSTAND THE REASONING 
+# sum(!cond_update) # 9 12 22
+# cuid <- biostatus_merge[cond_diff_status123,]$cuid
+# wrong_nb_yr <- sapply(cuid, function(c){
+#   # c <- 532
+#   cond <- conservationunits_decoder$cuid == c
+#   gen_length <- conservationunits_decoder$gen_length[cond]
+#   
+#   cond <- biostatus_merge_diff$cuid == c
+#   curr_spw_start_yr <- biostatus_merge_diff$curr_spw_start_year_old[cond]
+#   curr_spw_end_yr <- biostatus_merge_diff$curr_spw_end_year_old[cond]
+#   nb_yr <- curr_spw_end_yr - curr_spw_start_yr + 1
+#   
+#   if(nb_yr != gen_length){
+#     out <- T
+#   }else{
+#     out <- F
+#   }
+#   return(out)
+# })
+# 
+# cuid_wrong <- cuid[wrong_nb_yr]
+# cond <- biostatus_merge_diff$cuid %in% cuid_wrong
+# biostatus_merge_diff[cond,]
+# biostatus_merge_diff$type_diff[cond]
+# explanation <- biostatus_merge_diff$explanation[cond]
+# explanation <- paste(explanation,"wrong nb year for curr spw abun",sep = "; ")
+# explanation <- gsub("\\?; ","",explanation)
+# 
+# biostatus_merge_diff$explanation[cond] <- explanation
 
 # Other potential reasons: ?
 
-#'*  Different status: data-deficient --> status (12) *
+#'*  Different status: data-deficient --> status *
 cond_dataDeff_biostatus <- biostatus_merge$psf_status_old == "data-deficient" & 
   biostatus_merge$psf_status_new %in% c("poor","fair","good")
-sum(cond_dataDeff_biostatus) # 5 12 13 42
+sum(cond_dataDeff_biostatus) # 8 5 12 13 42
 biostatus_merge[cond_dataDeff_biostatus,] # |> View()
 cuid <- biostatus_merge$cuid[cond_dataDeff_biostatus]
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
@@ -469,16 +550,16 @@ biostatus_merge_diff$type_diff[cond_cuid] <- "data-deficient to biostatus"
 # cond_6 <- grepl("6",biostatus_merge$psf_status_code_all_new)
 # sum(cond_3 & cond_6) # 10
 
-sum(biostatus_merge$psf_status_code_all_new == "3, 6") # 1
+# reason: data was not available (code = 9)
+# That's all of them
+cond <- biostatus_merge_diff$psf_status_code_old == 9 & biostatus_merge_diff$psf_status_code_new != 9
+biostatus_merge_diff[cond_cuid & cond,]
+biostatus_merge_diff[cond_cuid & cond,]$explanation <- "no data was available"
 
-biostatus_merge_diff$explanation[cond_cuid]
-
-count <- count + sum(cond_dataDeff_biostatus)
-
-#'*  Different status: data-deficient --> not-assessed (17) *
+#'*  Different status: data-deficient --> not-assessed *
 cond <- biostatus_merge$psf_status_old == "data-deficient" & 
   biostatus_merge$psf_status_new == "not-assessed"
-sum(cond) # 17 27
+sum(cond) # 0 17 27
 biostatus_merge[cond,]
 # the "not assessed" status is new and corresponds to the following cases:
 # Not assessed if:
@@ -491,13 +572,10 @@ cond_cuid <- biostatus_merge_diff$cuid %in% cuid_dataDeff_notAssess
 biostatus_merge_diff$type_diff[cond_cuid] <- "data-deficient to not-assessed"
 biostatus_merge_diff$explanation[cond_cuid] <- "new terminology for rule 5 and 6"
 
-count <- count + sum(cond)
-
-
-#'*  Different status: not-assessed --> data-deficient  *
+#'*  Different status: not-assessed --> data-deficient *
 cond <- biostatus_merge$psf_status_new == "data-deficient" & 
   biostatus_merge$psf_status_old == "not-assessed"
-sum(cond) # 17 27
+sum(cond) # 0 17 27
 biostatus_merge[cond,]
 
 biostatus_merge$psf_status_code_all_new[cond] |> unique() # make sense
@@ -507,13 +585,10 @@ cond_cuid <- biostatus_merge_diff$cuid %in% cuid_dataDeff_notAssess
 biostatus_merge_diff$type_diff[cond_cuid] <- " not-assessed to data-deficient"
 biostatus_merge_diff$explanation[cond_cuid] <- "rule 6 and rule 8 --> rule 8"
 
-count <- count + sum(cond)
-
-
-#'*  Different status: extinct --> status (1)*
+#'*  Different status: extinct --> status *
 cond <- biostatus_merge$psf_status_old == "extinct" & 
   biostatus_merge$psf_status_new %in% c("poor","fair","good")
-sum(cond) # 1
+sum(cond) # 0 1
 biostatus_merge[cond,]
 cuid <- biostatus_merge$cuid[cond]
 
@@ -521,12 +596,10 @@ cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "extinct to biostatus"
 biostatus_merge_diff$explanation[cond_cuid] <- "de novo"
 
-count <- count + sum(cond)
-
-#'* Different status: extinct --> data-deficient (2)*
+#'* Different status: extinct --> data-deficient *
 cond <- biostatus_merge$psf_status_old == "extinct" & 
   biostatus_merge$psf_status_new == "data-deficient"
-sum(cond) # 2 1
+sum(cond) # 0 2 1
 biostatus_merge[cond,]
 #' --> cyclic or high exploit/low prod
 
@@ -536,27 +609,37 @@ cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "extinct to data-deficient"
 biostatus_merge_diff$explanation[cond_cuid] <- "no longer extinct but not enough data"
 
-count <- count + sum(cond)
-
-
-#'* Different status: status --> data-deficient (21)*
+#'* Different status: status --> data-deficient *
 cond <- biostatus_merge$psf_status_old %in% c("poor","fair","good") & 
   biostatus_merge$psf_status_new == "data-deficient"
-sum(cond) # 21
+sum(cond) # 1 21
 biostatus_merge[cond,]
 
 cuid <- biostatus_merge$cuid[cond]
 
+#' Reason: it was decided to exclude CU 216 Skeena River-High Interior (river-type)
+#' from applying the absolute benchmark because of uncertainty in the data
+#' cf. Pop meeting 02/06/2025 (June)
 cond_cuid <- biostatus_merge_diff$cuid %in% cuid
 biostatus_merge_diff$type_diff[cond_cuid] <- "status to data-deficient"
-biostatus_merge_diff$explanation[cond_cuid] <- "related to new rule for status code 8"
+biostatus_merge_diff$explanation[cond_cuid] <- "exception made"
 
+#'* Different status: not-assessed --> status *
+cond <- biostatus_merge$psf_status_old == "not-assessed" & 
+  biostatus_merge$psf_status_new %in% c("poor","fair","good")
+sum(cond) # 1
+biostatus_merge[cond,]
 
-count <- count + sum(cond)
+# reason: rule: show status if red with percentile with high exploitation / 
+# low productivity
+cond <- biostatus_merge_diff$psf_status_code_all_new == "3, 6" & biostatus_merge_diff$psf_status_code_all_old == "6"
+biostatus_merge_diff[cond,]
+biostatus_merge_diff[cond,]$type_diff <- "not-assessed to status"
+biostatus_merge_diff[cond,]$explanation <- "high exploit / low prod & red percentile status"
 
-
-count == count_max
-
+# check if there is any left unexplained:
+cond <- biostatus_merge_diff$explanation == "?"
+biostatus_merge_diff[cond,]
 
 #'  - 1 = good
 #'  - 2 = fair

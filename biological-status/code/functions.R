@@ -668,7 +668,9 @@ regions_fun <- function(){
     Nass = 'Nass',
     Skeena = 'Skeena',
     Northern_Transboundary = "Northern Transboundary",
-    VIMI = "Vancouver Island & Mainland Inlets",
+    # VIMI = "Vancouver Island & Mainland Inlets",
+    EVIMI = "East Vancouver Island & Mainland Inlets",
+    WVI = "West Vancouver Island",
     Yukon = 'Yukon')
   
   return(regions)
@@ -855,10 +857,15 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
   
   biological_status_df <- NULL
   for(rg in region){
-    # rg <- region[3]
+    # rg <- region[8]
     
-    if(rg == "Vancouver_Island_&_Mainland_Inlets"){
-      rg <- "VIMI"
+    # if(rg == "Vancouver_Island_&_Mainland_Inlets"){
+    #   rg <- "VIMI"
+    # }
+    if(rg == "West_Vancouver_Island"){
+      rg <- "WVI"
+    }else if(rg == "East_Vancouver_Island_&_Mainland_Inlets"){
+      rg <- "EVIMI"
     }
     
     # returns all the files with pattern rg and "biological_status"
@@ -1514,13 +1521,13 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
                                        region = NA, wd_output = NA, species_all = T,
                                        export_csv = F){
   
-  if(is.na(biological_status_percentile)[1]){
-    pattern <- "biological_status_percentiles"
-    biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                                    wd_output = wd_output,
-                                                                    region = region,
-                                                                    species_all = species_all)
-  }
+  # if(is.na(biological_status_percentile)[1]){
+  #   pattern <- "biological_status_percentiles"
+  #   biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+  #                                                                   wd_output = wd_output,
+  #                                                                   region = region,
+  #                                                                   species_all = species_all)
+  # }
   
   if(is.na(conservationunits_decoder)[1]){
     conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
@@ -1559,35 +1566,40 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
   #' As of Population meeting of 23/04/2014
   #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
   cond <- conservationunits_decoder$species_name == "Chinook" &
-    conservationunits_decoder$region %in% c("Vancouver Island & Mainland Inlets",
+    conservationunits_decoder$region %in% c("East Vancouver Island & Mainland Inlets", # "Vancouver Island & Mainland Inlets",
+                                            "West Vancouver Island",
                                             "Fraser")
+  
+  # unique(unique(conservationunits_decoder$region))
+  
   highExploit_lowProd <- rbind(highExploit_lowProd,
                                conservationunits_decoder[cond,c("region","species_name","cuid","cu_name_pse")])
   
   highExploit_lowProd <- unique(highExploit_lowProd)
   
   # Export list if not already present in wd_pop_indic_data_input_dropbox
-  if(export_csv){
-    highExploit_lowProd_2 <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
-                                                        pattern = "CUs_highExploitation_lowProductivity")
-    
-    if(is.na(highExploit_lowProd_2)[1]){
-      write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
-                                           "/CUs_highExploitation_lowProductivity.csv"),
-                row.names = F)
-      
-    }else{ # check that the file present contains the same cuid
-      cond_1 <- all(highExploit_lowProd$cuid %in% highExploit_lowProd_2$cuid)
-      cond_2 <- all(highExploit_lowProd_2$cuid %in% highExploit_lowProd$cuid)
-      
-      if(!cond_1 | !cond_2){
-        print(paste0("CUs_highExploitation_lowProductivity.csv in ",wd_pop_indic_data_input_dropbox," differs from list in the code."))
-        print("File not exported to avoid risking losing information. Issue must be resolved manually.")
-        
-      }
-    }
-  }
+  # if(export_csv){
+  #   highExploit_lowProd_2 <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
+  #                                                       pattern = "CUs_highExploitation_lowProductivity")
+  #   
+  #   if(is.na(highExploit_lowProd_2)[1]){
+  #     write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
+  #                                          "/CUs_highExploitation_lowProductivity.csv"),
+  #               row.names = F)
+  #     
+  #   }else{ # check that the file present contains the same cuid
+  #     cond_1 <- all(highExploit_lowProd$cuid %in% highExploit_lowProd_2$cuid)
+  #     cond_2 <- all(highExploit_lowProd_2$cuid %in% highExploit_lowProd$cuid)
+  #     
+  #     if(!cond_1 | !cond_2){
+  #       print(paste0("CUs_highExploitation_lowProductivity.csv in ",wd_pop_indic_data_input_dropbox," differs from list in the code."))
+  #       print("File not exported to avoid risking losing information. Issue must be resolved manually.")
+  #       
+  #     }
+  #   }
+  # }
 
+  # Apply rule: show biostatus if red
   highExploit_lowProd$biostatus_percentile <- NA
   highExploit_lowProd$toRemove <- T
   for(i in 1:nrow(highExploit_lowProd)){
@@ -1608,6 +1620,13 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
     }
     # print(biological_status_percentileHere$status_percent075)
   }
+  
+  if(export_csv){
+    write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
+                                         "/CUs_highExploitation_lowProductivity.csv"),
+              row.names = F)
+  }
+  
   return(highExploit_lowProd)
 }
 
@@ -1826,7 +1845,8 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
                                                  log10_scale = F,
                                                  figure_print = F,
                                                  wd_figures = NA,
-                                                 file_name_nchar = 25){
+                                                 file_name_nchar = 25,
+                                                 add_absolute_benchmarks = F){
   
   require(zoo) # to use rollapply()
   
@@ -1855,7 +1875,12 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   region <- conservationunits_decoder$region[cond]
   if(region == "Vancouver Island & Mainland Inlets"){
     region <- "VIMI"
+  }else if(region == "West Vancouver Island"){
+    region <- "WVI"
+  }else if(region == "East Vancouver Island & Mainland Inlets"){
+    region <- "EVIMI"
   }
+  
   cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
   cu_name_pse <- gsub(" (even)","",cu_name_pse)
   cu_name_pse <- gsub(" (odd)","",cu_name_pse)
@@ -1902,6 +1927,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
       benchmark_low <- benchmarks$sgen
       benchmark_low_025 <- benchmarks$sgen_lower
       benchmark_low_975 <- benchmarks$sgen_upper
+      
     }else if(any(grepl("smsy_",colnames(benchmarks)))){   # should still be smsy80
       benchmark_up <- benchmarks$smsy
       benchmark_up_025 <- benchmarks$smsy_lower
@@ -2056,10 +2082,16 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
            y0 = csa_df$curr_spw_abun, y1 = csa_df$curr_spw_abun, 
            lwd = 3, col = col_csa)
   
-  # show benchmarks
+  # show relative benchmarks
   segments(x0 = c(x_range[1],x_range[1]), x1 = c(x_range[2],x_range[2]),
            y0 = c(benchmark_low,benchmark_up), y1 = c(benchmark_low,benchmark_up), 
            col = c(status_cols["red"], status_cols["green"]), lwd = 2)
+  
+  # show absolute benchmarks
+  if(add_absolute_benchmarks){
+    abline(a = 10000, b = 0,col = status_cols["green"], lwd = 2, lty = 2)
+    abline(a = 1500, b = 0,col = status_cols["red"], lwd = 2, lty = 2)
+  }
   
   # show benchmarks for other cyclic-lines (for cyclic CUs only)
   if(is_cyclic){
@@ -3225,7 +3257,7 @@ HBSRM_JAGS_fun <- function(model_name = c("Ricker",
 #' 
 # cuid <- CUs_cuid
 # Sm <- SR_l$S
-prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm,prior_extern = NA){
+prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm,prior_extra = NA){
   
   if(all(is.na(conservationunits_decoder))){
     

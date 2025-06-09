@@ -1,5 +1,4 @@
 
-
 #'******************************************************************************
 #' The goal of the script is to conduct a hierarchical Bayesian spawner recruits 
 #' (HBSR) R analysis for all regions and conservation units.
@@ -58,6 +57,7 @@ source("Code/functions.R")
 # Load packages
 library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
+library(tidyverse)
 
 # Paths to the repositories containing the run reconstruction datasets for each 
 # region.
@@ -90,7 +90,6 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
-
 
 
 #'* External values for prior for Smax *
@@ -149,7 +148,6 @@ prior_Korman_English_2013$prSmax[cond] <- 7069
 cond <- prior_Korman_English_2013$cu_name_pse == "Motase"
 prior_Korman_English_2013$prSmax[cond] <- 1764
   
-
 # File of prior values for Smax for SEL from Atlas et al. 2025
 # https://github.com/DylanMG/DL-CC-sockeye/blob/main/output/data/SmaxPRs.txt
 prior_Atlas_et_al_2025 <- read.table(paste0(wd_pop_indic_data_input_dropbox,"/SmaxPRs.txt"), 
@@ -288,6 +286,10 @@ prior_extra <- rbind(prior_extra,prior_Korman_English_2013[cond,])
 cond <- prior_extra$cu_name_pse %in% c("Swan","Stephens")
 prior_extra <- prior_extra[!cond,]
 
+prior_extra <- prior_extra %>%
+  arrange(region,cu_name_pse)
+
+write.csv(prior_extra,paste0(wd_data,"/priors_Smax.csv"), row.names = F)
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species
@@ -296,20 +298,13 @@ prior_extra <- prior_extra[!cond,]
 # option to show the SR plot
 show_figures <- F
 
-# Choosing the region(s)
-region <- regions_df$Fraser
+# Choose one region
 region <- regions_df$Yukon
-region <- regions_df$Nass
-region <- regions_df$Central_coast
-region <- regions_df$Columbia     # BSC: no _RS data file
-region <- regions_df$Haida_Gwaii
-region <- regions_df$Skeena
 
 # multiple regions:
 region <- c(
-  regions_df$Columbia,
-  regions_df$Transboundary,
-  regions_df$VIMI)
+  regions_df$WVI,
+  regions_df$EVIMI)
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -359,7 +354,7 @@ options(warn = 0)  #
 #----------------------------------------------------------------------------#
 
 for(i_rg in 1:length(region)){
-  # i_rg <- 3
+  # i_rg <- 1
   
   cond_rs_rg <- recruitsperspawner$region == region[i_rg]
   # recruitsperspawner_rg <- recruitsperspawner[recruitsperspawner$region == region[i_rg],]
@@ -370,8 +365,14 @@ for(i_rg in 1:length(region)){
   })
   
   regionName <- region[i_rg]
-  if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
-    regionName <- "VIMI"
+  # if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+  #   regionName <- "VIMI"
+  # }
+  if(region[i_rg] == "West Vancouver Island"){
+    regionName <- "WVI"
+  }
+  if(region[i_rg] == "East Vancouver Island & Mainland Inlets"){
+    regionName <- "EVIMI"
   }
   
   cond <- all(is.na(recruitsperspawner$spawners[cond_rs_rg])) | 
@@ -384,7 +385,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 4
+      # i_sp <- 1
       
       speciesAcroHere <- species_acro[i_sp]
       

@@ -79,21 +79,12 @@ regions_df <- regions_fun()
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Fraser
 region <- regions_df$Yukon
-region <- regions_df$Northern_Transboundary
 
 # multiple regions:
 region <- c(
-  regions_df$Fraser,
-  regions_df$Yukon,
-  regions_df$Nass)
-
-region <- c(
-  regions_df$Haida_Gwaii,
-  regions_df$Central_coast)
-
-region <- regions_df$Fraser
+  regions_df$WVI,
+  regions_df$EVIMI)
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -119,7 +110,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 #' To calculating current spawner abundance for biostatus assessment
 fromDatabase <- update_file_csv <- F
 
-cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
@@ -163,11 +154,17 @@ for(i_rg in 1:length(region)){
   # i_rg <- 1
   cond_csa_rg <- cuspawnerabundance$region == region[i_rg]
   
-  if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
-    regionName <- "VIMI"
+  if(region[i_rg] == "West Vancouver Island"){
+    regionName <- "WVI"
+  }else if(region[i_rg] == "East Vancouver Island & Mainland Inlets"){
+    regionName <- "EVIMI"
   }else{
     regionName <- regionName <- gsub(" ","_",region[i_rg])
   }
+  
+  # if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+  #   regionName <- "VIMI"
+  # }
 
   species_acro <- sapply(X = species,FUN = function(sp){
     cond <- species_acronym_df$species_name == sp
@@ -513,7 +510,4 @@ for(i_rg in 1:length(region)){
     } # end of loop for the species
   } # if there is enough data
 } # end of the loop for the regions
-
-
-
 

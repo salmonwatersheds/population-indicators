@@ -21,6 +21,9 @@
 vignettes/*.html
 vignettes/*.pdf
 
+# produced html files
+*.html
+
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth
 
@@ -55,6 +58,8 @@ intermediate/
 # Any fodlers called figures will be ignored
 figures/
 
+code/Chilcotin_river_CUs_summary_medias.R
+
 
 # biological-status/data/
 biological-status/Bayes_SR_model.txt
@@ -67,25 +72,35 @@ biological-status/HBSRM_Larkin_13.txt
 biological-status/HBSRM_Larkin_23.txt
 biological-status/HBSRM_Larkin_123.txt
 
+
 # biological-status/code/1a_HBSRM_cyclic.R
 # biological-status/code/2a_benchmarks_HBSRM_cyclic.R
 biological-status/code/benchmarks_comparison.R
 biological-status/code/checks_fixes.R
 biological-status/code/sensitivity_analyses.R
 biological-status/code/parallel_stuff.R
+
 biological-status/figures/
+
 biological-status/output_OLD/
+
+biological-status/output/dataset101_biological_status_dd.csv
 
 hatchery-releases/data/
 hatchery-releases/output/SWP_hatchery_data.xlsx
 
 spawner-surveys/data
 spawner-surveys/references
+spawner-surveys/code/1_nuseds_collation_1.rmd
 spawner-surveys/code/nuseds_data_collation_old.R
 spawner-surveys/code/nuseds_data_collation_old2.R
 spawner-surveys/code/nuseds_data_collation_old3.R
 spawner-surveys/code/2_nuseds_cuid_streamid_old.R
 spawner-surveys/code/2_nuseds_cuid_streamid_old2.R
+spawner-surveys/code/QR_code_1_nuseds_collation.png
+spawner-surveys/code/QR_code_1_nuseds_collation.svg
+spawner-surveys/code/
+
 spawner-surveys/output/1_log_file.csv
 
 

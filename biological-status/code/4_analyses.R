@@ -158,14 +158,16 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 #                                                wd = wd_pop_indic_data_input_dropbox)
 
 
-# find CUs with biostatus:
-cond <- biological_status_cu$psf_status_code %in% 1:3
+# find CUs with biostatus but not with absolute benchmark
+cond <- biological_status_cu$psf_status_code %in% 1:3 & 
+  biological_status_cu$psf_status_type != "Absolute"
+
 cuid_biostat <- biological_status_cu$cuid[cond]
 
-cond <- grepl("cyclic",biological_status_cu$cu_name_pse)
-cuid_biostat <- biological_status_cu$cuid[cond]
+# cond <- grepl("cyclic",biological_status_cu$cu_name_pse)
+# cuid_biostat <- biological_status_cu$cuid[cond]
 
-figure_print <- F
+figure_print <- T
 percent <- 0
 for(cuid in cuid_biostat){
   # cuid <- 599
@@ -175,7 +177,7 @@ for(cuid in cuid_biostat){
                                        dataset102_benchmarks = benchmarks_cu, 
                                        #dataset103_output = cuspawnerabund_smooth,
                                        conservationunits_decoder = conservationunits_decoder, 
-                                       figure_print = figure_print, # figure_print, 
+                                       figure_print = T, # figure_print, 
                                        wd_figures = wd_figures)
   
   progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100
@@ -1291,15 +1293,17 @@ dev.off()
 #
 # Convergence issues for HBSRM: how many CUs? ------
 
+# (Gelman–Rubin's convergence estimate Rc
+
 #'* Import the new biostatus *
 biostatus <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
                                         pattern = "dataset101_biological_status")
 nrow(biostatus)
 
 cond_sr <- biostatus$psf_status_type == "sr" & !is.na(biostatus$psf_status_type)
-sum(cond_sr) # 117
+sum(cond_sr) # 130 117
  
-col_main <- c("region","species_abbr","cu_name_pse","cuid","sr_status",
+col_main <- c("region","species_qualified","cu_name_pse","cuid","sr_status",
               "percentile_status")
 
 biostatus_focus <- biostatus[cond_sr,col_main]
@@ -1311,15 +1315,23 @@ biostatus_focus$parameters_issue <- NA
 Rc_cut <- 1.1
 
 for(rg in unique(biostatus_focus$region)){
-  # rg <- unique(biostatus_focus$region)[5]
-  if(rg == "Vancouver Island & Mainland Inlets"){
-    rg_name <- "VIMI"
+  # rg <- unique(biostatus_focus$region)[2]
+  # if(rg == "Vancouver Island & Mainland Inlets"){
+  #   rg_name <- "VIMI"
+  # }else{
+  #   rg_name <- gsub(" ","_",rg)
+  # }
+  
+  if(rg == "West Vancouver Island"){
+    rg_name <- "WVI"
+  }else if(rg == "East Vancouver Island & Mainland Inlets"){
+    rg_name <- "EVIMI"
   }else{
     rg_name <- gsub(" ","_",rg)
   }
   
   cond_rg <- biostatus_focus$region == rg
-  species_here <- unique(biostatus_focus$species_abbr[cond_rg])
+  species_here <- unique(biostatus_focus$species_qualified[cond_rg])
   cond <- grepl("PK",species_here)
   species_here[cond] <- "PK"
   cond <- grepl("SE",species_here)
@@ -1329,11 +1341,11 @@ for(rg in unique(biostatus_focus$region)){
     # sp <- species_here[2]
     
     if(sp == "PK"){
-      cond_rg_sp <- cond_rg & biostatus_focus$species_abbr %in% c("PKE","PKO")
+      cond_rg_sp <- cond_rg & biostatus_focus$species_qualified %in% c("PKE","PKO")
     }else if(sp == "SE"){
-      cond_rg_sp <- cond_rg & biostatus_focus$species_abbr %in% c("SER","SEL")
+      cond_rg_sp <- cond_rg & biostatus_focus$species_qualified %in% c("SER","SEL")
     }else{
-      cond_rg_sp <- cond_rg & biostatus_focus$species_abbr == sp
+      cond_rg_sp <- cond_rg & biostatus_focus$species_qualified == sp
     }
 
     file_name <- paste0(rg_name,"_",sp,"_HBSRM_convDiagnostic.csv")
@@ -1407,11 +1419,11 @@ for(rg in unique(biostatus_focus$region)){
   }
 }
 
-biostatus_focus |> nrow() # 117
+biostatus_focus |> nrow() # 130 117
 
 # CUs with convergence issues for any of the parameters:
 cond_convIssue <- biostatus_focus$convIssue
-sum(cond_convIssue) # 30 28
+sum(cond_convIssue) # 47 30 28
 cond_col <- !colnames(biostatus_focus) %in% c("Rc_max","convIssue")
 biostatus_focus[cond_convIssue,cond_col]
 
@@ -1802,7 +1814,7 @@ benchmarks_summary_percentile_noNA[percent_diff < -50,]
 # do those have cyclic dynamics ?
 
 # 
-# Compare biostatus old vs. new IN PROGRESS ------
+# Compare biostatus old vs. new IN PROGRESS (OLD?) ------
 #' Goal:
 #' - flag the CUs whose status changed
 #' https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1717434872482819
@@ -1957,6 +1969,103 @@ nrow(data)
 #'* CUs with a new biostatus but not an old one *
 #'* CUs with a new biostatus but not an old one *
 
+
+
+# Compare biostatus before vs after new rules (21/05/2025) -------
+
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1745963219139359?thread_ts=1745442260.883189&cid=CJ5RVHVCG
+#' Changes made: 
+#' (1) implement a lower absolute abundance benchmark of 1,500
+#' (2) increase the upper benchmark from 80%Smsy/50th percentile to Smsy/75th percentile.
+
+# Import the file before implementing these changes
+
+date_before <- "2025-03-05"
+
+biostatus_before <- read.csv(paste0(wd_output,"/archive/dataset101_biological_status_",date_before,".csv"), header = T) 
+head(biostatus_before)
+
+benchmarks_before <- read.csv(paste0(wd_output,"/archive/dataset102_benchmarks_",date_before,".csv"), header = T) 
+head(benchmarks_before)
+
+
+date_after <- "2025-05-21"
+
+biostatus_after <- read.csv(paste0(wd_output,"/archive/dataset101_biological_status_",date_after,".csv"), header = T) 
+head(biostatus_after)
+
+benchmarks_after <- read.csv(paste0(wd_output,"/archive/dataset102_benchmarks_",date_after,".csv"), header = T) 
+head(benchmarks_after)
+
+identical(benchmarks_before$curr_spw,benchmarks_after$curr_spw) # TRUE
+
+# 
+biostatus <- biostatus_before
+biostatus$curr_spw <- sapply(biostatus$cuid,function(cuid){
+  cond <- benchmarks_after$cuid == cuid
+  return(benchmarks_after$curr_spw[cond])
+})
+biostatus$psf_status_code_all_after <- sapply(biostatus$cuid,function(cuid){
+  cond <- biostatus_after$cuid == cuid
+  return(biostatus_after$psf_status_code_all[cond])
+})
+biostatus$psf_status_type_after <- sapply(biostatus$cuid,function(cuid){
+  cond <- biostatus_after$cuid == cuid
+  return(biostatus_after$psf_status_type[cond])
+})
+biostatus$psf_status_code_after <- sapply(biostatus$cuid,function(cuid){
+  cond <- biostatus_after$cuid == cuid
+  return(biostatus_after$psf_status_code[cond])
+})
+biostatus$psf_status_after <- sapply(biostatus$cuid,function(cuid){
+  cond <- biostatus_after$cuid == cuid
+  return(biostatus_after$psf_status[cond])
+})
+
+biostatus$sr_green_prob_after <- sapply(biostatus$cuid,function(cuid){
+  cond <- biostatus_after$cuid == cuid
+  return(biostatus_after$sr_green_prob[cond])
+})
+
+biostatus$sr_yellow_prob_after <- sapply(biostatus$cuid,function(cuid){
+  cond <- biostatus_after$cuid == cuid
+  return(biostatus_after$sr_yellow_prob[cond])
+})
+
+#'* CU that are concerned with the absolute lower bench of <1500 *
+cond <- !is.na(biostatus$psf_status_type_after) & biostatus$psf_status_type_after == "Absolute"
+sum(cond) # 20
+
+biostatus[cond,c("region","species_qualified","cuid","cu_name_pse","curr_spw",
+                      "psf_status_type","psf_status","psf_status_after")]
+
+
+#'* CU that are went from green to amber with 100% Smsy *
+cond <- !is.na(biostatus$psf_status_type_after) & 
+  biostatus$psf_status_type_after == "sr" &
+  biostatus$psf_status != biostatus$psf_status_after
+  
+sum(cond) # 8
+
+biostatus[cond,c("region","species_qualified","cuid","cu_name_pse","curr_spw",
+                 "psf_status_type","psf_status","psf_status_after")]
+
+biostatus[cond,c("region","species_qualified","cuid","cu_name_pse","curr_spw",
+                 "psf_status_type","psf_status","psf_status_after",
+                 "sr_green_prob","sr_green_prob_after","sr_yellow_prob","sr_yellow_prob_after")]
+
+
+#'* CU that are went from green to amber with 75th percentile *
+cond <- !is.na(biostatus$psf_status_type_after) & 
+  biostatus$psf_status_type_after == "percentile" &
+  biostatus$psf_status != biostatus$psf_status_after
+
+sum(cond) # 4
+
+biostatus[cond,c("region","species_qualified","cuid","cu_name_pse","curr_spw",
+                 "psf_status_type","psf_status","psf_status_after")]
+
+sum(biostatus$psf_status_code %in% 1:3)
 
 
 # ) TODELETE Decision rules for HBSR and percentile benchmarks -------

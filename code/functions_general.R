@@ -104,6 +104,7 @@ mean_geom_fun <- function(x){
   # 
   if(sum(!is.na(x))> 0){
     # gm <- prod(x, na.rm = T)^(1/sum(!is.na(x)))
+    x[!is.na(x) & x == 0] <- 1
     gm <- exp(mean(log(x),na.rm = T)) # other equivalent formula that does not risk to return Inf
   }else{
     gm <- NA

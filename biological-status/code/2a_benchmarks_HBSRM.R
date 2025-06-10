@@ -82,7 +82,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 #' To calculating current spawner abundance for biostatus assessment
 fromDatabase <- update_file_csv <- F
 
-cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
@@ -90,10 +90,12 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = datasetsNames_database
 #' Import the conservationunits_decoder.csv from population-indicators/data_input or 
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
+# Temporary change
+colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species and last year for current spawner abundance
@@ -102,17 +104,12 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Fraser
 region <- regions_df$Yukon
-region <- regions_df$Haida_Gwaii
 
 # multiple regions:
 region <- c(
-  regions_df$Columbia,
-  regions_df$Transboundary,
-  regions_df$VIMI)
-
-region <- regions_df$VIMI
+  regions_df$WVI,
+  regions_df$EVIMI)
 
 # all the regions
 region <- as.character(regions_df[1,])
@@ -145,14 +142,21 @@ options(warn = 0)  # warnings are stored until the top level function returns (d
 
 # 
 for(i_rg in 1:length(region)){
-  
   # i_rg <- 3
   
-  if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
-    regionName <- "VIMI"
+  if(region[i_rg] == "West Vancouver Island"){
+    regionName <- "WVI"
+  }else if(region[i_rg] == "East Vancouver Island & Mainland Inlets"){
+    regionName <- "EVIMI"
   }else{
-    regionName <- gsub(" ","_",region[i_rg])
+    regionName <- regionName <- gsub(" ","_",region[i_rg])
   }
+  
+  # if(region[i_rg] == "Vancouver Island & Mainland Inlets"){
+  #   regionName <- "VIMI"
+  # }else{
+  #   regionName <- gsub(" ","_",region[i_rg])
+  # }
   
   # Get all the species for which _posteriors_priorShift datasets are available
   files_list <- list.files(wd_data_input)
@@ -213,6 +217,7 @@ for(i_rg in 1:length(region)){
       
       # find the corresponding cuid 
       cuids <- sapply(CUs,function(cu){
+        # cu <- CUs[1]
         cond_cu <- conservationunits_decoder$cu_name_pse == cu
         cond_rg <- conservationunits_decoder$region == region[i_rg]
         cond_sp <- conservationunits_decoder$species_name %in% speciesHere
@@ -439,7 +444,7 @@ for(i_rg in 1:length(region)){
         }
         
         species_name <- conservationunits_decoder$species_name[cond_cud_cu]
-        species_qualified <- conservationunits_decoder$species_abbr[cond_cud_cu]
+        species_qualified <- conservationunits_decoder$species_qualified[cond_cud_cu]
         
         # TEMPORARY
         # simplify species_name as in PSE data meeting December 11 2024

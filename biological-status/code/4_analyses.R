@@ -159,8 +159,17 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 
 
 # find CUs with biostatus but not with absolute benchmark
-cond <- biological_status_cu$psf_status_code %in% 1:3 & 
-  biological_status_cu$psf_status_type != "Absolute"
+# cond <- biological_status_cu$psf_status_code %in% 1:3 &
+#   biological_status_cu$psf_status_type != "Absolute" & 
+#   !is.na(biological_status_cu$psf_status_type)
+# 
+# cond <- biological_status_cu$psf_status_code %in% 1:3 &
+#   biological_status_cu$psf_status_type == "Absolute" & 
+#   !is.na(biological_status_cu$psf_status_type)
+
+biological_status_cu$psf_status_type[cond]
+
+cond <- biological_status_cu$psf_status_code %in% 1:3
 
 cuid_biostat <- biological_status_cu$cuid[cond]
 
@@ -170,14 +179,14 @@ cuid_biostat <- biological_status_cu$cuid[cond]
 figure_print <- T
 percent <- 0
 for(cuid in cuid_biostat){
-  # cuid <- 599
+  # cuid <- 1219
   plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
                                        cuspawnerabundance = spawnerabundance_cu, 
                                        dataset101_biological_status = biological_status_cu, 
                                        dataset102_benchmarks = benchmarks_cu, 
                                        #dataset103_output = cuspawnerabund_smooth,
                                        conservationunits_decoder = conservationunits_decoder, 
-                                       figure_print = T, # figure_print, 
+                                       figure_print = figure_print, # figure_print, 
                                        wd_figures = wd_figures)
   
   progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100

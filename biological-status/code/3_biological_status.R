@@ -874,7 +874,7 @@ biological_status_merged[cond_12 & cond_1500,]
 biological_status_merged$psf_status_code_all[cond_12 & cond_1500] <- paste0(biological_status_merged$psf_status_code_all[cond_12 & cond_1500],", 3")
 biological_status_merged$psf_status_code[cond_12 & cond_1500] <- 3
 biological_status_merged$psf_status[cond_12 & cond_1500] <- "poor"
-biological_status_merged$psf_status_type[cond_12 & cond_1500] <- "Absolute"
+biological_status_merged$psf_status_type[cond_12 & cond_1500] <- "absolute"
 
 
 #' For the CUs with status_code 7: insufficient time series length:
@@ -888,7 +888,7 @@ biological_status_merged[cond_7 & cond_1500 & !cond_exception,]
 biological_status_merged$psf_status_code_all[cond_7 & cond_1500 & !cond_exception] <- paste0("3, ",biological_status_merged$psf_status_code_all[cond_7 & cond_1500 & !cond_exception])
 biological_status_merged$psf_status_code[cond_7 & cond_1500 & !cond_exception] <- 3
 biological_status_merged$psf_status[cond_7 & cond_1500 & !cond_exception] <- "poor"
-biological_status_merged$psf_status_type[cond_7 & cond_1500 & !cond_exception] <- "Absolute"
+biological_status_merged$psf_status_type[cond_7 & cond_1500 & !cond_exception] <- "absolute"
 
 # Check
 cond <- biological_status_merged$cuid == 216
@@ -1024,7 +1024,7 @@ sum(condition_Percent)                       # 60 48 57 42 39 40 37 72 71 69
 sum(condition_1_2_3 & condition_Percent)     # 33 27 37 42 39 40 37 72 71 69
 
 condition_absolute <- !is.na(biological_status_merged$psf_status_type) & 
-  biological_status_merged$psf_status_type == "Absolute"
+  biological_status_merged$psf_status_type == "absolute"
 
 sum(condition_HBSRM) + 
   sum(condition_Percent) + 

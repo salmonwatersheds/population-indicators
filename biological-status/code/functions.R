@@ -1979,16 +1979,34 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     # This is indeed the 50% percentile and not the 75, despite the name being "75%_spw"
     # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
     
+  }else if(grepl("[A|a]bsolute",biostatus$psf_status_type)){
+    
+    benchmark_low <- NA
+    benchmark_low_025 <- NA
+    benchmark_low_975 <- NA
+    benchmark_up <- NA
+    benchmark_up_025 <- NA
+    benchmark_up_975 <- NA
+    
+    method <- "Absolute"
+    status <- "poor"
+    
   }else{ # there is no benchmark values
     print("There are no benchmark values for this CU.")
     polygons_show <- F
   }
   
   # adjust y_range eventually if values are below thresholds
-  if(any(max(y_range) < c(benchmark_low_025,benchmark_up_025))){
-    y_range[2] <- benchmark_up_975 + benchmark_up_975 * .2
+  if(!is.na(benchmark_low_025)){
+    if(any(max(y_range) < c(benchmark_low_025,benchmark_up_025))){
+      y_range[2] <- benchmark_up_975 + benchmark_up_975 * .2
+    }
+  }else{
+    if(any(max(y_range) < 1500)){
+      y_range[2] <- 1500
+    }
   }
-  
+
   # Get current spawner abundance
   csa_df <- current_spawner_abundance_fun(cuids = cuid, 
                                           cuspawnerabundance = spawnerAbund, 
@@ -2088,7 +2106,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
            col = c(status_cols["red"], status_cols["green"]), lwd = 2)
   
   # show absolute benchmarks
-  if(add_absolute_benchmarks){
+  if(add_absolute_benchmarks | is.na(benchmark_up_975)){
     abline(a = 10000, b = 0,col = status_cols["green"], lwd = 2, lty = 2)
     abline(a = 1500, b = 0,col = status_cols["red"], lwd = 2, lty = 2)
   }
@@ -2165,8 +2183,10 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   points(x = x, y = y, type = 'o', lwd = 2.5, pch = 16, cex = .7)
   
   # display issue
-  if(benchmark_low > benchmark_up){
-    legend("top","BENCHMARK ISSUE",bty = 'n', text.col = "red")
+  if(!is.na(benchmark_low)){
+    if(benchmark_low > benchmark_up){
+      legend("top","BENCHMARK ISSUE",bty = 'n', text.col = "red")
+    }
   }
   
   # Extend benchmarks and plot 95% CI and current spawner abundance
@@ -2192,7 +2212,6 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
                                  benchmark_up_975), 
            col = c(status_cols["red"],status_cols["green"]), lwd = 2)
   
-  #
   # show benchmarks for other cyclic-lines (for cyclic CUs only)
   coeff_x_cl <- .15
   if(is_cyclic){

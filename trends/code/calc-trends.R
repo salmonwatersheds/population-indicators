@@ -178,7 +178,7 @@ for(i in 1:nrow(cu_list)){
   #'* Calculate long-term trends *
   
   # log transform (and deal with 0s)
-  y[y == 0 & !is.na(y)] <- 0.01
+  y[y == 0 & !is.na(y)] <- 1 # 0.01
   # y_log <- log(y + 0.01)
   y_log <- log(y)
   
@@ -430,6 +430,7 @@ dataset391_output_new <- dataset391_output_new[!cond,]
 # Export the files ------
 #
 date <- as.character(Sys.Date())
+# date <- "2025-06-05"
 
 # Export in /output/archive folder on dropbox
 write.csv(dataset103_output_new,paste0(wd_output,"/archive/dataset103_log_smoothed_spawners_",date,".csv"),

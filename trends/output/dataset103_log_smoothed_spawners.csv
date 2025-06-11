@@ -2701,10 +2701,10 @@
 "Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2015,6.4276403229218
 "Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2016,6.14287700836514
 "Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2017,5.47108286387528
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2018,2.85818062361382
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2019,2.5054742646464
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2020,2.15650831161239
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2021,1.957272318052
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2018,4.00947317011085
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2019,3.65676681114343
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2020,3.30780085810942
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2021,3.10856486454902
 "Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2022,4.01796140448062
 "Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",2023,3.64888127628621
 "Fraser","Chinook","CK",308,"Fraser Canyon-Nahatlatch (Spring 5-2)",1975,NA
@@ -3102,8 +3102,8 @@
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1975,NA
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1976,NA
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1977,NA
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1978,1.07937202838408
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1979,1.25265882352406
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1978,2.2306645748811
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1979,2.40395137002109
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1980,3.38195712137812
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1981,3.62716443463105
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1982,3.45387763949107
@@ -3111,10 +3111,10 @@
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1984,3.22480495652253
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1985,3.62716443463106
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1986,4.41103798861334
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1987,2.68409916886781
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1988,2.51081237372782
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1989,2.49798905013093
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1990,2.46304856453714
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1987,3.83539171536483
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1988,3.66210492022484
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1989,3.64928159662796
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1990,3.61434111103417
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1991,4.91258032375672
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1992,5.03008123106815
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",1993,5.09869044249359
@@ -3145,9 +3145,9 @@
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2018,2.8665213495311
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2019,2.11404212239462
 "Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2020,2.22146967345014
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2021,-0.193272831750981
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2022,0.158744726332124
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2023,0.454512457999092
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2021,1.34178389691172
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2022,1.69380145499482
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",2023,1.98956918666179
 "Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",1975,NA
 "Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",1976,NA
 "Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",1977,NA
@@ -7728,9 +7728,9 @@
 "Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1977,NA
 "Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1978,NA
 "Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1979,NA
-"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1980,2.84244846290635
-"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1981,3.14468854936559
-"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1982,3.37849323480551
+"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1980,3.99374100940337
+"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1981,4.29598109586262
+"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1982,4.52978578130254
 "Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1983,5.92939127105213
 "Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1984,5.82253026734539
 "Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",1985,5.52029018088615
@@ -8431,15 +8431,15 @@
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1977,NA
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1978,NA
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1979,NA
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1980,-0.896573081472495
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1981,0.957725470785303
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1982,0.957725470785303
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1980,2.1735403758529
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1981,3.26031056377935
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1982,3.26031056377935
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1983,6.95847821067975
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1984,7.66164941933189
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1985,3.5727095508919
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1986,3.5727095508919
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1987,3.83413143548978
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1988,4.29784957525199
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1985,5.1077662795546
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1986,5.1077662795546
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1987,5.36918816415248
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1988,5.83290630391469
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1989,7.22436872721323
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1990,7.22436872721323
 "Fraser","Sockeye","SEL",734,"Taseko-Early Summer",1991,6.74625261702263
@@ -8671,10 +8671,10 @@
 "Fraser","Sockeye","SER",742,"Widgeon (river-type)",1987,6.69749824278342
 "Fraser","Sockeye","SER",742,"Widgeon (river-type)",1988,7.21794534520583
 "Fraser","Sockeye","SER",742,"Widgeon (river-type)",1989,7.03865699843509
-"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1990,4.09483456607566
-"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1991,3.87021776172646
-"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1992,3.08434372637089
-"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1993,2.12288911516606
+"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1990,5.24612711257268
+"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1991,5.02151030822349
+"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1992,4.23563627286791
+"Fraser","Sockeye","SER",742,"Widgeon (river-type)",1993,3.65794584382876
 "Fraser","Sockeye","SER",742,"Widgeon (river-type)",1994,5.34336111227819
 "Fraser","Sockeye","SER",742,"Widgeon (river-type)",1995,4.78571929183629
 "Fraser","Sockeye","SER",742,"Widgeon (river-type)",1996,4.79288802690995
@@ -12189,15 +12189,15 @@
 "Yukon","Chum","CM",1214,"North Yukon",2013,5.74111866689701
 "Yukon","Chum","CM",1214,"North Yukon",2014,5.4996210667904
 "Yukon","Chum","CM",1214,"North Yukon",2015,5.85948780590935
-"Yukon","Chum","CM",1214,"North Yukon",2016,3.47638183812303
-"Yukon","Chum","CM",1214,"North Yukon",2017,3.47700450345114
-"Yukon","Chum","CM",1214,"North Yukon",2018,4.05423808361932
-"Yukon","Chum","CM",1214,"North Yukon",2019,4.30474695468147
+"Yukon","Chum","CM",1214,"North Yukon",2016,4.62767438462005
+"Yukon","Chum","CM",1214,"North Yukon",2017,4.62829704994817
+"Yukon","Chum","CM",1214,"North Yukon",2018,5.20553063011634
+"Yukon","Chum","CM",1214,"North Yukon",2019,5.45603950117849
 "Yukon","Chum","CM",1214,"North Yukon",2020,6.70194115660557
-"Yukon","Chum","CM",1214,"North Yukon",2021,4.0515355879538
-"Yukon","Chum","CM",1214,"North Yukon",2022,0.885661214811535
-"Yukon","Chum","CM",1214,"North Yukon",2023,0.277701082358368
-"Yukon","Chum","CM",1214,"North Yukon",2024,0.312790421782099
+"Yukon","Chum","CM",1214,"North Yukon",2021,5.20282813445082
+"Yukon","Chum","CM",1214,"North Yukon",2022,3.18824630780558
+"Yukon","Chum","CM",1214,"North Yukon",2023,2.58028617535241
+"Yukon","Chum","CM",1214,"North Yukon",2024,2.61537551477614
 "Yukon","Chum","CM",1215,"White",2005,NA
 "Yukon","Chum","CM",1215,"White",2006,NA
 "Yukon","Chum","CM",1215,"White",2007,NA
@@ -12227,10 +12227,10 @@
 "Yukon","Chum","CM",1219,"Teslin",2011,6.9362675878371
 "Yukon","Chum","CM",1219,"Teslin",2012,6.12610116838694
 "Yukon","Chum","CM",1219,"Teslin",2013,6.08716253603464
-"Yukon","Chum","CM",1219,"Teslin",2014,3.56991203828121
-"Yukon","Chum","CM",1219,"Teslin",2015,2.92482308211665
-"Yukon","Chum","CM",1219,"Teslin",2016,3.3857070168046
-"Yukon","Chum","CM",1219,"Teslin",2017,3.21335480219226
+"Yukon","Chum","CM",1219,"Teslin",2014,4.72120458477823
+"Yukon","Chum","CM",1219,"Teslin",2015,4.07611562861368
+"Yukon","Chum","CM",1219,"Teslin",2016,4.53699956330162
+"Yukon","Chum","CM",1219,"Teslin",2017,4.36464734868929
 "Yukon","Chum","CM",1219,"Teslin",2018,6.46593327059119
 "Yukon","Chum","CM",1219,"Teslin",2019,7.40285015262196
 "Yukon","Chum","CM",1219,"Teslin",2020,7.28118633691241

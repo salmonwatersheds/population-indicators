@@ -51,7 +51,7 @@
 "Fraser","Chinook","CK",304,"Lower Fraser River (Spring 5-2)",-12.3,-84,-0.130793,269.667,6.904,2009,2023,NA
 "Fraser","Chinook","CK",305,"Lower Fraser River-Upper Pitt (Summer 5-2)",-9.2,-74,-0.096103,198.148,5.077,2009,2023,NA
 "Fraser","Chinook","CK",306,"Lower Fraser River (Summer 5-2)",-1.9,-23.6,-0.019189,42.611,4.06,2009,2023,NA
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",-34.5,-99.1,-0.423451,858.876,6.893,2012,2023,NA
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",-30.2,-98.1,-0.359043,729.317,6.922,2012,2023,NA
 "Fraser","Chinook","CK",308,"Fraser Canyon-Nahatlatch (Spring 5-2)",11.4,351.4,0.107659,-214.334,1.952,2009,2023,NA
 "Fraser","Chinook","CK",309,"Middle Fraser River-Portage (Fall 5-2)",-8.1,-69.5,-0.084841,175.024,4.579,2009,2023,NA
 "Fraser","Chinook","CK",310,"Middle Fraser River (Spring 5-2)",-1.5,-19.1,-0.015136,38.668,8.259,2009,2023,NA
@@ -60,7 +60,7 @@
 "Fraser","Chinook","CK",313,"South Thompson River (Summer 4-1)",5.2,75.2,0.050984,-91.49,11.09,2012,2023,NA
 "Fraser","Chinook","CK",314,"South Thompson River (Summer 5-2)",1.6,25.3,0.016127,-25.607,6.793,2009,2023,NA
 "Fraser","Chinook","CK",315,"Shuswap River (Summer 4-1)",4,54.6,0.039617,-69.893,9.816,2012,2023,NA
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",-31.4,-98.4,-0.376765,762.641,4.589,2012,2023,NA
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",-20.7,-92.2,-0.231847,470.653,4.176,2012,2023,NA
 "Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",-2.9,-27.8,-0.029589,68.601,9.068,2012,2023,NA
 "Fraser","Chinook","CK",318,"North Thompson River (Spring 5-2)",0.5,7.8,0.005336,-5.47,5.251,2009,2023,NA
 "Fraser","Chinook","CK",319,"North Thompson River (Summer 5-2)",-3.6,-39.7,-0.03618,80.672,7.986,2009,2023,NA
@@ -240,8 +240,8 @@
 "Yukon","Chinook","CK",1211,"Upper Yukon",-16.7,-95.5,-0.182567,376.184,7.945,2017,2024,NA
 "Yukon","Chinook","CK",1212,"Teslin",-10.1,-83.6,-0.106293,219.762,6.432,2007,2024,NA
 "Yukon","Chum","CM",1213,"Middle Yukon",-16.8,-86.8,-0.184401,383.012,11.812,2013,2024,NA
-"Yukon","Chum","CM",1214,"North Yukon",-36.2,-99.3,-0.450086,912.219,6.196,2013,2024,NA
+"Yukon","Chum","CM",1214,"North Yukon",-21.7,-93.2,-0.244786,498.875,6.122,2013,2024,NA
 "Yukon","Chum","CM",1215,"White",-21.5,-93.1,-0.242445,499.907,11.865,2013,2024,NA
-"Yukon","Chum","CM",1219,"Teslin",32.7,2147.1,0.282929,-565.569,3.967,2013,2024,NA
+"Yukon","Chum","CM",1219,"Teslin",20.5,676.4,0.186317,-370.174,4.882,2013,2024,NA
 "Columbia","Sockeye","SEL",1300,"Osoyoos",-14.7,-82.5,-0.158688,330.646,11.524,2011,2022,NA
 "Columbia","Steelhead","SH",1380,"Mid Columbia Summer",-13.5,-86.9,-0.145319,296.154,4.208,2009,2023,NA

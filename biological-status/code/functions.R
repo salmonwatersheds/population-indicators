@@ -668,7 +668,9 @@ regions_fun <- function(){
     Nass = 'Nass',
     Skeena = 'Skeena',
     Northern_Transboundary = "Northern Transboundary",
-    VIMI = "Vancouver Island & Mainland Inlets",
+    # VIMI = "Vancouver Island & Mainland Inlets",
+    EVIMI = "East Vancouver Island & Mainland Inlets",
+    WVI = "West Vancouver Island",
     Yukon = 'Yukon')
   
   return(regions)
@@ -855,10 +857,15 @@ rbind_biologicalStatusCSV_fun <- function(pattern,wd_output,region,species = NA,
   
   biological_status_df <- NULL
   for(rg in region){
-    # rg <- region[3]
+    # rg <- region[8]
     
-    if(rg == "Vancouver_Island_&_Mainland_Inlets"){
-      rg <- "VIMI"
+    # if(rg == "Vancouver_Island_&_Mainland_Inlets"){
+    #   rg <- "VIMI"
+    # }
+    if(rg == "West_Vancouver_Island"){
+      rg <- "WVI"
+    }else if(rg == "East_Vancouver_Island_&_Mainland_Inlets"){
+      rg <- "EVIMI"
     }
     
     # returns all the files with pattern rg and "biological_status"
@@ -1514,13 +1521,13 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
                                        region = NA, wd_output = NA, species_all = T,
                                        export_csv = F){
   
-  if(is.na(biological_status_percentile)[1]){
-    pattern <- "biological_status_percentiles"
-    biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
-                                                                    wd_output = wd_output,
-                                                                    region = region,
-                                                                    species_all = species_all)
-  }
+  # if(is.na(biological_status_percentile)[1]){
+  #   pattern <- "biological_status_percentiles"
+  #   biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
+  #                                                                   wd_output = wd_output,
+  #                                                                   region = region,
+  #                                                                   species_all = species_all)
+  # }
   
   if(is.na(conservationunits_decoder)[1]){
     conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
@@ -1559,35 +1566,40 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
   #' As of Population meeting of 23/04/2014
   #' https://docs.google.com/document/d/1lw4PC7nDYKYCxb_yQouDjLcoWrblItoOb9zReL6GmDs/edit?usp=sharing
   cond <- conservationunits_decoder$species_name == "Chinook" &
-    conservationunits_decoder$region %in% c("Vancouver Island & Mainland Inlets",
+    conservationunits_decoder$region %in% c("East Vancouver Island & Mainland Inlets", # "Vancouver Island & Mainland Inlets",
+                                            "West Vancouver Island",
                                             "Fraser")
+  
+  # unique(unique(conservationunits_decoder$region))
+  
   highExploit_lowProd <- rbind(highExploit_lowProd,
                                conservationunits_decoder[cond,c("region","species_name","cuid","cu_name_pse")])
   
   highExploit_lowProd <- unique(highExploit_lowProd)
   
   # Export list if not already present in wd_pop_indic_data_input_dropbox
-  if(export_csv){
-    highExploit_lowProd_2 <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
-                                                        pattern = "CUs_highExploitation_lowProductivity")
-    
-    if(is.na(highExploit_lowProd_2)[1]){
-      write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
-                                           "/CUs_highExploitation_lowProductivity.csv"),
-                row.names = F)
-      
-    }else{ # check that the file present contains the same cuid
-      cond_1 <- all(highExploit_lowProd$cuid %in% highExploit_lowProd_2$cuid)
-      cond_2 <- all(highExploit_lowProd_2$cuid %in% highExploit_lowProd$cuid)
-      
-      if(!cond_1 | !cond_2){
-        print(paste0("CUs_highExploitation_lowProductivity.csv in ",wd_pop_indic_data_input_dropbox," differs from list in the code."))
-        print("File not exported to avoid risking losing information. Issue must be resolved manually.")
-        
-      }
-    }
-  }
+  # if(export_csv){
+  #   highExploit_lowProd_2 <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox, 
+  #                                                       pattern = "CUs_highExploitation_lowProductivity")
+  #   
+  #   if(is.na(highExploit_lowProd_2)[1]){
+  #     write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
+  #                                          "/CUs_highExploitation_lowProductivity.csv"),
+  #               row.names = F)
+  #     
+  #   }else{ # check that the file present contains the same cuid
+  #     cond_1 <- all(highExploit_lowProd$cuid %in% highExploit_lowProd_2$cuid)
+  #     cond_2 <- all(highExploit_lowProd_2$cuid %in% highExploit_lowProd$cuid)
+  #     
+  #     if(!cond_1 | !cond_2){
+  #       print(paste0("CUs_highExploitation_lowProductivity.csv in ",wd_pop_indic_data_input_dropbox," differs from list in the code."))
+  #       print("File not exported to avoid risking losing information. Issue must be resolved manually.")
+  #       
+  #     }
+  #   }
+  # }
 
+  # Apply rule: show biostatus if red
   highExploit_lowProd$biostatus_percentile <- NA
   highExploit_lowProd$toRemove <- T
   for(i in 1:nrow(highExploit_lowProd)){
@@ -1608,6 +1620,13 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
     }
     # print(biological_status_percentileHere$status_percent075)
   }
+  
+  if(export_csv){
+    write.csv(highExploit_lowProd,paste0(wd_pop_indic_data_input_dropbox,
+                                         "/CUs_highExploitation_lowProductivity.csv"),
+              row.names = F)
+  }
+  
   return(highExploit_lowProd)
 }
 
@@ -1725,7 +1744,8 @@ current_spawner_abundance_fun <- function(cuids,
     
     # get the count
     spawnerAbundance <- cusa$estimated_count
-    spawnerAbundance[spawnerAbundance <= 0] <- NA
+    spawnerAbundance[spawnerAbundance == 0] <- 1
+    spawnerAbundance[spawnerAbundance < 0] <- NA
     names(spawnerAbundance) <- cusa$year
     
     # Are there any spawner abundance data?
@@ -1825,7 +1845,8 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
                                                  log10_scale = F,
                                                  figure_print = F,
                                                  wd_figures = NA,
-                                                 file_name_nchar = 25){
+                                                 file_name_nchar = 25,
+                                                 add_absolute_benchmarks = F){
   
   require(zoo) # to use rollapply()
   
@@ -1854,7 +1875,12 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   region <- conservationunits_decoder$region[cond]
   if(region == "Vancouver Island & Mainland Inlets"){
     region <- "VIMI"
+  }else if(region == "West Vancouver Island"){
+    region <- "WVI"
+  }else if(region == "East Vancouver Island & Mainland Inlets"){
+    region <- "EVIMI"
   }
+  
   cu_name_pse <- conservationunits_decoder$cu_name_pse[cond]
   cu_name_pse <- gsub(" (even)","",cu_name_pse)
   cu_name_pse <- gsub(" (odd)","",cu_name_pse)
@@ -1901,6 +1927,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
       benchmark_low <- benchmarks$sgen
       benchmark_low_025 <- benchmarks$sgen_lower
       benchmark_low_975 <- benchmarks$sgen_upper
+      
     }else if(any(grepl("smsy_",colnames(benchmarks)))){   # should still be smsy80
       benchmark_up <- benchmarks$smsy
       benchmark_up_025 <- benchmarks$smsy_lower
@@ -1952,16 +1979,34 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     # This is indeed the 50% percentile and not the 75, despite the name being "75%_spw"
     # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1707332952867199
     
+  }else if(grepl("[A|a]bsolute",biostatus$psf_status_type)){
+    
+    benchmark_low <- NA
+    benchmark_low_025 <- NA
+    benchmark_low_975 <- NA
+    benchmark_up <- NA
+    benchmark_up_025 <- NA
+    benchmark_up_975 <- NA
+    
+    method <- "Absolute"
+    status <- "poor"
+    
   }else{ # there is no benchmark values
     print("There are no benchmark values for this CU.")
     polygons_show <- F
   }
   
   # adjust y_range eventually if values are below thresholds
-  if(any(max(y_range) < c(benchmark_low_025,benchmark_up_025))){
-    y_range[2] <- benchmark_up_975 + benchmark_up_975 * .2
+  if(!is.na(benchmark_low_025)){
+    if(any(max(y_range) < c(benchmark_low_025,benchmark_up_025))){
+      y_range[2] <- benchmark_up_975 + benchmark_up_975 * .2
+    }
+  }else{
+    if(any(max(y_range) < 1500)){
+      y_range[2] <- 1500
+    }
   }
-  
+
   # Get current spawner abundance
   csa_df <- current_spawner_abundance_fun(cuids = cuid, 
                                           cuspawnerabundance = spawnerAbund, 
@@ -2055,10 +2100,16 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
            y0 = csa_df$curr_spw_abun, y1 = csa_df$curr_spw_abun, 
            lwd = 3, col = col_csa)
   
-  # show benchmarks
+  # show relative benchmarks
   segments(x0 = c(x_range[1],x_range[1]), x1 = c(x_range[2],x_range[2]),
            y0 = c(benchmark_low,benchmark_up), y1 = c(benchmark_low,benchmark_up), 
            col = c(status_cols["red"], status_cols["green"]), lwd = 2)
+  
+  # show absolute benchmarks
+  if(add_absolute_benchmarks | is.na(benchmark_up_975)){
+    abline(a = 10000, b = 0,col = status_cols["green"], lwd = 2, lty = 2)
+    abline(a = 1500, b = 0,col = status_cols["red"], lwd = 2, lty = 2)
+  }
   
   # show benchmarks for other cyclic-lines (for cyclic CUs only)
   if(is_cyclic){
@@ -2113,7 +2164,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     x <- x[-1]
   }
   
-  y[y == 0 & !is.na(y)] <- 0.01 # replace 0s by 0.01
+  y[y == 0 & !is.na(y)] <- 1 # 0.01 # replace 0s by 0.01
   smooth.y <- rollapply(
     data = log(y), 
     FUN = mean, 
@@ -2132,8 +2183,10 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   points(x = x, y = y, type = 'o', lwd = 2.5, pch = 16, cex = .7)
   
   # display issue
-  if(benchmark_low > benchmark_up){
-    legend("top","BENCHMARK ISSUE",bty = 'n', text.col = "red")
+  if(!is.na(benchmark_low)){
+    if(benchmark_low > benchmark_up){
+      legend("top","BENCHMARK ISSUE",bty = 'n', text.col = "red")
+    }
   }
   
   # Extend benchmarks and plot 95% CI and current spawner abundance
@@ -2159,7 +2212,6 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
                                  benchmark_up_975), 
            col = c(status_cols["red"],status_cols["green"]), lwd = 2)
   
-  #
   # show benchmarks for other cyclic-lines (for cyclic CUs only)
   coeff_x_cl <- .15
   if(is_cyclic){
@@ -2327,39 +2379,53 @@ plot_spawnerAbundance_benchmarks_cyclic_percentile_fun <- function(cuid,
       # Find the benchmark values
       polygons_show <- T
       if(biostatus$psf_status_type[1] == "sr"){
-        benchmark_low <- benchmarks$sgen[cond_cl_yr]
-        benchmark_low_025 <- benchmarks$sgen_lower[cond_cl_yr]
-        benchmark_low_975 <- benchmarks$sgen_upper[cond_cl_yr]
+        # benchmark_low <- benchmarks$sgen[cond_cl_yr]
+        # benchmark_low_025 <- benchmarks$sgen_lower[cond_cl_yr]
+        # benchmark_low_975 <- benchmarks$sgen_upper[cond_cl_yr]
+        benchmark_low <- benchmarks$sr_low[cond_cl_yr]
+        benchmark_low_025 <- benchmarks$sr_low_025[cond_cl_yr]
+        benchmark_low_975 <- benchmarks$sr_low_975[cond_cl_yr]
         
-        if(any(grepl("smsy80",colnames(benchmarks)))){
-          benchmark_up <- benchmarks$smsy80[cond_cl_yr]
-          benchmark_up_025 <- benchmarks$smsy80_lower[cond_cl_yr]
-          benchmark_up_975 <- benchmarks$smsy80_upper[cond_cl_yr]
-        }else{
-          benchmark_up <- benchmarks$smsy[cond_cl_yr]
-          benchmark_up_025 <- benchmarks$smsy_lower[cond_cl_yr]
-          benchmark_up_975 <- benchmarks$smsy_upper[cond_cl_yr]
-        }
+        # if(any(grepl("smsy80",colnames(benchmarks)))){
+        #   benchmark_up <- benchmarks$smsy80[cond_cl_yr]
+        #   benchmark_up_025 <- benchmarks$smsy80_lower[cond_cl_yr]
+        #   benchmark_up_975 <- benchmarks$smsy80_upper[cond_cl_yr]
+        # }else{
+        #   benchmark_up <- benchmarks$smsy[cond_cl_yr]
+        #   benchmark_up_025 <- benchmarks$smsy_lower[cond_cl_yr]
+        #   benchmark_up_975 <- benchmarks$smsy_upper[cond_cl_yr]
+        # }
+        
+        benchmark_up <- benchmarks$sr_upper[cond_cl_yr]
+        benchmark_up_025 <- benchmarks$sr_upper_025[cond_cl_yr]
+        benchmark_up_975 <- benchmarks$sr_upper_975[cond_cl_yr]
+        
         method <- "HBSR"
         status <- biostatus$sr_status
         
       }else if(biostatus$psf_status_type[1] == "percentile"){
         
-        if(any(grepl("X25._spw",colnames(biostatus)))){
-          benchmark_low <- benchmarks$X25._spw[cond_cl_yr]             # `25%_spw`
-          benchmark_low_025 <- benchmarks$X25._spw_lower[cond_cl_yr]   # `25%_spw_lower`
-          benchmark_low_975 <- benchmarks$X25._spw_upper[cond_cl_yr]   # `25%_spw_upper`
-          benchmark_up <- benchmarks$X75._spw[cond_cl_yr]              # `75%_spw`
-          benchmark_up_025 <- benchmarks$X75._spw_lower[cond_cl_yr]    # `75%_spw_lower`
-          benchmark_up_975 <- benchmarks$X75._spw_upper[cond_cl_yr]    # `75%_spw_upper`
-        }else{
-          benchmark_low <- benchmarks$`25%_spw`[cond_cl_yr]
-          benchmark_low_025 <- benchmarks$`25%_spw_lower`[cond_cl_yr]
-          benchmark_low_975 <- benchmarks$`25%_spw_upper`[cond_cl_yr]
-          benchmark_up <- benchmarks$`75%_spw`[cond_cl_yr]
-          benchmark_up_025 <- benchmarks$`75%_spw_lower`[cond_cl_yr]
-          benchmark_up_975 <- benchmarks$`75%_spw_upper`[cond_cl_yr]
-        }
+        # if(any(grepl("X25._spw",colnames(biostatus)))){
+        #   benchmark_low <- benchmarks$X25._spw[cond_cl_yr]             # `25%_spw`
+        #   benchmark_low_025 <- benchmarks$X25._spw_lower[cond_cl_yr]   # `25%_spw_lower`
+        #   benchmark_low_975 <- benchmarks$X25._spw_upper[cond_cl_yr]   # `25%_spw_upper`
+        #   benchmark_up <- benchmarks$X75._spw[cond_cl_yr]              # `75%_spw`
+        #   benchmark_up_025 <- benchmarks$X75._spw_lower[cond_cl_yr]    # `75%_spw_lower`
+        #   benchmark_up_975 <- benchmarks$X75._spw_upper[cond_cl_yr]    # `75%_spw_upper`
+        # }else{
+        #   benchmark_low <- benchmarks$`25%_spw`[cond_cl_yr]
+        #   benchmark_low_025 <- benchmarks$`25%_spw_lower`[cond_cl_yr]
+        #   benchmark_low_975 <- benchmarks$`25%_spw_upper`[cond_cl_yr]
+        #   benchmark_up <- benchmarks$`75%_spw`[cond_cl_yr]
+        #   benchmark_up_025 <- benchmarks$`75%_spw_lower`[cond_cl_yr]
+        #   benchmark_up_975 <- benchmarks$`75%_spw_upper`[cond_cl_yr]
+        # }
+        benchmark_low <- benchmarks$percentile_lower[cond_cl_yr]
+        benchmark_low_025 <- benchmarks$percentile_lower_025[cond_cl_yr]
+        benchmark_low_975 <- benchmarks$percentile_lower_975[cond_cl_yr]
+        benchmark_up <- benchmarks$percentile_upper[cond_cl_yr]
+        benchmark_up_025 <- benchmarks$percentile_upper_025[cond_cl_yr]
+        benchmark_up_975 <- benchmarks$percentile_upper_975[cond_cl_yr]
         
         method <- "Percentiles"
         status <- biostatus$percentile_status
@@ -3210,7 +3276,7 @@ HBSRM_JAGS_fun <- function(model_name = c("Ricker",
 #' 
 # cuid <- CUs_cuid
 # Sm <- SR_l$S
-prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
+prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm,prior_extra = NA){
   
   if(all(is.na(conservationunits_decoder))){
     
@@ -3224,71 +3290,24 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
   cu_prior_df$prSmax <- NA
   cu_prior_df$prCV <- 10
   
-  #'* Skeena SEL for which prSmax is estimated with a photosynthetic-based *
-  # approach (from Korman & English 2013; cf. Table SX.1 p. 33)
-  cuid_Skeena_SEL <- c(171,191,192,193,175,176,183,177,178,185,197,187)
-  
-  #' Note1: CU Swan/Club (cuid 188) was also in this list above but the CU
-  #' was assigned to the Stephens CU, following DFO update
-  #' The change in the PSE was made in August 2024
-  #' https://salmonwatersheds.slack.com/archives/CPD76USTU/p1726165574970689
-  
-  #' Note 2:  There is no values given for Asitika cuid 190 in the report, 
-  #' it was removed from the list.
-  
   if(nrow(cu_prior_df) != length(cuid)){
     print("PROBLEM: In prior_beta_Ricker_fun(): cuid(s) not in conservationunits_decoder")
   }
   
-  if(any(cuid %in% cuid_Skeena_SEL)){
+  #'* CU in the additional external dataset provide *
+  if(any(cuid %in% prior_extra$cuid)){
+    cuid_concerned <- cuid[cuid %in% prior_extra$cuid]
     
-    cuid_concerned <- cuid[cuid %in% cuid_Skeena_SEL]
-    
-    cond <- cu_prior_df$cuid %in% cuid_Skeena_SEL
-    cu_prior_df$prCV[cond] <- 0.3
-    
-    # create a data frame with the CU-specific values for prSmx
-    cond <- conservationunits_decoder$cuid %in% cuid_concerned
-    coln <- c("region","species_name","cu_name_pse","cuid")
-    cuid_Skeena_SEL_df <- conservationunits_decoder[cond,coln]
-    cuid_Skeena_SEL_df$prSmax <- NA
-    cuid_Skeena_SEL_df$prCV <- 0.3
-    
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Alastair"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 23437
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Azuklotz"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 5933
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Bear"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 40532
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Damshilgwit"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 2000
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Johnston"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 4125
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Kitsumkalum"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 20531
-    cond <- grepl("Kitwancool",cuid_Skeena_SEL_df$cu_name_pse)
-    cuid_Skeena_SEL_df$prSmax[cond] <- 36984
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Lakelse"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 35916
-    cond <- grepl("Mcdonell",cuid_Skeena_SEL_df$cu_name_pse)
-    cuid_Skeena_SEL_df$prSmax[cond] <- 4072
-    cond <- grepl("Morice",cuid_Skeena_SEL_df$cu_name_pse)
-    cuid_Skeena_SEL_df$prSmax[cond] <- 191362
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Stephens"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 7069
-    cond <- cuid_Skeena_SEL_df$cu_name_pse == "Motase"
-    cuid_Skeena_SEL_df$prSmax[cond] <- 1764
-    
-    # replace values in cu_prior_df
     for(cu in cuid_concerned){
       # cu <- cuid_concerned[1]
-      cond <- cuid_Skeena_SEL_df$cuid == cu
-      prSmax_here <- cuid_Skeena_SEL_df$prSmax[cond]
+      cond <- prior_extra$cuid == cu
+      prSmax_here <- prior_extra$prSmax[cond]
       
       cond <- cu_prior_df$cuid == cu
       cu_prior_df$prSmax[cond] <- prSmax_here
+      cu_prior_df$prCV[cond] <- 0.3 # more informative than 10
     }
-  } # End Skeena SEL for which prSmax is estimated with a photosynthetic-based (Korman & English 2013)
+  }
   
   #'* Fraser SEL for which prSmax is estimated with a photosynthetic-based *
   # approach (from Grant et al. 2020; cf. Table 10)
@@ -3358,10 +3377,12 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm){
     }
   } # End Fraser SEL for which prSmax is estimated with a photosynthetic-based (Korman & English 2013)
   
-  
   # For the rest of the CUs: prSmax = geo_mean(S):
   cond <- ! cuid %in% cuid_Skeena_SEL & ! cuid %in% cuid_Fraser_SEL
   cuid_concerned <- cuid[cond]
+  
+  cond <- is.na(cu_prior_df$prSmax)
+  cuid_concerned <- cu_prior_df$cuid[cond]
   for(cu in cuid_concerned){
     # cu <- cuid_concerned[2]
     cond <- conservationunits_decoder$cuid == cu

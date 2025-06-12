@@ -23,7 +23,9 @@ The goal of the script is to associate each population (defined by the fields `P
 ```{r,include=FALSE}
 
 #'******************************************************************************
-#' The goal of the script is to 
+#' The goal of the script is to produce the final dataset2_spawner-surveys_DATE.csv
+#' dataset. The script source spawner-survey data from NuSEDS and other source and
+#' combine them.
 #' 
 #' Previous script: Fraser_salmon_CU_updates.Rmd
 #' 
@@ -98,7 +100,7 @@ source("code/functions.R")
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- F
+export_datasets <- T
 
 #' Decision made in 1_nuseds_collation.rmd: 
 #' Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
@@ -296,6 +298,13 @@ TBR_data$species_qualified <- sapply(TBR_data$cuid,function(cuid){
   return(unique(conservationunits_decoder$species_qualified[cond]))
 })
 
+
+cond <- TBR_data$species_name %in% c("Pink (odd)","Pink (even)")
+TBR_data$species_name[cond] <- "Pink"
+
+cond <- TBR_data$species_name %in% c("River sockeye","Lake sockeye")
+TBR_data$species_name[cond] <- "Sockeye"
+
 TBR_data$region <- "Northern Transboundary" # is "Transboundary"
 
 # Old, still relevant?
@@ -395,6 +404,8 @@ CC_data$species_qualified <- sapply(CC_data$cuid,function(cuid){
 })
 CC_data$GFE_ID <- NA
 
+unique(CC_data$species_name)
+
 show <- unique(CC_data[,c("region","species_name","cuid","cu_name_pse")])
 show <- show[order(show$region),]
 rownames(show) <- NULL
@@ -414,6 +425,8 @@ Yukon_data$species_qualified <- sapply(Yukon_data$cuid,function(cuid){
   return(unique(conservationunits_decoder$species_qualified[cond]))
 })
 Yukon_data$GFE_ID <- NA
+
+unique(Yukon_data$species_name)
 
 show <- unique(Yukon_data[,c("region","species_name","cuid","cu_name_pse")])
 show <- show[order(show$species_name),]

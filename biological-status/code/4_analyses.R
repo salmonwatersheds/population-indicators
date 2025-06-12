@@ -167,7 +167,7 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 #   biological_status_cu$psf_status_type == "Absolute" & 
 #   !is.na(biological_status_cu$psf_status_type)
 
-biological_status_cu$psf_status_type[cond]
+# biological_status_cu$psf_status_type[cond]
 
 cond <- biological_status_cu$psf_status_code %in% 1:3
 
@@ -176,10 +176,51 @@ cuid_biostat <- biological_status_cu$cuid[cond]
 # cond <- grepl("cyclic",biological_status_cu$cu_name_pse)
 # cuid_biostat <- biological_status_cu$cuid[cond]
 
+#'* ISSUE *
+#' all the cases where the percentile benchmarks are outside their CI
+
+cond <- ((benchmarks_cu$percentile_upper > benchmarks_cu$percentile_upper_975) |
+  (benchmarks_cu$percentile_upper < benchmarks_cu$percentile_upper_025) |
+  (benchmarks_cu$percentile_lower > benchmarks_cu$percentile_lower_975) |
+  (benchmarks_cu$percentile_lower < benchmarks_cu$percentile_lower_025)) &
+  !is.na(benchmarks_cu$percentile_upper)
+
+benchmarks_cu[cond,c("region","species_name","cu_name_pse","cuid",
+                     "percentile_lower_025","percentile_lower","percentile_lower_975",
+                     "percentile_upper_025","percentile_upper","percentile_upper_975")]
+
+cond_here <- cond & 
+  benchmarks_cu$cuid %in% cuid_biostat
+
+cond_here <- cond 
+
+cond_here <- cond &
+  benchmarks_cu$cuid %in% cuid_biostat & 
+  biological_status_cu$psf_status_type == "percentile" & !is.na(biological_status_cu$psf_status_type)
+
+show <- benchmarks_cu[cond_here,c("region","species_name","cu_name_pse","cuid",
+                     "percentile_lower_025","percentile_lower","percentile_lower_975",
+                     "percentile_upper_025","percentile_upper","percentile_upper_975")]
+
+show <- benchmarks_cu[cond_here,c("region","species_name","cu_name_pse","cuid")]
+
+show$psf_status_code <- sapply(show$cuid,function(cuid){
+  cond <- biological_status_cu$cuid == cuid
+  return(biological_status_cu$psf_status_code[cond])
+})
+
+show$psf_status_type <- sapply(show$cuid,function(cuid){
+  cond <- biological_status_cu$cuid == cuid
+  return(biological_status_cu$psf_status_type[cond])
+})
+
+
+
+
 figure_print <- T
 percent <- 0
 for(cuid in cuid_biostat){
-  # cuid <- 1219
+  # cuid <- 509
   plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
                                        cuspawnerabundance = spawnerabundance_cu, 
                                        dataset101_biological_status = biological_status_cu, 

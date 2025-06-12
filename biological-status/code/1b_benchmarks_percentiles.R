@@ -79,7 +79,7 @@ regions_df <- regions_fun()
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Yukon
+region <- regions_df$Central_Coast
 
 # multiple regions:
 region <- c(
@@ -96,7 +96,8 @@ region <- as.character(regions_df[1,])
 # If we specify the species:
 cond_sp <- species_acronym_df$species_qualified_simple == "CK" | 
   species_acronym_df$species_qualified_simple == "SE"
-species <- species_acronym_df$species_name_simple[cond_sp] |> unique()
+cond_sp <- species_acronym_df$species_qualified_simple == "CK"
+species <- "Chinook"
 
 # For all species
 species <- species_acronym_df$species_name_simple |> unique()
@@ -118,7 +119,7 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
 #' Import the conservationunits_decoder.csv from population-indicators/data_input or 
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)

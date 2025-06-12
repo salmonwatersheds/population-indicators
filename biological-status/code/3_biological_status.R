@@ -861,21 +861,22 @@ unique(biological_status_merged$psf_status)
 #' Changes made: 
 #' (1) implement a lower absolute abundance benchmark of 1,500
 #' (2) increase the upper benchmark from 80%Smsy/50th percentile to Smsy/75th percentile.
+#' Note that the absolute benchmark status has priority over the relative benchmark one
 
 #' For the CUs with good or fair biostatus:
-cond_12 <- biological_status_merged$psf_status_code %in% 1:2
+cond_123 <- biological_status_merged$psf_status_code %in% 1:3
 sum(is.na(biological_status_merged$current_spawner_abundance))
 cond_1500 <- !is.na(biological_status_merged$current_spawner_abundance) &
   biological_status_merged$current_spawner_abundance < 1500
 
-biological_status_merged[cond_12 & cond_1500,]
-
+biological_status_merged[cond_123 & cond_1500,]
+sum(cond_123 & cond_1500) # 48
+ 
 # update the fields:
-biological_status_merged$psf_status_code_all[cond_12 & cond_1500] <- paste0(biological_status_merged$psf_status_code_all[cond_12 & cond_1500],", 3")
-biological_status_merged$psf_status_code[cond_12 & cond_1500] <- 3
-biological_status_merged$psf_status[cond_12 & cond_1500] <- "poor"
-biological_status_merged$psf_status_type[cond_12 & cond_1500] <- "absolute"
-
+biological_status_merged$psf_status_code_all[cond_123 & cond_1500] <- paste0(biological_status_merged$psf_status_code_all[cond_123 & cond_1500],", 3")
+biological_status_merged$psf_status_code[cond_123 & cond_1500] <- 3
+biological_status_merged$psf_status[cond_123 & cond_1500] <- "poor"
+biological_status_merged$psf_status_type[cond_123 & cond_1500] <- "absolute"
 
 #' For the CUs with status_code 7: insufficient time series length:
 #' EXCEPTION for CUID = 216 (SER Skeena River-HIgh Interior):
@@ -909,6 +910,7 @@ table(biological_status_merged$psf_status)
 #            287              4             36             51             12             59 2025-03-05 
 #            284              4             37             32             12             80 2025-05-21: the data is the same but the new rule with 100% Smsy, 75% percentile and <1500 are applied 
 #            275              4             43             24             11             90 2025-06-03
+
 
 #'* Show psf_status_type for CUs with psf_status_code_all == 8 *
 #' Update (2024-11-20 from PSE data meeting): we still show the method used in 
@@ -1319,7 +1321,7 @@ biological_status_merged$psf_status_type[cond] <- "percentile"
 
 # write files in /output/archive
 date <- as.character(Sys.Date())
-date <- "2025-06-03"
+# date <- "2025-06-03"
 
 # write in the /output/archive in dropbox
 write.csv(biological_status_merged,

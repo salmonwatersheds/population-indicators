@@ -911,7 +911,6 @@ table(biological_status_merged$psf_status)
 #            284              4             37             32             12             80 2025-05-21: the data is the same but the new rule with 100% Smsy, 75% percentile and <1500 are applied 
 #            275              4             43             24             11             90 2025-06-03
 
-
 #'* Show psf_status_type for CUs with psf_status_code_all == 8 *
 #' Update (2024-11-20 from PSE data meeting): we still show the method used in 
 #' psf_status_type for the CU with only data-deficient (no estimates of spawner abundance in the most recent generation)
@@ -919,11 +918,19 @@ table(biological_status_merged$psf_status)
 cond_8 <- biological_status_merged$psf_status_code_all == "8"
 cond_sr <- !is.na(biological_status_merged$sr_status)
 cond_percentile <- !is.na(biological_status_merged$percentile_status)
+
 # biological_status_merged[cond_8,]
 # Check that all these CUs have a biostatus_type available
-sum(cond_8) - sum(cond_sr & cond_8) - sum(cond_8 & !cond_sr & cond_percentile) # should be 0
+sum(cond_8) - sum(cond_8 & cond_sr) - sum(cond_8 & !cond_sr & cond_percentile)  # should be 0
 biological_status_merged$psf_status_type[cond_8 & cond_sr] <- "sr"
 biological_status_merged$psf_status_type[cond_8 & !cond_sr & cond_percentile] <- "percentile"
+
+# New rule with absolute benchmarks:
+cond_1500 <- !is.na(biological_status_merged$current_spawner_abundance) &
+  biological_status_merged$current_spawner_abundance < 1500
+biological_status_merged$psf_status_type[cond_8 & cond_sr & cond_1500] <- "absolute"
+biological_status_merged$psf_status_type[cond_8 & !cond_sr & cond_percentile & cond_1500] <- "absolute"
+
 
 #'* Add field  hist_COLOUR *
 #' Note: this will be be removed in future. And no need to do the same for 

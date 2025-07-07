@@ -861,21 +861,22 @@ unique(biological_status_merged$psf_status)
 #' Changes made: 
 #' (1) implement a lower absolute abundance benchmark of 1,500
 #' (2) increase the upper benchmark from 80%Smsy/50th percentile to Smsy/75th percentile.
+#' Note that the absolute benchmark status has priority over the relative benchmark one
 
 #' For the CUs with good or fair biostatus:
-cond_12 <- biological_status_merged$psf_status_code %in% 1:2
+cond_123 <- biological_status_merged$psf_status_code %in% 1:3
 sum(is.na(biological_status_merged$current_spawner_abundance))
 cond_1500 <- !is.na(biological_status_merged$current_spawner_abundance) &
   biological_status_merged$current_spawner_abundance < 1500
 
-biological_status_merged[cond_12 & cond_1500,]
-
+biological_status_merged[cond_123 & cond_1500,]
+sum(cond_123 & cond_1500) # 48
+ 
 # update the fields:
-biological_status_merged$psf_status_code_all[cond_12 & cond_1500] <- paste0(biological_status_merged$psf_status_code_all[cond_12 & cond_1500],", 3")
-biological_status_merged$psf_status_code[cond_12 & cond_1500] <- 3
-biological_status_merged$psf_status[cond_12 & cond_1500] <- "poor"
-biological_status_merged$psf_status_type[cond_12 & cond_1500] <- "absolute"
-
+biological_status_merged$psf_status_code_all[cond_123 & cond_1500] <- paste0(biological_status_merged$psf_status_code_all[cond_123 & cond_1500],", 3")
+biological_status_merged$psf_status_code[cond_123 & cond_1500] <- 3
+biological_status_merged$psf_status[cond_123 & cond_1500] <- "poor"
+biological_status_merged$psf_status_type[cond_123 & cond_1500] <- "absolute"
 
 #' For the CUs with status_code 7: insufficient time series length:
 #' EXCEPTION for CUID = 216 (SER Skeena River-HIgh Interior):
@@ -917,11 +918,19 @@ table(biological_status_merged$psf_status)
 cond_8 <- biological_status_merged$psf_status_code_all == "8"
 cond_sr <- !is.na(biological_status_merged$sr_status)
 cond_percentile <- !is.na(biological_status_merged$percentile_status)
+
 # biological_status_merged[cond_8,]
 # Check that all these CUs have a biostatus_type available
-sum(cond_8) - sum(cond_sr & cond_8) - sum(cond_8 & !cond_sr & cond_percentile) # should be 0
+sum(cond_8) - sum(cond_8 & cond_sr) - sum(cond_8 & !cond_sr & cond_percentile)  # should be 0
 biological_status_merged$psf_status_type[cond_8 & cond_sr] <- "sr"
 biological_status_merged$psf_status_type[cond_8 & !cond_sr & cond_percentile] <- "percentile"
+
+# New rule with absolute benchmarks:
+cond_1500 <- !is.na(biological_status_merged$current_spawner_abundance) &
+  biological_status_merged$current_spawner_abundance < 1500
+biological_status_merged$psf_status_type[cond_8 & cond_sr & cond_1500] <- "absolute"
+biological_status_merged$psf_status_type[cond_8 & !cond_sr & cond_percentile & cond_1500] <- "absolute"
+
 
 #'* Add field  hist_COLOUR *
 #' Note: this will be be removed in future. And no need to do the same for 
@@ -1319,7 +1328,7 @@ biological_status_merged$psf_status_type[cond] <- "percentile"
 
 # write files in /output/archive
 date <- as.character(Sys.Date())
-date <- "2025-06-03"
+# date <- "2025-06-03"
 
 # write in the /output/archive in dropbox
 write.csv(biological_status_merged,

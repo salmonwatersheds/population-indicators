@@ -49,6 +49,10 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          wds_l$wd_population_indicator_data_input_dropbox,
                                          sep = "/")
 
+wd_pop_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+                              wds_l$wd_population_indicator_dropbox,
+                              "biological-status/data", sep = "/")
+
 # wd_output <- gsub("/output","/output_NORMAL_DIST",wd_output)
 
 # Import functions for this specific project
@@ -289,7 +293,16 @@ prior_extra <- prior_extra[!cond,]
 prior_extra <- prior_extra %>%
   arrange(region,cu_name_pse)
 
+prior_extra$species_name <- sapply(prior_extra$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(conservationunits_decoder$species_name[cond])
+})
+
+prior_extra <- prior_extra[,c("region","species_name","species_qualified",
+                              "cu_name_pse","cuid","prSmax","source")]
+
 write.csv(prior_extra,paste0(wd_data,"/priors_Smax.csv"), row.names = F)
+write.csv(prior_extra,paste0(wd_pop_data_dropbox,"/priors_Smax.csv"), row.names = F)
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species

@@ -1,7 +1,7 @@
 ---
 title: "1_nuseds_collation"
 author: "Bruno S. Carturan, Eric Hertz, Stephanie J. Peacock"
-date: "2025-01-24"
+date: "2025-08-22"
 output: 
   html_document:
     toc: true                  # Adds a table of contents to the document
@@ -29,23 +29,33 @@ Fisheries and Oceans Canada. 2024. NuSEDS - New Salmon Escapement Database Syste
 #' The goal of the script is to import, clean and format NuSEDS data.
 #' Script based on Emma Atkinson's previous version (26-Mar-2019).
 #' 
-#' Files imported:
-#' - conservationunits_decoder.csv (from database)
-#' - streamlocationids.csv (from database)
-#' - all_areas_nuseds_DATE.csv (from DFO)
-#' - conservation_unit_system_sites_DATE.csv (from DFO)
-#' - nuseds_report_definitions.csv (from DFO)
-#' - conservation_unit_report_definitions.csv (from DFO)
-#' - DFO_GFE_IDs_list_1.xlsx (from Wu Zhipeng, DFO)
-#' - DFO_GFE_IDs_list_2.xlsx (from Wu Zhipeng, DFO)
-#' 
-#' Files produced: 
-#' - 1_all_areas_nuseds_cleaned_DATE.csv
-#' - 1_conservation_unit_system_sites_cleaned_DATE.csv
-#' - 1_NuSEDS_escapement_data_collated_DATE.csv         # the merged and further corrected all_areas_nuseds and conservation_unit_system_sites
-#' - 1_series_inNUSEDS_noInCUSS_DATE.csv                # series removed because no alternative series could be found in conservation_unit_system_sites; to investigate later may be
-#' - 1_series_removed_DATE.csv                          # series removed from either datasets and why
-#' - 1_series_added_DATE.csv                            # series added to either dataset and why
+#' Imported files:
+
+#'- all_areas_nuseds_DATE.csv                    # "NUSEDS"
+#'- conservation_unit_system_sites_DATE.csv      # "CUSS"
+#'- conservationunits_decoder.csv                      # the list of conservation units as defined in the PSE
+#'- nuseds_report_definitions.csv                      # definition of the fields in all_areas_nuseds
+#'- conservation_unit_report_definitions.csv           # definition of the fields in conservation_unit_system_sites
+#'- DFO_All_Streams_Segments_20240408.xlsx             # stream - GFE_ID data file from DFO (emailed by Wu Zhipeng, DFO, 09/04/2024)
+#'- PSF_modified_SEP_releases_2023.xlsx                # DFO's Hatchery dataset (emailed by Brock Ramshaw, DFO, 03/07/2023)
+#'- /pse_conservation_units/pse_conservation_units.gdb # shape files of the conservation unites as defined in the PSE
+#'- /se_boundary_regions/se_boundary_regions.shp       # shape files for the Region boundaries as defined in the PSE
+
+
+#' Files both imported & exported (intermediate "_TEMP" files created to save computation time):
+
+#'- all_areas_nuseds_noNA0s_TEMP.csv  # NUSEDS after removing the time series only made of NAs and/or 0s (not used in paper)
+#'- all_areas_nuseds_noNAs_TEMP.csv   # NUSEDS after removing the time series only made of NAs (used in paper)
+#'- trackRecord_noNA0s_TEMP.csv       # all the time series in CUSS not in NUSEDS using all_areas_nuseds_noNA0s_TEMP.csv (not used in paper)
+#'- trackRecord_noNAs_TEMP.csv        # all the time series in CUSS not in NUSEDS using all_areas_nuseds_noNAs_TEMP.csv (used in paper)
+
+
+#' Files exported:
+
+#'- 1_NuSEDS_escapement_data_collated_DATE.csv   # the cleaned combined NUSEDS and CUSS dataset with time series containing only NAs removed
+#'- 1_series_inNUSEDS_noInCUSS_DATE.csv          # Export the series in NUSEDS with IndexIds and GFE_IDs not in CUSS with info on the number of data points and POPULATION
+#'- 1_series_removed_DATE.csv                    # series removed to either NUSEDS or CUSS
+#'- 1_series_added_DATE.csv                      # series added to either NUSEDS or CUSS
 #' - log_file.csv                                     # the log file containing the name of the orginak NUSEDS and CUSS files imported and the information about 0s being removed or not.
 
 #'******************************************************************************
@@ -64,6 +74,8 @@ library(dplyr)
 library(readxl)
 library(parallel)
 library(sp) # to calculate distances from geo-spatial coordinates
+library(sf)
+library(scales)
 # library(dplyr)
 # library(tibble)
 # library(scales)
@@ -116,6 +128,8 @@ wd_hatchery <- paste(wd_X_Drive1_PROJECTS,
                      wds_l$wd_population_indicator_dropbox,
                      "hatchery-releases",
                      sep = "/")
+
+wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
 
 source("code/functions.R")
 
@@ -345,6 +359,41 @@ head(DFO_hatchery[,c("STOCK_GFE_ID","STOCK_WATERBODY_NAME","STOCK_LATITUDE","STO
 #     streamlocationids$species_name[streamlocationids$cuid == c] <- conservationunits_decoder$species_name[cond]
 #   }
 # }
+```
+
+The regions and CUs shape files as defined in the PSE are imported:
+
+```{r, include=FALSE}
+
+#'* Import the shape files for the Region boundaries *
+#' Note that se_boundary/se_boundary.shp is used in 0_assign-regions.R. This is a
+#' lighter shape file but contains the same regions. The code here works with 
+#' se_boundary.shp.
+
+regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
+  st_transform(crs = 4269)
+unique(regions_shp$regionname)
+
+sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
+
+regions_shp_full <- regions_shp
+regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001 # to reduce computation time
+
+# plot(st_geometry(regions_shp_full[1,]))
+# plot(st_geometry(regions_shp[1,]))
+
+#'* Import the geodatabase for the CU boundaries  *
+CUs_gdb <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/pse_conservation_units/pse_conservation_units.gdb")) %>%
+  st_transform(crs = 4269)
+head(CUs_gdb)
+unique(CUs_gdb$species)
+unique(CUs_gdb$region)
+
+CUs_gdb_full <- CUs_gdb      
+CUs_gdb <- st_simplify(x = CUs_gdb_full, dTolerance = .002) # to reduce computation time
+
+# plot(st_geometry(CUs_gdb_full[1,]))
+# plot(st_geometry(CUs_gdb[1,]), add = F)
 ```
 
 # Initial modifications
@@ -1107,7 +1156,7 @@ all_areas_nuseds <- fields_edit_NUSEDS_CUSS_fun(IndexId_focal = "PKE_54793433",
 # removed$comment <- c("Removed because not in NUSEDS and alternative series PKE_54793433 & GFE_ID = 1490 has only one data point, which was also removed",
 #                      "Only 1 data point(s) and not in CUSS")
 # 
-# removed_all <- rbind(removed_all,removed)
+removed_all <- rbind(removed_all,removed)
 # 
 # condition <- conservation_unit_system_sites$IndexId == removed$IndexId[1] &
 #   conservation_unit_system_sites$GFE_ID == removed$GFE_ID[1]
@@ -3309,7 +3358,7 @@ removed$comment <- "Series not in CUSS, merged to series CO_46170 & GFE_ID = 213
 removed_all <- rbind(removed_all,removed)
 ```
 
-The other focal series `r paste("CO_46170","54282",sep = " - ")` in black ("DAM"; top plot) is instead added to **CUSS**. Its `GFE_ID` is not in **CUSS**: but it is in **DFO streams file** but without coordinates:
+The other focal series `r paste("CO_46170","54282",sep = " - ")` in black ("DAM"; top plot) is instead added to **CUSS**. Its `GFE_ID` is not in **CUSS**: 
 
 ```{r, echo=FALSE}
 # The coordinates are not in DFO_All_Streams_Segments:
@@ -3322,11 +3371,6 @@ It is also not in the **DFO hatchery file**"
 ```{r, echo=FALSE}
 cond <- DFO_hatchery$REL_GFE_ID == 54282 & !is.na( DFO_hatchery$REL_GFE_ID)
 DFO_hatchery[cond,c("REL_GFE_ID","REL_LATITUDE","REL_LONGITUDE")]
-```
-
-```{r, echo=FALSE}
-cond <- DFO_hatchery$STOCK_GFE_ID == 54282 & !is.na( DFO_hatchery$STOCK_GFE_ID)
-DFO_hatchery[cond,c("STOCK_GFE_ID","STOCK_LATITUDE","STOCK_LONGITUDE")]
 ```
 
 It is in the **DFO streams file** but without coordinates:
@@ -4005,7 +4049,7 @@ show
 
 Because the focal series `r paste("CO_46835","2463",sep = " - ")` is much more recent that the alternative series `r paste("CO_46835","285",sep = " - ")`, it the latter that is modified in **CUSS** (i.e., the `GFE_ID` of the alternative series is changed to the one of the focal series) and in **NUSEDS**.
 
-```{r, include=FALSE}
+```{r, echo=FALSE}
 
 # modify CUSS
 conservation_unit_system_sites <- fields_edit_NUSEDS_CUSS_fun(edit_CUSS = T, 
@@ -4420,7 +4464,7 @@ for(i in is){
 }
 ```
 
-The resulting merged focal series are not merged to the alternative series but are added to **CUSS** instead
+The resulting merged focal series are not merged to the alternative series but are added to **CUSS** instead.
 
 ```{r,echo=FALSE}
 #' Cases with PHILLIPS RIVER & CLEAR WATER CREEK (VIMI) (i = 17 to 22)
@@ -4774,37 +4818,37 @@ show
 ```
 
 ```{r, include=FALSE}
-wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
+# wd_pop_indic_data_gis_dropbox <- gsub("input","gis",wd_pop_indic_data_input_dropbox)
+# 
+# library(sf)
+# library(sp)     # for spDists() TERRA is the replacement
+# library(scales)
+# 
+# #'* Import the shape files for the Region boundaries  *
+# # wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
+# # wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS)
+# # wd_maps_rg <- paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions")
+# regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
+#   st_transform(crs = 4269)
+# unique(regions_shp$regionname)
+# sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
+# regions_shp_full <- regions_shp
+# regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001 # to reduce computation time
+# 
+# # plot(st_geometry(regions_shp_full[1,]))
+# # plot(st_geometry(regions_shp[1,]))
+# 
+# #'* Import the geodatabase for the CU boundaries  *
+# # wd_maps_cu <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
+# # wd_maps_cu <- paste0(wd_maps_cu,"/CUs_Master/GDB")
+# CUs_gdb <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/pse_conservation_units/pse_conservation_units.gdb")) %>%
+#   st_transform(crs = 4269)
+# head(CUs_gdb)
+# unique(CUs_gdb$species)
+# unique(CUs_gdb$region)
 
-library(sf)
-library(sp)     # for spDists() TERRA is the replacement
-library(scales)
-
-#'* Import the shape files for the Region boundaries  *
-# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
-# wd_maps_rg <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS)
-# wd_maps_rg <- paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions")
-regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
-  st_transform(crs = 4269)
-unique(regions_shp$regionname)
-sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
-regions_shp_full <- regions_shp
-regions_shp <- st_simplify(x = regions_shp, dTolerance = .002) # .001 # to reduce computation time
-
-# plot(st_geometry(regions_shp_full[1,]))
-# plot(st_geometry(regions_shp[1,]))
-
-#'* Import the geodatabase for the CU boundaries  *
-# wd_maps_cu <- gsub("1_PROJECTS","5_DATA",wd_X_Drive1_PROJECTS) # files not up to date
-# wd_maps_cu <- paste0(wd_maps_cu,"/CUs_Master/GDB")
-CUs_gdb <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/pse_conservation_units/pse_conservation_units.gdb")) %>%
-  st_transform(crs = 4269)
-head(CUs_gdb)
-unique(CUs_gdb$species)
-unique(CUs_gdb$region)
-
-CUs_gdb_full <- CUs_gdb      
-CUs_gdb <- st_simplify(x = CUs_gdb_full, dTolerance = .002) # to reduce computation time
+# CUs_gdb_full <- CUs_gdb      
+# CUs_gdb <- st_simplify(x = CUs_gdb_full, dTolerance = .002) # to reduce computation time
 
 # plot(st_geometry(CUs_gdb_full[1,]))
 # plot(st_geometry(CUs_gdb[1,]), add = F)

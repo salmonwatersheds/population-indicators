@@ -243,7 +243,7 @@ retrieve_data_from_PSF_databse_fun <- function(dsn_database = "salmondb_prod",
   
   dataset <- dbGetQuery(
     conn = connec,
-    statement = paste("SELECT * FROM",name_dataset)
+    statement = paste("SELECT * FROM", name_dataset)
   )
   
   # Replace -989898 with NA

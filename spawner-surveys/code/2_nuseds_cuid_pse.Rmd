@@ -17,7 +17,9 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
-The goal of the script is to associate each population (defined by the fields `POP_ID` = `IndexId`, the latter also specifying the species acronym) in the **cleaned NuSEDS** dataset (i.e., *NuSEDS_escapement_data_collated_DATE.csv*) to the conservation unit identification number `cuid`, as defined in the Pacific Salmon explorer ([PSE](https://www.salmonexplorer.ca/)). The cleaning procedure is coded in the script *1_nuseds_collation.rmd* and is visible in [1_nuseds_collation.html](https://bookdown.org/salmonwatersheds/1_nuseds_collation_atkinson/1_nuseds_collation.html).
+The goal of the script is to associate each population (defined by the fields `POP_ID` = `IndexId`, the latter also specifying the species acronym) in the **cleaned NuSEDS** dataset (i.e., *NuSEDS_escapement_data_collated_DATE.csv*) to the conservation unit identification number `cuid`, as defined in the Pacific Salmon explorer ([PSE](https://www.salmonexplorer.ca/)). The cleaning procedure is coded in the script *1_nuseds_collation.rmd* and is visible in [1_nuseds_collation.html](https://bookdown.org/salmonwatersheds/1_nuseds_collation/1_nuseds_collation.html).
+
+*IMPORTANT NOTE:* This is the script that PSF maintains actively and it is updated annually as new versions of NuSEDS are released. The corresponding script used in [Atkinson et al. 2025. Monitoring for fisheries or for fish? Declines in monitoring of salmon spawners continue despite a conservation crisis](https://doi.org/10.1139/cjfas-2024-0387) is accessible at: [b_nuseds_cuid_pse.Rmd](https://github.com/salmonwatersheds/salmon_data_demise/blob/main/code/b_nuseds_cuid_pse.Rmd).
 
 ```{r,include=FALSE}
 

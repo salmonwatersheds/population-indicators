@@ -23,6 +23,9 @@ The dataset version corresponding to this script is:
 
 Fisheries and Oceans Canada. 2024. NuSEDS - New Salmon Escapement Database System. Pacific Biological Station. Retrieved January 22, 2024, from <https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6>.
 
+*IMPORTANT NOTE:* This is the script that PSF maintains actively and it is updated annually as new versions of NuSEDS are released. The corresponding script used in [Atkinson et al. 2025. Monitoring for fisheries or for fish? Declines in monitoring of salmon spawners continue despite a conservation crisis](https://doi.org/10.1139/cjfas-2024-0387) is accessible at: [a_nuseds_collation.Rmd](https://github.com/salmonwatersheds/salmon_data_demise/blob/main/code/a_nuseds_collation.Rmd).
+
+
 ```{r, include = F}
 
 #'******************************************************************************

@@ -92,9 +92,11 @@ hatchery-releases/output/SWP_hatchery_data.xlsx
 spawner-surveys/data
 spawner-surveys/references
 spawner-surveys/code/1_nuseds_collation_1.rmd
+spawner-surveys/code/1_nuseds_collation_1.R
 spawner-surveys/code/nuseds_data_collation_old.R
 spawner-surveys/code/nuseds_data_collation_old2.R
 spawner-surveys/code/nuseds_data_collation_old3.R
+spawner-surveys/code/2_nuseds_cuid_streamid.R
 spawner-surveys/code/2_nuseds_cuid_streamid_old.R
 spawner-surveys/code/2_nuseds_cuid_streamid_old2.R
 spawner-surveys/code/QR_code_1_nuseds_collation.png

@@ -1,2 +1,3 @@
 "","region","species_name","species_qualified","cuid","cu_name_pse","streamid","stream_name_pse","GFE_ID","indicator","latitude","longitude","year","stream_observed_count","stream_survey_method","stream_survey_quality","source_id"
-"111881","Central Coast","Chinook","CK",512,"Bella Coola-Bentinck",1998,"ATNARKO RIVER",970,"N",52.376564,-126.094356,1950,NA,"Not Applicable","Unknown","NuSEDS_20250221"
+"1","Yukon","Chinook","CK",1201,"Big Salmon",10194,"BIG SALMON RIVER",2516,"Y",61.880259,-134.922526,1959,68,"unknown estimate method","Unkonwn","PSF_Carturan_20250415"
+"2","Yukon","Chinook","CK",1201,"Big Salmon",10194,"BIG SALMON RIVER",2516,"Y",61.880259,-134.922526,1968,857,"unknown estimate method","Unkonwn","PSF_Carturan_20250415"

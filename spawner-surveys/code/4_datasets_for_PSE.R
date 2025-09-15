@@ -75,7 +75,7 @@ library(dplyr)
 options(warn = 0)
 options(digits = 9) ## 7
 
-# Import files -------
+# Import files for MAIN NUSEDS UPDATE -------
 #
 
 #'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
@@ -727,9 +727,6 @@ write.csv(dataset_1part2[1:2,],paste0(getwd(),"/output/dataset2_spawner_surveys_
 # cond <- dataset_1part2$species_name == "Coho"
 # sites_Coho <- unique(dataset_1part2$GFE_ID[cond])
 # length(sites_Coho) # 1705
-
-
-
 #
 # Check if multiple series appear for a same cuid - streamid combination -----------
 #' There WERE several instances were there were multiple locations associated to
@@ -813,3 +810,81 @@ for(r in 1:nrow(series)){
 
 
 dataset_1part2$streami
+
+#
+# UPDATE YUKON ONLY Start here ------
+#
+
+#'* conservationunits_decoder * 
+conservationunits_decoder <- read.csv(paste0(wd_pop_indic_data_input_dropbox,
+                                             "/conservationunits_decoder.csv"),header = T)
+unique(conservationunits_decoder$region)
+
+#' * Import the full dataset2_spawner-surveys_DATE.csv  *
+#' 
+spawnerSurveryFull <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                 pattern = "dataset2_spawner-surveys") #
+
+head(spawnerSurveryFull)
+
+# remove the Yukon data from spawnerSurveryFull
+cond_Yukon <- spawnerSurveryFull$region == "Yukon"
+sum(cond_Yukon) # 657
+
+spawnerSurveryFull <- spawnerSurveryFull[!cond_Yukon,]
+unique(spawnerSurveryFull$region)
+
+# check source_id
+unique(spawnerSurveryFull$source_id)
+cond <- spawnerSurveryFull$source_id == ""
+unique(spawnerSurveryFull$region[cond])
+unique(spawnerSurveryFull$species_name[cond]) # --> no source for steelhead yet
+spawnerSurveryFull[cond,]
+
+#' 
+#' * Import the Yukon data *
+wd_Yukon_data <- paste0(wd_X_Drive1_PROJECTS,
+                        "/1_Active/Population Methods and Analysis/population-data/yukon-data/output/archive")
+
+Yukon_data <- import_mostRecent_file_fun(wd = wd_Yukon_data,
+                                         pattern = "dataset2_spawner-surveys_Yukon") # TEMPORARY
+head(Yukon_data)
+nrow(Yukon_data) # 772
+
+# merge the two
+spawnerSurveryFull <- rbind(spawnerSurveryFull,Yukon_data)
+
+# Update VIMI:
+cond_VIMI <- spawnerSurveryFull$region ==  "Vancouver Island & Mainland Inlets"
+for(cu in unique(spawnerSurveryFull$cuid[cond_VIMI])){
+  cond <- conservationunits_decoder$cuid == cu
+  rg <- unique(conservationunits_decoder$region[cond])
+  
+  cond <- spawnerSurveryFull$cuid == cu
+  spawnerSurveryFull$region[cond] <- rg
+}
+unique(spawnerSurveryFull$region)
+
+
+# order fields:
+spawnerSurveryFull <- spawnerSurveryFull %>% 
+  arrange(factor(region, levels = c("Yukon","Transboundary","Haida Gwaii","Nass",
+                                    "Skeena","Central Coast",
+                                    "East Vancouver Island & Mainland Inlets",
+                                    "West Vancouver Island",
+                                    "Fraser","Columbia")),
+          species_name,
+          cu_name_pse,
+          factor(indicator, levels = c("Y","N","",NA)),
+          stream_name_pse,
+          year)
+
+#
+date <- Sys.Date()
+write.csv(spawnerSurveryFull,paste0(wd_output,"/archive/dataset2_spawner-surveys_",date,".csv"),
+          row.names = F)
+
+# Produce a dummy datasets in the loca; /ouput repo to push to github
+write.csv(spawnerSurveryFull[1:2,],paste0(getwd(),"/output/dataset2_spawner-surveys_dummy.csv"))
+
+

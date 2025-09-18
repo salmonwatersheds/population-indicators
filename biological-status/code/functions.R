@@ -546,15 +546,29 @@ modelBoot <- function(
     series, 
     numLags = 1, # numLags is the lag for the autocorrelation; default is just 1 year
     nBoot = 10000, 
-    benchmarks = c(0.25, 0.75) # c(0.25, 0.5)
+    benchmarks = c(0.25, 0.75), # c(0.25, 0.5)
+    aic = FALSE,
+    remove_NAs_tails = F # to remove NAs on each side of the time series
 ){
   
+  require(scales)
+  
   if(sum(!is.na(series)) > 1){ # if there is at least two data points (to avoid crashing)
+    
+    # Remove NAs on each side of the time series
+    if(remove_NAs_tails){
+      while(is.na(series[1])){
+        series <- series[-1]
+      }
+      while(is.na(series[length(series)])){
+        series <- series[-length(series)]
+      }
+    }
     
     # check if every odd or even year have consistently NAs like for Pink salmons,
     # which generate a error in the ar(). So it that case, remove 
     # the odd or even years data points.
-    # OTHE TSOLUTION THAT DOES NOT WORK: set numLags to 2
+    # OTHER SOLUTION THAT DOES NOT WORK: set numLags to 2
     series_odd <- series[1:length(series) %% 2 == 1]
     series_even <- series[1:length(series) %% 2 == 0]
     keep_odd <- sum(!is.na(series_odd)) > 0
@@ -568,12 +582,14 @@ modelBoot <- function(
     
     n <- length(series) 
     
+    # plot(x = 1:length(series),y = log(series), type = "l", lwd = 2)
+    
     ar.fit <- ar(
       log(series), # spawner time series
       demean = TRUE, # Estimate mean spawners
       intercept = FALSE, # Intercept = 0 for autocorrelation
       order.max = numLags, # lag for autocorrelation
-      aic = FALSE, # estimate autocorrelation for all numLags 
+      aic = aic, # FAULSE estimate autocorrelation for all numLags 
       method = "yule-walker", # only method that allows for NAs
       na.action = na.pass #
     ) # standard OLS
@@ -615,7 +631,8 @@ modelBoot <- function(
       
       # obs.star.log[,i]
       
-      HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]), benchmarks, na.rm = TRUE)
+      HS_benchBoot[i, ] <- quantile(exp(obs.star.log[(numLags + 1):(numLags + n), i]),
+                                    benchmarks, na.rm = TRUE)
     } # end bootstrap loop
     
     # plot(x = 1:(n+1), y = obs.star.log[,1], type = 'l', col = alpha('grey10',alpha = 0.5),
@@ -641,20 +658,346 @@ modelBoot <- function(
     
     ouptup <- list(m = HS_benchmedian, 
                    CI = HS_benchCI, 
-                   simulatedSeries = obs.star, 
+                   seriesSimulated = obs.star,
+                   seriesOriginal = series,
                    benchmarks = benchmarks,
-                   benchmarkBoot = HS_benchBoot)
+                   benchmarkBoot = HS_benchBoot,
+                   ar_model = ar.fit)
   }else{
     
     ouptup <- list(m = rep(NA,length(benchmarks)), 
                    CI = matrix(NA,nrow = 2, ncol = length(benchmarks)), 
-                   simulatedSeries = NA, 
+                   seriesSimulated = NA, 
+                   seriesOriginal = series,
                    benchmarks = benchmarks,
-                   benchmarkBoot = NA)
+                   benchmarkBoot = NA,
+                   ar_model = NA)
   }
   
   return(ouptup)
 }
+
+#' Function to perform naive bootstrapping of a time series.
+#' - NAs at the end of each tails are removed.
+#' - NAs inside the time series are kept in the re-sampling.
+# x <- bootstrap_cuid_fun(cuid,spawnerabundance = spawnerabundance)
+# x$CI
+bootstrap_cuid_fun <- function(cuid, nBoot = 5000, 
+                               benchmarks = c(.25,.75),
+                               cuspawnerabundance){
+  
+  cond_cuid <- cuspawnerabundance$cuid == cuid[1] # only one cuid at a time
+  
+  # Select the time series
+  spawnerAbundance_here <- cuspawnerabundance$estimated_count[cond_cuid]
+  spawnerAbundance_here[spawnerAbundance_here < 0 & !is.na(spawnerAbundance_here)] <- NA
+  spawnerAbundance_here[spawnerAbundance_here == 0 & !is.na(spawnerAbundance_here)] <- 1
+  names(spawnerAbundance_here) <- cuspawnerabundance$year[cond_cuid]
+  
+  # remove NAs on each tail
+  while(is.na(spawnerAbundance_here[1])){
+    spawnerAbundance_here <- spawnerAbundance_here[-1]
+  }
+  while(is.na(spawnerAbundance_here[length(spawnerAbundance_here)])){
+    spawnerAbundance_here <- spawnerAbundance_here[-length(spawnerAbundance_here)]
+  }
+  
+  # bootstrap
+  simulatedSeries <- matrix(nrow = length(spawnerAbundance_here), 
+                            ncol = nBoot)
+  benchmarks_sim <- matrix(nrow = nBoot, 
+                           ncol = length(benchmarks), 
+                           dimnames = list(c(1:nBoot),paste0("benchmark_",benchmarks)))
+  
+  for(i in 1:nBoot){
+    series.i <- sample(spawnerAbundance_here, replace = TRUE) # re-sample data
+    simulatedSeries[,i] <- series.i
+    benchmarks_sim[i,] <- quantile(series.i, benchmarks, na.rm = T) # save benchmark
+  }
+  
+  benchmarks_median <-  apply(benchmarks_sim, 2, median, na.rm = TRUE)
+  
+  benchmarks_CI <- apply(benchmarks_sim, 2, quantile, c(0.025, 0.975), na.rm = TRUE)
+  
+  output <- list(m = benchmarks_median, 
+                 CI = benchmarks_CI, 
+                 seriesSimulated = simulatedSeries,
+                 seriesOriginal = spawnerAbundance_here,
+                 benchmarks = benchmarks,
+                 benchmarkBoot = benchmarks_sim)
+  
+  return(output)
+}
+
+#' Function to perform block boostrapping on a time series.
+#' from: https://github.com/salmonwatersheds/percentile-benchmarks-CI
+#' - NAs on each tail of the time series are removed.
+#' - NAs inside the time series are kept in the re-sampling.
+#' - there is the option to have a fix block length (if integer is provided) OR to
+#'   give a proportion to adjust the block length to the length of the time series
+#'   (e.g. .25 = 1/4 --> 4 blocks) 
+# x <- bootstrap_block_cuid_fun(cuid,spawnerabundance = spawnerabundance, 
+#                               blockLength = 10, nBoot = 100)
+# x$CI
+bootstrap_block_cuid_fun <- function(cuid, nBoot = 5000, 
+                                     benchmarks = c(.25,.75),
+                                     cuspawnerabundance,
+                                     blockLength = 10){
+  
+  cond_cuid <- cuspawnerabundance$cuid == cuid[1] # only one cuid at a time
+  
+  # Select the time series
+  spawnerAbundance_here <- cuspawnerabundance$estimated_count[cond_cuid]
+  spawnerAbundance_here[spawnerAbundance_here < 0 & !is.na(spawnerAbundance_here)] <- NA
+  spawnerAbundance_here[spawnerAbundance_here == 0 & !is.na(spawnerAbundance_here)] <- 1
+  names(spawnerAbundance_here) <- cuspawnerabundance$year[cond_cuid]
+  
+  # remove NAs on each tail
+  while(is.na(spawnerAbundance_here[1])){
+    spawnerAbundance_here <- spawnerAbundance_here[-1]
+  }
+  while(is.na(spawnerAbundance_here[length(spawnerAbundance_here)])){
+    spawnerAbundance_here <- spawnerAbundance_here[-length(spawnerAbundance_here)]
+  }
+  
+  # define block length and the number of blocks
+  if(blockLength < 1){
+    nBlocks <- 1/blockLength
+    blockLength <- ceiling(length(spawnerAbundance_here)/nBlocks)
+  }else{
+    nBlocks <- ceiling(length(spawnerAbundance_here)/blockLength)
+  }
+  
+  #
+  n <- length(spawnerAbundance_here)
+  
+  # bootstrap
+  simulatedSeries <- matrix(nrow = n, ncol = nBoot)
+  
+  benchmarks_sim <- matrix(nrow = nBoot, 
+                           ncol = length(benchmarks), 
+                           dimnames = list(c(1:nBoot),paste0("benchmark_",benchmarks)))
+  
+  for(i in 1:nBoot){
+    
+    # Select starting points for blocks
+    j <- sample(1:(n - blockLength + 1), size = nBlocks, replace = TRUE)
+    
+    # Indices of new time series to be constructed
+    newIndex <- rep(j, each = blockLength) + rep(0:(blockLength - 1), nBlocks)
+    
+    # Block-sampled spawner timeseries
+    series.i <- spawnerAbundance_here[newIndex[1:n]]
+    
+    simulatedSeries[,i] <- series.i
+    benchmarks_sim[i,] <- quantile(series.i, benchmarks, na.rm = T) # save benchmark
+  }
+  
+  benchmarks_median <-  apply(benchmarks_sim, 2, median, na.rm = TRUE)
+  
+  benchmarks_CI <- apply(benchmarks_sim, 2, quantile, c(0.025, 0.975), na.rm = TRUE)
+  
+  output <- list(m = benchmarks_median, 
+                 CI = benchmarks_CI, 
+                 seriesSimulated = simulatedSeries,
+                 seriesOriginal = spawnerAbundance_here,
+                 benchmarks = benchmarks,
+                 benchmarkBoot = benchmarks_sim,
+                 blockLength = blockLength)
+  
+  return(output)
+}
+
+#' Function to perform a bootstrap method on a time series using auto-regressive
+#' model (use of the function modelBoot()).
+bootstrap_ar_cuid_fun <- function(cuid, nBoot = 5000, numLags = 1, 
+                                  benchmarks = c(.25,.75),
+                                  cuspawnerabundance, aic = F,
+                                  remove_NAs_tails = F){
+  
+  cond_cuid <- cuspawnerabundance$cuid == cuid[1] # only one cuid at a time
+  
+  spawnerAbundance_here <- cuspawnerabundance$estimated_count[cond_cuid]
+  spawnerAbundance_here[spawnerAbundance_here < 0 & !is.na(spawnerAbundance_here)] <- NA
+  spawnerAbundance_here[spawnerAbundance_here == 0 & !is.na(spawnerAbundance_here)] <- 1
+  names(spawnerAbundance_here) <- cuspawnerabundance$year[cond_cuid]
+  
+  # Simulate the time series to obtain the 95% CI for the percentile 
+  # benchmarks
+  modelCI <- modelBoot(series = spawnerAbundance_here, 
+                       numLags = numLags, # numLags is the lag for the autocorrelation; default is just 1 year
+                       nBoot = nBoot,
+                       benchmarks = benchmarks,
+                       aic = aic,                # to be able to compare
+                       remove_NAs_tails = remove_NAs_tails) # to remove NAs on each tail of the time series
+  return(modelCI)
+}
+
+#' Function to display the distributions of lower and upper percentile benchmarks
+#' obtain with a bootstrap method, i.e, auto-regression with bootstrap_ar_cuid_fun(), 
+#' Block boostrapping with bootstrap_block_cuid_fun() and naive bootstrapping with
+#' bootstrap_cuid_fun().
+#' bootOutput is the list produced by any of these three functions.
+#' used in: https://github.com/salmonwatersheds/percentile-benchmarks-CI
+#' e.g.:
+# bootOutput <- bootstrap_block_cuid_fun(cuid = 509, blockLength = 1/4, 
+#                                        spawnerabundance = spawnerabundance)
+# bootstrap_cuid_hist_fun(bootOutput = bootOutput)
+bootstrap_cuid_hist_fun <- function(bootOutput, benchmarks = c(.25,.75),
+                                    main = "Simulated vs. real benchmarks",
+                                    legend_show  = T, x_max = NA, x_min = NA){
+  
+  seriesOriginal <- bootOutput$seriesOriginal
+  
+  bench_25 <- quantile(x = seriesOriginal, probs = benchmarks[1], na.rm = T)
+  bench_75 <- quantile(x = seriesOriginal, probs = benchmarks[2], na.rm = T)
+  
+  name_benchmark_lower <- paste0("benchmark_",benchmarks[1])
+  name_benchmark_upper <- paste0("benchmark_",benchmarks[2])
+  
+  bench_25_025CI <- quantile(x = bootOutput$benchmarkBoot[,name_benchmark_lower], 
+                             probs = .025, na.rm = T)
+  bench_25_975CI <- quantile(x = bootOutput$benchmarkBoot[,name_benchmark_lower], 
+                             probs = .975, na.rm = T)
+  bench_25_median <- quantile(x = bootOutput$benchmarkBoot[,name_benchmark_lower], 
+                              probs = .5, na.rm = T)
+  bench_75_median <- quantile(x = bootOutput$benchmarkBoot[,name_benchmark_upper], 
+                              probs = .5, na.rm = T)
+  bench_75_025CI <- quantile(x = bootOutput$benchmarkBoot[,name_benchmark_upper], 
+                             probs = .025, na.rm = T)
+  bench_75_975CI <- quantile(x = bootOutput$benchmarkBoot[,name_benchmark_upper], 
+                             probs = .975, na.rm = T)
+  
+  # layout(matrix(1:2, nrow = 2))
+  # par(mar = c(5,5,3,.5))
+  
+  pl <- hist(bootOutput$benchmarkBoot[,"benchmark_0.25"], plot = F)
+  
+  pu <- hist(bootOutput$benchmarkBoot[,"benchmark_0.75"], plot = F)
+  
+  y_max <- max(pl$counts,pu$counts) * 1.1
+  
+  values <- c(bench_25,bench_75,
+              bench_25_025CI,bench_25_975CI,
+              bench_25_median,bench_75_median,
+              bench_75_025CI,bench_75_975CI)
+  
+  if(is.na(x_max)){
+    x_max <- max(values,na.rm = T) * 1
+  }
+  
+  if(is.na(x_min)){
+    x_min <- min(values,na.rm = T) * 1
+  }
+  
+  plot(pl, main = main, col = alpha("#C06363",.4),
+       xlab = "Lower and hupper benchmark (nb of fish)", xlim = 
+         c(x_min,x_max), ylim = c(0,y_max))
+  plot(pu,  main = "", 
+       xlab = "", xlim = c(x_min,x_max), 
+       col = alpha("#83B687",.4), add = T)
+  
+  segments(x0 = bench_25, y0 = 0, x1 = bench_25, y1 = y_max, lwd = 2, col = "#C06363")
+  segments(x0 = bench_25_median, y0 = 0, x1 = bench_25_median, y1 = y_max, lwd = 2, 
+           col = "#C06363", lty = 2)
+  arrows(x0 = bench_25_025CI, y0 = y_max * .8, x1 = bench_25_975CI, y1 = y_max * .8, 
+         length = .2, angle = 90, lwd = 2, col = "#C06363", code = 3)
+  
+  segments(x0 = bench_75, y0 = 0, x1 = bench_75, y1 = y_max, lwd = 2, col = "#83B687")
+  segments(x0 = bench_75_median, y0 = 0, x1 = bench_75_median, y1 = y_max, lwd = 2, 
+           col = "#83B687", lty = 2)
+  arrows(x0 = bench_75_025CI, y0 = y_max * .7, x1 = bench_75_975CI, y1 = y_max * .7, 
+         length = .2, angle = 90, lwd = 2, col = "#83B687", code = 3)
+  
+  if(legend_show){
+    legend("right",c("median data","median simulated data"), lty = c(1,2), 
+           lwd = 2, bty = "n")
+  }
+
+  # legend("topright",paste(spawnerabundance_cu$region[cond_cuid] |> unique(),
+  #                         spawnerabundance_cu$species_name[cond_cuid]|> unique(),
+  #                         spawnerabundance_cu$cu_name_pse[cond_cuid]|> unique(), sep = "-"), 
+  #        bty = "n")
+}
+
+#' Function to display the simulated time seires obtained with a bootstrap method,
+#' i.e, auto-regression with bootstrap_ar_cuid_fun(), Block boostrapping with
+#' bootstrap_block_cuid_fun() and naive bootstrapping with bootstrap_cuid_fun().
+#' bootOutput is the list produced by any of these three functions.
+#' The function also show the real time series.
+#' used in: https://github.com/salmonwatersheds/percentile-benchmarks-CI
+#' e.g.:
+# bootOutput <- bootstrap_block_cuid_fun(cuid = 509, blockLength = 1/4,
+#                                        cuspawnerabundance = cuspawnerabundance)
+# bootstrap_cuid_plot_fun(bootOutput = bootOutput, prop_nb_seriesSim = .01)
+bootstrap_cuid_plot_fun <- function(bootOutput,
+                                    ylab = "Number of spawners",
+                                    xlab = "Years",
+                                    main = "Simulated vs. real time series",
+                                    prop_nb_seriesSim = .1, # the proportion of simulated time series to show
+                                    alpha = .5,
+                                    lwd = 2,
+                                    legend_show  = T,
+                                    show_benchmarks = T,
+                                    show_CI = T,
+                                    col_simul = "grey60",
+                                    col_orginal = "black"){
+  
+  require(scales)
+  
+  seriesOriginal <- bootOutput$seriesOriginal
+  years <- as.numeric(names(seriesOriginal))
+  
+  # subset if the simulated time series
+  nBoot <- nrow(bootOutput$benchmarkBoot)
+  index <- sample(1:nBoot,ceiling(nBoot * prop_nb_seriesSim), replace = F)
+  
+  y_min <- min(bootOutput$seriesSimulated[,index],seriesOriginal, na.rm = T)
+  y_max <- max(bootOutput$seriesSimulated[,index],seriesOriginal, na.rm = T)
+  
+  # y_min <- min(bootOutput$seriesSimulated,seriesOriginal, na.rm = T)
+  # y_max <- max(bootOutput$seriesSimulated,seriesOriginal, na.rm = T)
+  
+  plot(x = years,y = seriesOriginal, col = NA, ylab = ylab, xlab = xlab, 
+       main = main, ylim = c(y_min,y_max))
+  # 
+  for(j in 1:length(index)){
+    lines(x = years, y = bootOutput$seriesSimulated[,index[j]], lwd = lwd, 
+          col = alpha(col_simul,alpha))
+  }
+  
+  # show the original data
+  lines(x = years, y = bootOutput$seriesOriginal, lwd = lwd + 1, 
+        col = col_orginal)
+  points(x = years, y = bootOutput$seriesOriginal, pch = 16, cex = 1.5, 
+         col = col_orginal)
+  
+  # show the CI
+  x_min <- min(years)
+  x_max <- max(years)
+  
+  benchmarks <- paste0("benchmark_",bootOutput$benchmarks)
+  
+  if(show_CI){
+    y0 <- bootOutput$CI["2.5%",benchmarks[1]]
+    y1 <- bootOutput$CI["97.5%",benchmarks[1]]
+    polygon(x = c(x_min,x_max,x_max,x_min), y = c(y0,y0,y1,y1),
+            col = alpha("#C06363",.3), border = NA)
+    y0 <- bootOutput$CI["2.5%",benchmarks[2]]
+    y1 <- bootOutput$CI["97.5%",benchmarks[2]]
+    polygon(x = c(x_min,x_max,x_max,x_min), y = c(y0,y0,y1,y1),
+            col = alpha("#83B687",.3), border = NA)
+  }
+  
+  # show the benchmarks
+  if(show_benchmarks){
+    y <- quantile(seriesOriginal,bootOutput$benchmarks[1],na.rm = T)
+    segments(x0 = x_min, y0 = y, x1 = x_max, y1 = y, col = "#C06363", lwd = lwd)
+    y <- quantile(seriesOriginal,bootOutput$benchmarks[2],na.rm = T)
+    segments(x0 = x_min, y0 = y, x1 = x_max, y1 = y, col = "#83B687", lwd = lwd)
+  }
+}
+
 
 # Function that returns the name of the regions. This is to ensure that no spelling
 # mistakes are make.
@@ -1917,7 +2260,19 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
   
   # Find the benchmark values
   polygons_show <- T
-  if(biostatus$psf_status_type == "sr"){
+  if(is.na(biostatus$psf_status_type)){
+    
+    benchmark_low <- NA
+    benchmark_low_025 <- NA
+    benchmark_low_975 <- NA
+    benchmark_up <- NA
+    benchmark_up_025 <- NA
+    benchmark_up_975 <- NA
+    
+    method <- "Absolute"
+    status <- "data-deficient"
+    
+  }else if(biostatus$psf_status_type == "sr"){
 
     if(any(grepl("smsy80",colnames(benchmarks)))){
       benchmark_up <- benchmarks$smsy80
@@ -3302,10 +3657,11 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm,prio
       # cu <- cuid_concerned[1]
       cond <- prior_extra$cuid == cu
       prSmax_here <- prior_extra$prSmax[cond]
+      prCV_here <- prior_extra$prCV[cond]
       
       cond <- cu_prior_df$cuid == cu
       cu_prior_df$prSmax[cond] <- prSmax_here
-      cu_prior_df$prCV[cond] <- 0.3 # more informative than 10
+      cu_prior_df$prCV[cond] <- prCV_here # 0.3 # more informative than 10
     }
   }
   
@@ -3395,4 +3751,63 @@ prior_beta_Ricker_fun <- function(cuid,conservationunits_decoder = NA,wd,Sm,prio
   
   return(cu_prior_df)
 }
+
+#' biostatus vs. data-deficient vs. not-assessed for 
+#' - region
+#' - species
+#' - region & species ?
+#' Wafle plot
+# biostatus_data <- biostatus_tot
+plot_biostatus_summary_fun <- function(biostatus_data,n_width = 10, n_height = NA,
+                                       main = "",col_border = "black",
+                                       psf_status_col = NA, ylab = "", 
+                                       cex = 1, font = 2, line = 1,bty = 'n'){
+  
+  if(is.na(n_height)){
+    n_height <- ceiling(sum(biostatus_data$count) / n_width)
+  }
+  
+  if(is.na(psf_status_col)[1]){
+    psf_status <- c("good","fair","poor","extinct","not-assessed","data-deficient")
+    psf_status_col <- c("#83B687","#DED38A","#C06363","#924848","black","#A7A9AC")
+    names(psf_status_col) <- psf_status
+  }else{
+    psf_status <- names(psf_status_col)
+  }
+  
+  plot(NA, xlim = c(0,n_width), ylim = c(0,n_height), xaxt = 'n', yaxt = 'n',
+       xlab = '', ylab = '', bty = bty, main = "", yaxs = "i", xaxs = "i")
+  
+  if(ylab != ""){
+    mtext(text = ylab, side = 2, line = line, cex = cex, font = font)
+  }
+  if(main != ""){
+    mtext(text = main, side = 3, line = line, cex = cex, font = font)
+  }
+  
+  y <- 1
+  x <- 1
+  count_tot <- 1
+  for(s in psf_status){
+    # s <- psf_status[2]
+    col_here <- psf_status_col[s]
+    cond_s <- biostatus_data$psf_status == s
+    
+    if(sum(cond_s) > 0){
+      for(c in 1:biostatus_data$count[cond_s]){
+        # c <- 1
+        if(length(1:count_tot) > (y * n_width)){
+          y <- y + 1
+        }
+        polygon(x = c(x-1,x,x,x-1),y = c(y-1,y-1,y,y),border = col_border,col = col_here)
+        count_tot <- count_tot + 1
+        x <- x + 1
+        if(x > n_width){
+          x <- 1
+        }
+      }
+    }
+  }
+}
+
 

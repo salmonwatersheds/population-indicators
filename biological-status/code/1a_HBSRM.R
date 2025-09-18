@@ -118,6 +118,10 @@ prior_Korman_English_2013$cu_name_pse <- sapply(prior_Korman_English_2013$cuid,f
 
 prior_Korman_English_2013 <- prior_Korman_English_2013[,c("region","species_qualified","cu_name_pse","cuid")]
 
+# defined CV: in p. 13
+# 0.3 for all SE CUs, except for the four Babine Systems for which it is 1
+prior_Korman_English_2013$prCV <- 0.3
+
 #' Note1: CU Swan/Club (cuid 188) was also in this list above but the CU
 #' was assigned to the Stephens CU, following DFO update
 #' The change in the PSE was made in August 2024
@@ -156,7 +160,7 @@ prior_Korman_English_2013$prSmax[cond] <- 1764
 # https://github.com/DylanMG/DL-CC-sockeye/blob/main/output/data/SmaxPRs.txt
 prior_Atlas_et_al_2025 <- read.table(paste0(wd_pop_indic_data_input_dropbox,"/SmaxPRs.txt"), 
                          header = T)
-prior_Atlas_et_al_2025 <- prior_Atlas_et_al_2025[,c("region","population","SmaxPR")]
+prior_Atlas_et_al_2025 <- prior_Atlas_et_al_2025[,c("region","population","SmaxPR","SmaxPR_SD")]
 prior_Atlas_et_al_2025$population <- gsub("_"," ",prior_Atlas_et_al_2025$population)
 cu_pse_simple <- simplify_string_fun(conservationunits_decoder$cu_name_pse)
 prior_Atlas_et_al_2025$cuid <- sapply(prior_Atlas_et_al_2025$population,function(cu){
@@ -240,6 +244,9 @@ prior_Atlas_et_al_2025$region <- sapply(prior_Atlas_et_al_2025$cuid,function(cui
   return(out)
 })
 
+# Determine the CV from SD
+prior_Atlas_et_al_2025$SmaxPR_CV <- prior_Atlas_et_al_2025$SmaxPR_SD / prior_Atlas_et_al_2025$SmaxPR
+
 # Compare the two datasets
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1748973321001659?thread_ts=1748970773.018779&cid=CJ5RVHVCG
 prior_compare <- merge(x = prior_Korman_English_2013,
@@ -276,8 +283,10 @@ prior_Korman_English_2013$source <- "Korman & English 2013"
 prior_Atlas_et_al_2025$source <- "Atlas et al. 2025"
 prior_extra <- prior_Atlas_et_al_2025
 colnames(prior_extra)[colnames(prior_extra) == "SmaxPR"] <- "prSmax" 
-prior_extra <- prior_extra[,c("region","species_qualified","cu_name_pse","cuid","prSmax","source")]
+colnames(prior_extra)[colnames(prior_extra) == "SmaxPR_CV"] <- "prCV" 
+prior_extra <- prior_extra[,c("region","species_qualified","cu_name_pse","cuid","prSmax","prCV","source")]
 
+# the only CU in English & Korman and not in Atlas et al.
 cond <- !prior_Korman_English_2013$cuid %in% prior_extra$cuid
 prior_Korman_English_2013[cond,]
 
@@ -299,7 +308,7 @@ prior_extra$species_name <- sapply(prior_extra$cuid,function(cuid){
 })
 
 prior_extra <- prior_extra[,c("region","species_name","species_qualified",
-                              "cu_name_pse","cuid","prSmax","source")]
+                              "cu_name_pse","cuid","prSmax","prCV","source")]
 
 write.csv(prior_extra,paste0(wd_data,"/priors_Smax.csv"), row.names = F)
 write.csv(prior_extra,paste0(wd_pop_data_dropbox,"/priors_Smax.csv"), row.names = F)
@@ -398,7 +407,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 1
+      # i_sp <- 4
       
       speciesAcroHere <- species_acro[i_sp]
       
@@ -477,7 +486,7 @@ for(i_rg in 1:length(region)){
         CU_cyclicNO <- colnames(R)[!cond]
         
         for(i_CUs in 1:2){
-          # i_CUs <- 2
+          # i_CUs <- 1
           CUs_here <- list(CU_cyclicNO,CU_cyclic)[[i_CUs]]
           
           if(length(CUs_here) > 0){
@@ -519,7 +528,6 @@ for(i_rg in 1:length(region)){
             #                                              priors_HBSRmodel$species %in% speciesHere,]
             # THIS priors_HBSRmodel IS AN OLD LIST COMING FROM TXT FILES FOR WHICH THE CREATING CODE IS 
             # LOST.
-            
             CUs_priors <- prior_beta_Ricker_fun(cuid = CUs_cuid,
                                                 conservationunits_decoder = conservationunits_decoder,
                                                 Sm = S,

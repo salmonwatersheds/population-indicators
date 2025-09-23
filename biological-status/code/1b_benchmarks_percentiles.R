@@ -79,7 +79,7 @@ regions_df <- regions_fun()
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Central_Coast
+region <- regions_df$Yukon
 
 # multiple regions:
 region <- c(
@@ -97,7 +97,7 @@ region <- as.character(regions_df[1,])
 cond_sp <- species_acronym_df$species_qualified_simple == "CK" | 
   species_acronym_df$species_qualified_simple == "SE"
 cond_sp <- species_acronym_df$species_qualified_simple == "CK"
-species <- "Chinook"
+species <- "Chum"
 
 # For all species
 species <- species_acronym_df$species_name_simple |> unique()
@@ -106,15 +106,8 @@ species <- species_acronym_df$species_name_simple |> unique()
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
-#' Import the cuspawnerabundance.csv from population-indicators/data_input or 
-#' download it from the PSF database.
-#' To calculating current spawner abundance for biostatus assessment
-fromDatabase <- update_file_csv <- F
 
-cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
+fromDatabase <- update_file_csv <- F
 
 #' Import the conservationunits_decoder.csv from population-indicators/data_input or 
 #' download it from the PSF database.
@@ -124,13 +117,45 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
-nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")])) # 463 466 467
+# remove the SMU-related information because that causes issues lower (one CU belongs to 2 SMUs)
+nrow(conservationunits_decoder) # 470
+conservationunits_decoder <- conservationunits_decoder[,!grepl("smu",colnames(conservationunits_decoder))]
+conservationunits_decoder <- unique(conservationunits_decoder)
+nrow(conservationunits_decoder) # 469
 
-# Import the spawner_abundance.csv, downloaded from SPS work. OLDER CODE
-# spawner_abundance_path <- paste0(wd_X_Drive1_PROJECTS,"/",wd_project_dropbox,"/data")
-# spawner_abundance <- read.csv(paste0(spawner_abundance_path,"/spawner_abundance.csv"),header = T)
-# head(spawner_abundance)
-# unique(spawner_abundance$species_name)
+#' Import the cuspawnerabundance.csv from population-indicators/data_input or 
+#' download it from the PSF database.
+#' To calculating current spawner abundance for biostatus assessment
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+
+#'* TEMOPORARY *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon <- gsub("population-indicators/data-input",
+                 "population-data/Yukon-data",
+                 wd_pop_indic_data_input_dropbox)
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
+                                           pattern = "dataset1_spawner-abundance")
+
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- conservationunits_decoder$cuid == cuid
+  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
+
+cond <- cuspawnerabundance$region == "Yukon"
+cuspawnerabundance[cond,]
+cuspawnerabundance <- cuspawnerabundance[!cond,]
+
+cuspawnerabundance <- rbind(cuspawnerabundance,
+                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+
 
 # The benchmarks to use
 benchmarks <- c(0.25, 0.5, 0.75) # was c(0.25, 0.5)
@@ -152,7 +177,7 @@ print_fig <- T
 #
 for(i_rg in 1:length(region)){
   
-  # i_rg <- 1
+  # i_rg <- 7
   cond_csa_rg <- cuspawnerabundance$region == region[i_rg]
   
   if(region[i_rg] == "West Vancouver Island"){
@@ -181,7 +206,7 @@ for(i_rg in 1:length(region)){
     
     for(i_sp in 1:length(species_acro)){
       
-      # i_sp <- 1
+      # i_sp <- 4
       
       speciesAcroHere <- species_acro[i_sp]
       
@@ -214,8 +239,8 @@ for(i_rg in 1:length(region)){
           # i_cu <- 1
           
           cond <- conservationunits_decoder$cuid == cuids[i_cu]
-          species_qualifyHere <- conservationunits_decoder$species_abbr[cond]
-          species_nameHere <- conservationunits_decoder$species_name[cond]
+          species_qualifyHere <- conservationunits_decoder$species_qualified[cond]
+          species_nameHere <- conservationunits_decoder$species_name[cond] |> unique()
           
           # TEMPORARY
           # simplify species_name as in PSE data meeting December 11 2024
@@ -246,7 +271,8 @@ for(i_rg in 1:length(region)){
           modelCI <- modelBoot(series = spawnerAbundance, 
                                numLags = numLags, # numLags is the lag for the autocorrelation; default is just 1 year
                                nBoot = nBoot,
-                               benchmarks = benchmarks)  # to be able to compare
+                               benchmarks = benchmarks,   # to be able to compare
+                               remove_NAs_tails = T)      # the NAs are 
           
           # place the information a dataframe
           benchSummary_df <- data.frame(region = rep(region[i_rg],length(benchmarks)),
@@ -494,7 +520,6 @@ for(i_rg in 1:length(region)){
             benchSummary_region_species_df <- rbind(benchSummary_region_species_df,
                                                     benchSummary_df)
           }
-
         } # end of loop for the CUs
         
         print(paste0("*** ",regionName,"_",speciesAcroHere," done ***"))

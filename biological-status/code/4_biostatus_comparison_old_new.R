@@ -27,7 +27,6 @@
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1700673066049189?thread_ts=1700604709.505309&cid=CJ5RVHVCG
 #'******************************************************************************
 
-
 # 
 rm(list = ls())
 graphics.off()
@@ -129,6 +128,12 @@ benchmarks_old <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
 # benchmarks_old$species_name[grepl("[S|s]ockeye",benchmarks_old$species_name)] <- "Sockeye"
 # benchmarks_old$species_name[grepl("Pink",benchmarks_old$species_name)] <- "Pink"
 
+# TEMPORARY CHANGE
+# the Henderson lake sockeye CU in VIMI is now called Hucuktlis
+# https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1747060690168909
+cond <- biostatus_old$cuid == 953
+biostatus_old[cond,]
+biostatus_old[cond,]$cu_name_pse <- "Hucuktlis"
 
 #'* Import the new biostatus *
 biostatus_new <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
@@ -194,27 +199,34 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
 
+# remove the SMU-related information because that causes issues lower (one CU belongs to 2 SMUs)
+nrow(conservationunits_decoder) # 470
+conservationunits_decoder <- conservationunits_decoder[,!grepl("smu",colnames(conservationunits_decoder))]
+conservationunits_decoder <- unique(conservationunits_decoder)
+nrow(conservationunits_decoder) # 469
+
 length(unique(conservationunits_decoder$pooledcuid)) # 463
 
-#' TEMPORARY change og the region for VIMI
-unique(biostatus_new$region)
-VIMI_rg <- c("East Vancouver Island & Mainland Inlets",
-             "West Vancouver Island")
+#' TEMPORARY change of the region for VIMI
+# unique(biostatus_new$region)
+# VIMI_rg <- c("East Vancouver Island & Mainland Inlets",
+#              "West Vancouver Island")
+# 
+# cond_rg <- biostatus_new$region %in% VIMI_rg
+# biostatus_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+# 
+# cond_rg <- benchmarks_new$region %in% VIMI_rg
+# benchmarks_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+# 
+# cond_rg <- cuspawnerabundance$region %in% VIMI_rg
+# cuspawnerabundance$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+# 
+# cond_rg <- dataset390_output$region %in% VIMI_rg
+# dataset390_output$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+# 
+# cond_rg <- conservationunits_decoder$region %in% VIMI_rg
+# conservationunits_decoder$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
 
-cond_rg <- biostatus_new$region %in% VIMI_rg
-biostatus_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-
-cond_rg <- benchmarks_new$region %in% VIMI_rg
-benchmarks_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-
-cond_rg <- cuspawnerabundance$region %in% VIMI_rg
-cuspawnerabundance$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-
-cond_rg <- dataset390_output$region %in% VIMI_rg
-dataset390_output$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-
-cond_rg <- conservationunits_decoder$region %in% VIMI_rg
-conservationunits_decoder$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
 
 #'* Import the list of priors for Smax (produced in 1a_HBSRM.R) *
 priors_Smax <- read.csv(paste0(wd_data,"/priors_Smax.csv"),header = T)
@@ -231,7 +243,8 @@ columns <- c("region","species_name","species_qualified","cuid",
 
 biostatus_merge <- merge(x = biostatus_old[,columns],
                          y = biostatus_new[,columns],
-                         by = c("region","species_name","species_qualified","cuid","cu_name_pse"))
+                         by = c("region","species_name","species_qualified","cuid","cu_name_pse"), 
+                         all = F)
 
 head(biostatus_merge)
 
@@ -259,6 +272,8 @@ cuid_old[!cuid_old %in% cuid_new] # none 241 188 521 751
 cond <- biostatus_old$cuid %in% cuid_old[!cuid_old %in% cuid_new]
 biostatus_old[cond,] 
 
+cuid_new[!cuid_new %in% cuid_old] # none
+
 # Old comments:
 # 188 Swan/Club: all good, was supposed to be removed
 # https://salmonwatersheds.slack.com/archives/CKNVB4MCG/p1713985785863399?thread_ts=1709839326.139849&cid=CKNVB4MCG
@@ -284,23 +299,23 @@ biostatus_merge[cond,]
 
 #'* Condition same status *
 cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
-sum(cond_same) # 436 442 378 432 370 369 362 346
+sum(cond_same) # 450 436 442 378 432 370 369 362 346
 biostatus_merge[cond_same,] # |> View()
 
 # with biostatus assessed:
 cond_123 <- biostatus_merge$psf_status_old[cond_same] %in% c("poor","fair","goog")
-sum(cond_123) # 106 88 76 87 48 44
+sum(cond_123) # 129 106 88 76 87 48 44
 
 # and with same method used:
 cond_method_same <- biostatus_merge[cond_same,][cond_123,]$psf_status_type_old ==  biostatus_merge[cond_same,][cond_123,]$psf_status_type_new
-sum(cond_method_same) # 106 88 70 85 46 43
+sum(cond_method_same) # 128 106 88 70 85 46 43
 
 biostatus_merge[cond_same,][cond_123,][cond_method_same,]
 biostatus_merge[cond_same,][cond_123,][!cond_method_same,]
 
 #'* Different status *
 cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
-sum(cond_diff) # 27 21 41 31 93 103 120
+sum(cond_diff) # 13 27 21 41 31 93 103 120
 
 show <- biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
                             "psf_status_old","psf_status_new",
@@ -315,6 +330,8 @@ show$curr_spw_end_year <- sapply(show$cuid,function(cuid){
   
   if(is.na(curr_spw_end_year_old) & !is.na(curr_spw_end_year_new)){
     out <- "curr_spw_end_year_old is NA"
+  }else if(!is.na(curr_spw_end_year_old) & is.na(curr_spw_end_year_new)){
+    out <- "curr_spw_end_year_new is NA"
   }else if(curr_spw_end_year_new != curr_spw_end_year_old){
     out <- paste0(curr_spw_end_year_old,"(old) < ",curr_spw_end_year_new," (new)")
   }else{
@@ -330,7 +347,7 @@ show$gen_length <- sapply(show$cuid,function(cuid){
 })
 
 show
-nrow(show) # 27
+nrow(show) # 13 27
 
 cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
 cases$count <- apply(cases,1,function(r){
@@ -339,7 +356,7 @@ cases$count <- apply(cases,1,function(r){
   return(sum(cond))
 })
 cases
-sum(cases$count) # 27
+sum(cases$count) # 13 27
 
 # record the CUs that are different
 biostatus_merge_diff <- biostatus_merge[cond_diff,]
@@ -355,8 +372,8 @@ cond_sr_new <- biostatus_merge$psf_status_type_new == "sr" & !cond_method_NA_new
 cond_sr_old <- biostatus_merge$psf_status_type_old == "sr" & !cond_method_NA_old
 cond_percent_new <- biostatus_merge$psf_status_type_new == "percentile" & !cond_method_NA_new
 cond_percent_old <- biostatus_merge$psf_status_type_old == "percentile" & !cond_method_NA_old
-cond_absolute_new <- biostatus_merge$psf_status_type_new == "Absolute" & !cond_method_NA_new
-cond_absolute_old <- biostatus_merge$psf_status_type_old == "Absolute" & !cond_method_NA_old
+cond_absolute_new <- biostatus_merge$psf_status_type_new == "absolute" & !cond_method_NA_new
+cond_absolute_old <- biostatus_merge$psf_status_type_old == "absolute" & !cond_method_NA_old
 cond_diff_method <- (cond_sr_new & cond_percent_old) | 
   (cond_sr_old & cond_percent_new) | 
   (cond_absolute_new & !cond_absolute_old) | 

@@ -93,8 +93,13 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
-colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
+# colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
 
+# remove the SMU-related information because that causes issues lower
+nrow(conservationunits_decoder) # 470
+conservationunits_decoder <- conservationunits_decoder[,!grepl("smu",colnames(conservationunits_decoder))]
+conservationunits_decoder <- unique(conservationunits_decoder)
+nrow(conservationunits_decoder) # 469
 
 #'* External values for prior for Smax *
 

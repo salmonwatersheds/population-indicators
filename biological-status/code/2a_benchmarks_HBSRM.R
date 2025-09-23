@@ -82,11 +82,6 @@ datasetsNames_database <- datasetsNames_database_fun()
 #' To calculating current spawner abundance for biostatus assessment
 fromDatabase <- update_file_csv <- F
 
-cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
-
 #' Import the conservationunits_decoder.csv from population-indicators/data_input or 
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
@@ -94,8 +89,45 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationun
                                                    fromDatabase = fromDatabase,
                                                    update_file_csv = update_file_csv,
                                                    wd = wd_pop_indic_data_input_dropbox)
+
+# remove the SMU-related information because that causes issues lower
+nrow(conservationunits_decoder) # 470
+conservationunits_decoder <- conservationunits_decoder[,!grepl("smu",colnames(conservationunits_decoder))]
+conservationunits_decoder <- unique(conservationunits_decoder)
+nrow(conservationunits_decoder) # 469
+
 # Temporary change
-colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
+# colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
+
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+#'* TEMOPORARY *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon <- gsub("population-indicators/data-input",
+                 "population-data/Yukon-data",
+                 wd_pop_indic_data_input_dropbox)
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
+                                           pattern = "dataset1_spawner-abundance")
+
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- conservationunits_decoder$cuid == cuid
+  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
+
+cond <- cuspawnerabundance$region == "Yukon"
+cuspawnerabundance[cond,]
+cuspawnerabundance <- cuspawnerabundance[!cond,]
+
+cuspawnerabundance <- rbind(cuspawnerabundance,
+                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species and last year for current spawner abundance
@@ -142,7 +174,7 @@ options(warn = 0)  # warnings are stored until the top level function returns (d
 
 # 
 for(i_rg in 1:length(region)){
-  # i_rg <- 3
+  # i_rg <- 1
   
   if(region[i_rg] == "West Vancouver Island"){
     regionName <- "WVI"
@@ -189,7 +221,7 @@ for(i_rg in 1:length(region)){
   }else{
     
     for(i_sp in 1:length(species_acro)){
-      # i_sp <- 3
+      # i_sp <- 1
       
       # Import the HBSRM outputs, i.e., the posterior distributions of:
       # - mu_a and sigma_a: with CU-level intrinsic productivity ai ~ N(mu_a,sigma_a)

@@ -115,6 +115,7 @@
 "Central Coast","Coho","CO",523,"Northern Coastal Streams",-0.3,-18,-0.003056,17.623,11.645,1956,2021
 "Central Coast","Sockeye","SEL",524,"Long",-1.2,-49.8,-0.012303,35.448,11.359,1958,2014
 "Central Coast","Sockeye","SEL",525,"Owikeno",-2.6,-79.4,-0.025895,64.293,13.592,1958,2019
+"Central Coast","Sockeye","SEL",528,"South Atnarko Lakes",-4.9,-93.4,-0.050226,109.932,10.985,1970,2024
 "Central Coast","Sockeye","SEL",529,"Backland",-7.2,-98.9,-0.074878,154.297,7.461,1961,2021
 "Central Coast","Sockeye","SEL",532,"Canoona",3.7,533.2,0.036189,-64.448,6.845,1970,2021
 "Central Coast","Sockeye","SEL",534,"Evelyn",-0.6,-32.4,-0.006219,19.402,7.225,1958,2021
@@ -177,7 +178,7 @@
 "Fraser","Coho","CO",749,"Interior Fraser",1.1,50.6,0.011372,-14.547,8.038,1986,2022
 "Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",-2.9,-71.5,-0.029927,68.385,9.129,1980,2022
 "Fraser","Steelhead","SH",780,"Mid Fraser Summer",-4.9,-90.5,-0.049994,106.248,7.46,1976,2023
-"Fraser","Steelhead","SH",781,"Thompson Summer",-4.4,-84,-0.044654,96.433,7.93,1982,2023
+"Fraser","Steelhead","SH",781,"Thompson Summer",-4.3,-83.3,-0.043603,94.338,7.916,1982,2023
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",-0.7,-27.9,-0.006663,19.808,6.742,1961,2010
 "Haida Gwaii","Chum","CM",801,"East Haida Gwaii",-1.6,-63.7,-0.016072,43.89,12.422,1958,2021
 "Haida Gwaii","Chum","CM",802,"North Haida Gwaii",-3,-84.1,-0.030123,70.267,11.287,1958,2019
@@ -212,8 +213,9 @@
 "East Vancouver Island & Mainland Inlets","Pink","PKO",926,"Southern Fjords (odd)",-0.5,-29.9,-0.00539,23.289,12.763,1953,2019
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",933,"Sakinaw",-12.1,-99.8,-0.12925,263.674,9.051,1970,2018
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",939,"Nimpkish",-1,-46.9,-0.010535,31.777,11.16,1957,2017
-"West Vancouver Island","Sockeye","SEL",952,"Great Central",-0.5,-18.4,-0.005211,22.557,12.235,1981,2020
-"West Vancouver Island","Sockeye","SEL",969,"Sproat",1.6,84.7,0.015731,-19.36,11.802,1981,2020
+"West Vancouver Island","Sockeye","SEL",952,"Great Central",-0.7,-26.6,-0.007196,26.516,12.26,1981,2024
+"West Vancouver Island","Sockeye","SEL",953,"Hucuktlis",-1.2,-43.9,-0.012058,33.791,9.965,1976,2024
+"West Vancouver Island","Sockeye","SEL",969,"Sproat",1.2,69.9,0.012332,-12.582,11.848,1981,2024
 "West Vancouver Island","Chum","CM",977,"Northwest Vancouver Island",1.1,89.5,0.010834,-10.852,10.338,1956,2015
 "West Vancouver Island","Chum","CM",978,"Southwest & West Vancouver Island",-0.5,-25,-0.004877,22.238,12.699,1956,2015
 "East Vancouver Island & Mainland Inlets","Chum","CM",979,"Upper Knight",-7,-96.7,-0.072394,151.217,9.615,1956,2003
@@ -228,20 +230,21 @@
 "Northern Transboundary","Sockeye","SEL",1033,"King Salmon",18.8,1478.6,0.172446,-340.108,5.991,2007,2023
 "Northern Transboundary","Sockeye","SEL",1038,"Klukshu",-1.5,-47,-0.014771,38.927,9.681,1980,2023
 "Northern Transboundary","Sockeye","SEL",1039,"Nesketahin",-7,-90.8,-0.072388,152.243,8.19,1990,2023
+"Columbia","Sockeye","SEL",1300,"Osoyoos",1.3,115.7,0.013258,-16.495,9.543,1964,2022
+"Columbia","Steelhead","SH",1380,"Mid Columbia Summer",-13.5,-84.9,-0.145319,296.154,4.062,2010,2023
 "Yukon","Chinook","CK",1201,"Big Salmon",-1.1,-32.3,-0.011483,31.514,8.663,1990,2024
-"Yukon","Chinook","CK",1202,"Nordenskiold",2.4,126.6,0.024063,-40.881,7.004,1990,2024
-"Yukon","Chinook","CK",1203,"Pelly",-1.5,-40.8,-0.015427,39.978,9.277,1990,2024
 "Yukon","Chinook","CK",1204,"Middle Yukon",-0.3,-10.5,-0.00325,15.748,9.282,1990,2024
+"Yukon","Chinook","CK",1202,"Nordenskiold",2.4,126.6,0.024063,-40.881,7.004,1990,2024
+"Yukon","Chinook","CK",1207,"Northern Yukon",-2.4,-55.7,-0.023919,56.743,9.144,1990,2024
+"Yukon","Chinook","CK",1203,"Pelly",-1.5,-40.8,-0.015427,39.978,9.277,1990,2024
 "Yukon","Chinook","CK",1205,"Stewart",-1.1,-30.5,-0.010695,29.474,8.191,1990,2024
 "Yukon","Chinook","CK",1206,"White",-1.7,-43.7,-0.016872,41.937,8.361,1990,2024
-"Yukon","Chinook","CK",1207,"Northern Yukon",-2.4,-55.7,-0.023919,56.743,9.144,1990,2024
+"Yukon","Chinook","CK",1212,"Teslin",-2.5,-71.1,-0.024816,55.631,6.645,1974,2024
+"Yukon","Chinook","CK",1211,"Upper Yukon",-16.7,-30.6,-0.182567,376.184,7.033,2022,2024
 "Yukon","Chinook","CK",1209,"Porcupine",-30,-83.1,-0.356156,727.413,8.333,2019,2024
 "Yukon","Chinook","CK",1210,"Old Crow",-30,-83.1,-0.356156,727.413,8.333,2019,2024
-"Yukon","Chinook","CK",1211,"Upper Yukon",-16.7,-30.6,-0.182567,376.184,7.033,2022,2024
-"Yukon","Chinook","CK",1212,"Teslin",-2.5,-71.1,-0.024816,55.631,6.645,1974,2024
 "Yukon","Chum","CM",1213,"Middle Yukon",-10.3,-82.3,-0.108358,229.411,11.828,2008,2024
 "Yukon","Chum","CM",1214,"North Yukon",-17.1,-95,-0.187289,382.712,6.636,2008,2024
 "Yukon","Chum","CM",1215,"White",-12.8,-88.8,-0.136839,286.59,11.818,2008,2024
 "Yukon","Chum","CM",1219,"Teslin",-3.3,-41.9,-0.033984,74.773,6.533,2008,2024
-"Columbia","Sockeye","SEL",1300,"Osoyoos",1.3,115.7,0.013258,-16.495,9.543,1964,2022
-"Columbia","Steelhead","SH",1380,"Mid Columbia Summer",-13.5,-84.9,-0.145319,296.154,4.062,2010,2023
+"Yukon","Chum","CM",1217,"Porcupine",-3.7,-84.4,-0.03719,84.5,11.088,1974,2024

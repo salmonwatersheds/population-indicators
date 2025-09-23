@@ -78,32 +78,63 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
 
+#'* Import conservationunits_decoder.csv *
+# CU list (includes gen length info for running avg) (conservationunits_decoder.csv)
+# cu_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
+#   select(region, species_qualified, pooledcuid, cuid, cu_name_pse, gen_length)
+cu_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+                                    fromDatabase = fromDatabase,
+                                    update_file_csv = update_file_csv,
+                                    wd = wd_pop_indic_data_input_dropbox)
+
+# TEMPORARY
+# colnames(cu_decoder)[colnames(cu_decoder) == "species_abbr"] <- "species_qualified"
+
+# remove the SMU-related information because that causes issues lower
+nrow(cu_decoder) # 470
+cu_decoder <- cu_decoder[,!grepl("smu",colnames(cu_decoder))]
+cu_decoder <- unique(cu_decoder)
+nrow(cu_decoder) # 469
+
+cu_decoder <- cu_decoder  %>%
+  select(region, species_qualified, pooledcuid, cuid, cu_name_pse, gen_length)
+
+
 #'* Import cuspawnerabundance:  CU-level spawner abundance data *
 spawners <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                   fromDatabase = fromDatabase,
                                   update_file_csv = update_file_csv,
                                   wd = wd_pop_indic_data_input_dropbox)
 
-spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
+# spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
 
 # Filter out no estimated spawner abundance
 spawners <- spawners %>% filter(!is.na(estimated_count))
 
+#'* TEMOPORARY *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon <- gsub("population-indicators/data-input",
+                 "population-data/Yukon-data",
+                 wd_pop_indic_data_input_dropbox)
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
+                                           pattern = "dataset1_spawner-abundance")
 
-#'* Import conservationunits_decoder.csv *
-# CU list (includes gen length info for running avg) (conservationunits_decoder.csv)
-# cu_decoder <- retrieve_data_from_PSF_databse_fun(name_dataset = "appdata.vwdl_conservationunits_decoder") %>%
-#   select(region, species_qualified, pooledcuid, cuid, cu_name_pse, gen_length)
-cu_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
-                                 fromDatabase = fromDatabase,
-                                 update_file_csv = update_file_csv,
-                                 wd = wd_pop_indic_data_input_dropbox)
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- cu_decoder$cuid == cuid
+  sq <- cu_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
 
-# TEMPORARY
-colnames(cu_decoder)[colnames(cu_decoder) == "species_abbr"] <- "species_qualified"
+cond <- spawners$region == "Yukon"
+spawners[cond,]
+spawners <- spawners[!cond,]
 
-cu_decoder <- cu_decoder  %>%
-  select(region, species_qualified, pooledcuid, cuid, cu_name_pse, gen_length)
+spawners <- rbind(spawners,
+                  spwAbd_yukon[,colnames(spawners)])
 
 #
 # Fill datasets and produce figures ------------
@@ -402,7 +433,7 @@ head(dataset202_output_new)
 head(dataset391_output_new)
 
 # Check that there is no duplicated rows:
-cond <- dataset391_output_new$region == "Transboundary"
+cond <- dataset391_output_new$region == "Northern Transboundary"
 dataset391_output_new[cond,]
 
 #
@@ -471,8 +502,8 @@ write.csv(dataset391_output_new,
 # https://stackoverflow.com/questions/18695335/replacing-all-nas-with-smoothing-spline
 # If not, may be just use it for Pink only? I am not sure what is done originally
 # (the code in the Rmd script is unclear (731 and after)).
-
-# Checks related to this thread:
+#
+# Checks related to this thread: -----
 # https://salmonwatersheds.slack.com/archives/C03LB7KM6JK/p1722278192424409?thread_ts=1719268108.787009&cid=C03LB7KM6JK
 
 
@@ -579,23 +610,23 @@ pattern <- "dataset202"
 
 # Most recent dataset:
 trend_allgen <- import_mostRecent_file_fun(wd = wd, pattern = pattern)
-nrow(trend_allgen) # 246
+nrow(trend_allgen) # 249 246
 
 # Second most recent dataset:
 trend_allgen_old <- import_mostRecent_file_fun(wd = wd, pattern = pattern, 
                                                second_last = T)
-nrow(trend_allgen_old) # 238
+nrow(trend_allgen_old) # 246 238
 
 #' TEMPORARY
 #' Bring back VIMI to be able to compare to previous dataset
-trend_allgen$region <- sapply(trend_allgen$region,function(rg){
-  if(rg %in% c("East Vancouver Island & Mainland Inlets","West Vancouver Island")){
-    out <- "Vancouver Island & Mainland Inlets"
-  }else{
-    out <- rg
-  }
-  return(out)
-})
+# trend_allgen$region <- sapply(trend_allgen$region,function(rg){
+#   if(rg %in% c("East Vancouver Island & Mainland Inlets","West Vancouver Island")){
+#     out <- "Vancouver Island & Mainland Inlets"
+#   }else{
+#     out <- rg
+#   }
+#   return(out)
+# })
 
 #
 identical(trend_allgen,trend_allgen_old)
@@ -703,6 +734,34 @@ spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
 spawners <- spawners[!is.na(spawners$estimated_count),]
 cond_781 <- spawners$cuid == 781
 spawners[cond_781,]
+
+# 
+# Rheanna's request for Leah ------
+# To find CUs that started increasing in trends around 2015
+
+wd <- paste0(wd_output,"/archive")
+
+# Most recent dataset:
+pattern <- "dataset202"
+trend_allgen <- import_mostRecent_file_fun(wd = wd, pattern = pattern)
+nrow(trend_allgen) # 246
+
+pattern <- "dataset391"
+trend_3gen <- import_mostRecent_file_fun(wd = wd, pattern = pattern)
+nrow(trend_allgen) # 246
+
+
+d <- merge(x = trend_allgen, 
+           y = trend_3gen, 
+           by = c("region","species_name","species_qualified","cuid","cu_name_pse"), 
+           all = T)
+
+cond_3gen <- d$threegen_percent_change > 5 & !is.na(d$threegen_percent_change)
+cond_2 <-  d$threegen_percent_change > d$percent_change & 
+  !is.na(d$threegen_percent_change) & !is.na(d$percent_change)
+cond_3 <- d$threegen_start_year > 2012 & !is.na(d$threegen_start_year)
+d[cond_3gen & cond_2,]
+d[cond_3gen & cond_2 & cond_3,]
 
 
 

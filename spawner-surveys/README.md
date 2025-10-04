@@ -30,9 +30,14 @@ to the dataset.
 See the [Tech Report: 4.1.1.1. Spawner Surveys](https://bookdown.org/salmonwatersheds/tech-report-staging/analytical-approach.html#overview-population-indicators) and [Tech Report: Appendix 2: NuSEDS Data Processing](https://bookdown.org/salmonwatersheds/tech-report-staging/appendix-2.html) for detailed methodology for the spawner-survey data compilation.
 
 
+## Cleaning of NuSEDS
+
+The NuSEDS cleaning procedure is [1_nuseds_collation.Rmd](https://bookdown.org/salmonwatersheds/1_nuseds_collation/) and attribution of `cuid` and `popualtionid` to each population is [2_nuseds_cuid_pse.Rmd](https://bookdown.org/salmonwatersheds/2_nuseds_cuid_pse/). The dataset produced at the end of these two scripts is [2_nuseds_cuid_streamid_DATE.csv](https://doi.org/10.5281/zenodo.14194638).
+
+
 ## Scripts & files
 
-### 1_nuseds_collation.R
+### 1_nuseds_collation.Rmd
 
 The goal of the script is to merge NuSEDS and CUSS, which requires to either fix 
 or discard problematic time series (i.e. abundance data related to one population
@@ -97,7 +102,7 @@ recorded in 1_series_removed_DATE.csv and 1_series_added_DATE.csv.
   - Series added to either dataset and why
 
 
-### 2_nuseds_cuid_streamid.R
+### 2_nuseds_cuid_streamid.Rmd
 
 The goal of the script is to associate each CU (i.e. `CU_NAME`) to its PSE `cuid`
 and each stream (i.e. `GFE_ID`, `WATERBODY`, `SYSTEM_SITE`, etc.) to its corresponding 

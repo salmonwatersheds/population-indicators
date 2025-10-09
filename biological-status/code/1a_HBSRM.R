@@ -77,16 +77,10 @@ regions_df <- regions_fun()
 #' corresponding CSV files.
 datasetsNames_database <- datasetsNames_database_fun()
 
-#' Import the recruitsperspawner.csv from population-indicators/data_input or 
 #' download it from the PSF database
 fromDatabase <- update_file_csv <- F
 
-recruitsperspawner <- datasets_database_fun(nameDataSet = "recruitsperspawner.csv",
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
-
-#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#'* Import the conservationunits_decoder.csv * 
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
 conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
@@ -100,6 +94,40 @@ nrow(conservationunits_decoder) # 470
 conservationunits_decoder <- conservationunits_decoder[,!grepl("smu",colnames(conservationunits_decoder))]
 conservationunits_decoder <- unique(conservationunits_decoder)
 nrow(conservationunits_decoder) # 469
+
+
+#'* Import the recruitsperspawner.csv *  
+recruitsperspawner <- datasets_database_fun(nameDataSet = "recruitsperspawner.csv",
+                                            fromDatabase = fromDatabase,
+                                            update_file_csv = update_file_csv,
+                                            wd = wd_pop_indic_data_input_dropbox)
+
+#'* TEMOPORARY *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon <- gsub("population-indicators/data-input",
+                 "population-data/Yukon-data",
+                 wd_pop_indic_data_input_dropbox)
+
+RperS_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
+                                          pattern = "dataset5_recruits-per-spawner_Yukon")
+
+RperS_yukon$observed_count <- NA
+RperS_yukon$species_qualified <- NA
+RperS_yukon$r_s <- RperS_yukon$recruits/RperS_yukon$spawners
+for(cuid in unique(RperS_yukon$cuid)){
+  cond <- conservationunits_decoder$cuid == cuid
+  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+  
+  cond <- RperS_yukon$cuid == cuid
+  RperS_yukon$species_qualified[cond] <- sq
+}
+
+cond <- recruitsperspawner$region == "Yukon"
+recruitsperspawner[cond,]
+recruitsperspawner <- recruitsperspawner[!cond,]
+
+recruitsperspawner <- rbind(recruitsperspawner,
+                            RperS_yukon[,colnames(recruitsperspawner)])
 
 #'* External values for prior for Smax *
 
@@ -315,8 +343,8 @@ prior_extra$species_name <- sapply(prior_extra$cuid,function(cuid){
 prior_extra <- prior_extra[,c("region","species_name","species_qualified",
                               "cu_name_pse","cuid","prSmax","prCV","source")]
 
-write.csv(prior_extra,paste0(wd_data,"/priors_Smax.csv"), row.names = F)
-write.csv(prior_extra,paste0(wd_pop_data_dropbox,"/priors_Smax.csv"), row.names = F)
+# write.csv(prior_extra,paste0(wd_data,"/priors_Smax.csv"), row.names = F)
+# write.csv(prior_extra,paste0(wd_pop_data_dropbox,"/priors_Smax.csv"), row.names = F)
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species

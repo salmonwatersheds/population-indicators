@@ -82,7 +82,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 #' To calculating current spawner abundance for biostatus assessment
 fromDatabase <- update_file_csv <- F
 
-#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#'* Import the conservationunits_decoder.csv * 
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
 conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",

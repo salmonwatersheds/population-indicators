@@ -246,6 +246,9 @@ for(i in 1:nrow(cu_list)){
   dataset103_output_here$cu_name_pse <- cu_name_pse
   dataset103_output_here$year <- x
   dataset103_output_here$avg_escape_log <- y_log_smooth
+  dataset103_output_here$avg_escape <- exp(y_log_smooth)
+  
+  # CREATE A COLUMN FOR AVG_ESCAPEMENT EASIER FOR CHECKS
   
   if(is.null(dataset103_output_new)){
     dataset103_output_new <- dataset103_output_here

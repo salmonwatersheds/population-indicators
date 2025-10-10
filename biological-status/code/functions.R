@@ -2231,7 +2231,7 @@ plot_spawnerAbundance_benchmarks_fun <- function(cuid,
     cu_name_pse <- substr(x = cu_name_pse, start = 1, stop = file_name_nchar) 
   }
   
-  if(any("species_quaified" == colnames(conservationunits_decoder))){
+  if(any("species_qualified" == colnames(conservationunits_decoder))){
     species_abbr <- conservationunits_decoder$species_qualified[cond]
   }else{
     species_abbr <- conservationunits_decoder$species_abbr[cond]

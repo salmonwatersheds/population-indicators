@@ -106,23 +106,56 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
 
+#'* Import the conservationunits_decoder.csv *
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
 #' Import the recruitsperspawner.csv 
 # recruitsperspawner <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[3],
 #                                             fromDatabase = fromDatabase,
 #                                             update_file_csv = update_file_csv,
 #                                             wd = wd_pop_indic_data_input_dropbox)
 
-#' Import the cuspawnerabundance.csv
-spawnerabundance_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[2],
+#'* Import the cuspawnerabundance.csv *
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                              fromDatabase = fromDatabase,
                                              update_file_csv = update_file_csv,
                                              wd = wd_pop_indic_data_input_dropbox)
 
-# Import the current biostatus from the database (dataset101_output) NOT NEEDED ?
-biological_status_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[13],
-                                              fromDatabase = fromDatabase,
-                                              update_file_csv = update_file_csv,
-                                              wd = wd_pop_indic_data_input_dropbox)
+#'* TEMOPORARY *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon <- gsub("population-indicators/data-input",
+                 "population-data/Yukon-data",
+                 wd_pop_indic_data_input_dropbox)
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
+                                           pattern = "dataset1_spawner-abundance")
+
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- conservationunits_decoder$cuid == cuid
+  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
+
+cond <- cuspawnerabundance$region == "Yukon"
+cuspawnerabundance[cond,]
+cuspawnerabundance <- cuspawnerabundance[!cond,]
+
+cuspawnerabundance <- rbind(cuspawnerabundance,
+                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+
+
+
+#'* Import the current biostatus from the database (dataset101_output) *
+# biological_status_cu <- datasets_database_fun(nameDataSet = "dataset101_biological_status.csv",
+#                                               fromDatabase = fromDatabase,
+#                                               update_file_csv = update_file_csv,
+#                                               wd = wd_pop_indic_data_input_dropbox)
 
 # In case the file on the database is not updated:
 # biological_status_cu <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
@@ -134,10 +167,10 @@ biological_status_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archi
 #                               header = T)
 
 # Import the current biostatus from the database (dataset102_output)
-benchmarks_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[19],
-                                       fromDatabase = fromDatabase,
-                                       update_file_csv = update_file_csv,
-                                       wd = wd_pop_indic_data_input_dropbox)
+# benchmarks_cu <- datasets_database_fun(nameDataSet = "dataset102_benchmarks.csv",
+#                                        fromDatabase = fromDatabase,
+#                                        update_file_csv = update_file_csv,
+#                                        wd = wd_pop_indic_data_input_dropbox)
 
 # In case the file on the database is not updated:
 # benchmarks_cu <- read.csv(paste0(wd_output,"/Benchmarks_HBSR_Percentile_all.csv"),
@@ -145,11 +178,7 @@ benchmarks_cu <- datasets_database_fun(nameDataSet = datasetsNames_database$name
 benchmarks_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
                                             pattern = "dataset102_benchmarks")
 
-# Import the conservationunits_decoder.csv
-conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[1],
-                                                   fromDatabase = fromDatabase,
-                                                   update_file_csv = update_file_csv,
-                                                   wd = wd_pop_indic_data_input_dropbox)
+
 
 # Import dataset103_output for the smooth spawner abundance:
 # cuspawnerabund_smooth <- datasets_database_fun(nameDataSet = datasetsNames_database$name_CSV[16],
@@ -171,64 +200,33 @@ conservationunits_decoder <- datasets_database_fun(nameDataSet = datasetsNames_d
 
 cond <- biological_status_cu$psf_status_code %in% 1:3
 
+cond <- biological_status_cu$cuid == 1207
+
 cuid_biostat <- biological_status_cu$cuid[cond]
 
 # cond <- grepl("cyclic",biological_status_cu$cu_name_pse)
 # cuid_biostat <- biological_status_cu$cuid[cond]
 
-#'* ISSUE *
-#' all the cases where the percentile benchmarks are outside their CI
-
-cond <- ((benchmarks_cu$percentile_upper > benchmarks_cu$percentile_upper_975) |
-  (benchmarks_cu$percentile_upper < benchmarks_cu$percentile_upper_025) |
-  (benchmarks_cu$percentile_lower > benchmarks_cu$percentile_lower_975) |
-  (benchmarks_cu$percentile_lower < benchmarks_cu$percentile_lower_025)) &
-  !is.na(benchmarks_cu$percentile_upper)
-
-benchmarks_cu[cond,c("region","species_name","cu_name_pse","cuid",
-                     "percentile_lower_025","percentile_lower","percentile_lower_975",
-                     "percentile_upper_025","percentile_upper","percentile_upper_975")]
-
-cond_here <- cond & 
-  benchmarks_cu$cuid %in% cuid_biostat
-
-cond_here <- cond 
-
-cond_here <- cond &
-  benchmarks_cu$cuid %in% cuid_biostat & 
-  biological_status_cu$psf_status_type == "percentile" & !is.na(biological_status_cu$psf_status_type)
-
-show <- benchmarks_cu[cond_here,c("region","species_name","cu_name_pse","cuid",
-                     "percentile_lower_025","percentile_lower","percentile_lower_975",
-                     "percentile_upper_025","percentile_upper","percentile_upper_975")]
-
-show <- benchmarks_cu[cond_here,c("region","species_name","cu_name_pse","cuid")]
-
-show$psf_status_code <- sapply(show$cuid,function(cuid){
-  cond <- biological_status_cu$cuid == cuid
-  return(biological_status_cu$psf_status_code[cond])
+biological_status_cu$curr_spw <- sapply(biological_status_cu$cuid,function(cuid){
+  cond <- benchmarks_cu$cuid == cuid
+  gen_length <- unique(benchmarks_cu$curr_spw[cond])
+  return(gen_length)
 })
 
-show$psf_status_type <- sapply(show$cuid,function(cuid){
-  cond <- biological_status_cu$cuid == cuid
-  return(biological_status_cu$psf_status_type[cond])
-})
+cond <- biological_status_cu
 
-
-
-
-figure_print <- T
+figure_print <- F
 percent <- 0
 for(cuid in cuid_biostat){
-  # cuid <- 509
+  # cuid <- 1207
   plot_spawnerAbundance_benchmarks_fun(cuid = cuid,
-                                       cuspawnerabundance = spawnerabundance_cu, 
+                                       cuspawnerabundance = cuspawnerabundance, 
                                        dataset101_biological_status = biological_status_cu, 
                                        dataset102_benchmarks = benchmarks_cu, 
                                        #dataset103_output = cuspawnerabund_smooth,
                                        conservationunits_decoder = conservationunits_decoder, 
                                        figure_print = figure_print, # figure_print, 
-                                       wd_figures = wd_figures)
+                                       wd_figures = wd_figures, add_absolute_benchmarks = T)
   
   progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100
   if(progress > percent){
@@ -265,6 +263,170 @@ for(r in 1:nrow(bs_check)){
 
 cond <- bs_check$sr_status != bs_check$sr_status_2
 bs_check[cond,]
+
+#
+# Investigating the issue with percentile benchmark CI not containing benchmark -----
+#
+fromDatabase <- update_file_csv <- F
+
+#' Import the cuspawnerabundance.csv
+cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
+                                             fromDatabase = fromDatabase,
+                                             update_file_csv = update_file_csv,
+                                             wd = wd_pop_indic_data_input_dropbox)
+
+# In case the file on the database is not updated:
+# biological_status_cu <- read.csv(paste0(wd_output,"/Biological_status_HBSR_Percentile_all.csv"),
+#                                      header = T)
+biological_status_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                                   pattern = "dataset101_biological_status")
+
+# Import the current biostatus from the database (dataset102_output)
+benchmarks_cu <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                            pattern = "dataset102_benchmarks")
+
+# Import the conservationunits_decoder.csv
+conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+                                                   fromDatabase = fromDatabase,
+                                                   update_file_csv = update_file_csv,
+                                                   wd = wd_pop_indic_data_input_dropbox)
+
+#'* ISSUE *
+#' all the cases where the percentile benchmarks are outside their CI
+
+cond <- ((benchmarks_cu$percentile_upper > benchmarks_cu$percentile_upper_975) |
+           (benchmarks_cu$percentile_upper < benchmarks_cu$percentile_upper_025) |
+           (benchmarks_cu$percentile_lower > benchmarks_cu$percentile_lower_975) |
+           (benchmarks_cu$percentile_lower < benchmarks_cu$percentile_lower_025)) &
+  !is.na(benchmarks_cu$percentile_upper)
+
+show <- benchmarks_cu[cond,c("region","species_name","cu_name_pse","cuid",
+                     "percentile_lower_025","percentile_lower","percentile_lower_975",
+                     "percentile_upper_025","percentile_upper","percentile_upper_975")]
+
+show 
+
+# cond_here <- cond & 
+#   benchmarks_cu$cuid %in% cuid_biostat
+# 
+# cond_here <- cond 
+# 
+# cond_here <- cond &
+#   benchmarks_cu$cuid %in% cuid_biostat & 
+#   biological_status_cu$psf_status_type == "percentile" & !is.na(biological_status_cu$psf_status_type)
+# 
+# show <- benchmarks_cu[cond_here,c("region","species_name","cu_name_pse","cuid",
+#                                   "percentile_lower_025","percentile_lower","percentile_lower_975",
+#                                   "percentile_upper_025","percentile_upper","percentile_upper_975")]
+# 
+# show <- benchmarks_cu[cond_here,c("region","species_name","cu_name_pse","cuid")]
+
+show$psf_status_code <- sapply(show$cuid,function(cuid){
+  cond <- biological_status_cu$cuid == cuid
+  return(biological_status_cu$psf_status_code[cond])
+})
+
+show$psf_status_type <- sapply(show$cuid,function(cuid){
+  cond <- biological_status_cu$cuid == cuid
+  return(biological_status_cu$psf_status_type[cond])
+})
+
+cond <- ((benchmarks_cu$percentile_upper < benchmarks_cu$percentile_upper_975) &
+           (benchmarks_cu$percentile_upper > benchmarks_cu$percentile_upper_025) &
+           (benchmarks_cu$percentile_lower < benchmarks_cu$percentile_lower_975) &
+           (benchmarks_cu$percentile_lower > benchmarks_cu$percentile_lower_025)) &
+  !is.na(benchmarks_cu$percentile_upper)
+
+show_good <- benchmarks_cu[cond,c("region","species_name","cu_name_pse","cuid",
+                             "percentile_lower_025","percentile_lower","percentile_lower_975",
+                             "percentile_upper_025","percentile_upper","percentile_upper_975")]
+
+show_good$psf_status_code <- sapply(show_good$cuid,function(cuid){
+  cond <- biological_status_cu$cuid == cuid
+  return(biological_status_cu$psf_status_code[cond])
+})
+
+show_good$psf_status_type <- sapply(show_good$cuid,function(cuid){
+  cond <- biological_status_cu$cuid == cuid
+  return(biological_status_cu$psf_status_type[cond])
+})
+
+show
+
+i <- 1  # Central Coast      Chinook                CK  509       Docee code = 8
+i <- 9  #  Yukon      Chinook                CK 1211 Upper Yukon code = 3   
+i <- 10 #  Yukon         Chum                CM 1213 Middle Yukon 
+i <- 8
+cond <- biological_status_cu$cuid == show$cuid[i]
+biological_status_cu[cond,]
+plot_spawnerAbundance_benchmarks_fun(cuid = 509, #show$cuid[i],
+                                     cuspawnerabundance = cuspawnerabundance, 
+                                     dataset101_biological_status = biological_status_cu, 
+                                     dataset102_benchmarks = benchmarks_cu, 
+                                     #dataset103_output = cuspawnerabund_smooth,
+                                     conservationunits_decoder = conservationunits_decoder, 
+                                     figure_print = F, # figure_print, 
+                                     wd_figures = wd_figures)
+
+bootstrap_cuid_hist_compare_fun(cuid = show$cuid[i], nBoot = 5000, numLags = 1, 
+            benchmarks = c(.25,.75), 
+            spawnerabundance = spawnerabundance)
+
+i <- 1 
+i <- 2
+i <- 3
+i <- 6
+cond <- biological_status_cu$cuid == show_good$cuid[i]
+biological_status_cu[cond,]
+plot_spawnerAbundance_benchmarks_fun(cuid = show_good$cuid[i],
+                                     cuspawnerabundance = cuspawnerabundance, 
+                                     dataset101_biological_status = biological_status_cu, 
+                                     dataset102_benchmarks = benchmarks_cu, 
+                                     #dataset103_output = cuspawnerabund_smooth,
+                                     conservationunits_decoder = conservationunits_decoder, 
+                                     figure_print = F, # figure_print, 
+                                     wd_figures = wd_figures)
+
+bootstrap_cuid_hist_compare_fun(cuid = show_good$cuid[i], nBoot = 5000, 
+                                numLags = 1, 
+                                benchmarks = c(.25,.75), 
+                                spawnerabundance = cuspawnerabundance)
+
+ar_model_phi <- data.frame(cuid = c(show$cuid,show_good$cuid),
+                           phi = NA)
+
+for(cuid in c(show$cuid,show_good$cuid)){
+  ar_here <- bootstrap_ar_cuid_fun(cuid = cuid,nBoot = 5000, numLags = 1, benchmarks =  c(.25,.75), 
+                         cuspawnerabundance = cuspawnerabundance)
+  
+  cond <- ar_model_phi$cuid == cuid
+  ar_model_phi$phi[cond] <- ar_here$ar_model$x.mean
+}
+
+ar_model_phi$issue <- F
+cond <- ar_model_phi$cuid %in% show$cuid 
+ar_model_phi$issue[cond] <- T
+
+graphics.off()
+stripchart(phi ~ issue, data = ar_model_phi, vertical = T, pch = 1, cex = 2)
+
+x_max <- max(ar_model_phi$phi)
+x_min  <- min(ar_model_phi$phi)
+
+cond <- !ar_model_phi$issue
+h_noIssue <- hist(ar_model_phi$phi[cond], plot = F)
+cond <- ar_model_phi$issue
+h_Issue <- hist(ar_model_phi$phi[cond], plot = F)
+plot(h_noIssue, main = "", xlab = "Autocorrelation (phi)", xlim = c(x_min,x_max),
+     col = alpha("grey50",.5))
+plot(h_Issue, xlim = c(x_min,x_max),
+     add = T, col = alpha("red",.5))
+
+
+
+
+
+
 
 #
 # Import datasets TO CLEAN ------

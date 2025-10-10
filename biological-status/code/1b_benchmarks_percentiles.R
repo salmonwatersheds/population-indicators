@@ -7,7 +7,7 @@
 #' - cuspawnerabundance (from database)
 #' - conservationunits_decoder (from database)
 #' 
-#' Files produced: 
+#' Files produced:
 #' - output/REGION_SPECIES_benchmarks_summary_percentiles.csv
 #' - output/REGION_SPECIES_biological_status_percentiles.csv
 #' 
@@ -109,7 +109,7 @@ datasetsNames_database <- datasetsNames_database_fun()
 
 fromDatabase <- update_file_csv <- F
 
-#' Import the conservationunits_decoder.csv from population-indicators/data_input or 
+#'* Import the conservationunits_decoder.csv *  
 #' download it from the PSF database.
 #' # To obtain the generation length and calculate the the "current spawner abundance".
 conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
@@ -123,7 +123,7 @@ conservationunits_decoder <- conservationunits_decoder[,!grepl("smu",colnames(co
 conservationunits_decoder <- unique(conservationunits_decoder)
 nrow(conservationunits_decoder) # 469
 
-#' Import the cuspawnerabundance.csv from population-indicators/data_input or 
+#'* Import the cuspawnerabundance.csv * 
 #' download it from the PSF database.
 #' To calculating current spawner abundance for biostatus assessment
 cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",

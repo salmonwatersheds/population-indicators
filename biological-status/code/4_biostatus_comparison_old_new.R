@@ -174,24 +174,9 @@ biostatus_old$curr_spw_start_year <- sapply(biostatus_old$cuid,function(cuid){
   return(benchmarks_old$curr_spw_start_year[cond])
 })
 
-#'* Import the current spawner abundance (for generation length) *
+
 datasetsNames_database <- datasetsNames_database_fun()
 fromDatabase <- update_file_csv <- F
-cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
-                                            fromDatabase = fromDatabase,
-                                            update_file_csv = update_file_csv,
-                                            wd = wd_pop_indic_data_input_dropbox)
-
-#'* Import dataset390_output for survey_quality (for catch_method quality and decision tree) *
-dataset390_output <- datasets_database_fun(nameDataSet = "dataset390_data_quality.csv", # see datasetsNames_database$name_CSV for names
-                                           fromDatabase = fromDatabase,
-                                           update_file_csv = update_file_csv,
-                                           wd = wd_pop_indic_data_input_dropbox)
-
-dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
-head(dataset390_output)
-
-nrow(dataset390_output) # 463 465 466
 
 #'* Import conservationunits_decoder for generation length *
 conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
@@ -207,25 +192,23 @@ nrow(conservationunits_decoder) # 469
 
 length(unique(conservationunits_decoder$pooledcuid)) # 463
 
-#' TEMPORARY change of the region for VIMI
-# unique(biostatus_new$region)
-# VIMI_rg <- c("East Vancouver Island & Mainland Inlets",
-#              "West Vancouver Island")
-# 
-# cond_rg <- biostatus_new$region %in% VIMI_rg
-# biostatus_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-# 
-# cond_rg <- benchmarks_new$region %in% VIMI_rg
-# benchmarks_new$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-# 
-# cond_rg <- cuspawnerabundance$region %in% VIMI_rg
-# cuspawnerabundance$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-# 
-# cond_rg <- dataset390_output$region %in% VIMI_rg
-# dataset390_output$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
-# 
-# cond_rg <- conservationunits_decoder$region %in% VIMI_rg
-# conservationunits_decoder$region[cond_rg] <- "Vancouver Island & Mainland Inlets"
+
+#'* Import the current spawner abundance (for generation length) *
+# cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
+#                                             fromDatabase = fromDatabase,
+#                                             update_file_csv = update_file_csv,
+#                                             wd = wd_pop_indic_data_input_dropbox)
+
+#'* Import dataset390_output for survey_quality (for catch_method quality and decision tree) *
+dataset390_output <- datasets_database_fun(nameDataSet = "dataset390_data_quality.csv", # see datasetsNames_database$name_CSV for names
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+
+dataset390_output <- dataset390_output[,c("region","species_name","cuid","cu_name_pse","catch_method")]
+head(dataset390_output)
+
+nrow(dataset390_output) # 463 465 466
 
 
 #'* Import the list of priors for Smax (produced in 1a_HBSRM.R) *

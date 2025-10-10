@@ -977,7 +977,7 @@ table(biological_status_merged$psf_status)
 #            284              4             37             32             12             80 2025-05-21: the data is the same but the new rule with 100% Smsy, 75% percentile and <1500 are applied 
 #            275              4             43             24             11             90 2025-06-03
 #            270              4             44             25             11             91 2025-06-22: updating the Yukon data (also moved some of the code with new rule for 8 and absolute benchmark above)
-
+#            270              4             42             25             11             93 2025-10-09: 
 
 #'* Add field  hist_COLOUR *
 #' Note: this will be be removed in future. And no need to do the same for 

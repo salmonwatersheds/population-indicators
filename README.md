@@ -61,10 +61,13 @@ Could include the run timing data but also spawn timing analysis of NuSEDS data 
 #### `hatchery-release-score`
 
 #### `data-quality`
+Calculates CU-level data quality scores based on data quality of spawner surveys and other datasets within each CU.
 
-### `overviews`
+#### `overviews`
+Calculates the CU-level spawner abundance anomalies shown in the regional Overviews pages. 
 
-### `trends`
+#### `trends`
+Calculates short-term (three generation) and long-term (all years) linear trends in log spawner abundance that are shown in the trends indicator.
 
 ## Order to run the updates
 

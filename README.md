@@ -62,6 +62,13 @@ Could include the run timing data but also spawn timing analysis of NuSEDS data 
 
 #### `data-quality`
 
+### `overviews`
+
+### `trends`
+
+## Order to run the updates
+
+`spawner-abundance` (dataset 1) --> `trends` (datasets 102, 102 and 391) --> `overviews` (dataset 558)
 
 ## Acknowledgements
 

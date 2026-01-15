@@ -107,18 +107,20 @@ compareColNamesDF_fun <- function(DF1,DF2){
 nuseds_fields_definitions_fun <- function(wd_references){
   
   #' Sources of information:
-  #' - Data Dictionary NuSEDS: 
+  #' - Data_Dictionary_NuSEDS_EN
+  #' previously Data Dictionary NuSEDS: 
   #'    - /references/nuseds_report_definitions.csv
   #'    - https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6/resource/60c2827f-c439-3b37-ab84-42515eb1b521
-  #'    - 
-  #' Conservation_Unit_Report_Definitions:
+  #'    - https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6/resource/1d343cd3-5614-3bda-814b-48a08084b051 new
+  #'
+  #' - Census Sites_SEN_Definitions
+  #' previously: Conservation_Unit_Report_Definitions:
   #' - /references/conservation_unit_report_definitions.csv
   #' - https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6/resource/894ba9df-8931-3cf1-bf4c-ba8876bcf515
+  #' - https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6/resource/54c49419-7446-386a-afc3-39cea7dc7d8f new
   
-  nuseds_report_def <- read.csv(paste(wd_references,"nuseds_report_definitions.csv",
-                                      sep = "/"))
-  conservation_unit_report_def <- read.csv(paste(wd_references,"conservation_unit_report_definitions.csv",
-                                                 sep = "/"))
+  nuseds_report_def <- read.csv(paste0(wd_references,"/Data_Dictionary_NuSEDS_EN.csv")) # nuseds_report_definitions.csv
+  conservation_unit_report_def <- read.csv(paste0(wd_references,"/Census Sites_SEN_Definitions.csv")) # conservation_unit_report_definitions.csv
   
   nuseds_report_def_l <- list()
   for(r in 1:nrow(nuseds_report_def)){
@@ -133,7 +135,7 @@ nuseds_fields_definitions_fun <- function(wd_references){
   names(conservation_unit_report_def_l) <- conservation_unit_report_def$Field.Name
   
   fields_def <- list(nuseds_report_def_l,conservation_unit_report_def_l)
-  names(fields_def) <- c("all_areas_nuseds","cu_system_sites")
+  names(fields_def) <- c("all_areas_nuseds","cu_census_sites") # previously cu_system_sites
   return(fields_def)
 }
 
@@ -717,7 +719,7 @@ cuss_nuseds_match_single_fun <- function(IndexId, i, prog_steps = 10,
 # detectCores()
 # detectCores(logical = FALSE)
 # cores_nb <- 10
-cuss_nuseds_match_parallel_fun <- function(conservation_unit_system_sites,
+cuss_nuseds_match_parallel_fun <- function(conservation_unit_census_sites, # previously conservation_unit_system_sites
                                            all_areas_nuseds,
                                            cores_nb = 1){
   
@@ -733,21 +735,21 @@ cuss_nuseds_match_parallel_fun <- function(conservation_unit_system_sites,
     cl <- makeCluster(cores_nb)
     
     # export the different object to the cluster
-    clusterExport(cl, "conservation_unit_system_sites")
+    clusterExport(cl, "conservation_unit_census_sites")
     clusterExport(cl, "all_areas_nuseds")
     # lusterExport(cl, "prog_steps")
     # clusterExport(cl, "IndexIds")
     clusterExport(cl, "cuss_nuseds_match_single_fun")
     
-    trackRecord_l <- parLapply(cl = cl, X = unique(conservation_unit_system_sites$IndexId), 
+    trackRecord_l <- parLapply(cl = cl, X = unique(conservation_unit_census_sites$IndexId), 
                                fun = function(iid){
       # iid <- unique(conservation_unit_system_sites$IndexId)[174]
       # i <- which(IndexIds == iid)
-      i <- which(unique(conservation_unit_system_sites$IndexId) == iid)
+      i <- which(unique(conservation_unit_census_sites$IndexId) == iid)
       trackRecord <- cuss_nuseds_match_single_fun(IndexId = iid,
                                                   i = i, 
                                                   #prog_steps = prog_steps,
-                                                  conservation_unit_system_sites = conservation_unit_system_sites,
+                                                  conservation_unit_system_sites = conservation_unit_census_sites,
                                                   all_areas_nuseds = all_areas_nuseds)
       return(trackRecord)
     })
@@ -761,7 +763,7 @@ cuss_nuseds_match_parallel_fun <- function(conservation_unit_system_sites,
       trackRecord <- cuss_nuseds_match_single_fun(IndexId = iid,
                                                   i = i,
                                                   #prog_steps = prog_steps,
-                                                  conservation_unit_system_sites = conservation_unit_system_sites,
+                                                  conservation_unit_system_sites = conservation_unit_census_sites,
                                                   all_areas_nuseds = all_areas_nuseds)
       return(trackRecord)
     })
@@ -886,9 +888,11 @@ compare_series_fun <- function(series_focal,series_compare,percentage = F){
 
 
 #' Function to return a list for the fields in all_areas_nuseds and 
-#' conservation_unit_system_sites that are associated to unique IndexId and GFE_ID,
-#' to both and to none. The assumption is based on if single or multiple values
-#' of a given field is returned for each IndexId or GDE_ID.
+#' conservation_unit_system_sites that are associated to unique (1) IndexId, 
+#' (2) GFE_ID, (3) both or (4) to none. The assumption is based on if single or multiple values
+#' of a given field is returned for each IndexId or GFE_ID.
+#' If runProcess is TRUE, a process checks if multiple values of field can be found
+#' for a given IndexId and GFE_ID. This takes some time.
 fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
                                       conservation_unit_system_sites,
                                       runProcess = F,                # takes a while
@@ -923,7 +927,6 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
   }
   CUSS_l[[1]] <- out
 
-
   # GFE_ID
   if(runProcess){
     cond_gfeid <- fields_CUSS_asso$fields_1 == "GFE_ID" &
@@ -931,12 +934,12 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
     fields_CUSS_asso[cond_gfeid,]
     out <- as.character(fields_CUSS_asso$fields_2[cond_gfeid])
     
-    # remove fields that are known to be CU related only
-    out <- out[!out %in% c('FAZ_ACRO','MAZ_ACRO','JAZ_ACRO')]
+    # remove fields that are known to be CU related only  --> NO, they are POP_ID and GFE_ID specific, for both independently
+    # out <- out[!out %in% c('FAZ_ACRO','MAZ_ACRO','JAZ_ACRO')]
     
   }else{
-    out <- c('GFE_ID','SYSTEM_SITE','GFE_TYPE','Y_LAT','X_LONGT','WATERSHED_CDE',
-             'FWA_WATERSHED_CDE')
+    out <- c('GFE_ID','CENSUS_SITE','GFE_TYPE','Y_LAT','X_LONGT','WATERSHED_CDE',
+             'FWA_WATERSHED_CDE','FAZ_ACRO','MAZ_ACRO','JAZ_ACRO') # SYSTEM_SITE
     
     if("coordinates_changed" %in% colnames(conservation_unit_system_sites)){
       out <- c(out,"coordinates_changed")
@@ -958,11 +961,11 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
     }
     out <- out
     
-    # remove fields that are known to be CU related only
-    out <- out[!out %in% c('FAZ_ACRO','MAZ_ACRO','JAZ_ACRO')]
+    # remove fields that are known to be CU related only --> NO, they are POP_ID and GFE_ID specific, for both independently
+    # out <- out[!out %in% c('FAZ_ACRO','MAZ_ACRO','JAZ_ACRO')]
     
   }else{
-    out <- c()
+    out <- NA
   }
   CUSS_l[[3]] <- out
   
@@ -980,7 +983,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
     }
 
   }else{
-    out <- c('MAP_LABEL')
+    out <- NA # MAP_LABEL not in conservation_unit_census_sites anymore as of 2025-05-28
   }
   CUSS_l[[4]] <- out
   
@@ -1025,6 +1028,8 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
   
   #' *** all_areas_nuseds ***
   NUSEDS_l <- list()
+  
+  # IndexId
   if(runProcess){
     fields_NUSEDS_asso <- association_twoFields_fun(fields_1 = c("IndexId","GFE_ID"),
                                                     fields_2 = colnames(all_areas_nuseds),
@@ -1038,6 +1043,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
     
   }else{
     out <- c("SPECIES","POPULATION","RUN_TYPE","POP_ID")
+    out <- c(out,"FULL_CU_IN") # new addition as of 2025-11-03
     
     if(newFieldsIncluded){
       out <- c(out,'species_acronym_ncc','IndexId')
@@ -1056,6 +1062,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
   }else{
     out <- c('AREA','WATERBODY','GAZETTED_NAME','LOCAL_NAME_1','LOCAL_NAME_2',
              'WATERSHED_CDE','WATERBODY_ID','GFE_ID')
+    out <- c(out,"FWA_WATERSHED_CDE") # new addition as of 2025-11-03
     
     if(newFieldsIncluded){
       # out <- c(out,'StatArea') # field not create in script 1 anymore
@@ -1078,7 +1085,7 @@ fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
     }
     
   }else{
-    out <- c()
+    out <- NA
     
   }
   NUSEDS_l[[3]] <- out
@@ -1168,7 +1175,9 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
     if(sum(cond_cuss_iid) > 0){ # if IndexId is already present in CUSS:
       
       for(f in fields_l$CUSS$IndexId){
-        cuss_new[,f] <- unique(conservation_unit_system_sites[,f][cond_cuss_iid])
+        val <- unique(conservation_unit_system_sites[,f][cond_cuss_iid])
+        val <- val[!is.na(val)]
+        cuss_new[,f] <- val
       }
       
     }else{  # if IndexId is not already present in CUSS:
@@ -1180,6 +1189,8 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
       field_comm <- field_comm[field_comm != "IndexId"]
       
       for(f in field_comm){
+        val <- unique(conservation_unit_system_sites[,f][cond_cuss_iid])
+        val <- val[!is.na(val)]
         cuss_new[,f] <- unique(all_areas_nuseds[,f][cond_nuseds_iid])
       }
       
@@ -1188,10 +1199,10 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
       if(cuss_new$species_acronym_ncc == "CN"){
         cuss_new$SPECIES_QUALIFIED <- "CK"
         
-      }else if(cuss_new$species_acronym_ncc %in% c("SEL","SER")){
-        cuss_new$SPECIES_QUALIFIED <- "SX"
-        
       }
+      # else if(cuss_new$species_acronym_ncc %in% c("SEL","SER")){
+      #   cuss_new$SPECIES_QUALIFIED <- "SX"
+      # }
     }
     
     # Fill with GFE_ID related fields
@@ -1212,7 +1223,8 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
         cuss_new[,f] <- unique(all_areas_nuseds[,f][cond_nuseds_gfeid])
       }
       
-      cuss_new$SYSTEM_SITE <- unique(all_areas_nuseds$WATERBODY[cond_nuseds_gfeid])
+      # cuss_new$SYSTEM_SITE <- unique(all_areas_nuseds$WATERBODY[cond_nuseds_gfeid])
+      cuss_new$CENSUS_SITE <- unique(all_areas_nuseds$WATERBODY[cond_nuseds_gfeid])
     }
   }
   return(cuss_new)
@@ -1228,8 +1240,8 @@ CUSS_newRow_fun <- function(IndexId,GFE_ID,
 fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
                                         GFE_ID_focal = NA, GFE_ID_alter = NA,
                                         edit_NUSEDS = F,  edit_CUSS = F, 
-                                        all_areas_nuseds = all_areas_nuseds,
-                                        conservation_unit_system_sites = conservation_unit_system_sites){
+                                        all_areas_nuseds,
+                                        conservation_unit_system_sites){
   
   require(dplyr)
   
@@ -1303,7 +1315,7 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
             # find the fields in common for GFE_ID in NUSEDS and CUSS
             fields <- fields_l$NUSEDS$GFE_ID[fields_l$NUSEDS$GFE_ID %in% fields_l$CUSS$GFE_ID]
             # add SYSTEM_SITE, which is WATERSHED in NUSEDS
-            fields <- c(fields,"SYSTEM_SITE")
+            fields <- c(fields,"CENSUS_SITE") # SYSTEM_SITE
           }
         }
         
@@ -1360,10 +1372,10 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
       
       for(f in fields){
         f_focal <- f
-        if(f == "SYSTEM_SITE" & !varAlter_presentInSameDataset){  # add SYSTEM_SITE WATERSHED in NUSEDS
+        if(f == "CENSUS_SITE" & !varAlter_presentInSameDataset){  # add CENSUS_SITE (previously SYSTEM_SITE) WATERSHED in NUSEDS
           f_focal <- "WATERBODY"
         }else if(f == "WATERBODY" & !varAlter_presentInSameDataset){
-          f_focal <- "SYSTEM_SITE"
+          f_focal <- "CENSUS_SITE" # SYSTEM_SITE
         }
         dataset_focal[cond_focal,f_focal] <- unique(dataset_alter[cond_alter,f])
       }

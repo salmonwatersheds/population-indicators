@@ -2245,12 +2245,13 @@ dataset2 <- dataset2 %>%
           year)
 
 
+# Produce a dummy datasets in the loca; /ouput repo to push to github
+write.csv(dataset2[1:2,],paste0(getwd(),"/output/dataset2_spawner-surveys_dummy.csv"))
+
 date <- Sys.Date()
-write.csv(dataset2,paste0(wd_output,"/archive/dataset2_spawner_surveys_",date,".csv"),
+write.csv(dataset2,paste0(wd_output,"/archive/dataset2_spawner-surveys_",date,".csv"),
           row.names = F)
 
-# Produce a dummy datasets in the loca; /ouput repo to push to github
-write.csv(dataset2[1:2,],paste0(getwd(),"/output/dataset2_spawner_surveys_dummy.csv"))
 
 # dataset2 <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive/"),
 #                                              pattern = "dataset2") # dataset2_spawner_surveys

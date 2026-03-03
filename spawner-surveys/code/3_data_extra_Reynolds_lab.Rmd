@@ -1,19 +1,23 @@
+---
+title: "3_data_extra_Reynolds_lab"
+author: "Bruno S. Carturan, Eric Hertz, Stephanie J. Peacock"
+# date: "2025-08-22"
+output: 
+  html_document:
+    toc: true                  # Adds a table of contents to the document
+    toc_float: true           # Makes the table of contents float on the side as the reader scrolls.
+    toc_collapsed: true        # Starts the table of contents in a collapsed state.
+    toc_depth: 3               # Specifies the depth of headers (e.g., ##, ###) to include in the table of contents.
+    number_sections: true      # 
+    theme: journal  # lumen
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
 
-#'******************************************************************************
-#' The goal of the script is to combine the cleaned NuSEDS data with the data 
-#' sent by Arianne Nickels from the Reynolds' Lab (SFU).
-#' 
-#' Files imported:
-#' - SFU_Escapement_PSF.xlsx       : the Reynolds's Lab main excel file 
-#' - SFU_stream_Coordinates.xlsx   : the Reynolds's Lab stream coordinates used here
-#' - 2_nuseds_cuid_streamid_nuseds_20240419.csv : the cleaned NuSEDS data with PSE cuid and streamid (and with data no in PSE)
-#' - DFO_All_Streams_Segments_20240408.xlsx : the file sent by Wu Zhipeng (DFO) with stream-related information
-#' 
-#' Files produced: 
-#' - 3_data_extra_Reynolds_lab_DATE.csv    
-#' 
-#'******************************************************************************
+```{r, include=FALSE}
 
 # 
 rm(list = ls())
@@ -70,17 +74,107 @@ library(sf)
 options(warn = 0)
 options(digits = 9) ## 7
 
-# Import files and add relevant fields ------
+export_datasets <- T
+```
 
+# Import files
+
+## PSE data
+
+```{r}
 #'* Import the cleaned NuSEDS data matched with the cuid and streamid of the PSE *
 nuseds_cuid_streamid <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
-                                                   pattern = "nuseds_cuid_streamid")
+                                                   pattern = "2_nuseds_cuid_streamid")
 
-head(nuseds_cuid_streamid)
+# head(nuseds_cuid_streamid)
 
 nuseds_cuid_streamid$source_id <- "NuSEDS_20251103"
+```
 
+```{r}
+#'* Import the NuSEDS field definitions *
+nuseds_fields_definitions <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
+```
 
+```{r, include=FALSE}
+#'* Import the stream - GFE_ID data file from DFO *
+#' (emailed from Wu Zhipeng, DFO, 09/04/2024)
+#' There are different locations in the 2nd first sheets to we combine them into a unique dataframe
+# DFO_All_Streams_Segments <- read_xlsx(paste0(wd_data_dropbox,"/DFO_All_Streams_Segments_20240408.xlsx"),
+#                                       sheet = "All Streams")
+# 
+# DFO_All_Streams_Segments2 <- read_xlsx(paste0(wd_data_dropbox,"/DFO_All_Streams_Segments_20240408.xlsx"),
+#                                        sheet = "Stream Segments")
+# 
+# columns <- c("NME","ID","X_LONGT","Y_LAT")
+# DFO_All_Streams_Segments <- rbind(DFO_All_Streams_Segments[,columns],
+#                                   DFO_All_Streams_Segments2[,columns]
+#                                   # DFO_All_Streams_Segments3[,columns],
+#                                   # DFO_All_Streams_Segments4[,columns]
+# )
+# DFO_All_Streams_Segments <- unique(DFO_All_Streams_Segments)
+# 
+# rm(DFO_All_Streams_Segments2)
+# head(DFO_All_Streams_Segments)
+```
+
+```{r, include=FALSE}
+#'* Import the conservationunits_decoder.csv *
+# datasetsNames_database <- datasetsNames_database_fun()
+# fromDatabase <- update_file_csv <- F
+# #' # To obtain the generation length and calculate the the "current spawner abundance".
+# conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
+#                                                    fromDatabase = fromDatabase,
+#                                                    update_file_csv = update_file_csv,
+#                                                    wd = wd_pop_indic_data_input_dropbox)
+```
+
+```{r}
+#'* Import the shape files for the Region boundaries *
+#' Note that se_boundary/se_boundary.shp is used in 0_assign-regions.R. This is a
+#' lighter shape file but contains the same regions. The code here works with 
+#' se_boundary.shp.
+# regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
+#   st_transform(crs = 4269)
+# unique(regions_shp$regionname)
+wd_geo_regions <- gsub("1_PROJECTS","5_DATA/Mapping/study areas/shapefiles/PSE_regions/",wd_X_Drive1_PROJECTS)
+
+regions_shp <- st_read(paste0(wd_geo_regions,"se_boundary_regions_simple/se_boundary_regions_simple.shp")) %>%
+  st_transform(crs = 4269)
+# unique(regions_shp$Region)
+
+sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
+```
+
+```{r}
+#'* Import the geodatabase for the CU boundaries  *
+wd_geo_cus <- gsub("1_PROJECTS","5_DATA/CUs_Master/GDB/",wd_X_Drive1_PROJECTS)
+
+CUs_gdb <- st_read(paste0(wd_geo_cus,"PSF_CUs_Master.gdb")) %>%
+  st_transform(crs = 4269)
+
+# remove non-used region values
+cond <- ! CUs_gdb$region_name %in% c("Not Assessed","Arctic/Mackenzie")
+CUs_gdb <- CUs_gdb[cond,]
+CUs_gdb <- st_simplify(x = CUs_gdb, dTolerance = .002) # to reduce computation time
+```
+
+## SFU data
+
+```{r}
+#'* Import the SFU data: escapement *
+SFU_escap <- read_excel(paste(wd_data_dropbox,"SFU_Escapement_data_Master_PSF.xlsx",sep="/"), 
+                       sheet = "Estimates") |>
+  as.data.frame()
+
+head(SFU_escap)
+# nrow(SFU_escap) # 3853
+
+SFU_escap$source_id <- "Reynolds_20260209"
+
+```
+
+```{r}
 #'* Import the SFU data: stream info *
 #' Preious file: SFU_Escapement_PSF.xlsx
 SFU_stream <- read_excel(paste(wd_data_dropbox,"SFU_Escapement_data_Master_PSF.xlsx",sep="/"), 
@@ -88,46 +182,53 @@ SFU_stream <- read_excel(paste(wd_data_dropbox,"SFU_Escapement_data_Master_PSF.x
   as.data.frame()
 
 head(SFU_stream)
+```
 
+Some checks and modifications:
 
-#'* Import the SFU data: escapement *
-SFU_escap <- read_excel(paste(wd_data_dropbox,"SFU_Escapement_data_Master_PSF.xlsx",sep="/"), 
-                       sheet = "Estimates") |>
-  as.data.frame()
-
-head(SFU_escap)
-nrow(SFU_escap) # 3853
-
-SFU_escap$source_id <- "Reynolds_20260209"
-
+```{r}
 # Remove rows with NAs
 cond <- is.na(SFU_escap$estimate.number) | SFU_escap$estimate.number == "NA"
-sum(cond) # 1428
 SFU_escap <- SFU_escap[!cond,]
-
-# SFU_escap_colnames <- colnames(SFU_escap)
+sum(cond) # 1428
 
 # CHECK of duplicated rows --> should all be false
 any(duplicated(SFU_escap))
 any(duplicated(SFU_escap[,c("reynolds.me","year","species","estimate.number")]))
 
 # CHECK that the stream names match between the two datasets
-all(SFU_escap$reynolds.me %in% SFU_stream$SFU_Stream_Name) # FALSE
-all(SFU_stream$SFU_Stream_Name %in% SFU_escap$reynolds.me) # TRUE
+all(SFU_escap$reynolds.me %in% SFU_stream$SFU_Stream_Name)
+all(SFU_stream$SFU_Stream_Name %in% SFU_escap$reynolds.me)
 cond <- ! SFU_escap$reynolds.me %in% SFU_stream$`SFU Stream Name`
 SFU_escap$reynolds.me [cond] |> unique()
-# "Beales Left"        "Beales Right"       "Fell Creek"         "Mosquito Bay Left"  "Mosquito Bay Right"
+
 cond <- ! SFU_stream$`SFU Stream Name` %in% SFU_escap$reynolds.me
 SFU_stream$`SFU Stream Name`[cond]
 # "Fell"
 
-unique(SFU_stream$SFU_Stream_Name)
+# unique(SFU_stream$SFU_Stream_Name)
 # "Beales Left" & "Beales Right" --> "Beales
 # "Fell Creek" --> "Fell
 #  "Mosquito Bay Left" & "Mosquito Bay Right" --> "Mosquito Bay"
 
-unique(SFU_escap$reynolds.me)
+cond <- SFU_escap$reynolds.me == "Fell Creek"
+SFU_escap$reynolds.me[cond] <- "Fell"
+```
 
+We remove extra data for Beales Left & Right and Mosquito Bay Left and Right because these counts should be combined and the combined counts are also in the data set, as expressed in Arianne Nickels' email: Please note that we split both Mosquito bay and Beales into two streams, so the numbers from "Mosquito bay" are a combination of both "Mosquito bay left" and "Mosquito bay right". This is the same for Beales. The reason is because the streams both share an estuary but then split off once you hit the tree line. DFO considers them one stream, so it might be easiest to stick to that. I thought I'd include the combined data and the split data just in case."
+
+```{r}
+cond_remove <- SFU_escap$reynolds.me %in% c("Beales Left","Beales Right",
+                                            "Mosquito Bay Left","Mosquito Bay Right")
+SFU_escap <- SFU_escap[!cond_remove,]
+
+all(SFU_escap$reynolds.me %in% SFU_stream$`SFU Stream Name`)
+all(SFU_stream$`SFU Stream Name` %in% SFU_escap$reynolds.me)
+```
+
+## Find ESTIMATE_CLASSIFICATION
+
+```{r}
 #' Find for each value in estimate.method the corresponding value in the fields
 # https://www.salmonexplorer.ca/methods/analytical-approach.html#data-quality
 
@@ -135,10 +236,6 @@ unique(SFU_escap$reynolds.me)
 unique(SFU_escap$estimate.method)
 unique(nuseds_cuid_streamid$ESTIMATE_METHOD)
 SFU_escap$estimate.method[SFU_escap$estimate.method == "Peak live + Dead"] <- "Peak Live + Dead"
-
-SFU_stream$ESTIMATE_CLASSIFICATION
-nuseds_cuid_streamid$ESTIMATE_CLASSIFICATION |> unique()
-nuseds_cuid_streamid$stream_survey_quality
 
 estimate.method_SFU <- unique(SFU_escap$estimate.method)
 estimate.method_SFU[! estimate.method_SFU %in% unique(nuseds_cuid_streamid$ESTIMATE_METHOD)]
@@ -221,97 +318,21 @@ SFU_escap$stream_survey_quality[cond] <- "Medium-Low"
 
 any(is.na(SFU_escap$ESTIMATE_CLASSIFICATION))
 
-#' NOTE: many of these observations are from NuSEDS so we have have changed the 
-#' values of ESTIMATE_CLASSIFICATION and stream_survey_quality. However, the 
-#' edit of nuseds_cuid_streamid below will only be done with SFU data in the case 
-#' of conflicting data points.
+```
 
-# Message from Arianne Nickels
-# "Please note that we split both Mosquito bay and Beales into two streams, so the 
-# numbers from "Mosquito bay" are a combination of both "Mosquito bay left" and 
-# "Mosquito bay right". This is the same for Beales. The reason is because the 
-# streams both share an estuary but then split off once you hit the tree line. DFO
-# considers them one stream, so it might be easiest to stick to that. I thought 
-# I'd include the combined data and the split data just in case."
-cond_remove <- SFU_escap$reynolds.me %in% c("Beales Left","Beales Right",
-                                            "Mosquito Bay Left","Mosquito Bay Right")
-SFU_escap <- SFU_escap[!cond_remove,]
+# Match locations
 
-cond <- SFU_escap$reynolds.me == "Fell Creek"
-SFU_escap$reynolds.me[cond] <- "Fell"
+There are `r nrow(SFU_stream)` locations to match:
 
-all(SFU_escap$reynolds.me %in% SFU_stream$SFU_Stream_Name) # TRUE
-all(SFU_stream$SFU_Stream_Name %in% SFU_escap$reynolds.me) # TRUE
+```{r, echo=FALSE}
+unique(SFU_stream[,c("SFU Stream Name","Nuseds Names","Latitude_Longitude (River Mouth)")])
+```
 
+## Some modifications
 
-#'* Import the NuSEDS field definitions *
-nuseds_fields_definitions <- nuseds_fields_definitions_fun(wd_references = wd_references_dropbox)
+Convert coordinates from degrees to decimals:
 
-
-#'* Import the stream - GFE_ID data file from DFO *
-#' (emailed from Wu Zhipeng, DFO, 09/04/2024)
-#' There are different locations in the 2nd first sheets to we combine them into a unique dataframe
-DFO_All_Streams_Segments <- read_xlsx(paste0(wd_data_dropbox,"/DFO_All_Streams_Segments_20240408.xlsx"),
-                                      sheet = "All Streams")
-
-DFO_All_Streams_Segments2 <- read_xlsx(paste0(wd_data_dropbox,"/DFO_All_Streams_Segments_20240408.xlsx"),
-                                       sheet = "Stream Segments")
-
-columns <- c("NME","ID","X_LONGT","Y_LAT")
-DFO_All_Streams_Segments <- rbind(DFO_All_Streams_Segments[,columns],
-                                  DFO_All_Streams_Segments2[,columns]
-                                  # DFO_All_Streams_Segments3[,columns],
-                                  # DFO_All_Streams_Segments4[,columns]
-)
-DFO_All_Streams_Segments <- unique(DFO_All_Streams_Segments)
-
-rm(DFO_All_Streams_Segments2)
-head(DFO_All_Streams_Segments)
-
-
-#'* Import the conservationunits_decoder.csv *
-datasetsNames_database <- datasetsNames_database_fun()
-fromDatabase <- update_file_csv <- F
-#' # To obtain the generation length and calculate the the "current spawner abundance".
-conservationunits_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv",
-                                                   fromDatabase = fromDatabase,
-                                                   update_file_csv = update_file_csv,
-                                                   wd = wd_pop_indic_data_input_dropbox)
-
-
-#'* Import the shape files for the Region boundaries *
-#' Note that se_boundary/se_boundary.shp is used in 0_assign-regions.R. This is a
-#' lighter shape file but contains the same regions. The code here works with 
-#' se_boundary.shp.
-# regions_shp <- st_read(paste0(wd_pop_indic_data_gis_dropbox,"/se_boundary_regions/se_boundary_regions.shp")) %>%
-#   st_transform(crs = 4269)
-# unique(regions_shp$regionname)
-wd_geo_regions <- gsub("1_PROJECTS","5_DATA/Mapping/study areas/shapefiles/PSE_regions/",wd_X_Drive1_PROJECTS)
-
-regions_shp <- st_read(paste0(wd_geo_regions,"se_boundary_regions_simple/se_boundary_regions_simple.shp")) %>%
-  st_transform(crs = 4269)
-unique(regions_shp$Region)
-
-sf_use_s2(FALSE) # so that st_intersects() and st_simplify() can be used
-
-#'* Import the geodatabase for the CU boundaries  *
-wd_geo_cus <- gsub("1_PROJECTS","5_DATA/CUs_Master/GDB/",wd_X_Drive1_PROJECTS)
-
-CUs_gdb <- st_read(paste0(wd_geo_cus,"PSF_CUs_Master.gdb")) %>%
-  st_transform(crs = 4269)
-
-# remove non-used region values
-cond <- ! CUs_gdb$region_name %in% c("Not Assessed","Arctic/Mackenzie")
-CUs_gdb <- CUs_gdb[cond,]
-CUs_gdb <- st_simplify(x = CUs_gdb, dTolerance = .002) # to reduce computation time
-
-#
-# Match stream names -------------
-#
-nrow(SFU_stream) # 23
-
-colnames(SFU_stream)
-
+```{r, echo = F}
 # Convert coordinates from degree to decimal
 lat_long <- strsplit(x = SFU_stream$`Latitude_Longitude (River Mouth)`,
                      split = " ")
@@ -331,9 +352,13 @@ lat_long <- lapply(lat_long,function(ll){
 SFU_stream$Latitude <- sapply(lat_long,function(ll){ll[1]})
 SFU_stream$Longitude <- sapply(lat_long,function(ll){ll[2]})
 SFU_stream$Longitude <- - SFU_stream$Longitude
+```
 
-head(SFU_stream)
+```{r, echo=FALSE}
+unique(SFU_stream[,c("SFU Stream Name","Nuseds Names","Latitude","Longitude")])
+```
 
+```{r, include=FALSE}
 # remove space in column names in SFU_stream:
 colnames(SFU_stream) <- gsub(" ","_",colnames(SFU_stream))
 
@@ -347,7 +372,11 @@ nuseds_cuid_streamid$AREA |> unique()
 
 unique(SFU_stream$SFU_Stream_Name)
 unique(SFU_stream$Nuseds_Names)
+```
 
+Add the region field using the PSE's region shape file:
+
+```{r, include=FALSE}
 # Add the region field
 SFU_stream$region <- NA
 for(r in 1:nrow(SFU_stream)){
@@ -372,11 +401,17 @@ for(r in 1:nrow(SFU_stream)){
   }
 }
 unique(SFU_stream$region)
+```
 
+```{r, echo=FALSE}
+unique(SFU_stream[,c("region","SFU_Stream_Name","Nuseds_Names","Latitude","Longitude")])
+```
 
-# options(warn=1)  # print warnings as they occur
-# options(warn = 2)  # treat warnings as errors
+## Match locations
 
+We try to match the stream names in **SFU_stream** with those in the PSE.
+
+```{r, include=FALSE}
 #' Try to match the stream names in SFU_stream with those in the PSE 
 #' (stream_name_PSE). Provide the associated GFE_ID in that case.
 SFU_stream$GFE_ID <- NA
@@ -502,10 +537,12 @@ for(r in 1:nrow(SFU_stream)){
     SFU_stream$in_PSE[r] <- in_PSE
   }
 }
+```
 
 
-location_maybe
+There are `r sum(SFU_stream$in_PSE == "TRUE")` locations that matched:
 
+```{r, echo=FALSE}
 SFU_stream$WATERBODY <- sapply(SFU_stream$GFE_ID,function(x){
   if(is.na(x)){
     out <- NA
@@ -516,7 +553,26 @@ SFU_stream$WATERBODY <- sapply(SFU_stream$GFE_ID,function(x){
   return(out)
 })
 
+cond <- SFU_stream$in_PSE == "TRUE"
+SFU_stream[cond,c("region","SFU_Stream_Name","WATERBODY","GFE_ID")]
+```
 
+There are `r sum(SFU_stream$in_PSE == "FALSE")` locations that did not match:
+
+```{r, echo=FALSE}
+cond <- SFU_stream$in_PSE == "FALSE"
+SFU_stream[cond,c("region","SFU_Stream_Name","WATERBODY","GFE_ID")]
+```
+
+There are `r sum(SFU_stream$in_PSE == "?")` locations for which we are not sure and we show here the potential matches (`distance` is the distance between SFU's and DFO's locations in km):
+
+```{r, echo=FALSE}
+location_maybe[,c("SFU_Stream_Name","GFE_ID","WATERBODY","distance")]
+```
+
+To check if any of these location match, we look at the count data. If the counts are the same for several years then it is likely a match (the SFU points are from SFU):
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
 #' There are two locations with potentially multiple match 
 #' See if we can find the right location in nuseds looking if the data match
 cond <- SFU_stream$in_PSE == "?"
@@ -607,37 +663,40 @@ for(sn in SFU_Stream_Name_check){
     }
   }
 }
+```
 
-# CONCLUSION: these locations are not in NuSEDS
-unique(location_maybe$SFU_Stream_Name)
-location_maybe
-
-#
-#' Match populations for the locations that we found in NuSEDS
-
-# cond_gfeid <- !is.na(SFU_stream$GFE_ID) # just for those with matched location
+There does not seem to be any match, except may be for **Bullock Square** and **BULLOCK CHANNEL #3 SOUTH CREEK** but the distances between the two are > 4km (as shown in table above), so we decide that these are different locations and time series.
 
 
-# number of populations
-# cond <- SFU_escap$reynolds.me %in% SFU_stream$SFU_Stream_Name[cond_gfeid]
-# nrow(unique(SFU_escap[cond,c("reynolds.me","species")])) # 57
-nrow(unique(SFU_escap[,c("reynolds.me","species")])) # 80
+# Merge the two datasets
 
-#' PROCEDURE
-#' if IndexId/POP_ID found (so GFE_ID found too):
-#'  - if new counts --> add them to nuseds_cuid_streamid_Reynolds
-#'  - if counts in conflicts (different value) --> replace value in nuseds_cuid_streamid_Reynolds 
-#'    from SFU_escap UNLESS THESE POINTS ARE FROM NUSEDS AS WELL, in which case we 
-#'    keep our data assuming our dataset is more up to date. 
-#'  - if counts are the same --> do nothing and keep source_id = "NuSEDS_20251103"
-#'  - do not change info about the location
-#' if IndexId/POP_ID not found but GFE_ID found:
-#'  - do not change info about the location
-#'  - add time series to nuseds_cuid_streamid_Reynolds 
-#' if IndexId/POP_ID not found and GFE_ID found:
-#'  - add info about the location
-#'  - add time series to nuseds_cuid_streamid_Reynolds
+Here is the procedure:
 
+- if `IndexId/POP_ID` found (so `GFE_ID` found too):
+
+  - if new counts --> add them to NuSEDS
+  
+  - if counts in conflicts (different value) --> replace values in NuSEDS UNLESS THESE POINTS ARE FROM NUSEDS AS WELL, in which case we keep our data assuming our dataset is more up to date.
+  
+  - if counts are the same --> do nothing
+  
+  - in any cases, do not change info about the location
+  
+- if `IndexId/POP_ID` not found but `GFE_ID` found:
+  
+  - add time series to NuSEDS 
+  
+  - do not change info about the location
+  
+- if `IndexId/POP_ID` not found and `GFE_ID` found:
+  
+  - add time series to NuSEDS
+  
+  - add info about the location
+
+Note that it is essential to appropriately update the value of the variables associated to counts, populations and locations. The SFU data is shown with purple circles, those ones with one circle were sourced from NuSEDS (by Reynolds' team), the ones with two circles are Reynolds's own estimates.
+
+```{r}
 #' variables to delete the value when editing nuseds_cuid_streamid_Reynolds with 
 #' existing IndexId and GFE_ID
 var_toDelete <- c("NATURAL_ADULT_SPAWNERS","NATURAL_JACK_SPAWNERS","ADULT_PRESENCE",
@@ -665,9 +724,26 @@ var_toDelete_GFE_ID <- c("GFE_ID","WATERSHED_CDE","FWA_WATERSHED_CDE","WATERBODY
                          "GAZETTED_NAME","LOCAL_NAME_1","LOCAL_NAME_2","CENSUS_SITE",
                          "X_LONGT","Y_LAT","FAZ_ACRO","MAZ_ACRO","JAZ_ACRO",
                          "AREA","StatArea","IS_INDICATOR","GFE_TYPE","coordinates_changed")
+```
+
+
+```{r, echo=FALSE, fig.width=15, fig.height=8}
+#' PROCEDURE
+#' if IndexId/POP_ID found (so GFE_ID found too):
+#'  - if new counts --> add them to nuseds_cuid_streamid_Reynolds
+#'  - if counts in conflicts (different value) --> replace value in nuseds_cuid_streamid_Reynolds 
+#'    from SFU_escap UNLESS THESE POINTS ARE FROM NUSEDS AS WELL, in which case we 
+#'    keep our data assuming our dataset is more up to date. 
+#'  - if counts are the same --> do nothing and keep source_id = "NuSEDS_20251103"
+#'  - do not change info about the location
+#' if IndexId/POP_ID not found but GFE_ID found:
+#'  - do not change info about the location
+#'  - add time series to nuseds_cuid_streamid_Reynolds 
+#' if IndexId/POP_ID not found and GFE_ID found:
+#'  - add info about the location
+#'  - add time series to nuseds_cuid_streamid_Reynolds
 
 nuseds_cuid_streamid_Reynolds <- nuseds_cuid_streamid
-graphics.off()
 
 count <- 0
 for(r in 1:nrow(SFU_stream)){
@@ -699,7 +775,7 @@ for(r in 1:nrow(SFU_stream)){
   }
 
   for(sp in species){
-    # sp <- species[1]
+    # sp <- species[4]
     
     if(sp == "pink odd"){
       cond_sp_sfu <- SFU_escap$species == "pink" & SFU_escap$year %% 2 != 0
@@ -1049,8 +1125,7 @@ for(r in 1:nrow(SFU_stream)){
              type = "l", main = paste0(cu_name_pse," (CUID = ",cuid,") INTERSECTED"),
              xlab= "Year", ylab = "MAX_ESTIMATE")
         points(x = data$Year, y = data$MAX_ESTIMATE, col = "red", cex = 1, pch = 16)
-        
-        if(is.na(GFE_ID)){
+                if(is.na(GFE_ID)){
           legend("top",data$sys_nm[1],bty = "n")
         }else{
           legend("top",data$WATERBODY[1],bty = "n")
@@ -1062,18 +1137,25 @@ for(r in 1:nrow(SFU_stream)){
     }
   }
 }
+```
 
-#
+# Export dataset
 
-#
-# Write CSF file data_extra_Reynolds_lab_DATE.csv -------
-#
+```{r}
+if(export_datasets){
+  date <- Sys.Date()
+  write.csv(nuseds_cuid_streamid_Reynolds,
+            paste0(wd_output,"/archive/3_nuseds_cuid_streamid_Reynolds_",date,".csv"),
+            row.names = F)
+}
+```
 
-# View(nuseds_cuid_streamid_add)
 
-date <- Sys.Date()
-write.csv(nuseds_cuid_streamid_Reynolds,
-          paste0(wd_output,"/archive/3_nuseds_cuid_streamid_Reynolds_",date,".csv"),
-          row.names = F)
+
+
+
+
+
+
 
 

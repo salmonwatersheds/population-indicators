@@ -165,7 +165,9 @@ plot_IndexId_GFE_ID_fun <- function(IndexIds = NA, GFE_IDs = NA, species_acro = 
   if(!all(is.na(IndexIds)) & !all(is.na(GFE_IDs)) & length(IndexIds) == length(GFE_IDs)){
     
     nusedsHere <- lapply(X = 1:length(IndexIds), FUN = function(i){
-      cond <- all_areas_nuseds$IndexId == IndexIds[i] &
+      cond <- !is.na(all_areas_nuseds$IndexId) & 
+        all_areas_nuseds$IndexId == IndexIds[i] &
+        !is.na(all_areas_nuseds$GFE_ID) &
         all_areas_nuseds$GFE_ID == as.numeric(GFE_IDs[i])
       return(all_areas_nuseds[cond,])
     })
@@ -264,7 +266,7 @@ plot_IndexId_GFE_ID_fun <- function(IndexIds = NA, GFE_IDs = NA, species_acro = 
     # plot each IndexIds & GFE_IDs series (no hierarchy in the variables) 
     for(var_out_val in var_out_vals){
       # var_out_val <- var_out_vals[1]
-      nusedsHere <- all_areas_nuseds[all_areas_nuseds[,var_out] == var_out_val,]
+      nusedsHere <- all_areas_nuseds[!is.na(all_areas_nuseds[,var_out]) & all_areas_nuseds[,var_out] == var_out_val,]
       
       # if only certain species are displayed:
       if(all(!is.na(species_acro))){
@@ -1250,6 +1252,20 @@ fields_edit_NUSEDS_CUSS_fun <- function(IndexId_focal = NA, IndexId_alter = NA,
   fields_l <- fields_IndexId_GFE_ID_fun(all_areas_nuseds = all_areas_nuseds,
                                         conservation_unit_system_sites = conservation_unit_system_sites)
   
+  # CU_NAME is added to NUSEDS at some point in the 1_nuseds_collation.r
+  if(any(colnames(all_areas_nuseds) == "CU_NAME")){
+    fields_l$NUSEDS$IndexId <- c(fields_l$NUSEDS$IndexId,"CU_NAME")
+    
+  }
+  if(any(colnames(all_areas_nuseds) == "cu_name_pse")){
+    fields_l$NUSEDS$IndexId <- c(fields_l$NUSEDS$IndexId,"cu_name_pse")
+    
+  }
+  if(any(colnames(all_areas_nuseds) == "cuid")){
+    fields_l$NUSEDS$IndexId <- c(fields_l$NUSEDS$IndexId,"cuid")
+    
+  }
+  
   if(!edit_CUSS & !edit_NUSEDS){
     print("Please choose a dataset to edit.")
     
@@ -1504,9 +1520,9 @@ streamids_newData_fun <- function(nuseds,
 #' streamid related datasets. Also it is advised to use the function simplify_string_fun()
 #' to match these names because there are cases with double spaces that could not
 #' have been kept in the list below).
-SYSTEM_SITE_fixes_fun <- function(){
+CENSUS_SITE_fixes_fun <- function(){
   
-  SYSTEM_SITE_fixes <- c("FANNIE COVE LEFT HAND CREEK",
+  CENSUS_SITE_fixes <- c("FANNIE COVE LEFT HAND CREEK",
                          "FANNIE COVE RIGHT HAND CREEK",
                          "COOPER INLET CREEKS",
                          "CHILLIWACK RIVER",
@@ -1626,8 +1642,8 @@ SYSTEM_SITE_fixes_fun <- function(){
                     "BILL MINER CREEK-LAKE SHORE",
                     "Babine-Unaccounted")
   
-  out <- list(SYSTEM_SITE_fixes,sys_nm_fixes)
-  names(out) <- c("SYSTEM_SITE","sys_nm")
+  out <- list(CENSUS_SITE_fixes,sys_nm_fixes)
+  names(out) <- c("CENSUS_SITE","sys_nm")
   return(out)
 }
 
@@ -1986,9 +2002,205 @@ locations_duplicated_group_fun <- function(locations_duplicated,return_dist = F)
   return(locations_duplicated[,cols])
 }
 
+#' Function to sum MAX_ESTIMATE of two time series with overlapping counts.
+#' If method_sum == "combined Methods": 
+#' - ESTIMATE_METHOD <- "combined Methods"
+#' - ESTIMATE_CLASSIFICATION <- to the lowest value of the two
+#' 
+#' If method_sum == "highest abundance":
+#' - ESTIMATE_METHOD <- the method of the highest count
+#' - ESTIMATE_CLASSIFICATION <- the classification of the highest count
+#' 
+# IndexId_1 <- "CM_50536"
+# IndexId_2 <- "CM_50537"
+# GFE_ID_1 <- 816
+# GFE_ID_2 <- 816
+# conservation_unit_system_sites <- conservation_unit_census_sites
+sum_2timeSeries_nuseds_fun <- function(IndexId_1,IndexId_2,
+                                             GFE_ID_1,GFE_ID_2,
+                                             all_areas_nuseds,
+                                             conservation_unit_system_sites,
+                                             method_sum = c("combined Methods","highest abundance"),
+                                             years = NA){
+  
+  # 
+  cond_cuss <- conservation_unit_system_sites$IndexId == IndexId_1
+  FULL_CU_IN_1 <- unique(conservation_unit_system_sites$FULL_CU_IN[cond_cuss])
+  
+  cond_cuss <- conservation_unit_system_sites$IndexId == IndexId_2
+  FULL_CU_IN_2 <- unique(conservation_unit_system_sites$FULL_CU_IN[cond_cuss])
+  
+  if(FULL_CU_IN_1 != FULL_CU_IN_2){
+    print(paste("!!! Sum of two time series having different FULL_CU_IN: ",FULL_CU_IN_1,"vs.",FULL_CU_IN_2,"!!!"))
+  }
+  
+  columns <- c("IndexId","POPULATION","GFE_ID","WATERBODY","Year","MAX_ESTIMATE","ESTIMATE_METHOD","ESTIMATE_CLASSIFICATION")
+  
+  cond_nuseds <- all_areas_nuseds$IndexId == IndexId_1 & all_areas_nuseds$GFE_ID == GFE_ID_1
+  series_1 <- unique(all_areas_nuseds[cond_nuseds,columns])
+  
+  cond_nuseds <- all_areas_nuseds$IndexId == IndexId_2 & all_areas_nuseds$GFE_ID == GFE_ID_2
+  series_2 <- unique(all_areas_nuseds[cond_nuseds,columns])
+  
+  # remove NAs
+  cond_NA_1 <- is.na(series_1$MAX_ESTIMATE)
+  cond_NA_2 <- is.na(series_2$MAX_ESTIMATE)
+  series_1 <- series_1[!cond_NA_1,]
+  series_2 <- series_2[!cond_NA_2,]
+  
+  # only keep years in common
+  yr_1 <- series_1$Year
+  yr_2 <- series_2$Year
+  years_com <- yr_1[yr_1 %in% yr_2]
+  years_com <- sort(years_com)
+  
+  # if years is provided, only keep those
+  if(is.na(years[1])){
+    years <- years_com
+  }else{
+    years <- years[years %in% years_com]
+  }
+  
+  # filter series
+  series_1 <- series_1[series_1$Year %in% years,]
+  series_2 <- series_2[series_2$Year %in% years,]
+  
+  series_1 <- series_1[order(series_1$Year),]
+  series_2 <- series_2[order(series_2$Year),]
+  
+  series_sum <- series_1[,c("Year","MAX_ESTIMATE","ESTIMATE_METHOD","ESTIMATE_CLASSIFICATION")]
+  series_sum$method <- NA
+  series_sum$classification <- NA
+  
+  series_names <- paste(c(IndexId_1,IndexId_2),c(GFE_ID_1,GFE_ID_2),sep=" - ")
+  
+  if(nrow(series_1) == 0 | nrow(series_2) == 0){
+
+    series_sum <- NA
+    print("No years in common, return NA.")
+    
+  }else{
+    
+    for(r in 1:nrow(series_sum)){
+      # r <- 1
+      series_sum$MAX_ESTIMATE[r] <- series_1$MAX_ESTIMATE[r] + series_2$MAX_ESTIMATE[r]
+      
+      ESTIMATE_METHOD_1 <- series_1$ESTIMATE_METHOD[r]
+      ESTIMATE_CLASSIFICATION_1 <- series_1$ESTIMATE_CLASSIFICATION[r]
+      MAX_ESTIMATE_1 <- series_1$MAX_ESTIMATE[r]
+      ESTIMATE_METHOD_2 <- series_2$ESTIMATE_METHOD[r]
+      ESTIMATE_CLASSIFICATION_2 <- series_2$ESTIMATE_CLASSIFICATION[r]
+      MAX_ESTIMATE_2 <- series_2$MAX_ESTIMATE[r]
+      
+      MAX_ESTIMATEs <- c(MAX_ESTIMATE_1,MAX_ESTIMATE_2)
+      ESTIMATE_CLASSIFICATIONs <- c(ESTIMATE_CLASSIFICATION_1,ESTIMATE_CLASSIFICATION_2)
+      
+      ESTIMATE_METHOD_sum <- NA
+      ESTIMATE_CLASSIFICATION_sum <- NA
+      
+      if(ESTIMATE_METHOD_1 == ESTIMATE_METHOD_2){
+        ESTIMATE_METHOD_sum <- ESTIMATE_METHOD_1
+        series_sum$method[r] <- "same"
+        
+      }else{
+        
+        if(method_sum == "combined Methods"){
+          ESTIMATE_METHOD_sum <- "Combined Methods"
+          series_sum$method[r] <- "changed to Combined Methods"
+          
+        }else if(method_sum == "highest abundance"){
+          ESTIMATE_METHOD_sum <- c(ESTIMATE_METHOD_1,ESTIMATE_METHOD_2)[MAX_ESTIMATEs == max(MAX_ESTIMATEs)]
+          series_sum$method[r] <- paste("method from",series_names[MAX_ESTIMATEs == max(MAX_ESTIMATEs)])
+        }
+      }
+      
+      if(ESTIMATE_CLASSIFICATION_1 == ESTIMATE_CLASSIFICATION_2){
+        ESTIMATE_CLASSIFICATION_sum <- ESTIMATE_CLASSIFICATION_1
+        series_sum$classification[r] <- "same"
+        
+      }else{
+        
+        if(method_sum == "combined Methods"){ # take the lowest quality
+          cond_noestimate_1 <- ESTIMATE_CLASSIFICATION_1 %in% c("","UNKNOWN","NO SURVEY","NO SURVEY THIS YEAR")
+          cond_noestimate_2 <- ESTIMATE_CLASSIFICATION_2 %in% c("","UNKNOWN","NO SURVEY","NO SURVEY THIS YEAR")
+          if(cond_noestimate_1 & !cond_noestimate_2){
+            ESTIMATE_METHOD_sum <- ESTIMATE_CLASSIFICATION_2
+            series_sum$classification[r] <- paste("classification of",series_names[2])
+          }else if(!cond_noestimate_1 & cond_noestimate_2){
+            ESTIMATE_METHOD_sum <- ESTIMATE_CLASSIFICATION_1
+            series_sum$classification[r] <- paste("classification of",series_names[1])
+          }else if(cond_noestimate_1 & cond_noestimate_2){
+            ESTIMATE_METHOD_sum <- "UNKNOWN"
+            series_sum$classification[r] <- "changed to UNKNOWN"
+          }else{
+            
+            ec <- data.frame(ESTIMATE_CLASSIFICATION = c("TRUE ABUNDANCE (TYPE-1)",
+                                                         "TRUE ABUNDANCE (TYPE-2)",
+                                                         "RELATIVE ABUNDANCE (TYPE-3)",
+                                                         "RELATIVE ABUNDANCE (TYPE-4)",
+                                                         "RELATIVE ABUNDANCE (TYPE-5)",
+                                                         "RELATIVE: CONSTANT MULTI-YEAR METHODS",
+                                                         "PRESENCE/ABSENCE (TYPE-6)",
+                                                         "PRESENCE-ABSENCE (TYPE-6)",
+                                                         "RELATIVE: VARYING MULTI-YEAR METHODS"),
+                             score = c(1,2,3,4,5,5,6,6,6))
+            
+            score_1 <- ec$score[ec$ESTIMATE_CLASSIFICATION == ESTIMATE_CLASSIFICATION_1]
+            score_2 <- ec$score[ec$ESTIMATE_CLASSIFICATION == ESTIMATE_CLASSIFICATION_2]
+            if(score_1 == score_2){
+              ESTIMATE_CLASSIFICATION_sum <- ESTIMATE_CLASSIFICATION_1
+              series_sum$classification[r] <- paste("classification of",series_names[1])
+            }else{
+              scores <- c(score_1,score_2)
+              ESTIMATE_CLASSIFICATION_sum <- c(ESTIMATE_CLASSIFICATION_1,ESTIMATE_CLASSIFICATION_2)[scores == max(scores)]
+              series_sum$classification[r] <- paste("classification of",series_names[scores == max(scores)])
+            }
+          }
+          
+        }else if(method_sum == "highest abundance"){
+          ESTIMATE_CLASSIFICATION_sum <- c(ESTIMATE_CLASSIFICATION_1,ESTIMATE_CLASSIFICATION_2)[MAX_ESTIMATEs == max(MAX_ESTIMATEs)]
+          series_sum$classification[r] <- paste("classification of",series_names[MAX_ESTIMATEs == max(MAX_ESTIMATEs)])
+        }
+      }
+      
+      series_sum$ESTIMATE_METHOD[r] <- ESTIMATE_METHOD_sum
+      series_sum$ESTIMATE_CLASSIFICATION[r] <- ESTIMATE_CLASSIFICATION_sum
+    }
+  }
+  
+  out_l <- list(series_1,series_2,series_sum)
+  names(out_l) <- c(series_names,"sum")
+  return(out_l)
+}
 
 
-
+#' Function to create a dataset with the same columns as the one provided as 
+#' input but only with NA
+# dataset <- nuseds_cuid_streamid
+create_empty_dataset_fun <- function(dataset,n_row = NA,col_toChange = NA){
+  
+  if(is.na(col_toChange)[1]){
+    col_toChange <- colnames(dataset)
+  }
+  
+  if(is.na(n_row)){
+    n_row <- nrow(dataset)
+  }
+  
+  if(n_row <= nrow(dataset)){
+    out <- dataset[1:n_row,]
+  }else{
+    while(n_row > nrow(dataset)){
+      dataset <- rbind(dataset,dataset[1,])
+    }
+    out <- dataset
+  }
+  
+  for(c in col_toChange){
+    out[,c] <- NA
+  }
+  return(out)
+}
 
 
 

@@ -77,7 +77,7 @@ library(dplyr)
 options(warn = 0)
 options(digits = 9) ## 7
 
-# Import files for MAIN NUSEDS UPDATE -------
+# Import files -------
 #
 
 #'* Import the cleaned NuSEDS data that includes the Reynolds data *
@@ -175,16 +175,12 @@ data_SH <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,
 data_SH$stream_name_pse <- data_SH$stream_name_pse |> toupper()
 
 
-#'* Import data from Columbia ??? *
+#'* Import data from Columbia *
+#' This only concerns extra data points for Sockeye 
 region <- "columbia-data"
-# data_columbia <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output/archive"), 
-#                                          pattern = "dataset2_spawner-surveys")
-
-# data_columbia <- import_mostRecent_file_fun(wd = wd_pop_indic_data_input_dropbox,
-#                                             pattern = "columbia_dataset2") # TEMPORARY ???
 
 # There is this dataset:
-data_Columbia <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/data"), 
+data_Columbia <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output/archive/"), 
                                             pattern = "dataset2_spawner-surveys")
 # "File imported: dataset2_spawner-surveys_ColumbiaSteelhead_2025-03-25.csv ; Date modified: 2025-03-26 15:21:10"
 
@@ -192,33 +188,15 @@ data_Columbia <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",r
 unique(data_Columbia$region)
 unique(data_Columbia$species_name)
 
-colnames(data_Columbia)
-all(data_Columbia$streamid %in% data_SH$streamid) # TRUE
 
-for(sid in unique(data_Columbia$streamid)){
-  # sid <- unique(data_Columbia$streamid)[1]
-  
-  cond_columbia <- data_Columbia$streamid == sid
-  data_Columbia_here <- unique(data_Columbia[cond_columbia,c("cuid","stream_name_pse","streamid","year","stream_observed_count")])
-  data_Columbia_here <- data_Columbia_here[order(data_Columbia_here$year),]
-  rownames(data_Columbia_here) <- NULL
-  
-  cond_SH <- data_SH$streamid == sid
-  data_SH_here <- unique(data_SH[cond_SH,c("cuid","stream_name_pse","streamid","year","stream_observed_count")])
-  data_SH_here <- data_SH_here[order(data_SH_here$year),]
-  rownames(data_SH_here) <- NULL
-  
-  if(!identical(data_Columbia_here,data_SH_here)){
-    print("Not identical - BREAK")
-    break
-  }
-}
 
 #'* Import streamlocationids to obtain the streamid *
 streamlocationids <- datasets_database_fun(nameDataSet = "streamlocationids.csv", # datasetsNames_database$name_CSV[9],
                                            fromDatabase = fromDatabase,
                                            update_file_csv = update_file_csv,
                                            wd = wd_pop_indic_data_input_dropbox)
+
+sum(is.na(streamlocationids$streamid)) # 0
 
 # correction
 # https://pacificsalmonfdn.slack.com/archives/CKNVB4MCG/p1771895587752779
@@ -530,7 +508,7 @@ nuseds_cuid_streamid_copy <- nuseds_cuid_streamid
 # Remove in nuseds_cuid_streamid the data without a cuid
 cond <- is.na(nuseds_cuid_streamid$cuid)
 nuseds_cuid_streamid <- nuseds_cuid_streamid[!cond,]
-nrow(nuseds_cuid_streamid) # 313697
+nrow(nuseds_cuid_streamid) # 313605 313697
 
 
 # Check if there are GFE_ID attributed to different locations
@@ -568,8 +546,8 @@ length(unique(nuseds_locations$GFE_ID[cond_GFE_ID_nuseds])) # 2366
 # Make sure the locations with a GFE_ID match, if not, correct them
 
 cond_GFE_ID_pse <- !is.na(streamlocationids$GFE_ID)
-sum(!cond_GFE_ID_pse) # 91 93
-sum(cond_GFE_ID_pse)  # 6826 6824
+sum(!cond_GFE_ID_pse) # 93 91 93
+sum(cond_GFE_ID_pse)  # 6824 6826 6824
 
 streamlocationids_copy <- streamlocationids
 # streamlocationids <- streamlocationids_copy
@@ -1060,7 +1038,7 @@ nuseds_cuid_streamid$streamid[cond] <- streamlocationids[cond_coordinates,]$stre
 
 table(streamlocationids$data_present,useNA = "always")
 #   TRUE <NA> 
-#   6834   86
+#   6832   88
 
 # check again that there is no duplicated streamid in streamlocationids
 sum(duplicated(streamlocationids$streamid)) # 0
@@ -1275,7 +1253,7 @@ nuseds_cuid_streamid_copy3 <- nuseds_cuid_streamid
 # nuseds_cuid_streamid_noNA <- nuseds_cuid_streamid_noNA_copy1
 
 nuseds_streamid <- unique(nuseds_cuid_streamid[,c("region","sys_nm","GFE_ID","Y_LAT","X_LONGT","cu_name_pse","cuid","streamid")])
-nrow(nuseds_streamid) # 7023
+nrow(nuseds_streamid) # 7021 7023
 
 threshold <- 5
 for(r in 1:nrow(nuseds_streamid)){
@@ -1387,10 +1365,10 @@ all(nuseds_cuid_streamid$streamid |> unique() %in% streamlocationids$streamid) #
 # 1) Check locations with a GFE_ID
 check <- unique(streamlocationids[,c("GFE_ID","sys_nm","latitude","longitude")])
 check <- check[!is.na(check$GFE_ID),]
-nrow(check) # 2430
+nrow(check) # 2431 2430
 
 GFE_ID <- check$GFE_ID[duplicated(check$GFE_ID)]
-length(GFE_ID) # 61
+length(GFE_ID) # 62 61
 cond <- check$GFE_ID %in% GFE_ID
 check <- check[cond,]
 check <- check[order(check$GFE_ID),]
@@ -1818,7 +1796,7 @@ unique(data_cc$GFE_ID) == streamlocationids$GFE_ID[cond]       # TRUE
 # 
 table(streamlocationids$data_present,exclude = "always")
 #   TRUE <NA> 
-#   7077    8 
+#   7078    8 
 
 cond_NA <- is.na(streamlocationids$data_present)
 streamlocationids[cond_NA,]
@@ -1957,7 +1935,7 @@ streamlocationids[cond_NA,][r,]$data_present <- F
 
 table(streamlocationids$data_present,exclude = "always")
 # FALSE  TRUE 
-#     7  7077
+#     7  7078
 
 #
 # Edit NuSEDS data colnames --> dataset2 ------
@@ -2000,7 +1978,7 @@ dataset2 <- dataset2[,colToKeep]
 
 
 nrow(dataset2)
-# 313697 313763
+# 313605 313697 313763
 
 #
 # Add the other datasets ------
@@ -2084,7 +2062,7 @@ data_TBR$pointid <- NA
 dataset2 <- rbind(dataset2,data_TBR[,colnames(dataset2)])
 
 nrow(dataset2)
-# 314122 314113
+# 313963 314122 314113
 
 colnames(dataset2)[!colnames(dataset2) %in% colnames(data_TBR)]
                           
@@ -2109,21 +2087,49 @@ data_yukon$pointid <- NA
 dataset2 <- rbind(dataset2,data_yukon[,colnames(dataset2)])
 
 nrow(dataset2)
-# 314306
+# 314147 314239 314306
 
 #
-#'* Columbia data ??? *
-#
+#'* Columbia data *
+#' The only CU in data_Columbia is for CU SEL Osoyoos and it is compatible with NuSEDS
 
-cond <- nuseds_cuid_streamid$region == "Columbia"
-unique(nuseds_cuid_streamid[cond,c("cu_name_pse","CENSUS_SITE","GFE_ID","IndexId","Year")])
+data_Columbia$cu_name_pse |> unique()
+
+cond <- nuseds_cuid_streamid$region == "Columbia" & nuseds_cuid_streamid$SPECIES == "Sockeye"
+unique(nuseds_cuid_streamid[cond,c("cu_name_pse","CENSUS_SITE","GFE_ID","IndexId","Year","MAX_ESTIMATE")])
 max(nuseds_cuid_streamid$Year[cond])
 
+# Note that the "LOWER OKANAGAN RIVER" is probably "OKANAGAN RIVER" but we decided
+# to keep those as two separate locations
+cond_datasets <- dataset2$region == "Columbia" & dataset2$species_name == "Sockeye" & 
+  dataset2$stream_name_pse %in% c(data_Columbia$stream_name_pse,"OKANAGAN RIVER")
+dataset2_cut <- dataset2[cond_datasets,]
+dataset2_cut <- dataset2_cut[order(dataset2_cut$year),]
+
+cond_columbia <- data_Columbia$stream_name_pse == "LOWER OKANAGAN RIVER"
+
+plot(x = dataset2_cut$year, y = dataset2_cut$stream_observed_count, 
+     xlim = c(1995,2025), ylim = c(0,200000), cex = 2, lwd = 2, pch = 0)
+points(x = data_Columbia$year[cond_columbia], y = data_Columbia$stream_observed_count[cond_columbia], cex = 2, lwd = 2, col = "red")
+
+legend("topright",c("OKANAGAN RIVER (NuSEDS)","LOWER OKANAGAN RIVER (Bailey et al 2025)"),
+       pch = c(0,1), col = c("black","red"), pt.cex = 2, pt.lwd = 2)
+
+# find the streamid - NOT DONE FOR REASON EXPLAINED ABOVE
+# cond_streamid <- streamlocationids$region == "Columbia" & streamlocationids$species_qualified %in% c("SER","SEL")
+# streamlocationids[cond_streamid,]
+# 
+# data_Columbia$streamid[cond_columbia] <- streamlocationids[cond_streamid,]$streamid
+# data_Columbia[cond_columbia,] 
+
+dataset2 <- rbind(dataset2,data_yukon[,colnames(dataset2)])
+
+nrow(dataset2)
+# 314931 315023
 
 #
 #'* Steelhead *
 #
-
 
 # need to update VIMI
 cuid <- unique(data_SH$cuid)
@@ -2153,8 +2159,7 @@ colnames(dataset2)[!colnames(dataset2) %in% colnames(data_SH)]
 dataset2 <- rbind(dataset2,data_SH[,colnames(dataset2)])
 
 nrow(dataset2)
-# 314928
-
+# 315620 315712 314928
 
 #
 # checks on dataset2 ----
@@ -2415,6 +2420,7 @@ write.csv(spawnerSurveryFull,paste0(wd_output,"/archive/dataset2_spawner-surveys
           row.names = F)
 
 # Produce a dummy datasets in the loca; /ouput repo to push to github
-write.csv(spawnerSurveryFull[1:2,],paste0(getwd(),"/output/dataset2_spawner-surveys_dummy.csv"))
+write.csv(spawnerSurveryFull[1:2,],paste0(getwd(),"/output/dataset2_spawner-surveys_dummy.csv"),
+          row.names = F)
 
 

@@ -107,7 +107,7 @@ source("code/functions.R")
 #'* !!! DECISIONS TO MAKE !!! *
 
 # Set tp true to update the datasets
-export_datasets <- T
+export_datasets <- F
 
 #' Decision made in 1_nuseds_collation.rmd: 
 #' Remove the IndexId & GFE_ID time series in NUSEDS with only NAs and/or 0s
@@ -158,6 +158,21 @@ nrow(unique(nuseds[,c("SPECIES_QUALIFIED","POP_ID","CENSUS_SITE","WATERBODY","GF
 
 sum(nuseds$MAX_ESTIMATE == 0 & !is.na(nuseds$MAX_ESTIMATE)) # 3640 0
 sum(is.na(nuseds$MAX_ESTIMATE)) # 157928 158986 157808 157264 155984
+
+#'* Import the series removed in script 1 *
+#'
+series_removed <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
+                                             pattern = "1_series_removed_")
+
+series_removed_name <- paste0("1_series_removed_",date_export)
+
+#'* Import list for the fields in NUSEDS and CUSS that are associated to unique IndexId and GFE_ID *
+#' IndexId is define below as the species acronym + _ + POP_ID
+#' Those are used to updated all the columns/fields in NUSEDS and CUSS when adding
+#' or updating a population. 
+#' TODO UPDATE
+# fields_l <- fields_IndexId_GFE_ID_fun()
+
 ```
 
 ```{r,echo=FALSE}
@@ -359,6 +374,94 @@ show <- nuseds[cond & cond2,c("IndexId","AREA","StatArea")]|> unique()
 rownames(show) <- NULL
 show
 ```
+
+
+## Corrections on certain Skeena Sockeye river CUs 
+
+```{r, include=FALSE}
+# cf. https://pacificsalmonfdn.slack.com/archives/CJ5RVHVCG/p1773348259783639?thread_ts=1773330521.672579&cid=CJ5RVHVCG
+
+POP_ID <- c(49354,45452)
+POPULATION <- unique(nuseds$POPULATION[nuseds$POP_ID %in% POP_ID])
+IndexId <- unique(nuseds$IndexId[nuseds$POP_ID %in% POP_ID])
+GFE_ID <- unique(nuseds$GFE_ID[nuseds$POP_ID %in% POP_ID])
+CU_NAME <- unique(nuseds$CU_NAME[nuseds$POP_ID %in% POP_ID])
+FULL_CU_IN <- unique(nuseds$FULL_CU_IN[nuseds$POP_ID %in% POP_ID])
+```
+
+The time series for Skeena Sockeye with `POPULATION` = `r POPULATION[1]` and `r POPULATION[2]` are assigned to `CU_NAME` = `r CU_NAME` (`FULL_CU_IN` = `r FULL_CU_IN`) but they should not because they represent "timing groups" and not CUs (emailed from Andy Rosenberger sent in 2026-03-11). So we remove these time series. Here is the data removed:
+
+```{r, echo=FALSE, fig.height=7.5, fig.width=10}
+main <- paste("CU_NAME = ",CU_NAME)
+
+plot_IndexId_GFE_ID_fun(IndexIds = IndexId, GFE_IDs = GFE_ID, all_areas_nuseds = nuseds, 
+                        main = main)
+legend("topright",POPULATION,bty = "n")
+```
+
+
+```{r, echo=FALSE}
+for(i in 1:length(IndexId)){
+  cond <- nuseds$IndexId == IndexId[i] & nuseds$GFE_ID == GFE_ID[i]
+  series_removed_new <- series_removed[1,]
+  series_removed_new$IndexId <- IndexId[i]
+  series_removed_new$POP_ID <- POP_ID[i]
+  series_removed_new$species_acro <- unique(nuseds$SPECIES_QUALIFIED[cond])
+  series_removed_new$dataset <- "1_NuSEDS_escapement_data_collated"
+  series_removed_new$comment <- "Removed in script 2 because it is associated to a rum timing group and not a CU" 
+  
+  #' check if the series was not already in series_removed (which could happen by
+  #' running this script multiple times with export_datasets == T)
+  cond_rm <- series_removed$IndexId == series_removed_new$IndexId & 
+    series_removed$GFE_ID == series_removed_new$GFE_ID
+  if(!any(cond_rm)){
+      series_removed <- rbind(series_removed,series_removed_new)
+  }
+
+  nuseds <- nuseds[!cond,]
+  print(paste("Number of rows removed:",sum(cond)))
+}
+```
+
+```{r, include=FALSE}
+# cf. https://pacificsalmonfdn.slack.com/archives/CJ5RVHVCG/p1773348259783639?thread_ts=1773330521.672579&cid=CJ5RVHVCG
+
+POP_ID <- c(49404)
+POPULATION <- unique(nuseds$POPULATION[nuseds$POP_ID %in% POP_ID])
+IndexId <- unique(nuseds$IndexId[nuseds$POP_ID %in% POP_ID])
+GFE_ID <- unique(nuseds$GFE_ID[nuseds$POP_ID %in% POP_ID])
+CU_NAME <- unique(nuseds$CU_NAME[nuseds$POP_ID %in% POP_ID])
+FULL_CU_IN <- unique(nuseds$FULL_CU_IN[nuseds$POP_ID %in% POP_ID])
+
+cond_189 <- nuseds$cuid == 189 & !is.na(nuseds$cuid)
+CU_NAME_alter <- unique(nuseds$CU_NAME[cond_189])
+FULL_CU_IN_alter <- unique(nuseds$FULL_CU_IN[cond_189])
+
+col_CU <- c("FULL_CU_IN","cuid","cu_name_pse","CU_NAME","CU_ACRO","CU_LAT",
+            "CU_LONGT","CU_TYPE","CU_INDEX") 
+```
+
+Additionally, the time series for Skeena Sockeye with `POPULATION` = `r POPULATION` is assigned to `CU_NAME` = `r CU_NAME` (`FULL_CU_IN` = `r FULL_CU_IN`) but it should be assigned to CU `CU_NAME` = `r CU_NAME_alter` (`FULL_CU_IN` = `r FULL_CU_IN_alter`) (emailed from Andy Rosenberger sent in 2026-03-11). So we change the CU-related fields from:
+
+```{r, echo=FALSE}
+cond_49404 <- nuseds$POP_ID == 49404
+show <- unique(nuseds[cond_49404,col_CU])
+rownames(show) <- NULL
+show
+```
+to:
+
+```{r, echo=FALSE}
+# 
+for(f in col_CU){
+  nuseds[cond_49404,f] <- unique(nuseds[cond_189,f])
+}
+
+show <- unique(nuseds[cond_49404,col_CU])
+rownames(show) <- NULL
+show
+```
+
 
 ## Add the field FULL_CU_IN_PSE
 
@@ -995,6 +1098,9 @@ if(export_datasets){
   
   write.csv(log_file,paste0(wd_output_local,"/log_file.csv"),row.names = F)
   
+  #
+  write.csv(series_removed,paste0(wd_output,"/archive/",series_removed_name,".csv"), # keep the initial name/date
+            row.names = F)
 }
 ```
 

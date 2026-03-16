@@ -74,7 +74,7 @@ library(sf)
 options(warn = 0)
 options(digits = 9) ## 7
 
-export_datasets <- T
+export_datasets <- F
 ```
 
 # Import files
@@ -678,6 +678,8 @@ Here is the procedure:
   
   - if counts in conflicts (different value) --> replace values in NuSEDS UNLESS THESE POINTS ARE FROM NUSEDS AS WELL, in which case we keep our data assuming our dataset is more up to date.
   
+      **UPDATE**: the counts for coho and sockeye sourced from SFU were collected in September and October, which is not during peak season (source: Arianne Nickels, 2026-03-12); these counts are consequently trumped by NuSEDS counts in case the latter are available, otherwise their `stream_survey_quality` is downgraded
+  
   - if counts are the same --> do nothing
   
   - in any cases, do not change info about the location
@@ -773,9 +775,9 @@ for(r in 1:nrow(SFU_stream)){
       species <- c(species,"pink even")
     }
   }
-
+  
   for(sp in species){
-    # sp <- species[4]
+    # sp <- species[2]
     
     if(sp == "pink odd"){
       cond_sp_sfu <- SFU_escap$species == "pink" & SFU_escap$year %% 2 != 0
@@ -837,7 +839,6 @@ for(r in 1:nrow(SFU_stream)){
       # lines(x = yr_sfu, y = count_sfu, lty = 5, col = "purple", lwd = 2)
       points(x = yr_sfu, y = count_sfu, lty = 5, col = "purple", lwd = 2, pch = 1, cex = 2)
       
-      count <- count + 1
       legend("bottomleft",paste0("n = ",count), bty = "n")
       
       # show the points that are not NUSEDS but SFU
@@ -846,13 +847,24 @@ for(r in 1:nrow(SFU_stream)){
       count_sfu_sfu <- SFU_escap$estimate.number[cond_sn_sfu & cond_sp_sfu & cond_sfu] |> as.numeric()
       points(x = yr_sfu_sfu, y = count_sfu_sfu, lty = 5, col = "purple", lwd = 2, pch = 1, cex = 3)
       
+      legend("topright",c("NuSEDS","SFU - NUSEDS","SFU - SFU"),pch = c(16,1,1),
+             pt.cex = c(1,2,2), bty = "s", lwd = c(2,NA,NA), col = c("white","white","purple"),
+             text.col = "white")
+      
+      legend("topright",c("NuSEDS","SFU - NUSEDS","SFU - SFU"),pch = c(16,1,1),
+             pt.cex = c(1,2,3), bty = "n", lwd = c(2,NA,NA), col = c("red","purple","purple"))
+      
+      count <- count + 1
+      
       # Edit Nuseds
       nuseds_here <- nuseds_cuid_streamid[cond_nuseds,]
       nuseds_here <- nuseds_here[order(nuseds_here$Year),]
       SFU_escap_here <- SFU_escap[cond_sn_sfu & cond_sp_sfu,]
       SFU_escap_here <- SFU_escap_here[order(SFU_escap_here$year),]
       
-      # Replace in nuseds_cuid_streamid_Reynolds the raw with conflicting data points
+      # nuseds_here[,c("region","SPECIES","Year","MAX_ESTIMATE")]
+      
+      # Replace in nuseds_cuid_streamid_Reynolds the rows with conflicting data points
       # 1st: find years in common
       cond_common <- nuseds_here$Year %in% SFU_escap_here$year
       
@@ -897,24 +909,23 @@ for(r in 1:nrow(SFU_stream)){
               !is.na(nuseds_cuid_streamid_Reynolds$GFE_ID) &
               nuseds_cuid_streamid_Reynolds$GFE_ID == GFE_ID &
               nuseds_cuid_streamid_Reynolds$Year == data_merge$year[i]
-
-            nuseds_cuid_streamid_Reynolds$MAX_ESTIMATE[cond] <- data_merge$estimate.number[i]
-            nuseds_cuid_streamid_Reynolds$ESTIMATE_METHOD[cond] <- data_merge$estimate.method[i]
-            nuseds_cuid_streamid_Reynolds$ESTIMATE_CLASSIFICATION[cond] <- data_merge$ESTIMATE_CLASSIFICATION[i]
-            nuseds_cuid_streamid_Reynolds$stream_survey_quality[cond] <- data_merge$stream_survey_quality[i]
-            nuseds_cuid_streamid_Reynolds$source_id[cond] <- data_merge$source_id[i]
-            nuseds_cuid_streamid_Reynolds$ENUMERATION_METHODS[cond] <- ""
-          }
-          
-          # set the values for fields associated to measurement to NA
-          cond <- !is.na(nuseds_cuid_streamid_Reynolds$IndexId) &
-            nuseds_cuid_streamid_Reynolds$IndexId == IndexId & 
-            !is.na(nuseds_cuid_streamid_Reynolds$GFE_ID) &
-            nuseds_cuid_streamid_Reynolds$GFE_ID == GFE_ID &
-            nuseds_cuid_streamid_Reynolds$Year %in% data_merge$year
-          
-          for(c in var_toDelete){
-            nuseds_cuid_streamid_Reynolds[cond,c] <- NA
+            
+            #' only make the change in nuseds_cuid_streamid_Reynolds if:
+            #' - MAX_ESTIMATE is NA
+            #' - MAX_ESTIMATE is not NA and species is not coho not sockeye (cf. Arianne Nickels' comment above)
+            cond_change <- is.na(nuseds_cuid_streamid_Reynolds$MAX_ESTIMATE[cond]) | !sp %in% c("coho","sockeye")
+            
+            if(cond_change){
+              nuseds_cuid_streamid_Reynolds$MAX_ESTIMATE[cond] <- data_merge$estimate.number[i]
+              nuseds_cuid_streamid_Reynolds$ESTIMATE_METHOD[cond] <- data_merge$estimate.method[i]
+              nuseds_cuid_streamid_Reynolds$ESTIMATE_CLASSIFICATION[cond] <- data_merge$ESTIMATE_CLASSIFICATION[i]
+              nuseds_cuid_streamid_Reynolds$stream_survey_quality[cond] <- data_merge$stream_survey_quality[i]
+              nuseds_cuid_streamid_Reynolds$source_id[cond] <- data_merge$source_id[i]
+              nuseds_cuid_streamid_Reynolds$ENUMERATION_METHODS[cond] <- ""
+              
+              # set the values for fields associated to measurement to NA
+              nuseds_cuid_streamid_Reynolds[cond,var_toDelete] <- NA
+            }
           }
         }
       }
@@ -948,9 +959,7 @@ for(r in 1:nrow(SFU_stream)){
           nuseds_add$source_id <- SFU_escap_here_add$source_id
           
           # set the values associate to count to NA
-          for(c in var_toDelete){
-            nuseds_add[,c] <- NA
-          }
+          nuseds_add[,var_toDelete] <- NA
           
           # add the data to nuseds_cuid_streamid_Reynolds
           nuseds_cuid_streamid_Reynolds <- rbind(nuseds_cuid_streamid_Reynolds,nuseds_add)
@@ -965,11 +974,14 @@ for(r in 1:nrow(SFU_stream)){
                               pchs = 16,                              
                               Ylim = c(0,max(max(count_nuseds,na.rm = T),max(count_sfu,na.rm = T))),
                               Xlim = c(min(c(min(yr_nuseds),min(yr_sfu))),
-                                       max(c(max(yr_nuseds, na.rm = T),max(yr_sfu)))))
+                                       max(c(max(yr_nuseds, na.rm = T),max(yr_sfu)))), 
+                              colPalette = "blue")
       legend("top",CENSUS_SITE,bty = "n")
       points(x = yr_sfu, y = count_sfu, lty = 5, col = "purple", lwd = 2, pch = 1, cex = 2)
+      points(x = yr_sfu_sfu, y = count_sfu_sfu, lty = 5, col = "purple", lwd = 2, pch = 1, cex = 3)
       legend("bottomleft",paste0("n = ",count), bty = "n")
-      legend("topright","AFTER", bty = "n")
+      legend("topright",c("AFTER","Final (PSE)"), lwd = c(NA,2), col = c(NA,"blue"), pch = c(NA,16), bty = "s")
+      
       
     }else{ #'* The time series is not in NuSEDS * 
       
@@ -1121,11 +1133,11 @@ for(r in 1:nrow(SFU_stream)){
         data <- nuseds_cuid_streamid_Reynolds[cond,]
         data <- data[order(data$Year),]
         
-        plot(x = data$Year, y = data$MAX_ESTIMATE, lty = 1, col = "red", lwd = 2, 
+        plot(x = data$Year, y = data$MAX_ESTIMATE, lty = 1, col = "blue", lwd = 2, 
              type = "l", main = paste0(cu_name_pse," (CUID = ",cuid,") INTERSECTED"),
              xlab= "Year", ylab = "MAX_ESTIMATE")
         points(x = data$Year, y = data$MAX_ESTIMATE, col = "red", cex = 1, pch = 16)
-                if(is.na(GFE_ID)){
+        if(is.na(GFE_ID)){
           legend("top",data$sys_nm[1],bty = "n")
         }else{
           legend("top",data$WATERBODY[1],bty = "n")
@@ -1138,6 +1150,34 @@ for(r in 1:nrow(SFU_stream)){
   }
 }
 ```
+
+As mentioned above, we downgrade the `stream_survey_quality` for the counts from the SFU lab for sockeye and coho: 
+
+```{r, echo=FALSE}
+stream_survey_quality <- c("High","Medium-High","Medium","Medium-Low","Low")
+
+cond_dg <- nuseds_cuid_streamid_Reynolds$source_id == "Reynolds_20260209" & 
+  nuseds_cuid_streamid_Reynolds$SPECIES %in% c("Sockeye","Coho")
+
+for(ssq in unique(nuseds_cuid_streamid_Reynolds$stream_survey_quality[cond_dg])){
+   if(!is.na(ssq) & !ssq %in% c("Low","Unknown")){ # those cannot be downgraded
+     
+     cond_ssq <- cond_dg & 
+       !is.na(nuseds_cuid_streamid_Reynolds$stream_survey_quality) &
+       nuseds_cuid_streamid_Reynolds$stream_survey_quality == ssq
+     
+     print("BEFORE:")
+     print(unique(nuseds_cuid_streamid_Reynolds[cond_ssq,c("SPECIES","ESTIMATE_METHOD","source_id","stream_survey_quality")]))
+     
+     i <- which(ssq == stream_survey_quality)
+     nuseds_cuid_streamid_Reynolds$stream_survey_quality[cond_ssq] <- stream_survey_quality[i + 1]
+     
+     print("AFTER:")
+     print(unique(nuseds_cuid_streamid_Reynolds[cond_ssq,c("SPECIES","ESTIMATE_METHOD","source_id","stream_survey_quality")]))
+   }
+}
+```
+
 
 # Export dataset
 
@@ -1152,10 +1192,5 @@ if(export_datasets){
 
 
 
-
-
-
-
-
-
+END
 

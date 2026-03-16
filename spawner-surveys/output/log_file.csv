@@ -37,3 +37,4 @@
 "1_NuSEDS_escapement_data_collated_2026-02-20","1_nuseds_collation.rmd","2026-02-20","All Areas NuSEDS_20251103.csv","Conservation Unit Census Sites_20250528.csv",FALSE,FALSE
 "1_NuSEDS_escapement_data_collated_2026-02-20","1_nuseds_collation.rmd","2026-02-20","All Areas NuSEDS_20251103.csv","Conservation Unit Census Sites_20250528.csv",FALSE,FALSE
 "2_nuseds_cuid_streamid_2026-02-20","2_nuseds_cuid_pse.rmd","2026-02-20","All Areas NuSEDS_20251103.csv","conservation_unit_system_sites_20240122",FALSE,FALSE
+"2_nuseds_cuid_streamid_2026-03-12","2_nuseds_cuid_pse.rmd","2026-03-12","All Areas NuSEDS_20251103.csv","conservation_unit_system_sites_20240122",FALSE,FALSE

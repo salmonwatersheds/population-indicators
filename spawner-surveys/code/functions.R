@@ -896,7 +896,7 @@ compare_series_fun <- function(series_focal,series_compare,percentage = F){
 #' If runProcess is TRUE, a process checks if multiple values of field can be found
 #' for a given IndexId and GFE_ID. This takes some time.
 fields_IndexId_GFE_ID_fun <- function(all_areas_nuseds = NA,
-                                      conservation_unit_system_sites,
+                                      conservation_unit_system_sites = NA,
                                       runProcess = F,                # takes a while
                                       newFieldsIncluded = T){
   
@@ -1422,13 +1422,21 @@ update_for_FULL_CU_IN_l <- function(){
   out <- list()
   i <- 1
   # babine/onerka
-  out[[i]] <- c(45452,45462,48064,48069,48074,48094,48099,48599,48674,48684,49354,
-                49379,49384,49389,49394,49399,49404,49419,49424,49434,49439,
+  out[[i]] <- c(45452,45462,48064,48069,48074,48094,48099,48599,48674,48684,49354, # 49404
+                49379,49384,49389,49394,49399,49419,49424,49434,49439,
                 49429,48679)
   names(out)[i] <- "SEL-21-02-EW"
   # to Add? --> Ask Eric
   # 49429    607 Current  SEL-21-02      SEL-21-02 WRIGHT CREEK           N     SEL
   # BABINE      SEL-21-02          Current  48679                  PENDELTON CREEK
+  
+  # UPDATE 2026-03-12: POP_ID 49404 is removed from list above
+  #   cu_name_pse CU_NAME FULL_CU_IN FULL_CU_IN_PSE cuid      WATERBODY                        POPULATION POP_ID
+  # Babine/Onerka  BABINE  SEL-21-02   SEL-21-02-EW  180 MORRISON CREEK Morrison Creek (Smithers) Sockeye  49404
+  # BECAUSE: it should be associated to cu_name_pse  = "Tahlo/Morrison" and FULL_CU_IN_PSE to SEL-21-11) instead
+  # cf. https://pacificsalmonfdn.slack.com/archives/CJ5RVHVCG/p1773348259783639?thread_ts=1773330521.672579&cid=CJ5RVHVCG
+  # cf. emailed from Andy Rosenberger sent in 2026-03-11
+  
   
   # nilkitkwa
   i <- i + 1

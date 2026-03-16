@@ -2122,10 +2122,10 @@ legend("topright",c("OKANAGAN RIVER (NuSEDS)","LOWER OKANAGAN RIVER (Bailey et a
 # data_Columbia$streamid[cond_columbia] <- streamlocationids[cond_streamid,]$streamid
 # data_Columbia[cond_columbia,] 
 
-dataset2 <- rbind(dataset2,data_yukon[,colnames(dataset2)])
+dataset2 <- rbind(dataset2,data_Columbia[,colnames(dataset2)])
 
 nrow(dataset2)
-# 314931 315023
+#
 
 #
 #'* Steelhead *
@@ -2159,7 +2159,28 @@ colnames(dataset2)[!colnames(dataset2) %in% colnames(data_SH)]
 dataset2 <- rbind(dataset2,data_SH[,colnames(dataset2)])
 
 nrow(dataset2)
-# 315620 315712 314928
+
+
+#
+# Define missing streamid ----
+#
+
+cond_NA <- is.na(dataset2$streamid)
+show <- dataset2[cond_NA,c("region","species_name","cuid","stream_name_pse","GFE_ID","source_id")] |> unique() # it is all for Columbia SEL data added
+show
+
+#
+val <- max(dataset2$streamid, na.rm = T)
+for(r in 1:nrow(show)){
+  val <- val + 1
+  
+  cond <- cond_NA & dataset2$cuid == show$cuid[r] &
+    dataset2$stream_name_pse == show$stream_name_pse[r]
+  
+  dataset2$streamid[cond] <- val
+}
+
+sum(is.na(dataset2$streamid)) # 0
 
 #
 # checks on dataset2 ----
@@ -2169,10 +2190,12 @@ nrow(dataset2)
 
 # Check for those with GFE_ID 
 check_locations <- dataset2[,c("stream_name_pse","latitude","longitude","GFE_ID")] |> unique()
-nrow(check_locations) # 2406 2407
+nrow(check_locations) # 2410 2407
 
 cond_NA <- is.na(check_locations$GFE_ID)
 any(duplicated(check_locations$GFE_ID[!cond_NA]))
+# FALSE
+
 cond <- duplicated(check_locations$GFE_ID[!cond_NA])
 any(cond)
 # FALSE
@@ -2180,7 +2203,7 @@ any(cond)
 # Check for those without GFE_ID 
 cond_NA <- is.na(dataset2$GFE_ID)
 check_locations <- dataset2[cond_NA,c("region","stream_name_pse","latitude","longitude")] |> unique()
-nrow(check_locations) # 41
+nrow(check_locations) # 44
 
 cond <- duplicated(check_locations$stream_name_pse)
 unique(check_locations[cond,])
@@ -2195,9 +2218,9 @@ dataset2[cond,c("region","stream_name_pse","GFE_ID","latitude","longitude","stre
 length(unique(dataset2$streamid)) - nrow(unique(dataset2[,c("cuid","stream_name_pse","latitude","longitude")])) # 0
 
 
-sum(is.na(dataset2$cuid))
-sum(is.na(dataset2$stream_name_pse))
-sum(is.na(dataset2$streamid))
+sum(is.na(dataset2$cuid)) # 0
+sum(is.na(dataset2$stream_name_pse)) # 0
+sum(is.na(dataset2$streamid)) # 0
 
 #
 # Define point_id WHICH IS NOW A PERMANENT FIELD -----
@@ -2207,11 +2230,11 @@ sum(is.na(dataset2$streamid))
 # available for each location.
 
 cols <- c("stream_name_pse","latitude","longitude")
-nrow(unique(dataset2[,cols]))             # 2406
-nrow(unique(dataset2[,c(cols,"GFE_ID")])) # 2406
+nrow(unique(dataset2[,cols]))             # 2410
+nrow(unique(dataset2[,c(cols,"GFE_ID")])) # 2410
 
 locations <- unique(dataset2[,cols])
-nrow(locations) # 2406
+nrow(locations) # 2410
 
 count <- 1
 for(r in 1:nrow(locations)){
@@ -2222,8 +2245,8 @@ for(r in 1:nrow(locations)){
   count <- count + 1
 }
 
-nrow(unique(dataset2[,c(cols,"GFE_ID","pointid")])) # 2406
-length(unique(dataset2$pointid)) # 2406
+nrow(unique(dataset2[,c(cols,"GFE_ID","pointid")])) # 2410
+length(unique(dataset2$pointid)) # 2410
 
 #
 # Export dataset2_spawner_surveys_DATE.csv -----

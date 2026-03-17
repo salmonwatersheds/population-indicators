@@ -2964,7 +2964,7 @@ There are many cases where a CU in a given location (i.e., a unique `GFE_ID`) is
 
 -   **Case 2**: the shorter series is 100% duplicated: removed the focal series
 
--   **Case 3**: for the rest of the duplicated series,
+-   **Case 3**: for the rest of the duplicated series:
 
     -   points that are conflictual or duplicated are summed up
 

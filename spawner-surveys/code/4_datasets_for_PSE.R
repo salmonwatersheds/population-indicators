@@ -116,7 +116,7 @@ fromDatabase <- update_file_csv <- F
 
 
 #'* Import data from TBR *
-#' Documentation about the corrections made mannually:
+#' Documentation about the corrections made manually:
 #' https://www.dropbox.com/scl/fi/5m93l1whnuqtcvi3h9rh0/NuSEDS_modifications_hardcode.docx?rlkey=c1fykonhk1cdvdg0i8aizsgkc&e=1&dl=0
 region <- "transboundary-data"
 data_TBR <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output/archive"), 
@@ -158,6 +158,9 @@ data_yukon$stream_name_pse <- data_yukon$stream_name_pse |> toupper()
 
 
 #'* Import data from Central Coast *
+#' just for SEL "South Atnarko Lake"
+#' Atnarko sockeye data were provided by Kate McGivney (DFO) in 
+# https://github.com/Pacific-salmon-assess/Atnarko-sockeye/blob/main/data/spawners/spawners.csv
 region <- "central-coast-data"
 data_cc <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output"), 
                                          pattern = "dataset2_spawner-surveys")
@@ -175,8 +178,12 @@ data_SH <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,
 data_SH$stream_name_pse <- data_SH$stream_name_pse |> toupper()
 
 
-#'* Import data from Columbia *
+#'* Import data from Columbia !!! IMPORTANT NOTE : THE DATA IS NOT PUBLIC !!! *
 #' This only concerns extra data points for Sockeye 
+
+#' Athena Odgen's mail from last Friday (2026-03-20)
+#' We cannot import the data from Bailey et al 2025.
+#' The data github as been deleted.
 region <- "columbia-data"
 
 # There is this dataset:
@@ -187,7 +194,6 @@ data_Columbia <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",r
 # Is this SH data already in data_SH?
 unique(data_Columbia$region)
 unique(data_Columbia$species_name)
-
 
 
 #'* Import streamlocationids to obtain the streamid *
@@ -2252,6 +2258,15 @@ length(unique(dataset2$pointid)) # 2410
 #
 # Export dataset2_spawner_surveys_DATE.csv -----
 #
+
+#'* !!! IMPORTANT NOTE : THE DATA IS NOT PUBLIC *
+#' Athena Odgen's mail from last Friday (2026-03-20)
+#' We cannot import the data from Bailey et al 2025.
+#' The data github as been deleted.
+
+cond < dataset2$source_id <- "Bailey_20250121"
+dataset2 <- dataset2[!cond,]
+
 
 unique(dataset2$region)
 

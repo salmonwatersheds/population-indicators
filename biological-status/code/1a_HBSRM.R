@@ -392,7 +392,7 @@ FBYr <- -99
 MinSRpts <- 3 
 
 # Set the HBSR number of simulations, burning runs and chains:
-n.iter <- 50000 # 100000  # --> 10000 only
+n.iter <- 13000 # 100000  # --> 10000 only
 n.burnin <- 3000 # 5000  # 
 n.chains <- 6     # 
 
@@ -610,6 +610,7 @@ for(i_rg in 1:length(region)){
                                           modelFilename = NA,
                                           jags.data = jags.data, 
                                           jags.parms = jags.parms, 
+                                          n.iter = n.iter,
                                           n.thin = 10,             # to keep every 10th data point
                                           n.burnin = n.burnin,
                                           n.chains = n.chains)

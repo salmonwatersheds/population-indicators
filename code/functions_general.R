@@ -4,6 +4,44 @@
 #' several projects.
 #'******************************************************************************
 
+# Function to find the local path to SWP'S Dropbox X Drive. Useful when working on
+# a local clone of a repo but wanting to write archive files or large figures to
+# Dropbox. Returns file path to XDrive as character string.
+get_XDrive <- function(){
+  
+  # Directory where the local github repo population-indicators is located
+  base_dir <- getwd()
+  
+  # Now move up in the file structure until you find the parent directory that contains Dropbox 
+  Dropbox_dir <- base_dir
+  while(length(grep("Salmon Watersheds Dropbox", list.files(path = Dropbox_dir))) == 0){
+    setwd("..")
+    Dropbox_dir <- getwd()
+  }
+  
+  # Now set that working directory
+  Dropbox_dir <- paste(getwd(), "Salmon Watersheds Dropbox", sep = "/")
+  
+  # Within Dropbox, the X Drive is in a named folder. But this can be found through exclusion of other common folders
+  name_folder <- list.files(path = Dropbox_dir)[which((list.files(path = Dropbox_dir) %in% c("Icon\r", "Team Folder", "Team Paper Docs", "desktop.ini")) == FALSE)]
+  
+  if(length(name_folder) == 1){ 
+    Dropbox_dir <- paste(Dropbox_dir, name_folder, sep = "/")
+  } else{
+    stop("More than one possible Dropbox folder")
+  }
+  
+  XDrive_dir <- paste0(Dropbox_dir, "/X Drive/")
+  
+  # Set working directory back to original
+  setwd(base_dir)
+  
+  # Return path to X Drive
+  return(XDrive_dir)
+}
+
+
+
 
 #' Function that takes a dataframe, the column names to keep a desired number of
 #' rows and returns a new dataframe filled with NAs, with the same column names,

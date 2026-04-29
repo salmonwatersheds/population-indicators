@@ -16,7 +16,7 @@ Datasets produced in 2_nuseds_cuid_streamid.R:
 
 
 
-# NOTE: the followinf files have been produce for the Salmon Data Demise paper
+# NOTE: the following files have been produce for the Salmon Data Demise paper
 The different from the previous version)(2024-04-19) is that the 0s were NOT converted to NAs.
 
 - 1_NuSEDS_escapement_data_collated_2024-11-21.csv

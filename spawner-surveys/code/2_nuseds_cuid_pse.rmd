@@ -949,7 +949,7 @@ for(r in 1:nrow(change_all)){
 }
 ```
 
-##  Attribute streamid to nuseds
+##  Attribute streamid to nuseds TO REMOVE AT NEXT UPDATE
 
 The field `streamid` is a unique combination between a stream (`GFE_ID`) and CU (`cuid`) (`populationid` would be a more accurate name but we leave it as is for now). We use the PSE file *streamlocationids.csv* to match the existing `streamid`, for instance: 
 

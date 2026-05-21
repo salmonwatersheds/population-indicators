@@ -2259,10 +2259,26 @@ length(unique(dataset2$pointid)) # 2410
 # Export dataset2_spawner_surveys_DATE.csv -----
 #
 
+# Jus to be sure:
+dataset2$stream_observed_count <- round(dataset2$stream_observed_count)
+
+
+#' TODO: standardize stream_survey_method
+#' for next update
+
+#' TODO: correct typo in stream_survey_quality
+#' unkonwn
+#' broodstocl
+
+unique(dataset2$stream_survey_quality)
+dataset2$stream_survey_quality[dataset2$stream_survey_quality == "unkonwn"] <- "unkown"
+dataset2$stream_survey_quality[dataset2$stream_survey_quality == "broodstocl"] <- "broodstock"
+
+
 #'* !!! IMPORTANT NOTE : THE DATA IS NOT PUBLIC *
 #' Athena Odgen's mail from last Friday (2026-03-20)
-#' We cannot import the data from Bailey et al 2025.
-#' The data github as been deleted.
+#' We should import the data from Bailey et al 2025.
+#' Their data on their github as been deleted.
 
 cond < dataset2$source_id <- "Bailey_20250121"
 dataset2 <- dataset2[!cond,]

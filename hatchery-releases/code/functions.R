@@ -274,17 +274,19 @@ convert_column_match_fun <- function(df,decoder_df,colToConvert,colMatchingVal){
 
 #' Function that returns a vector of program names corresponding to the supplied 
 #' vector of acronyms provided and vice versa.
+#' https://psf.ca/wp-content/uploads/2021/10/Download-PDF651-1.pdf
+#' https://waves-vagues.dfo-mpo.gc.ca/Library/144345.pdf
 # prog_acro <- DFO_df$PROGRAM_CODE
 # prog_name <- NA
 program_acronym_fun <- function(prog_acro = NA, prog_name = NA){
   
-  progNameAcro_df <- data.frame(prog_acro = c("AFS","CDP","DPI","OPS","PIP","NA"),
+  progNameAcro_df <- data.frame(prog_acro = c("AFS","CDP","DPI","OPS","PIP","NA","COL","DEV","RRD","PRV"),
                                 prog_name = c("Aboriginal Fisheries Strategy",
                                               "Community Economic Development Program",
                                               "Designated Public Involvement",
                                               "Major Operations",
                                               "Public Involvement Program",
-                                              "NA"))
+                                              "NA","Colonization","Development","Resource Restoration Division","Province of B.C."))
   
   if(is.na(prog_acro)[1]){
     input <- prog_fullName
@@ -333,7 +335,7 @@ program_acronym_fun <- function(prog_acro = NA, prog_name = NA){
 release_type_pse_fun <- function(){
   
   release_type_df <- data.frame(release_stage = c("Fed Fry","Fed Fall",
-                                                  "Smolt 1+","Smolt 0+",
+                                                  "Smolt 1+","Smolt 0+","Smolt 2+","Chan Sm 1+",
                                                   "Unfed","Chan Fry",
                                                   "Eyed Egg",
                                                   "Seapen 0+","Seapen","Seapen 1+",
@@ -351,7 +353,7 @@ release_type_pse_fun <- function(){
                                                   "Egg",
                                                   "Unknown"),
                                 release_type_pse = c("Fry","Fry",
-                                                     "Smolt","Smolt",
+                                                     "Smolt","Smolt","Smolt","Smolt",
                                                      "Fry","Fry",
                                                      "Egg",
                                                      "Seapen","Seapen","Seapen",
@@ -378,9 +380,9 @@ release_type_pse_fun <- function(){
 #' Function to find the cuid and cu_index (NuSEDS's FULL_CU_IN) of the DFO's 
 #' hatchery dataset using (1) the cleaned PSE's NuSEDS dataset and (2) region 
 #' and CU PSE's geo files.
-# nuseds_cleaned <- nuseds
+# nuseds_cleaned <- nuseds_2
 # hatchery_DFO <- DFO_df_all
-# cu_index_type <- "REL_CU_INDEX" # "STOCK_CU_INDEX"
+# cu_index_type <- "REL_CU_INDEX" # "REL_CU_INDEX" # "STOCK_CU_INDEX"
 # percent_increment <- 1
 find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                                  nuseds_cleaned, # PSF cleaned NuSEDS data with cuid
@@ -408,8 +410,8 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
   
   # select the rows with NAs for cu_index_type selected:
   cond_na <- is.na(hatchery_DFO[,cu_index_type])
-  sum(cond_na) # 2374 2981
-  sum(cond_na)/nrow(hatchery_DFO) * 100 # 6.8%
+  sum(cond_na) # 2385 2374 2981
+  sum(cond_na)/nrow(hatchery_DFO) * 100 # 6.4 6.8%
   
   col_cu <- c("SPECIES_NAME","species_qualified")
   
@@ -421,7 +423,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
     
   }else if(cu_index_type == "REL_CU_INDEX"){
     
-    # create 
+    # create REL_GFE_NAME
     hatchery_DFO$REL_GFE_NAME <- sapply(hatchery_DFO$REL_GFE_ID,function(gfeid){
       if(!is.na(gfeid)){
         cond <- DFO_All_Streams_Segments$ID == gfeid
@@ -475,11 +477,19 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
   #      col = alpha("red",.2))
   
   # only retain the fields that are useful
-  nuseds_pop <- unique(nuseds_cleaned[,c("SPECIES","cuid","cu_name_dfo","cu_name_pse","CU_NAME","FULL_CU_IN",
-                                         "GFE_ID","SYSTEM_SITE","WATERBODY","GAZETTED_NAME","sys_nm_final",
-                                         "X_LONGT","Y_LAT")])
+  col_toKeep <- c("SPECIES","SPECIES_QUALIFIED","cuid",
+                  # "cu_name_dfo",
+                  "cu_name_pse","CU_NAME","FULL_CU_IN",
+                  "GFE_ID",
+                  "CENSUS_SITE",# "SYSTEM_SITE",
+                  "WATERBODY",
+                  # "GAsysETTED_NAME",
+                  "sys_nm", # "sys_nm_final",
+                  "X_LONGT","Y_LAT")
   
-  nrow(nuseds_pop) # 6848
+  nuseds_pop <- unique(nuseds_cleaned[,col_toKeep])
+  
+  nrow(nuseds_pop) # 7070 6848
   
   # 
   count_percent_threshold <- 1
@@ -487,7 +497,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
   hatchery_DFO_pop_NA$comment <- NA
   n_row <- nrow(hatchery_DFO_pop_NA)
   for(r in 1:n_row){
-    # r <- 603
+    # r <- 1
     # r <- which(hatchery_DFO_pop_NA$SPECIES_NAME == "Sockeye" & hatchery_DFO_pop_NA$REL_GFE_ID == 10071)
     
     count_percent <- (r/n_row) * 100
@@ -500,6 +510,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
     
     # hatchery_DFO_pop_NA[r,]
     SPECIES_NAME <- hatchery_DFO_pop_NA$SPECIES_NAME[r]
+    species_qualified <- hatchery_DFO_pop_NA$species_qualified[r]
     NAME <- hatchery_DFO_pop_NA[r,col_NAME] # field is useless because there is no match at all with NuSEDS
     GFE_ID <- hatchery_DFO_pop_NA[r,col_GFE_ID]
     RUN_NAME <- hatchery_DFO_pop_NA$RUN_NAME[r]
@@ -600,9 +611,23 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
             # here there is the choice between Middle Fraser River (Summer 5-2) vs. Middle Fraser River (Spring 5-2)
             cond_2 <- SPECIES_NAME == "Chinook" & GFE_ID == 290 & RUN_NAME == "Spring"
             
+            #' here there is the choice between Bella Coola-Dean Rivers BELLA COOLA-DEAN RIVERS vs. Bella Coola River-Late  BELLA COOLA RIVER-LATE
+            #' --> we assume that "summer" !=  "Late" --> so the former
+            cond_3 <- SPECIES_NAME == "Chum" & GFE_ID == 968 & RUN_NAME == "Summer"
+            
+            #' for REL_GFE_ID ="GREAT CENTRAL LAKE" choice between:
+            #' - GREAT CENTRAL/SPROAT  SEL-13-xx (no cuid)
+            #' - GREAT CENTRAL  SEL-13-08 --> the one
+            cond_4 <- SPECIES_NAME == "Sockeye" & GFE_ID == 3416 & RUN_NAME == "Summer"
+            
+            #' for REL_GFE_ID ="GREAT CENTRAL LAKE" choice between:
+            #' - GREAT CENTRAL/SPROAT  SEL-13-xx (no cuid)
+            #' - SPROAT  SEL-13-25 --> the one
+            cond_5 <- SPECIES_NAME == "Sockeye" & GFE_ID == 3444 & RUN_NAME == "Summer"
+            
             if(cond_1){  # r = 132
               cuid <- 761
-              FULL_CU_IN <- CUs_gdb$FULL_CU_IN[CUs_gdb$CUID == cuid]
+              FULL_CU_IN <- CUs_gdb$DFO_FULL_CU_IN[CUs_gdb$CUID == cuid] |> unique()
               comment <- paste(comment,"manual attribution to CU Middle Fraser River (Spring 5-2)",sep = "; ")
               
             }else if(cond_2){
@@ -610,6 +635,25 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
               FULL_CU_IN <- FULL_CU_IN[grepl("Spring ",cu_name_pse)]
               cu_name_pse <- cu_name_pse[grepl("Spring ",cu_name_pse)]
               comment <- paste(comment,"manual attribution to CU 761 Momich-Early Summer",sep = "; ")
+              
+            }else if(cond_3){
+              cond <- !grepl("Late",cu_name_pse)
+              cuid <- cuid[cond]
+              FULL_CU_IN <- FULL_CU_IN[cond]
+              cu_name_pse <- cu_name_pse[cond]
+              comment <- paste(comment,"manual attribution to CU 504 Bella Coola-Dean Rivers",sep = "; ")
+              
+            }else if(cond_4){
+              cond <- !is.na(cu_name_pse) & cu_name_pse == "Great Central"
+              cuid <- cuid[cond]
+              FULL_CU_IN <- FULL_CU_IN[cond]
+              cu_name_pse <- cu_name_pse[cond]
+              
+            }else if(cond_5){
+              cond <- !is.na(cu_name_pse) & cu_name_pse == "Sproat"
+              cuid <- cuid[cond]
+              FULL_CU_IN <- FULL_CU_IN[cond]
+              cu_name_pse <- cu_name_pse[cond]
               
             }else{
               print("more than one FULL_CU_IN for SPECIES & GFE_ID combo in NuSEDS")
@@ -693,6 +737,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                           coords = c(col_X_LONGT,col_Y_LAT), crs = 4269)
         
         layer_rg <- st_intersects(point, regions_shp)
+        
         if(length(layer_rg[[1]]) == 0){ # no match, try to buffer
           layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .001))
         }
@@ -711,47 +756,86 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
         if(length(layer_rg[[1]]) == 0){ # no match, try to buffer
           layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .4))
         }
-        # this is for a release location fall right in the middle between VIMI and
+        
+        # this is for a release location fall right in the middle between EVIMI and
         # the Fraser but the corresponding stock location is in VIMI at
         # HOWE SOUND-BURRARD INLET
         cond_rg_1 <- SPECIES_NAME == "Coho" & RUN_NAME == "Fall" & !is.na(RUN_NAME) &
           GFE_ID == 31815 & !is.na(GFE_ID) &
           length(layer_rg[[1]]) == 2
         
+        # this is for a release location fall right in the middle between WVI and
+        # EVIMI but the corresponding stock location is in WVI at the NITINAT RIVER
+        cond_rg_2 <- SPECIES_NAME == "Chinook" & RUN_NAME == "Fall" & !is.na(RUN_NAME) &
+          GFE_ID == 31138 & !is.na(GFE_ID) &
+          length(layer_rg[[1]]) == 2
+        
         if(cond_rg_1){
-          layer_rg[[1]] <- layer_rg[[1]][regions_shp$regionname[layer_rg[[1]]] == "Vancouver Island & Mainland Inlets"]
-        }   
+          layer_rg[[1]] <- layer_rg[[1]][regions_shp$regionname[layer_rg[[1]]] == "East Vancouver Island & Mainland Inlets"]
+        }
+        
+        if(cond_rg_2){
+          layer_rg[[1]] <- layer_rg[[1]][regions_shp$regionname[layer_rg[[1]]] == "West Vancouver Island"]
+        }
         
         if(length(layer_rg[[1]]) > 1){
           
           print("Issue with finding region even after buffering: more than one choice")
           break
           
-          layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .4))
+          # layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = 2))
           layer_rg
           
-          plot(st_geometry(regions_shp))
+          # plot(st_geometry(regions_shp))
           plot(st_geometry(regions_shp[layer_rg[[1]],]))
           plot(st_geometry(point), add = T, col = "red", pch = 16, cex = 2)
           
           hatchery_DFO_pop_NA[r,]
           
+          cond <- hatchery_DFO$SPECIES_NAME == SPECIES_NAME &
+            hatchery_DFO[,col_GFE_ID] == GFE_ID & !is.na(hatchery_DFO[,col_GFE_ID]) &
+            hatchery_DFO$RUN_NAME == RUN_NAME & !is.na(hatchery_DFO$RUN_NAME)
+          hatchery_DFO[cond,]
+          
+          
+          
           regions_here <- regions_shp$regionname[layer_rg[[1]]]
           regions_here
           
+          
+          
+          
+          cond_rg_sp <- CUs_gdb$region_name %in% regions_here & CUs_gdb$species_name == SPECIES_NAME
+          CUs_gdb_rg_sp <- CUs_gdb[cond_rg_sp,]
+          
+          layer_CU <- st_intersects(point, CUs_gdb_rg_sp, distance = .1)
+          layer_CU
+          
+          
         }
         
-        if(length(layer_rg[[1]]) == 0){ # still no match, 
+        if(length(layer_rg[[1]]) == 0){ # still no match
           print("Issue with finding region even after buffering")
           break
           
-          layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .2))
-          plot(st_geometry(regions_shp))
+          hatchery_DFO_pop_NA[r,]
+          
+          cond <- hatchery_DFO$SPECIES_NAME == SPECIES_NAME &
+            hatchery_DFO[,col_GFE_ID] == GFE_ID & !is.na(hatchery_DFO[,col_GFE_ID]) &
+            hatchery_DFO$RUN_NAME == RUN_NAME & !is.na(hatchery_DFO$RUN_NAME)
+          hatchery_DFO[cond,]
+          
+          layer_rg <- st_intersects(point, st_buffer(x = regions_shp, dist = .05))
+          layer_rg[[1]]
+          plot(st_geometry(regions_shp[layer_rg[[1]],]))
           plot(st_geometry(point), add = T, col = "red", pch = 16, cex = 2)
+          
+          
           
         }else{
           layer_rg <- layer_rg[[1]]
         }
+        
         rg <- regions_shp$regionname[layer_rg]
         
         # check
@@ -761,13 +845,13 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
         
         # filter region and species
         sp <- SPECIES_NAME
-        if(SPECIES_NAME == "Sockeye"){
-          sp <- c("River sockeye","Lake sockeye")
-        }else if(SPECIES_NAME == "Pink"){
-          sp <- c("Pink odd","Pink even")
-        }
+        # if(SPECIES_NAME == "Sockeye"){
+        #   sp <- c("River sockeye","Lake sockeye")
+        # }else if(SPECIES_NAME == "Pink"){
+        #   sp <- c("Pink odd","Pink even")
+        # }
         
-        cond_rg_sp <- CUs_gdb$region %in% rg & CUs_gdb$species %in% sp
+        cond_rg_sp <- CUs_gdb$region_name %in% rg & CUs_gdb$species_name %in% sp
         
         if(!any(cond_rg_sp)){
           
@@ -789,6 +873,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
           CUs_gdb_rg_sp <- CUs_gdb[cond_rg_sp,]
           
           layer_CU <- st_intersects(point, CUs_gdb_rg_sp)
+          
           if(length(layer_CU[[1]]) == 0){ # no match, try to buffer
             layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = .05))
           }
@@ -830,7 +915,20 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
             # "Release coordinates too far from CU area
             cond_6 <- SPECIES_NAME == "Sockeye" & is.na(NAME) & GFE_ID == 146 & !is.na(GFE_ID)
             
-            if(cond_1 | cond_3){
+            # Here is a case were it is stated that a Chum CU from Tofino is release in MORKILL RIVER, 
+            # which is in the upper Fraser, which is probably a mistake but I am not 
+            # making the call on selecting which stream they have been released.
+            # Could be TRANQUIL CREEK, BEDWELL RIVER, CYPRE RIVER or MEARES CREEK.
+            # There is only one Chum Cu in the Fraser and it does not go that far
+            # so the radius should be extended to 4.
+            cond_7 <- SPECIES_NAME == "Chum" & is.na(NAME) & GFE_ID == 168 & !is.na(GFE_ID) # &  
+              # hatchery_DFO_pop_NA[r,]$REL_GFE_NAME == "MORKILL RIVER" & !is.na(hatchery_DFO_pop_NA[r,]$REL_GFE_NAME) # crashes if focus us on STOCK
+            
+            #' another case with SH being released far from CU bourdaries
+            cond_8 <- SPECIES_NAME == "Steelhead" & is.na(NAME) & GFE_ID == 31755 & !is.na(GFE_ID) # &  
+              # hatchery_DFO_pop_NA[r,]$REL_GFE_NAME == "BLUE LAKE" & !is.na(hatchery_DFO_pop_NA[r,]$REL_GFE_NAME) # crashes if focus us on STOCK
+            
+            if(cond_1 | cond_3 | cond_8){
               comment <- paste(comment,"STOCK coordinates too far from CU area; probably rainbow trout - FAILURE",sep = "; ")
               hatchery_DFO_pop_NA$comment[r] <- comment
               
@@ -850,14 +948,25 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
               comment <- paste(comment,"Releate coordinates too far from CU area - FAILURE",sep = "; ")
               hatchery_DFO_pop_NA$comment[r] <- comment
               
+            }else if(cond_7){
+              # find the
+              layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = 4)) #
+              
             }else{
               
               print("Issue finding CU(s) in CUs_gdb even after buffering")
               break
               
-              dist <- 1.5
-              layer_CU <- st_intersects(point, st_buffer(x = CUs_gdb_rg_sp, dist = dist),) # 
+              hatchery_DFO_pop_NA[r,]
+              
+              cond <- DFO_df_all_copy$REL_GFE_ID == GFE_ID & !is.na(DFO_df_all_copy$REL_GFE_ID)
+              DFO_df_all_copy[cond,]
+              
+              dist <- 4
+              layer_CU <- st_intersects(point,st_buffer(x = CUs_gdb_rg_sp, dist = dist),) # 
               layer_CU
+              CUs_gdb_rg_sp[layer_CU[[1]],]
+              
               layer_CU <- layer_CU[[1]]
               
               plot(st_geometry(regions_shp[layer_rg,]))
@@ -881,6 +990,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
               cond <- hatchery_DFO$SPECIES_NAME == SPECIES_NAME & 
                 hatchery_DFO[,col_GFE_ID] == GFE_ID & !is.na(hatchery_DFO[,col_GFE_ID]) &
                 hatchery_DFO[,col_NAME] == NAME
+              
               hatchery_DFO[cond,]
               
               cond
@@ -889,19 +999,21 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
           }
           
           if(length(layer_CU[[1]]) > 0){
-            print(layer_CU)
+            
+            # print(layer_CU)
             
             layer_CU <- layer_CU[[1]]
+            
             # if there is more than one CUs
             if(length(layer_CU) > 1){
               
               # 
               CU_NAMEs <- sapply(layer_CU,function(l){
-                return(CUs_gdb_rg_sp$CU_NAME[l])
+                return(CUs_gdb_rg_sp$DFO_CU_NAME[l])
               })
               
               FULL_CU_INs <- sapply(layer_CU,function(l){
-                return(CUs_gdb_rg_sp$FULL_CU_IN[l])
+                return(CUs_gdb_rg_sp$DFO_FULL_CU_IN[l])
               })
               
               CUIDs <- sapply(layer_CU,function(l){
@@ -996,6 +1108,79 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                 cond_14 <- cond_14 & unique(hatchery_DFO$RUN_NAME[cond] == "Spring")
               }
               
+              cond_15 <- SPECIES_NAME == "Sockeye" & NAME == "Woss Lk" & !is.na(NAME)
+              
+              # choice between SER "Northern Coastal Streams (river-type)" vs SEL "Tankeeah River" 
+              cond_16 <- SPECIES_NAME == "Sockeye" & GFE_NAME == "TANKEEAH LAKE" & !is.na(GFE_NAME)
+              
+              # choice between SER "East Vancouver Island & Georgia Strait" vs SEL "Woss"
+              # the coordinates for Clint Creek in the DFO dataset show creek by Woss lake --> the latter it is
+              cond_17 <- SPECIES_NAME == "Sockeye" & GFE_NAME == "CLINT CREEK" & !is.na(GFE_NAME)
+              
+              # same as cond_17 but this time it is more obvious which one
+              cond_18 <- SPECIES_NAME == "Sockeye" & GFE_NAME == "WOSS LAKE" & !is.na(GFE_NAME)
+              
+              #' choice between East Vancouver Island-Georgia Strait (Summer 4-1) vs 
+              #' East Vancouver Island-Nanaimo (Spring x-2) --> the former because of "Summer
+              cond_19 <- SPECIES_NAME == "Chinook" & 
+                GFE_NAME == "SECOND LAKE" & !is.na(GFE_NAME) & 
+                RUN_NAME == "Summer" & !is.na(RUN_NAME)
+              
+              #' here the Stock CU is "East Vancouver Island-Cowichan and Koksilah (Fall x-1)" but the 
+              #' release site Green creek is outside of the CU boundary,  and falls on either 
+              #' - East Vancouver Island-Georgia Strait_SU_0.3
+              #' - East Vancouver Island-Nanaimo_SP_1.x
+              #' It does not matter really which one to pick. --> go for SU_0.3
+              cond_20 <- SPECIES_NAME == "Chinook" & 
+                GFE_NAME == "GREEN CREEK" & !is.na(GFE_NAME) & 
+                RUN_NAME == "Fall" & !is.na(RUN_NAME)
+              
+              #' Voice between
+              #' - West Vancouver Island         SER-10
+              #' -  Sproat      SEL-13-25
+              #' But STOCK_CU_NAME is "WEST VANCOUVER ISLAND" --> former
+              cond_21 <- SPECIES_NAME == "Sockeye" & 
+                GFE_NAME == "TAYLOR RIVER" & !is.na(GFE_NAME) & 
+                RUN_NAME == "Summer" & !is.na(RUN_NAME)
+              
+              #' Voice between
+              #' - West Vancouver Island         SER-10
+              #' -  Maggie      SEL-13-15 
+              #' But STOCK_CU_NAME is "WEST VANCOUVER ISLAND" --> former
+              cond_22 <- SPECIES_NAME == "Sockeye" & 
+                GFE_NAME == "MAGGIE LAKE" & !is.na(GFE_NAME) & 
+                RUN_NAME == "Summer" & !is.na(RUN_NAME)
+              
+              # cond <- hatchery_DFO$SPECIES_NAME == "Sockeye" & hatchery_DFO$REL_GFE_ID == 31400 & !is.na(hatchery_DFO$REL_GFE_ID)
+              # cond <- hatchery_DFO$SPECIES_NAME == "Sockeye" & hatchery_DFO$REL_GFE_NAME == "MAGGIE LAKE" & !is.na(hatchery_DFO$REL_GFE_NAME)
+              # hatchery_DFO[cond,]
+              
+              #' choices:
+              #' - East Vancouver Island-North_FA_0.x          CK-29
+              #' - East Vancouver Island-Qualicum & Puntledge_FA_0.x          CK-27
+              #' But STOCK_CU_NAME = CK-29 EAST VANCOUVER ISLAND-NORTH_FA_0.x  --> former
+              cond_23 <- SPECIES_NAME == "Chinook" & 
+                GFE_ID == 31823 & !is.na(GFE_ID) & 
+                RUN_NAME == "Fall" & !is.na(RUN_NAME)
+              
+              #' choices:
+              #' - Widgeon (river-type)
+              #' - Pitt-Early Summer
+              #' - Coquitlam-Early Summer  --> this one
+              #' Note: "Seagoing kokanee brood used for these smolts in hopes of restoring sockeye run"
+              #' STOCK_CU_NAME is NA but STOCK_NAME == Coquitlam R --> the latter
+              cond_24 <- SPECIES_NAME == "Sockeye" &
+                GFE_ID == 8 & !is.na(GFE_ID) &
+                RUN_NAME == "Fall" & !is.na(RUN_NAME)
+              
+              #' choices:
+              #' - Skeena River         SER-18
+              #' - Kitwancool      SEL-21-05
+              #' STOCK_CU_NAME is NA but STOCK_NAME == Kitwanga R --> the latter
+              cond_25 <- SPECIES_NAME == "Sockeye" &
+                GFE_ID == 31081 & !is.na(GFE_ID) &
+                RUN_NAME == "Summer" & !is.na(RUN_NAME)
+              
               if(cond_1 | cond_2){
                 layer_CU <- layer_CU[2]
                 
@@ -1003,7 +1188,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                 layer_CU <- layer_CU[cond_3]
                 
               }else if(cond_4){
-                layer_CU <- layer_CU[grepl("Kispiox",CUs_gdb_rg_sp$CU_NAME[layer_CU])]
+                layer_CU <- layer_CU[grepl("Kispiox",CUs_gdb_rg_sp$DFO_CU_NAME[layer_CU])]
                 
               }else if(cond_5){
                 cond <- grepl("Coquitlam",cu_name_pses)
@@ -1036,6 +1221,34 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
               }else if(cond_14){
                 layer_CU <- layer_CU[grepl("Early Stuart Timing",CU_NAMEs)]
                 
+              }else if(cond_15){
+                i <- CUs_gdb_rg_sp[layer_CU,]$DFO_CU_NAME == "Woss"
+                layer_CU <- layer_CU[grepl("Woss",CU_NAMEs)]
+                
+              }else if(cond_16){
+                layer_CU <- layer_CU[grepl("Tankeeah River",CU_NAMEs)]
+                
+              }else if(cond_17 | cond_18){
+                layer_CU <- layer_CU[grepl("Woss",CU_NAMEs)]
+                
+              }else if(cond_19){
+                layer_CU <- layer_CU[grepl("SU_0.3",CU_NAMEs)]
+                
+              }else if(cond_20){
+                layer_CU <- layer_CU[grepl("SU_0.3",CU_NAMEs)]
+                
+              }else if(cond_21 | cond_22){
+                layer_CU <- layer_CU[grepl("West Vancouver Island",CU_NAMEs)]
+                
+              }else if(cond_23){
+                layer_CU <- layer_CU[grepl("East Vancouver Island-North_FA_0.x",CU_NAMEs)]
+                
+              }else if(cond_24){
+                layer_CU <- layer_CU[is.na(CU_NAMEs)] # no SFO name, PSF name is "Coquitlam-Early Summer" 
+                
+              }else if(cond_25){
+                layer_CU <- layer_CU[grepl("Kitwancool",CU_NAMEs)]
+                
               }else{
                 
                 # the location is south of the Fraser river and the CUs are above
@@ -1066,6 +1279,21 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                   print("more than one CUs")
                   break
                   
+                  hatchery_DFO_pop_NA[r,]
+                  CUs_gdb_rg_sp[layer_CU,]
+
+                  cond <- hatchery_DFO$SPECIES_NAME == SPECIES_NAME & 
+                    hatchery_DFO[,col_X_LONGT] == LONGITUDE & !is.na(hatchery_DFO[,col_X_LONGT]) &
+                    hatchery_DFO[,col_Y_LAT] == LATITUDE & !is.na(hatchery_DFO[,col_Y_LAT])
+                  
+                  hatchery_DFO[cond,]
+                  hatchery_DFO[cond,]$STOCK_CU_NAME |> unique()
+                  hatchery_DFO[cond,]$RELEASE_SITE_NAME |> unique()
+                  
+                  
+                  
+
+                  
                   plot(st_geometry(regions_shp[layer_rg,]))
                   plot(st_geometry(CUs_gdb_rg_sp[layer_CU[1],]), add = T, col = alpha("red",.3))
                   plot(st_geometry(CUs_gdb_rg_sp[layer_CU[2],]), add = T, col = alpha("blue",.3))
@@ -1075,7 +1303,7 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                                             coords = c("REL_LONGITUDE","REL_LATITUDE"), crs = 4269)),
                        add = T, col = "black", pch = 17, cex = 2)
                   
-                  hatchery_DFO_pop_NA[r,]
+                  
                   
                   CUs_gdb_rg_sp[layer_CU,]
                   CUs_gdb_rg_sp[layer_CU,]$cu_name_pse
@@ -1087,15 +1315,19 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
                   cond <- hatchery_DFO$SPECIES_NAME == SPECIES_NAME & 
                     hatchery_DFO[,col_GFE_ID] == GFE_ID & !is.na(hatchery_DFO[,col_GFE_ID]) 
                   
-                  cond <- hatchery_DFO$SPECIES_NAME == SPECIES_NAME & 
-                    hatchery_DFO[,col_X_LONGT] == LONGITUDE & !is.na(hatchery_DFO[,col_X_LONGT]) &
-                    hatchery_DFO[,col_Y_LAT] == LATITUDE & !is.na(hatchery_DFO[,col_Y_LAT])
+
                   
-                  hatchery_DFO[cond,]
-                  hatchery_DFO[cond,]$RELEASE_SITE_NAME |> unique()
+                  cond <- nuseds_2$SPECIES == SPECIES_NAME & 
+                    simplify_string_fun(nuseds_2$CU_NAME) %in% simplify_string_fun(CU_NAMEs)
+                  nuseds_2[cond,]
                   
-                  cond <- nuseds$SPECIES == SPECIES_NAME & nuseds$CU_NAME %in% CU_NAMEs
+                  cond <- nuseds$species_name == SPECIES_NAME & nuseds$cu_name_pse %in% CU_NAMEs
                   nuseds[cond,]
+                  
+                  cond <- nuseds_2$cuid %in% CUs_gdb_rg_sp[layer_CU,]$CUID
+                  unique(nuseds_2[cond,c("region","SPECIES_QUALIFIED","cuid","CU_NAME","cu_name_pse","POPULATION")])
+                  
+                  nuseds_2$CU_NAME
                   
                 }else{
                   comment <- paste(comment,"intersect multiple CUs - FAILURE", sep = "; ")
@@ -1106,8 +1338,8 @@ find_CU_hatchery_fun <- function(hatchery_DFO,   # DFO's hatchery file
             
             if(length(layer_CU) == 1){
               
-              CU_NAME <- CUs_gdb_rg_sp$CU_NAME[layer_CU]
-              FULL_CU_IN <- CUs_gdb_rg_sp$FULL_CU_IN[layer_CU]
+              CU_NAME <- CUs_gdb_rg_sp$DFO_CU_NAME[layer_CU]
+              FULL_CU_IN <- CUs_gdb_rg_sp$DFO_FULL_CU_IN[layer_CU]
               cuid <- CUs_gdb_rg_sp$CUID[layer_CU]
               
               if(is.na(cuid)){ # try the decoder

@@ -835,7 +835,10 @@ CU_name_variations_fun <- function(CUname,spawnerAbundance = NA,speciesAcronym =
 
 #' Function to return the last version of a file whose name contains the given
 #' pattern. Works with .csv and .xlsx formats.
-import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA,second_last = F){
+import_mostRecent_file_fun <- function(wd,pattern,
+                                       pattern_exclude = NA,
+                                       second_last = F,
+                                       return_info = F){
   
   files_c <- list.files(wd)
   files_c <- files_c[grepl(x = files_c, 
@@ -887,6 +890,12 @@ import_mostRecent_file_fun <- function(wd,pattern,pattern_exclude = NA,second_la
       Print("File format to implement.")
     }
   }
+  
+  if(return_info){
+    out <- list(out,file,max(file.mtime))
+    names(out) <- c("dataset","filename","time_lastUpdate")
+  }
+  
   return(out)
 }
 

@@ -2186,6 +2186,12 @@ nrow(dataset2)
 #' there is no data in NuSEDS but there could be NAs for those years
 
 #' TODO TO CHECK IF THE CODE BELOW WORKS!
+#' 
+#' NEED TO ADD POP_ID and GFE_ID!!!
+
+data_HG$POP_ID <- 
+data_HG$GFE_ID <- 
+
 
 cond <- dataset2$cuid == unique(data_HG$cuid) & 
   dataset2$stream_name_pse == unique(data_HG$stream_name_pse) & 

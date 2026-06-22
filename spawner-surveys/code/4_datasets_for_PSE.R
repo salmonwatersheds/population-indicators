@@ -162,8 +162,8 @@ data_yukon$stream_name_pse <- data_yukon$stream_name_pse |> toupper()
 #' Atnarko sockeye data were provided by Kate McGivney (DFO) in 
 # https://github.com/Pacific-salmon-assess/Atnarko-sockeye/blob/main/data/spawners/spawners.csv
 region <- "central-coast-data"
-data_cc <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output"), 
-                                         pattern = "dataset2_spawner-surveys")
+data_cc <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output/archive/"), 
+                                      pattern = "dataset2_spawner-surveys")
 # "File imported: dataset2_spawner-surveys_CentralCoast_2025-04-03.csv ; Date modified: 2025-04-03 09:11:32"
 
 data_cc$stream_name_pse <- data_cc$stream_name_pse |> toupper()
@@ -194,6 +194,15 @@ data_Columbia <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",r
 # Is this SH data already in data_SH?
 unique(data_Columbia$region)
 unique(data_Columbia$species_name)
+
+
+#'* Import data from Haida Gwaii (NEW FROM LAST UPDATE in the fall of 2025) *
+#' additional data for CK North Haida Gwaii in the YAKOUN RIVER for years 2021 to 2025
+#' Simply add the data to the data already in NuSEDS
+region <- "haida-gwaii-data"
+data_HG <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output/archive"), 
+                                         pattern = "dataset2_spawner-surveys")
+
 
 
 #'* Import streamlocationids to obtain the streamid *
@@ -2166,6 +2175,25 @@ colnames(dataset2)[!colnames(dataset2) %in% colnames(data_SH)]
 dataset2 <- rbind(dataset2,data_SH[,colnames(dataset2)])
 
 nrow(dataset2)
+
+
+#'* Haida Gwaii (NEW FROM LAST UPDATE in the fall of 2025) *
+#' additional data for CK North Haida Gwaii in the YAKOUN RIVER for years 2021 to 2025
+#' Simply add the data to the data already in NuSEDS
+
+
+#' remove the rows in dataset2 corresponding to the year covers in data_HG, note that
+#' there is no data in NuSEDS but there could be NAs for those years
+
+#' TODO TO CHECK IF THE CODE BELOW WORKS!
+
+cond <- dataset2$cuid == unique(data_HG$cuid) & 
+  dataset2$stream_name_pse == unique(data_HG$stream_name_pse) & 
+  dataset2$year %in% data_HG$year
+
+dataset2 <- dataset2[!cond,]
+
+dataset2 <- rbind(dataset2,data_HG)
 
 
 #

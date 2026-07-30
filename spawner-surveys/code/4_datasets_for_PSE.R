@@ -171,7 +171,7 @@ data_cc$stream_name_pse <- data_cc$stream_name_pse |> toupper()
 
 #'* Import data from Steelhead *
 region <- "steelhead-data"
-data_SH <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output"), 
+data_SH <- import_mostRecent_file_fun(wd = paste0(wd_population_data,"/",region,"/output/archive"), 
                                          pattern = "dataset2_spawner-surveys")
 # 2025-03-26.csv ; Date modified: 2025-04-15
 
@@ -2314,11 +2314,13 @@ dataset2$stream_survey_quality[dataset2$stream_survey_quality == "broodstocl"] <
 #' We should import the data from Bailey et al 2025.
 #' Their data on their github as been deleted.
 
-cond < dataset2$source_id <- "Bailey_20250121"
+cond <- dataset2$source_id == "Bailey_20250121"
 dataset2 <- dataset2[!cond,]
 
 
 unique(dataset2$region)
+unique(dataset2$source_id)
+nrow(dataset2) # 314836
 
 # order fields:
 dataset2 <- dataset2 %>% 

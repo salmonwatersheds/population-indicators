@@ -77,6 +77,11 @@ library(dplyr)
 options(warn = 0)
 options(digits = 9) ## 7
 
+
+Note from 2026-08-04: For next update: for the one Chum CU in the Fraser, use RS data and not percentile
+https://pacificsalmonfdn.slack.com/archives/CJ5RVHVCG/p1785774532839279?thread_ts=1778604940.382219&cid=CJ5RVHVCG
+
+
 # Import files -------
 #
 

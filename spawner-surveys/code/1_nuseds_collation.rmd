@@ -382,6 +382,36 @@ The regions and CUs shape files as defined in the PSE are imported:
 
 ```{r, include=FALSE}
 
+TODO FOR NEXT update:
+  
+import_shape_files_from_PSE <- F
+
+if(import_shape_files_from_PSE){
+  regions_shp <- st_read("https://data.salmonwatersheds.ca/result?datasetid=518") %>%
+    st_transform(crs = 4269) %>%
+    st_simplify(dTolerance = .002)
+  
+  st_write(regions_shp,paste0(wd_data,"/se_boundary_regions/se_boundary_regions_simple.shp"))
+  
+}else{
+  regions_shp <- st_read(paste0(wd_data,"/se_boundary_regions/se_boundary_regions_simple.shp"))
+}
+
+
+if(import_shape_files_from_PSE){
+  CUs_gdb <- st_read("https://data.salmonwatersheds.ca/result?datasetid=104") %>%
+    st_transform(crs = 4269) %>%
+    st_simplify(dTolerance = .002)
+  
+  # st_write(CUs_gdb,paste0(wd_data,"/PSF_CUs_Master.gdb")) # does not work well
+  st_write(CUs_gdb,paste0(wd_data,"/PSF_CUs_Master.gpkg"), delete_dsn = T)
+  
+}else{
+  # CUs_gdb <- st_read(paste0(wd_data,"/PSF_CUs_Master.gdb"))
+  CUs_gdb <- st_read(paste0(wd_data,"/PSF_CUs_Master.gpkg"))
+}
+
+
 #'* Import the shape files for the Region boundaries *
 #' Note that se_boundary/se_boundary.shp is used in 0_assign-regions.R. This is a
 #' lighter shape file but contains the same regions. The code here works with 
@@ -673,6 +703,23 @@ sum(!GFE_ID_IndexId_CUSS_collapse %in% GFE_ID_IndexId_NUSEDS_collapse) # 5 5
 ```
 
 The major issue in NuSEDS is the discrepancy between the two datasets. Normally, there should be the same population references (i.e., unique `IndexId`/`POP_ID` & `GFE_ID` combinations). But there are `r nrow(GFE_ID_IndexId_NUSEDS)` unique population references in **NUSEDS** and only `r nrow(GFE_ID_IndexId_CUSS)` in **CUSS**. Additionally, there are `r sum(!GFE_ID_IndexId_NUSEDS_collapse %in% GFE_ID_IndexId_CUSS_collapse)` references in **NUSEDS** that are not in **CUSS** and `r sum(!GFE_ID_IndexId_CUSS_collapse %in% GFE_ID_IndexId_NUSEDS_collapse)` that are in **CUSS** but not in **NUSEDS**. This section consists in solving these discrepancies so that the same population references are present in both datasets.
+
+## 
+
+```{r}
+TODO FOR NEXT update: (note from 2026-08-21)
+# https://pacificsalmonfdn.slack.com/archives/CJ5RVHVCG/p1787336949706939?thread_ts=1786549199.370169&cid=CJ5RVHVCG
+# 
+# CU CK-23 is not recognised by DFO but it is by PSF. So DFO grouped to CK-84 in the following streams:
+# - NANAIMO RIVER - UPPER  --> RUN_TYE = "SPRING"
+# - NANAIMO RIVER                 --> RUN_TYPE = "SPRING" & "SUMMER" --> Counts for a given year were summed up
+# - PUNTLEDGE RIVER        --> RUN_TYPE = "SPRING"
+
+#' TODO: create there reference of CK-23 in NUSEDS AND CUSS and the attribite the 
+#' "SPRING" counts to CK-23
+```
+
+
 
 ## Duplicated rows
 

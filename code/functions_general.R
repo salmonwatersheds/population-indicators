@@ -23,7 +23,11 @@ get_XDrive <- function(){
   Dropbox_dir <- paste(getwd(), "Salmon Watersheds Dropbox", sep = "/")
   
   # Within Dropbox, the X Drive is in a named folder. But this can be found through exclusion of other common folders
-  name_folder <- list.files(path = Dropbox_dir)[which((list.files(path = Dropbox_dir) %in% c("Icon\r", "Team Folder", "Team Paper Docs", "desktop.ini")) == FALSE)]
+  name_folder <- list.files(path = Dropbox_dir)[which((list.files(path = Dropbox_dir) %in% c("Icon\r", 
+                                                                                             "Team Folder", 
+                                                                                             "Team Paper Docs", 
+                                                                                             "desktop.ini",
+                                                                                             "Presentation 2026 Design Edits - Sopia")) == FALSE)]
   
   if(length(name_folder) == 1){ 
     Dropbox_dir <- paste(Dropbox_dir, name_folder, sep = "/")

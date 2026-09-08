@@ -715,8 +715,13 @@ TODO FOR NEXT update: (note from 2026-08-21)
 # - NANAIMO RIVER                 --> RUN_TYPE = "SPRING" & "SUMMER" --> Counts for a given year were summed up
 # - PUNTLEDGE RIVER        --> RUN_TYPE = "SPRING"
 
-#' TODO: create there reference of CK-23 in NUSEDS AND CUSS and the attribite the 
+#' TODO: create there reference of CK-23 in NUSEDS AND CUSS and the attribute the 
 #' "SPRING" counts to CK-23
+
+#' In addition (2026-09-08): for CN_3334 - 1194 (unknown timing): it is/was merged  
+#' to the fall CU because of END_SPAWNING_DATE field but it should probably be 
+#' attributed to the SPRING CU: TO CHECK
+#' https://pacificsalmonfdn.slack.com/archives/D0BUL6RNW1Y/p1788880714755109
 ```
 
 

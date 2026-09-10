@@ -529,6 +529,12 @@ show
 Additionally, the `CU_NAME` of the river Sockeye at `SYSTEM` = "BELLA COOLA RIVER" (`GFE_ID` = 968) is changed from:
 
 ```{r, echo=FALSE}
+
+
+
+TODO: ISSUE: only the CU_NAME is changed but the cuid is not so the change does not occure !!!
+
+
 #'* FIX: South Atnarko Lakes *
 #' GFE_ID 968 for sockeye should be attributed to South Atnarko Lakes CU 
 #' (cf. Population meeting from 05/03/2024)
@@ -550,6 +556,8 @@ show <- unique(nuseds[cond,c("SPECIES_QUALIFIED","CU_NAME","CENSUS_SITE","GFE_ID
 rownames(show) <- NULL
 show
 ```
+
+
 
 ## Add the field stream_survey_quality
 

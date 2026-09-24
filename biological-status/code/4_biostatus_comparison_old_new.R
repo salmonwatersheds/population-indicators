@@ -27,74 +27,23 @@
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1700673066049189?thread_ts=1700604709.505309&cid=CJ5RVHVCG
 #'******************************************************************************
 
-# 
 rm(list = ls())
 graphics.off()
 
-# reset the wd to head using the location of the current script
-path <- rstudioapi::getActiveDocumentContext()$path
-dirhead <- "population-indicators"
-path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
-wd_head <- paste0(path_ahead,dirhead)
-setwd(wd_head)
-
-# Now import functions related to directories.
-# Note that the script cannot be called again once the directory is set to the 
-# subdirectory of the project (unless setwd() is called again).
-source("code/functions_set_wd.R")
 source("code/functions_general.R")
+source("code/functions_set_wd.R")
 source("code/colours.R")
-
-# return the name of the directories for the different projects:
-subDir_projects <- subDir_projects_fun()
-
-wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
-                                     Export_locally = F)
-wd_head <- wds_l$wd_head
-wd_code <- wds_l$wd_code
-wd_data <- wds_l$wd_data
-wd_figures <- wds_l$wd_figures
-wd_output <- wds_l$wd_output
-wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
-wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                                         wds_l$wd_population_indicator_data_input_dropbox,
-                                         sep = "/")
-
-wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                         wds_l$wd_project_dropbox,
-                         "data",sep="/")
-
-wd_pop_data_quality_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                                     "1_Active/Population Methods and Analysis/population-indicators/data-quality",
-                                     sep = "/")
-
-# The datasets to input were outputted by other scripts 
-wd_data_input <- wd_output
-
-# Import functions for this specific project
-source("Code/functions.R")
+source("biological-status/code/functions.R")
 
 library(tidyr)
 library(dplyr)
 library(xlsx)
 
-# Import species names and acronyms
-species_acronym_df <- species_acronym_fun()
-
-# Import region names
-regions_df <- regions_fun()
-
-# select all the regions
-region <- as.character(regions_df[1,])
-
-# select certain species
-species <- c(species_acronym_df$species_name[species_acronym_df$species_acro == "CK"],    
-             species_acronym_df$species_name[species_acronym_df$species_acro == "SX"])
-
-# note that species_all take precedence over species in SRdata_path_species_fun()
-species_all <- TRUE
-
-printFig <- F
+wd_X_Drive1_PROJECTS <- paste0(get_XDrive(),"1_PROJECTS")
+wd_popInd <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-indicators")
+wd_pop_indic_data_input_dropbox <- paste0(wd_popInd,"/data-input")
+wd_output <- paste0(wd_popInd,"/biological-status/output")
+wd_data <- paste0(getwd(),"/biological-status/data")
 
 options(warn = 0)
 
@@ -131,9 +80,9 @@ benchmarks_old <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"),
 # TEMPORARY CHANGE
 # the Henderson lake sockeye CU in VIMI is now called Hucuktlis
 # https://salmonwatersheds.slack.com/archives/CJ5RVHVCG/p1747060690168909
-cond <- biostatus_old$cuid == 953
-biostatus_old[cond,]
-biostatus_old[cond,]$cu_name_pse <- "Hucuktlis"
+# cond <- biostatus_old$cuid == 953
+# biostatus_old[cond,]
+# biostatus_old[cond,]$cu_name_pse <- "Hucuktlis"
 
 #'* Import the new biostatus *
 biostatus_new <- import_mostRecent_file_fun(wd = paste0(wd_output,"/archive"), 
@@ -210,6 +159,21 @@ head(dataset390_output)
 
 nrow(dataset390_output) # 463 465 466
 
+#'* Import dataset390_data_quality (dataset390_output) for survey_quality *
+dataset380_output <- datasets_database_fun(nameDataSet = "dataset380_output.csv", # datasetsNames_database$name_CSV[19],
+                                           fromDatabase = fromDatabase,
+                                           update_file_csv = update_file_csv,
+                                           wd = wd_pop_indic_data_input_dropbox)
+
+#'* Import list of CUs with high exploitation and/or low productivity *
+# Return list of CUs that have high exploitation rate or low production rates,
+# as well as a final call on keeping or removing the CUs depending of their
+# biostatus: the one with already a red/poor status are kept (i.e. Clare's 8th rule).
+# highExploit_lowProd <- cu_highExploit_lowProd_fun(biological_status_percentile = biological_status_percentile,
+#                                                   wd_pop_indic_data_input_dropbox = wd_pop_indic_data_input_dropbox, 
+#                                                   conservationunits_decoder = conservationunits_decoder, 
+#                                                   export_csv = T)
+highExploit_lowProd <- read.csv(paste0(wd_pop_indic_data_input_dropbox,"/CUs_highExploitation_lowProductivity.csv"))
 
 #'* Import the list of priors for Smax (produced in 1a_HBSRM.R) *
 priors_Smax <- read.csv(paste0(wd_data,"/priors_Smax.csv"),header = T)
@@ -251,11 +215,11 @@ nrow(biostatus_merge) # 463
 #'* CUs in old but not in new dataset and vice versa *
 cuid_old <- biostatus_old$cuid
 cuid_new <- biostatus_new$cuid
-cuid_old[!cuid_old %in% cuid_new] # none 241 188 521 751
+cuid_old[!cuid_old %in% cuid_new] # none none 241 188 521 751
 cond <- biostatus_old$cuid %in% cuid_old[!cuid_old %in% cuid_new]
 biostatus_old[cond,] 
 
-cuid_new[!cuid_new %in% cuid_old] # none
+cuid_new[!cuid_new %in% cuid_old] # none none
 
 # Old comments:
 # 188 Swan/Club: all good, was supposed to be removed
@@ -272,7 +236,7 @@ cuid_new[!cuid_new %in% cuid_old] # none
 cond <- biostatus_merge$curr_spw_end_year_new < biostatus_merge$curr_spw_end_year_old &
   !is.na(biostatus_merge$curr_spw_end_year_new) &
   !is.na(biostatus_merge$curr_spw_end_year_old)
-sum(cond) # 0 34
+sum(cond) # 0 0 34
 biostatus_merge[cond,]
 
 #' REASON:  OLD
@@ -282,46 +246,49 @@ biostatus_merge[cond,]
 
 #'* Condition same status *
 cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
-sum(cond_same) # 450 436 442 378 432 370 369 362 346
+sum(cond_same) # 428 (425) 450 436 442 378 432 370 369 362 346
 biostatus_merge[cond_same,] # |> View()
 
 # with biostatus assessed:
 cond_123 <- biostatus_merge$psf_status_old[cond_same] %in% c("poor","fair","goog")
-sum(cond_123) # 129 106 88 76 87 48 44
+sum(cond_123) # 112 129 106 88 76 87 48 44
 
 # and with same method used:
-cond_method_same <- biostatus_merge[cond_same,][cond_123,]$psf_status_type_old ==  biostatus_merge[cond_same,][cond_123,]$psf_status_type_new
-sum(cond_method_same) # 128 106 88 70 85 46 43
+cond_method_same <- biostatus_merge[cond_same,][cond_123,]$psf_status_type_old == biostatus_merge[cond_same,][cond_123,]$psf_status_type_new
+sum(cond_method_same) # 107 128 106 88 70 85 46 43
 
 biostatus_merge[cond_same,][cond_123,][cond_method_same,]
+
+# and with different method used:
 biostatus_merge[cond_same,][cond_123,][!cond_method_same,]
+
 
 #'* Different status *
 cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
-sum(cond_diff) # 13 27 21 41 31 93 103 120
+sum(cond_diff) # 35 (38) 13 27 21 41 31 93 103 120
 
 show <- biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
                             "psf_status_old","psf_status_new",
                             "psf_status_code_old","psf_status_code_new")]
 
-show$curr_spw_end_year <- sapply(show$cuid,function(cuid){
-  # cuid <- show$cuid[1]
-  cond <- benchmarks_new$cuid == cuid
-  curr_spw_end_year_new <- benchmarks_new$curr_spw_end_year[cond]
-  cond <- benchmarks_old$cuid == cuid
-  curr_spw_end_year_old <- benchmarks_old$curr_spw_end_year[cond]
-  
-  if(is.na(curr_spw_end_year_old) & !is.na(curr_spw_end_year_new)){
-    out <- "curr_spw_end_year_old is NA"
-  }else if(!is.na(curr_spw_end_year_old) & is.na(curr_spw_end_year_new)){
-    out <- "curr_spw_end_year_new is NA"
-  }else if(curr_spw_end_year_new != curr_spw_end_year_old){
-    out <- paste0(curr_spw_end_year_old,"(old) < ",curr_spw_end_year_new," (new)")
-  }else{
-   out <- curr_spw_end_year_old
-  }
-  return(out)
-})
+# show$curr_spw_end_year <- sapply(show$cuid,function(cuid){
+#   # cuid <- show$cuid[1]
+#   cond <- benchmarks_new$cuid == cuid
+#   curr_spw_end_year_new <- benchmarks_new$curr_spw_end_year[cond]
+#   cond <- benchmarks_old$cuid == cuid
+#   curr_spw_end_year_old <- benchmarks_old$curr_spw_end_year[cond]
+#   
+#   if(is.na(curr_spw_end_year_old) & !is.na(curr_spw_end_year_new)){
+#     out <- "curr_spw_end_year_old is NA"
+#   }else if(!is.na(curr_spw_end_year_old) & is.na(curr_spw_end_year_new)){
+#     out <- "curr_spw_end_year_new is NA"
+#   }else if(curr_spw_end_year_new != curr_spw_end_year_old){
+#     out <- paste0(curr_spw_end_year_old,"(old) < ",curr_spw_end_year_new," (new)")
+#   }else{
+#    out <- curr_spw_end_year_old
+#   }
+#   return(out)
+# })
 
 show$gen_length <- sapply(show$cuid,function(cuid){
   cond <- conservationunits_decoder$cuid == cuid
@@ -330,7 +297,7 @@ show$gen_length <- sapply(show$cuid,function(cuid){
 })
 
 show
-nrow(show) # 13 27
+nrow(show) # 35 (38) 13 27
 
 cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
 cases$count <- apply(cases,1,function(r){
@@ -339,16 +306,77 @@ cases$count <- apply(cases,1,function(r){
   return(sum(cond))
 })
 cases
-sum(cases$count) # 13 27
+sum(cases$count) # 38 13 27
 
 # record the CUs that are different
 biostatus_merge_diff <- biostatus_merge[cond_diff,]
+cuid_diff <- biostatus_merge_diff$cuid
+
+
+#'* CUs with improved status *
+cond_improve <- (biostatus_merge_diff$psf_status_new == "good" & biostatus_merge_diff$psf_status_old %in% c("poor","fair")) | 
+  (biostatus_merge_diff$psf_status_new == "fair" & biostatus_merge_diff$psf_status_old == "poor")
+biostatus_merge_diff[cond_improve,]
+sum(cond_improve)
+
+#'* CUs with deteriorated status *
+cond_deterior <- (biostatus_merge_diff$psf_status_old == "good" & biostatus_merge_diff$psf_status_new %in% c("poor","fair")) | 
+  (biostatus_merge_diff$psf_status_old == "fair" & biostatus_merge_diff$psf_status_new == "poor")
+biostatus_merge_diff[cond_deterior,]
+sum(cond_deterior)
+
+#'* CUs gained status *
+cond_gain <- (biostatus_merge_diff$psf_status_new %in% c("good","fair","poor") & biostatus_merge_diff$psf_status_old %in% c("data-deficient","not-assessed"))
+biostatus_merge_diff[cond_gain,]
+sum(cond_gain)
+
+#'* CUs lost status *
+cond_loss <- (biostatus_merge_diff$psf_status_old %in% c("good","fair","poor") & biostatus_merge_diff$psf_status_new %in% c("data-deficient","not-assessed"))
+biostatus_merge_diff[cond_loss,]
+sum(cond_loss)
+
+# Because the data was not updated
+cond_curr_spw_end_year_same <- !is.na(biostatus_merge_diff$curr_spw_end_year_new) & 
+  !is.na(biostatus_merge_diff$curr_spw_end_year_old) &
+  biostatus_merge_diff$curr_spw_end_year_new == biostatus_merge_diff$curr_spw_end_year_old
+
+biostatus_merge_diff[cond_loss & cond_curr_spw_end_year_same,]
+sum(cond_loss & cond_curr_spw_end_year_same)
+
+# The others:
+biostatus_merge_diff[cond_loss & !cond_curr_spw_end_year_same,]
+sum(cond_loss & !cond_curr_spw_end_year_same)
+
+cond <- highExploit_lowProd$cuid %in% biostatus_merge_diff[cond_loss & !cond_curr_spw_end_year_same,]$cuid
+highExploit_lowProd[cond,]
+
+
+#'* CUs not assessed but reason changed *
+cond_rest <- !biostatus_merge_diff$cuid %in% biostatus_merge_diff$cuid[cond_improve | cond_deterior | cond_gain | cond_loss]
+sum(cond_rest)
+biostatus_merge_diff[cond_rest,]
+
+
+cond <- dataset380_output$cuid %in% biostatus_merge_diff[cond_rest,]$cuid
+dataset380_output[cond,]
+
+cond <- conservationunits_decoder$cuid %in% biostatus_merge_diff[cond_rest,]$cuid
+conservationunits_decoder[cond,]
+
+# check: difference should be 0
+sum(cond_diff) - (sum(cond_improve) + sum(cond_deterior) + sum(cond_gain) + sum(cond_loss) + sum(cond_rest))
+
+# check that we have all the CUs considered: the substraction should be 0
+nrow(biostatus_merge) - (sum(cond_same) + sum(cond_diff))
+
+
+
+#'* !!! OLDER CODE BELOW !!! *
+
+#'* Different status: Different methods pooledcuid#'* Different status: Different methods (psf_status_type) and why *
 biostatus_merge_diff$type_diff <- NA
 biostatus_merge_diff$explanation <- "?"
 
-cuid_diff <- biostatus_merge_diff$cuid
-
-#'* Different status: Different methods (psf_status_type) and why *
 cond_method_NA_new <- is.na(biostatus_merge$psf_status_type_new)
 cond_method_NA_old <- is.na(biostatus_merge$psf_status_type_old)
 cond_sr_new <- biostatus_merge$psf_status_type_new == "sr" & !cond_method_NA_new
@@ -357,13 +385,31 @@ cond_percent_new <- biostatus_merge$psf_status_type_new == "percentile" & !cond_
 cond_percent_old <- biostatus_merge$psf_status_type_old == "percentile" & !cond_method_NA_old
 cond_absolute_new <- biostatus_merge$psf_status_type_new == "absolute" & !cond_method_NA_new
 cond_absolute_old <- biostatus_merge$psf_status_type_old == "absolute" & !cond_method_NA_old
-cond_diff_method <- (cond_sr_new & cond_percent_old) | 
+
+cond_diff_method <-  (cond_sr_new & cond_percent_old) | 
   (cond_sr_old & cond_percent_new) | 
   (cond_absolute_new & !cond_absolute_old) | 
   (!cond_absolute_new & cond_absolute_old)
 
+cond_diff_method <- (cond_sr_new & !cond_sr_old) | (!cond_sr_new & cond_sr_old) | 
+  (cond_percent_new & !cond_percent_old) | (!cond_percent_new & cond_percent_old) |
+  (cond_absolute_new & !cond_absolute_new) | (!cond_absolute_new & cond_absolute_old) |
+  (cond_method_NA_new & !cond_method_NA_old) | (!cond_method_NA_new & cond_method_NA_old)
+
+cond_diff_method_1 <- (cond_sr_new & !cond_sr_old) | 
+  (cond_percent_new & !cond_percent_old) |
+  (cond_absolute_new & !cond_absolute_new) |
+  (cond_method_NA_new & !cond_method_NA_old)
+
+
+biostatus_merge[cond_diff_method != cond_diff_method_1,]
+
 # nb of CUs with different methods overall:
-sum(cond_diff_method) # 8 8 2 14 11 16
+sum(cond_diff & cond_diff_method) # 17 8 8 2 14 11 16
+
+
+
+
 biostatus_merge[cond_diff_method,c("region","species_qualified","cuid","cu_name_pse",
                                    "psf_status_type_old","psf_status_type_new",
                                    "psf_status_old","psf_status_new","curr_spw_end_year_old","curr_spw_end_year_new")]

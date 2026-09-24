@@ -1851,13 +1851,13 @@ biological_status_compare_fun <- function(biological_status_df,wd,printFig = F,
 #' Function to return a dataframe of the CUs that have high exploitation rate or
 #' low production rates, as well as a final call on keeping or removing the CUs 
 #' depending of their biostatus: the one with already a red/poor status are kept
-#' (i.e. Clare's 8th rule). The function requires the biological_status_SH_percentiles
+#' (i.e. Clare's 8th rule). The function requires the biological_status_percentiles
 #' dataset because the 8th rules is applied to CUs evaluated with the percentile
 #' method (and because all the CUs evaluated with the HBSRM method are in this 
 #' dataset as well).
-#' - biological_status_HSPercent_df: data frame of the biostatus probabilities 
+#' - biological_status_percentile: data frame of the biostatus probabilities 
 #' obtained with percentile method. It is returned by the function 
-#' biological_status_HSPercent_df() and the argument pattern = "biological_status_SH_percentiles".
+#' biological_status_HSPercent_df() and the argument pattern = "biological_status_percentile".
 cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
                                        conservationunits_decoder = NA,
                                        wd_pop_indic_data_input_dropbox = NA,
@@ -1944,7 +1944,7 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
 
   # Apply rule: show biostatus if red
   highExploit_lowProd$biostatus_percentile <- NA
-  highExploit_lowProd$toRemove <- T
+  highExploit_lowProd$showPoorBiostatus <- F
   for(i in 1:nrow(highExploit_lowProd)){
     # i <- 1
     sp <- highExploit_lowProd$species[i]
@@ -1958,7 +1958,7 @@ cu_highExploit_lowProd_fun <- function(biological_status_percentile = NA,
     highExploit_lowProd$biostatus_percentile[i] <- status
     if(!is.na(status)){
       if(status %in% c("red","poor")){ #' New rule from Claire:
-        highExploit_lowProd$toRemove[i] <- F
+        highExploit_lowProd$showPoorBiostatus[i] <- T
       }
     }
     # print(biological_status_percentileHere$status_percent075)

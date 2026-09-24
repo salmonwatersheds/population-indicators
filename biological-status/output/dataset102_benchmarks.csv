@@ -1,48 +1,48 @@
 "region","species_name","species_qualified","cuid","cu_name_pse","curr_spw","sr_lower","sr_lower_025","sr_lower_975","sr_upper","sr_upper_025","sr_upper_975","percentile_lower","percentile_lower_025","percentile_lower_975","percentile_upper","percentile_upper_025","percentile_upper_975","curr_spw_start_year","curr_spw_end_year"
-"Central Coast","Chinook","CK",509,"Docee",439,NA,NA,NA,NA,NA,NA,469,377,766,1436,865,1550,2008,2011
-"Central Coast","Chinook","CK",510,"Rivers Inlet",817,473,251,886,1253,941,1843,726,422,1287,2369,1377,3797,2013,2017
-"Central Coast","Chinook","CK",511,"Wannock",6468,793,492,1381,3832,3245,4596,5535,3813,6192,8078,7083,9834,2013,2017
-"Central Coast","Chinook","CK",512,"Bella Coola-Bentinck",22821,3028,1637,5256,12067,9987,14803,14425,10239,18245,25000,17986,30240,2013,2017
-"Central Coast","Chinook","CK",513,"Dean River",2217,293,167,512,1194,1025,1495,1300,1010,1681,3300,2162,3606,2013,2017
-"Central Coast","Chinook","CK",514,"North & Central Coast-Late",1080,NA,NA,NA,NA,NA,NA,600,219,1123,2488,1272,3357,2017,2020
-"Central Coast","Chinook","CK",515,"North & Central Coast-Early",891,111,63,200,489,409,635,602,324,727,967,786,1420,2013,2017
-"Central Coast","Chum","CM",500,"Smith Inlet",6547,8255,4810,13968,30724,25797,38593,22959,10876,29943,73520,44523,97003,2018,2021
-"Central Coast","Chum","CM",501,"Rivers Inlet",4396,8739,5842,13332,27772,21667,35833,7809,4198,11817,37322,23348,64931,2018,2021
+"Central Coast","Chinook","CK",509,"Docee",439,NA,NA,NA,NA,NA,NA,469,377,752,1436,866,1535,2008,2011
+"Central Coast","Chinook","CK",510,"Rivers Inlet",817,473,248,886,1251,950,1844,726,422,1275,2369,1387,3818,2013,2017
+"Central Coast","Chinook","CK",511,"Wannock",6468,784,467,1388,3823,3256,4620,5535,3786,6262,8078,7057,9919,2013,2017
+"Central Coast","Chinook","CK",512,"Bella Coola-Bentinck",22821,3042,1674,5361,12094,10041,14938,14425,10240,18352,25000,18084,30599,2013,2017
+"Central Coast","Chinook","CK",513,"Dean River",2217,293,160,513,1200,1026,1504,1300,1001,1676,3300,2175,3595,2013,2017
+"Central Coast","Chinook","CK",514,"North & Central Coast-Late",1080,NA,NA,NA,NA,NA,NA,600,211,1110,2488,1256,3388,2017,2020
+"Central Coast","Chinook","CK",515,"North & Central Coast-Early",891,113,58,195,493,403,629,602,322,722,967,777,1408,2013,2017
+"Central Coast","Chum","CM",500,"Smith Inlet",6547,8437,4927,14191,31114,25905,38545,22959,11001,30158,73520,44506,98051,2018,2021
+"Central Coast","Chum","CM",501,"Rivers Inlet",4396,8452,5664,13266,27676,21719,35786,7809,4164,11632,37322,23392,65738,2018,2021
 "Central Coast","Chum","CM",502,"Wannock",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Chum","CM",503,"Spiller-Fitz-Hugh-Burke",91839,63582,36728,104312,169474,140202,221568,161904,129288,198206,292813,241170,345931,2018,2021
-"Central Coast","Chum","CM",504,"Bella Coola-Dean Rivers",115116,25079,14835,44461,133589,111148,167231,109704,81452,156383,273248,234061,313909,2018,2021
-"Central Coast","Chum","CM",505,"Bella Coola River-Late",6325,NA,NA,NA,NA,NA,NA,5084,1487,8686,23591,8731,27265,2018,2021
-"Central Coast","Chum","CM",506,"Hecate Lowlands",33474,36416,18537,64186,96394,73913,140879,72369,57243,84257,125140,108821,153089,2018,2021
-"Central Coast","Chum","CM",507,"Mussel-Kynoch",21837,15992,10331,26947,62234,53964,75732,50880,39752,71376,133316,104144,177580,2018,2021
-"Central Coast","Chum","CM",508,"Douglas-Gardner",54355,51129,34770,82999,166610,139271,215562,77727,58035,115994,345040,199177,400294,2018,2021
-"Central Coast","Coho","CO",516,"Smith Inlet",9038,NA,NA,NA,NA,NA,NA,1966,1850,9268,14485,9113,32453,2012,2014
-"Central Coast","Coho","CO",517,"Rivers Inlet",137001,NA,NA,NA,NA,NA,NA,14582,8232,22855,68424,45740,98676,2011,2013
-"Central Coast","Coho","CO",518,"Bella Coola-Dean Rivers",19375,8784,5464,14341,24612,20702,31831,19703,13713,22980,49219,40618,62649,2019,2021
-"Central Coast","Coho","CO",519,"Mussel-Kynoch",2207,2750,1612,4938,5660,4015,8936,2880,1921,3946,8600,5422,11753,2019,2021
-"Central Coast","Coho","CO",520,"Hecate Strait Mainland",40107,71668,51142,117944,127381,95590,179207,64740,42217,111823,201232,108968,293101,2019,2021
-"Central Coast","Coho","CO",522,"Douglas Channel-Kitimat Arm",113392,7025,3104,13415,43167,35968,54723,37656,30829,58299,140858,88523,154782,2019,2021
-"Central Coast","Coho","CO",523,"Northern Coastal Streams",72291,36091,25665,51211,85085,72552,102144,73400,60321,89369,142792,112104,175292,2019,2021
-"Central Coast","Pink","PKE",608,"Hecate Lowlands (even)",449484,223129,70926,555258,616048,405116,1109248,462836,350131,740407,1156501,825447,1385089,2020,2020
-"Central Coast","Pink","PKE",609,"Hecate Strait-Fjords (even)",11874814,486449,204274,1126068,2241830,1728862,3240503,1879552,1026509,3172992,5365948,3900439,6740769,2020,2020
-"Central Coast","Pink","PKO",610,"Homathko-Klinaklini-Smith-Rivers-Bella Coola-Dean (odd)",461427,182322,30936,427197,522897,0,921406,393923,105242,957130,1854181,753303,3616194,2021,2021
-"Central Coast","Pink","PKO",611,"Hecate Strait-Lowlands (odd)",614739,145525,83684,273974,435642,357081,595462,377772,275168,601166,893180,659662,1156313,2021,2021
-"Central Coast","Pink","PKO",612,"Hecate Strait-Fjords (odd)",1295152,560444,334256,1002022,1163335,812208,1754171,650796,470892,1145297,1662440,1264850,3059450,2021,2021
-"Central Coast","Sockeye","SEL",524,"Long",59096,4317,2983,6676,46814,41416,51761,26827,16441,63223,139642,78374,204619,2010,2014
-"Central Coast","Sockeye","SEL",525,"Owikeno",191314,34416,24807,46579,233717,202477,257268,188308,113633,343407,635109,417270,951918,2015,2019
+"Central Coast","Chum","CM",503,"Spiller-Fitz-Hugh-Burke",91839,61877,39272,104301,172362,139732,217334,161904,129739,198638,292813,240118,347383,2018,2021
+"Central Coast","Chum","CM",504,"Bella Coola-Dean Rivers",115116,24331,14769,44143,131094,112123,169445,109704,81659,157364,273248,233615,313460,2018,2021
+"Central Coast","Chum","CM",505,"Bella Coola River-Late",6325,NA,NA,NA,NA,NA,NA,5084,1465,8874,23591,8283,27365,2018,2021
+"Central Coast","Chum","CM",506,"Hecate Lowlands",33474,34308,19459,64681,94336,76004,142481,72369,56714,84116,125140,108037,152690,2018,2021
+"Central Coast","Chum","CM",507,"Mussel-Kynoch",21837,16739,10264,27166,62566,53586,75716,50880,39696,71568,133316,104807,177951,2018,2021
+"Central Coast","Chum","CM",508,"Douglas-Gardner",54355,53732,35537,83079,172383,138191,215625,77727,57576,115959,345040,200147,402465,2018,2021
+"Central Coast","Coho","CO",516,"Smith Inlet",9038,NA,NA,NA,NA,NA,NA,1966,1854,8983,14485,8973,32356,2012,2014
+"Central Coast","Coho","CO",517,"Rivers Inlet",137001,NA,NA,NA,NA,NA,NA,14582,8288,22460,68424,44479,99011,2011,2013
+"Central Coast","Coho","CO",518,"Bella Coola-Dean Rivers",19375,9367,5776,14687,25368,20374,31573,19703,13711,23029,49219,40658,63805,2019,2021
+"Central Coast","Coho","CO",519,"Mussel-Kynoch",2207,2727,1708,5126,5626,3990,9037,2880,1941,3972,8600,5439,11770,2019,2021
+"Central Coast","Coho","CO",520,"Hecate Strait Mainland",40107,72182,51024,117792,121999,94867,178204,64740,42615,112384,201232,107122,296704,2019,2021
+"Central Coast","Coho","CO",522,"Douglas Channel-Kitimat Arm",113392,6126,3412,13117,43216,36328,54576,37656,30832,57933,140858,88369,154006,2019,2021
+"Central Coast","Coho","CO",523,"Northern Coastal Streams",72291,36144,25653,51687,83465,72115,102187,73400,60595,89667,142792,112115,175023,2019,2021
+"Central Coast","Pink","PKE",608,"Hecate Lowlands (even)",449484,184283,83649,558523,596331,414771,1103324,462836,346622,734280,1156501,824631,1374180,2020,2020
+"Central Coast","Pink","PKE",609,"Hecate Strait-Fjords (even)",11874814,499926,216262,1110900,2182116,1719888,3224904,1879552,1034512,3157302,5365948,3864503,6672400,2020,2020
+"Central Coast","Pink","PKO",610,"Homathko-Klinaklini-Smith-Rivers-Bella Coola-Dean (odd)",461427,186910,34710,422669,529321,0,924771,393923,99321,969724,1854181,729104,3583410,2021,2021
+"Central Coast","Pink","PKO",611,"Hecate Strait-Lowlands (odd)",614739,144689,87527,271960,427025,351741,585228,377772,274442,604756,893180,664181,1166889,2021,2021
+"Central Coast","Pink","PKO",612,"Hecate Strait-Fjords (odd)",1295152,571835,326207,1005006,1128767,819597,1802962,650796,464750,1144981,1662440,1259656,3056576,2021,2021
+"Central Coast","Sockeye","SEL",524,"Long",59096,4385,2905,6626,46206,41653,51991,26827,16033,62168,139642,78420,204686,2010,2014
+"Central Coast","Sockeye","SEL",525,"Owikeno",191314,34681,24321,46146,233213,202904,256761,188308,113604,346418,635109,419469,939417,2015,2019
 "Central Coast","Sockeye","SEL",527,"Wannock (Owikeno)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",528,"South Atnarko Lakes",8160,4471,3381,5938,12621,11061,14188,7339,3081,17731,31640,12977,70892,2020,2024
-"Central Coast","Sockeye","SEL",529,"Backland",36,42,1,1237,182,0,2886,38,12,34,162,50,108,2017,2021
+"Central Coast","Sockeye","SEL",528,"South Atnarko Lakes",8160,4602,3303,5826,12584,10985,14105,7339,3021,17036,31640,13044,72330,2020,2024
+"Central Coast","Sockeye","SEL",529,"Backland",36,30,2,1272,94,0,2949,38,12,33,162,50,109,2017,2021
 "Central Coast","Sockeye","SEL",530,"Soda Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",532,"Canoona",3305,1488,1189,1794,4081,3175,5006,1400,1166,2833,5100,3729,7435,2018,2021
+"Central Coast","Sockeye","SEL",532,"Canoona",3305,1494,1184,1804,4032,3185,4943,1400,1177,2847,5100,3734,7511,2018,2021
 "Central Coast","Sockeye","SEL",533,"Dome",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",534,"Evelyn",1300,187,127,271,1035,870,1218,600,411,1054,2400,1548,3299,2017,2021
-"Central Coast","Sockeye","SEL",535,"Kainet Creek",1151,236,161,339,1559,1329,1821,850,517,1263,2350,1741,3575,2017,2021
+"Central Coast","Sockeye","SEL",534,"Evelyn",1300,184,124,267,1066,886,1221,600,415,1051,2400,1540,3293,2017,2021
+"Central Coast","Sockeye","SEL",535,"Kainet Creek",1151,237,157,336,1561,1328,1816,850,516,1261,2350,1763,3538,2017,2021
 "Central Coast","Sockeye","SEL",536,"Kimsquit",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",537,"Kitkiata",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",538,"Kitlope",14780,2964,1889,4240,19102,15882,21968,16000,10105,19512,36000,29327,46608,2017,2021
+"Central Coast","Sockeye","SEL",538,"Kitlope",14780,2828,1888,4285,19206,15987,22034,16000,10108,19387,36000,29393,46644,2017,2021
 "Central Coast","Sockeye","SEL",539,"Pine River",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",540,"Banks",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",541,"Bloomfield",810,360,197,597,1152,832,1658,405,231,674,1550,995,3168,2021,2021
+"Central Coast","Sockeye","SEL",541,"Bloomfield",810,368,198,608,1129,841,1664,405,234,668,1550,997,3153,2021,2021
 "Central Coast","Sockeye","SEL",542,"Bolton Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",543,"Bonilla",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",544,"Borrowman Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -51,45 +51,45 @@
 "Central Coast","Sockeye","SEL",547,"Chic Chic",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",548,"Tuwartz",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",549,"Fannie Cove",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",550,"Curtis Inlet",2710,2067,1661,2359,5001,3411,6531,3100,1753,6506,15000,9350,22117,2013,2015
+"Central Coast","Sockeye","SEL",550,"Curtis Inlet",2710,2107,1641,2338,5136,3325,6476,3100,1718,6482,15000,9169,22044,2013,2015
 "Central Coast","Sockeye","SEL",551,"Dallain Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",552,"Deer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",553,"Devon",5018,1044,864,1290,3754,3259,4182,3000,2252,4981,8000,7298,13287,2013,2017
+"Central Coast","Sockeye","SEL",553,"Devon",5018,1048,851,1286,3704,3293,4200,3000,2261,4982,8000,7298,13268,2013,2017
 "Central Coast","Sockeye","SEL",554,"Douglas Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",555,"Elizabeth",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",556,"Elsie/Hoy",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",557,"End Hill Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",558,"Evinrude Inlet",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",559,"Freeda",600,1211,510,1562,1858,0,3223,400,369,410,850,768,1003,2020,2020
-"Central Coast","Sockeye","SEL",560,"Hartley Bay",1145,243,182,348,939,827,1117,800,647,953,1550,1364,2204,2017,2021
+"Central Coast","Sockeye","SEL",559,"Freeda",600,1219,472,1511,1883,0,3143,400,369,411,850,765,1003,2020,2020
+"Central Coast","Sockeye","SEL",560,"Hartley Bay",1145,245,175,347,952,822,1112,800,640,946,1550,1349,2199,2017,2021
 "Central Coast","Sockeye","SEL",561,"Hevenor Inlet",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",562,"Higgins Lagoon",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",563,"Kadjusdis River",3800,206,96,334,1989,1635,2452,1150,872,1972,4000,3083,5791,2017,2021
+"Central Coast","Sockeye","SEL",563,"Kadjusdis River",3800,198,95,327,2012,1607,2450,1150,863,1979,4000,3046,5782,2017,2021
 "Central Coast","Sockeye","SEL",564,"Kdelmashan Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",565,"Keecha",2284,980,660,1378,3613,2712,4696,1900,1297,3000,7000,5253,10247,2014,2017
+"Central Coast","Sockeye","SEL",565,"Keecha",2284,978,645,1375,3623,2738,4721,1900,1318,3027,7000,5278,10249,2014,2017
 "Central Coast","Sockeye","SEL",566,"Kent Inlet Lagoon Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",567,"Kenzuwash Creeks",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",568,"Keswar Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",569,"Kildidt Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",570,"Kildidt Lagoon Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",571,"Kisameet",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",572,"Koeye",7488,2387,1920,2823,7338,6120,8936,2000,1842,3456,6893,5009,8192,2017,2021
-"Central Coast","Sockeye","SEL",573,"Kooryet",617,1777,1346,2208,4239,2655,5663,1405,1117,2740,7000,5466,8209,2016,2020
+"Central Coast","Sockeye","SEL",572,"Koeye",7488,2411,1933,2828,7434,6188,8964,2000,1859,3443,6893,4982,8065,2017,2021
+"Central Coast","Sockeye","SEL",573,"Kooryet",617,1800,1357,2219,4102,2640,5626,1405,1119,2758,7000,5473,8183,2016,2020
 "Central Coast","Sockeye","SEL",574,"Kunsoot River",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",575,"Kwakwa Creek",1130,487,331,747,2108,1679,2537,1500,717,1997,4000,2535,5955,2021,2021
+"Central Coast","Sockeye","SEL",575,"Kwakwa Creek",1130,499,338,746,2051,1674,2520,1500,695,1990,4000,2549,5972,2021,2021
 "Central Coast","Sockeye","SEL",576,"Lewis Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",577,"Limestone Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",578,"Lowe/Simpson/Weir",3061,5084,3201,6639,7895,3218,12052,4100,2948,6745,12000,9837,20583,2017,2021
-"Central Coast","Sockeye","SEL",579,"Mary Cove Creek",430,227,84,431,1415,868,2236,340,196,828,2000,1081,4005,2015,2018
+"Central Coast","Sockeye","SEL",578,"Lowe/Simpson/Weir",3061,5112,3238,6710,8082,3227,12275,4100,2944,6753,12000,9857,20667,2017,2021
+"Central Coast","Sockeye","SEL",579,"Mary Cove Creek",430,211,80,434,1462,814,2207,340,195,812,2000,1079,4042,2015,2018
 "Central Coast","Sockeye","SEL",580,"Mcdonald Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",581,"Mcloughlin",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",582,"Mikado",3990,697,451,1027,2353,2078,2751,3000,2018,3823,7000,5952,6998,2015,2017
+"Central Coast","Sockeye","SEL",582,"Mikado",3990,700,449,1030,2376,2063,2738,3000,2018,3825,7000,5948,6997,2015,2017
 "Central Coast","Sockeye","SEL",583,"Monckton Inlet Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",584,"Namu",3623,858,553,1198,2655,2033,3335,1500,1195,2288,4040,3191,5265,2017,2021
-"Central Coast","Sockeye","SEL",585,"Port John",542,357,251,476,1163,786,1524,284,148,522,1500,898,1949,2017,2021
+"Central Coast","Sockeye","SEL",584,"Namu",3623,812,530,1156,2735,2109,3339,1500,1190,2326,4040,3217,5258,2017,2021
+"Central Coast","Sockeye","SEL",585,"Port John",542,358,251,480,1154,788,1515,284,147,524,1500,902,1950,2017,2021
 "Central Coast","Sockeye","SEL",586,"Powles Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",587,"Price Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",588,"Roderick",302,392,167,1071,864,314,2178,375,288,418,950,564,1020,2016,2020
+"Central Coast","Sockeye","SEL",588,"Roderick",302,418,157,1186,872,285,2350,375,286,419,950,561,1023,2016,2020
 "Central Coast","Sockeye","SEL",589,"Ryan Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",590,"Salter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",591,"Scoular/Kilpatrick",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -98,9 +98,9 @@
 "Central Coast","Sockeye","SEL",594,"Spencer Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",595,"Stannard Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",596,"Talamoosa Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",597,"Tankeeah River",2000,495,298,809,3013,2578,3737,2000,1239,2980,6000,3831,8664,2020,2020
+"Central Coast","Sockeye","SEL",597,"Tankeeah River",2000,481,293,805,3086,2557,3771,2000,1232,2985,6000,3846,8746,2020,2020
 "Central Coast","Sockeye","SEL",598,"Treneman Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",599,"Tsimtack/Moore/Roger",1900,343,77,1374,2193,1366,4960,1500,1100,3212,6600,5257,12046,2017,2021
+"Central Coast","Sockeye","SEL",599,"Tsimtack/Moore/Roger",1900,349,87,1277,2192,1282,4789,1500,1107,3170,6600,5314,12040,2017,2021
 "Central Coast","Sockeye","SEL",600,"Tuno Creek East",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",601,"Tuno Creek West",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",602,"Tyler Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -108,35 +108,33 @@
 "Central Coast","Sockeye","SEL",604,"Watt Bay",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",605,"West Creek",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Sockeye","SEL",606,"Yaaklele Lagoon",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SEL",607,"Yeo",735,325,233,429,1150,939,1418,370,222,613,1600,1061,2377,2017,2021
+"Central Coast","Sockeye","SEL",607,"Yeo",735,328,241,432,1152,930,1410,370,222,617,1600,1066,2385,2017,2021
 "Central Coast","Sockeye","SER",613,"Rivers-Smith Inlets (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Sockeye","SER",614,"Northern Coastal Fjords (river-type)",2318,31273,17130,72365,60455,37977,116049,16026,4625,35115,94966,23223,164834,2018,2021
+"Central Coast","Sockeye","SER",614,"Northern Coastal Fjords (river-type)",2318,31534,14719,71143,61250,38076,116723,16026,4479,33447,94966,22221,158121,2018,2021
 "Central Coast","Sockeye","SER",615,"Northern Coastal Streams (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Steelhead","SH",680,"North Coast Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Steelhead","SH",681,"North Coast Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Central Coast","Steelhead","SH",682,"Central Coast Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Central Coast","Steelhead","SH",683,"Transition Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Columbia","Chinook","CK",301,"Okanagan",29,NA,NA,NA,NA,NA,NA,11,5,30,50,20,75,2018,2022
-"Columbia","Sockeye","SEL",1300,"Osoyoos",32451,NA,NA,NA,NA,NA,NA,12284,8406,17201,35364,25602,56342,2019,2022
-"Columbia","Steelhead","SH",1380,"Mid Columbia Summer",9,NA,NA,NA,NA,NA,NA,11,6,23,38,18,62,2019,2023
-"East Vancouver Island & Mainland Inlets","Chinook","CK",320,"Southern Mainland-Georgia Strait (Fall x-1)",588,NA,NA,NA,NA,NA,NA,351,170,506,598,452,913,2014,2018
-"East Vancouver Island & Mainland Inlets","Chinook","CK",321,"East Vancouver Island-Goldstream (Fall x-1)",4,NA,NA,NA,NA,NA,NA,16,2,77,213,32,538,2014,2018
-"East Vancouver Island & Mainland Inlets","Chinook","CK",322,"East Vancouver Island-Cowichan and Koksilah (Fall x-1)",8509,NA,NA,NA,NA,NA,NA,2840,1558,5763,6997,3407,11510,2014,2018
+"Columbia","Chinook","CK",301,"Okanagan",29,NA,NA,NA,NA,NA,NA,11,5,30,50,20,73,2018,2022
+"Columbia","Sockeye","SEL",1300,"Osoyoos",32451,NA,NA,NA,NA,NA,NA,12284,8383,17316,35364,25857,55730,2019,2022
+"Columbia","Steelhead","SH",1380,"Mid Columbia Summer",7,NA,NA,NA,NA,NA,NA,13,3,38,123,18,162,2021,2025
+"East Vancouver Island & Mainland Inlets","Chinook","CK",320,"Southern Mainland-Georgia Strait (Fall x-1)",588,NA,NA,NA,NA,NA,NA,351,168,503,598,446,911,2014,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",321,"East Vancouver Island-Goldstream (Fall x-1)",4,NA,NA,NA,NA,NA,NA,16,2,78,213,31,545,2014,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",322,"East Vancouver Island-Cowichan and Koksilah (Fall x-1)",8509,NA,NA,NA,NA,NA,NA,2840,1582,5669,6997,3372,11248,2014,2018
 "East Vancouver Island & Mainland Inlets","Chinook","CK",323,"East Vancouver Island-Nanaimo (Spring x-2)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Chinook","CK",324,"East Vancouver Island-Nanaimo and Chemainus (Fall x-1)",2325,NA,NA,NA,NA,NA,NA,1567,1242,1889,2421,2111,2814,2014,2018
-"East Vancouver Island & Mainland Inlets","Chinook","CK",325,"East Vancouver Island-Qualicum and Puntledge (Fall x-1)",14060,NA,NA,NA,NA,NA,NA,10582,8877,14546,16740,12763,23912,2014,2018
-"East Vancouver Island & Mainland Inlets","Chinook","CK",326,"Southern Mainland-Southern Fjords (Fall x-1)",2349,NA,NA,NA,NA,NA,NA,240,130,2238,2120,437,6829,2013,2017
-"East Vancouver Island & Mainland Inlets","Chinook","CK",327,"East Vancouver Island-North (Fall x-1)",7359,NA,NA,NA,NA,NA,NA,7585,5630,8923,10352,8114,13547,2014,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",324,"East Vancouver Island-Nanaimo and Chemainus (Fall x-1)",2325,NA,NA,NA,NA,NA,NA,1567,1252,1878,2421,2109,2852,2014,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",325,"East Vancouver Island-Qualicum and Puntledge (Fall x-1)",14060,NA,NA,NA,NA,NA,NA,10582,8809,14523,16740,12767,23896,2014,2018
+"East Vancouver Island & Mainland Inlets","Chinook","CK",326,"Southern Mainland-Southern Fjords (Fall x-1)",2349,NA,NA,NA,NA,NA,NA,240,135,2287,2120,433,6856,2013,2017
+"East Vancouver Island & Mainland Inlets","Chinook","CK",327,"East Vancouver Island-North (Fall x-1)",7359,NA,NA,NA,NA,NA,NA,7585,5651,8848,10352,8146,13629,2014,2018
 "East Vancouver Island & Mainland Inlets","Chinook","CK",331,"Homathko (Summer x-x)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Chinook","CK",332,"Klinaklini (Summer 5-2)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Chinook","CK",334,"East Vancouver Island-Georgia Strait (Summer 4-1)",1031,NA,NA,NA,NA,NA,NA,1050,848,1398,1970,1403,2310,2014,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",900,"Southern Coastal Streams",2602,NA,NA,NA,NA,NA,NA,1912,1046,5184,16117,7213,24198,2015,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",901,"Bute Inlet",39478,NA,NA,NA,NA,NA,NA,12229,8829,22770,76615,38714,110029,2015,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",902,"Loughborough",13120,NA,NA,NA,NA,NA,NA,15965,11629,18200,40468,32125,55424,2015,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",903,"Northeast Vancouver Island",9763,NA,NA,NA,NA,NA,NA,15642,9665,21879,74425,45995,88835,2015,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",904,"Georgia Strait",649252,NA,NA,NA,NA,NA,NA,394418,312271,474589,708638,585937,852173,2015,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",905,"Howe Sound-Burrard Inlet",368983,NA,NA,NA,NA,NA,NA,96977,63818,152203,313320,208389,537067,2015,2018
-"East Vancouver Island & Mainland Inlets","Chum","CM",979,"Upper Knight",2709,NA,NA,NA,NA,NA,NA,1114,713,4990,16500,9024,26916,2000,2003
+"East Vancouver Island & Mainland Inlets","Chinook","CK",334,"East Vancouver Island-Georgia Strait (Summer 4-1)",1031,NA,NA,NA,NA,NA,NA,1050,835,1392,1970,1414,2301,2014,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",900,"Southern Coastal Streams",2602,NA,NA,NA,NA,NA,NA,1912,1046,5243,16117,7345,24346,2015,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",901,"Bute Inlet",39478,NA,NA,NA,NA,NA,NA,12229,8946,23446,76615,39045,112754,2015,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",902,"Loughborough",13120,NA,NA,NA,NA,NA,NA,15965,11684,18286,40468,32908,56311,2015,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",903,"Northeast Vancouver Island",9763,NA,NA,NA,NA,NA,NA,15642,9758,21710,74425,46046,89810,2015,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",904,"Georgia Strait",649252,NA,NA,NA,NA,NA,NA,394418,309342,475881,708638,580730,851491,2015,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",905,"Howe Sound-Burrard Inlet",368983,NA,NA,NA,NA,NA,NA,96977,64919,153288,313320,210180,546276,2015,2018
+"East Vancouver Island & Mainland Inlets","Chum","CM",979,"Upper Knight",2709,NA,NA,NA,NA,NA,NA,1114,707,4968,16500,9001,26968,2000,2003
 "East Vancouver Island & Mainland Inlets","Coho","CO",907,"Howe Sound-Burrard Inlet",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Coho","CO",908,"Georgia Strait Mainland",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Coho","CO",909,"Southern Coastal Streams-Queen Charlotte Strait-Johnstone Strait-Southern Fjords",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -144,24 +142,24 @@
 "East Vancouver Island & Mainland Inlets","Coho","CO",911,"East Vancouver Island-Johnstone Strait-Southern Fjords",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Coho","CO",912,"Nahwitti Lowland",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Coho","CO",916,"Homathko-Klinaklini Rivers",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Pink","PKE",917,"Georgia Strait (even)",152684,80801,48032,136447,194135,122957,306890,29276,14079,89580,243993,68827,559543,2018,2018
-"East Vancouver Island & Mainland Inlets","Pink","PKE",920,"Southern Fjords (even)",575090,263592,155524,451816,859978,704856,1148615,596537,438995,1102032,1699305,1170291,2591921,2018,2018
-"East Vancouver Island & Mainland Inlets","Pink","PKO",921,"East Howe Sound-Burrard Inlet (odd)",110104,44232,24425,106105,121146,62927,230384,43526,22753,71607,141916,82829,266934,2019,2019
-"East Vancouver Island & Mainland Inlets","Pink","PKO",922,"Georgia Strait (odd)",1296234,289428,171122,563438,618165,397207,1117726,118733,64255,378592,602305,206859,1602070,2019,2019
-"East Vancouver Island & Mainland Inlets","Pink","PKO",923,"East Vancouver Island-Johnstone Strait (odd)",108129,36669,13692,121721,90531,36639,243103,15704,8181,51106,116709,69238,288408,2019,2019
-"East Vancouver Island & Mainland Inlets","Pink","PKO",924,"Nahwitti (odd)",8272,10183,5622,22853,21346,10515,41728,3933,2009,10456,24545,9718,62786,2019,2019
-"East Vancouver Island & Mainland Inlets","Pink","PKO",926,"Southern Fjords (odd)",8383,111044,58625,210769,321922,250445,469926,196384,100322,307132,594271,341439,921307,2019,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKE",917,"Georgia Strait (even)",152684,83433,49239,139148,193033,125929,309756,29276,14033,89752,243993,68333,576969,2018,2018
+"East Vancouver Island & Mainland Inlets","Pink","PKE",920,"Southern Fjords (even)",575090,282850,168711,456673,878492,705461,1135097,596537,435149,1092325,1699305,1169092,2615545,2018,2018
+"East Vancouver Island & Mainland Inlets","Pink","PKO",921,"East Howe Sound-Burrard Inlet (odd)",110104,45505,22078,105481,111714,61228,232253,43526,22672,71586,141916,83243,269378,2019,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",922,"Georgia Strait (odd)",1296234,287794,159551,547494,614041,396950,1103190,118733,64495,360515,602305,206108,1568639,2019,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",923,"East Vancouver Island-Johnstone Strait (odd)",108129,36073,14298,115739,83776,43864,236039,15704,8237,49584,116709,69360,285694,2019,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",924,"Nahwitti (odd)",8272,9902,5780,22523,20637,11849,42646,3933,1993,10599,24545,9544,61305,2019,2019
+"East Vancouver Island & Mainland Inlets","Pink","PKO",926,"Southern Fjords (odd)",8383,106062,61124,210159,318209,241847,466312,196384,98459,299631,594271,335375,907956,2019,2019
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",927,"Fulmore",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",928,"Heydon",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",929,"Kakweiken",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",930,"Loose",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",931,"Mackenzie",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",932,"Phillips",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Sockeye","SEL",933,"Sakinaw",73,NA,NA,NA,NA,NA,NA,210,89,920,4625,1146,6797,2014,2018
+"East Vancouver Island & Mainland Inlets","Sockeye","SEL",933,"Sakinaw",73,NA,NA,NA,NA,NA,NA,210,94,935,4625,1155,6923,2014,2018
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",935,"Tzoonie",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",937,"Ida-Bonanza",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",938,"Nahwitti",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Sockeye","SEL",939,"Nimpkish",70324,17409,11618,30454,29991,18323,49066,30029,21836,44090,1e+05,61256,117873,2013,2017
+"East Vancouver Island & Mainland Inlets","Sockeye","SEL",939,"Nimpkish",35814,17765,11059,29459,30795,17746,47206,30007,22824,43447,93324,64401,116688,2020,2024
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",941,"Quatse",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",942,"Schoen",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",943,"Shushartie",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -169,130 +167,123 @@
 "East Vancouver Island & Mainland Inlets","Sockeye","SEL",976,"Vernon",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SER",971,"Southern Fjords (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "East Vancouver Island & Mainland Inlets","Sockeye","SER",973,"East Vancouver Island & Georgia Strait (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Steelhead","SH",980,"South Coast Winter",518,NA,NA,NA,NA,NA,NA,319,162,420,554,406,767,2016,2020
-"East Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",218,NA,NA,NA,NA,NA,NA,282,194,340,476,326,592,2019,2023
-"East Vancouver Island & Mainland Inlets","Steelhead","SH",983,"South Coast Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"East Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",74,NA,NA,NA,NA,NA,NA,103,67,141,230,165,296,2020,2024
-"Fraser","Chinook","CK",302,"Boundary Bay (Fall 4-1)",167,NA,NA,NA,NA,NA,NA,75,48,160,250,124,385,2015,2018
-"Fraser","Chinook","CK",303,"Lower Fraser River (Fall 4-1)",65835,NA,NA,NA,NA,NA,NA,42953,31599,68664,108502,79814,161292,2020,2023
-"Fraser","Chinook","CK",304,"Lower Fraser River (Spring 5-2)",214,NA,NA,NA,NA,NA,NA,200,149,292,535,396,756,2019,2023
-"Fraser","Chinook","CK",305,"Lower Fraser River-Upper Pitt (Summer 5-2)",35,NA,NA,NA,NA,NA,NA,99,42,179,300,181,489,2019,2023
-"Fraser","Chinook","CK",306,"Lower Fraser River (Summer 5-2)",41,NA,NA,NA,NA,NA,NA,28,24,33,76,64,86,2019,2023
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",38,NA,NA,NA,NA,NA,NA,67,31,122,325,164,552,2020,2023
-"Fraser","Chinook","CK",308,"Fraser Canyon-Nahatlatch (Spring 5-2)",69,NA,NA,NA,NA,NA,NA,17,10,34,80,43,129,2019,2023
-"Fraser","Chinook","CK",309,"Middle Fraser River-Portage (Fall 5-2)",50,NA,NA,NA,NA,NA,NA,50,33,72,191,115,260,2019,2023
-"Fraser","Chinook","CK",310,"Middle Fraser River (Spring 5-2)",3484,NA,NA,NA,NA,NA,NA,3791,2375,6625,11913,5864,16121,2019,2023
-"Fraser","Chinook","CK",311,"Middle Fraser River (Summer 5-2)",9836,NA,NA,NA,NA,NA,NA,9552,7034,13555,19266,13434,24447,2019,2023
-"Fraser","Chinook","CK",312,"Upper Fraser River (Spring 5-2)",8521,NA,NA,NA,NA,NA,NA,10134,7226,16401,22668,15649,32573,2019,2023
-"Fraser","Chinook","CK",313,"South Thompson River (Summer 4-1)",164489,NA,NA,NA,NA,NA,NA,8200,6966,43024,74720,25657,195117,2020,2023
-"Fraser","Chinook","CK",314,"South Thompson River (Summer 5-2)",1371,NA,NA,NA,NA,NA,NA,781,607,1096,1625,1341,2141,2019,2023
-"Fraser","Chinook","CK",315,"Shuswap River (Summer 4-1)",39420,NA,NA,NA,NA,NA,NA,16576,9589,21377,33811,25999,47061,2020,2023
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",7,NA,NA,NA,NA,NA,NA,14,8,53,192,111,247,2021,2023
-"Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",8703,NA,NA,NA,NA,NA,NA,5375,3800,7809,11673,9999,17215,2020,2023
-"Fraser","Chinook","CK",318,"North Thompson River (Spring 5-2)",394,NA,NA,NA,NA,NA,NA,284,156,596,960,431,1767,2019,2023
-"Fraser","Chinook","CK",319,"North Thompson River (Summer 5-2)",3392,NA,NA,NA,NA,NA,NA,2644,1849,4049,6076,4225,7426,2019,2023
-"Fraser","Chinook","CK",333,"South Thompson-Adams River Upper",101,NA,NA,NA,NA,NA,NA,62,38,71,140,90,159,2018,2018
-"Fraser","Chum","CM",701,"Lower Fraser",572422,NA,NA,NA,NA,NA,NA,667730,515737,1068013,1988604,1027781,2292980,2019,2022
+"East Vancouver Island & Mainland Inlets","Steelhead","SH",980,"South Coast Winter",518,NA,NA,NA,NA,NA,NA,319,156,423,554,370,828,2016,2020
+"East Vancouver Island & Mainland Inlets","Steelhead","SH",981,"East Vancouver Island Winter",233,NA,NA,NA,NA,NA,NA,296,120,547,1443,425,1985,2022,2026
+"East Vancouver Island & Mainland Inlets","Steelhead","SH",985,"East Vancouver Island Summer",69,NA,NA,NA,NA,NA,NA,101,64,135,226,160,290,2021,2025
+"Fraser","Chinook","CK",302,"Boundary Bay (Fall 4-1)",433,NA,NA,NA,NA,NA,NA,54,28,105,176,124,290,2020,2023
+"Fraser","Chinook","CK",303,"Lower Fraser River (Fall 4-1)",114854,NA,NA,NA,NA,NA,NA,43020,32832,70498,112498,81789,161861,2022,2025
+"Fraser","Chinook","CK",304,"Lower Fraser River (Spring 5-2)",138,NA,NA,NA,NA,NA,NA,200,125,264,522,367,733,2021,2025
+"Fraser","Chinook","CK",305,"Lower Fraser River-Upper Pitt (Summer 5-2)",18,NA,NA,NA,NA,NA,NA,6,2,39,263,71,475,2021,2025
+"Fraser","Chinook","CK",306,"Lower Fraser River (Summer 5-2)",35,NA,NA,NA,NA,NA,NA,1,1,15,64,6,199,2021,2025
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",67,NA,NA,NA,NA,NA,NA,60,29,113,326,165,530,2022,2025
+"Fraser","Chinook","CK",308,"Fraser Canyon-Nahatlatch (Spring 5-2)",69,NA,NA,NA,NA,NA,NA,8,2,18,68,29,90,2021,2025
+"Fraser","Chinook","CK",309,"Middle Fraser River-Portage (Fall 5-2)",43,NA,NA,NA,NA,NA,NA,48,32,65,184,112,235,2021,2025
+"Fraser","Chinook","CK",310,"Middle Fraser River (Spring 5-2)",4519,NA,NA,NA,NA,NA,NA,3448,2435,6166,11254,5788,14384,2021,2025
+"Fraser","Chinook","CK",311,"Middle Fraser River (Summer 5-2)",12999,NA,NA,NA,NA,NA,NA,9174,7024,13036,18463,13673,23350,2021,2025
+"Fraser","Chinook","CK",312,"Upper Fraser River (Spring 5-2)",13721,NA,NA,NA,NA,NA,NA,9860,7632,15513,22462,15976,30745,2021,2025
+"Fraser","Chinook","CK",313,"South Thompson River (Summer 4-1)",185747,NA,NA,NA,NA,NA,NA,8775,5537,49962,81347,24178,246313,2022,2025
+"Fraser","Chinook","CK",314,"South Thompson River (Summer 5-2)",1371,NA,NA,NA,NA,NA,NA,730,551,1056,1647,1310,2155,2021,2025
+"Fraser","Chinook","CK",315,"Shuswap River (Summer 4-1)",36011,NA,NA,NA,NA,NA,NA,17093,9837,20245,34796,25774,46154,2022,2025
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",8,NA,NA,NA,NA,NA,NA,10,4,38,150,58,215,2022,2025
+"Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",8045,NA,NA,NA,NA,NA,NA,5073,3603,7242,11524,9486,16488,2022,2025
+"Fraser","Chinook","CK",318,"North Thompson River (Spring 5-2)",374,NA,NA,NA,NA,NA,NA,290,193,423,915,636,1112,2021,2025
+"Fraser","Chinook","CK",319,"North Thompson River (Summer 5-2)",4379,NA,NA,NA,NA,NA,NA,2446,1834,3694,5721,4218,7114,2021,2025
+"Fraser","Chinook","CK",333,"South Thompson-Adams River Upper",101,NA,NA,NA,NA,NA,NA,62,38,72,140,89,159,2018,2018
+"Fraser","Chum","CM",701,"Lower Fraser",1088052,NA,NA,NA,NA,NA,NA,703966,546172,1046629,1695797,1080791,2497216,2022,2025
 "Fraser","Coho","CO",704,"Lillooet",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Coho","CO",705,"Fraser Canyon",4325,8968,2496,40063,14086,4511,61292,2288,1192,3976,5922,3546,9208,2020,2022
-"Fraser","Coho","CO",707,"Lower Thompson",20738,3970,1625,15542,6081,2873,21902,4728,3243,6865,11400,8149,15788,2020,2022
-"Fraser","Coho","CO",708,"South Thompson",15367,10267,4330,40364,17147,7871,61329,3454,2351,6391,14724,8675,19254,2020,2022
-"Fraser","Coho","CO",709,"North Thompson",24558,15398,6494,57649,25207,12393,88964,8797,5592,12514,21166,14255,26338,2020,2022
-"Fraser","Coho","CO",749,"Interior Fraser",10861,4085,1624,17743,7157,3719,28444,2336,1684,3396,6475,4577,8913,2020,2022
+"Fraser","Coho","CO",705,"Fraser Canyon",8943,8305,3039,38433,13200,5036,58183,2324,1294,4379,6308,4004,9882,2023,2025
+"Fraser","Coho","CO",707,"Lower Thompson",20811,4021,1702,15664,6024,3075,22020,4843,3368,7816,12298,9097,18083,2023,2025
+"Fraser","Coho","CO",708,"South Thompson",16326,10116,4220,39671,16577,7522,60356,3579,2498,6861,14509,9205,19450,2023,2025
+"Fraser","Coho","CO",709,"North Thompson",27919,15260,5400,55644,26352,11431,86230,9090,5928,13517,24837,15393,27825,2023,2025
+"Fraser","Coho","CO",749,"Interior Fraser",17622,4052,1585,17658,7165,3523,27566,2440,1712,3947,7107,5184,11122,2023,2025
 "Fraser","Coho","CO",750,"Lower Fraser",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser","Coho","CO",906,"Boundary Bay",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Pink","PKO",710,"Fraser River (odd)",9542025,1632523,885613,2752412,5344076,4226881,7678803,2026245,1436519,6546496,8684073,3690574,21030001,2023,2023
-"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",4276,7102,803,23123,14741,0,43497,1004,298,2088,6429,3436,17932,2019,2022
-"Fraser","Sockeye","SEL",712,"Cultus-Late",233,NA,NA,NA,NA,NA,NA,656,345,1044,4419,2405,11459,2019,2022
-"Fraser","Sockeye","SEL",713,"Harrison-Downstream Migrating-Late",398,1023,480,2520,4686,3171,8935,620,230,2004,5962,2098,15621,2019,2022
-"Fraser","Sockeye","SEL",714,"Harrison-Upstream Migrating-Late",6248,14874,4663,60905,86257,39074,258226,24842,6141,33581,62704,45914,94340,2019,2022
-"Fraser","Sockeye","SEL",715,"Pitt-Early Summer",10825,7789,4050,14260,22342,17363,32996,15857,9225,26291,42446,30431,68934,2019,2022
-"Fraser","Sockeye","SEL",716,"Lillooet-Harrison-Late",18559,26081,9407,70329,87910,54437,188996,43084,20329,62513,159653,81229,244282,2019,2022
-"Fraser","Sockeye","SEL",718,"Nahatlatch-Early Summer",3004,750,375,1859,4316,3006,7350,1904,1289,2798,5436,3751,8326,2019,2022
-"Fraser","Sockeye","SEL",719,"Anderson-Seton-Early Summer",9246,6157,2755,17454,27031,17132,58773,4868,3935,8550,20162,13780,37903,2019,2022
-"Fraser","Sockeye","SEL",720,"Chilko-Early Summer",48873,NA,NA,NA,NA,NA,NA,7339,1258,30218,55061,17992,140418,1986,1989
-"Fraser","Sockeye","SEL",721,"Chilko-Summer",295505,95633,48220,204385,438331,324301,720587,241843,157994,395076,814776,531610,902845,2019,2022
-"Fraser","Sockeye","SEL",725,"Francois-Fraser-Summer",74239,31288,14102,89885,136368,94836,287602,63088,44914,90284,157788,126065,209077,2019,2022
-"Fraser","Sockeye","SEL",727,"Nadina-Francois-Early Summer",41381,12092,5344,38952,40634,22591,106895,6303,3447,9927,30543,21642,48651,2019,2022
-"Fraser","Sockeye","SEL",728,"Quesnel-Summer (cyclic)",34957,293608,151152,656870,732204,418202,1507599,20827,5547,47418,726365,188616,1486366,2019,2022
-"Fraser","Sockeye","SEL",729,"Seton-Late (de novo)",863,3813,1271,17330,19529,9669,72860,1716,513,3508,12181,7143,21252,2019,2022
-"Fraser","Sockeye","SEL",731,"Takla-Trembleur-Stuart-Summer (cyclic)",31079,111867,50891,275013,348412,204101,821885,13960,7134,35124,146651,79965,341078,2019,2022
-"Fraser","Sockeye","SEL",732,"Takla-Trembleur-Early Stuart (cyclic)",1377,97133,46741,260871,206127,106957,507139,24043,5911,32866,98165,56993,199609,2019,2022
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",534,NA,NA,NA,NA,NA,NA,104,63,324,1320,968,1928,2020,2022
-"Fraser","Sockeye","SEL",735,"Bowron-Early Summer",511,2168,917,7660,9328,5733,25639,1751,939,2949,8130,4567,11151,2019,2022
-"Fraser","Sockeye","SEL",738,"Shuswap-Early Summer (cyclic)",15729,125432,65225,310200,318218,161508,701204,13296,7270,25628,103868,62146,193146,2019,2022
-"Fraser","Sockeye","SEL",739,"Shuswap-Late (cyclic)",7519,557204,277767,1237827,1209404,611208,2618866,10108,2380,27690,1119784,254243,2136601,2019,2022
-"Fraser","Sockeye","SEL",740,"Kamloops-Early Summer",4071,4202,2062,11448,21697,14295,44066,2853,1779,7277,20349,9081,39672,2019,2022
-"Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",1249,2606,889,10854,9735,5398,30262,2004,1298,4516,10726,6460,17027,2019,2022
+"Fraser","Pink","PKO",710,"Fraser River (odd)",13000872,1559065,924122,2821981,5397540,4194591,7631108,2062481,1993501,7269242,9210774,4766520,20185598,2023,2025
+"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",5972,7483,2404,22965,15684,0,44933,1114,495,2393,6737,3700,24210,2020,2023
+"Fraser","Sockeye","SEL",712,"Cultus-Late",198,5884,2274,23479,18890,9524,65355,842,320,1888,13638,5005,19786,2020,2023
+"Fraser","Sockeye","SEL",713,"Harrison-Downstream Migrating-Late",744,938,534,1808,4656,3322,7399,177,100,477,4006,1786,6868,2020,2023
+"Fraser","Sockeye","SEL",714,"Harrison-Upstream Migrating-Late",13394,13209,5023,44501,76471,44396,215672,15745,6835,23374,55648,39576,70776,2020,2023
+"Fraser","Sockeye","SEL",715,"Pitt-Early Summer",16897,5217,3237,8822,22644,18558,29958,13382,9130,18194,36013,26353,46979,2020,2023
+"Fraser","Sockeye","SEL",716,"Lillooet-Harrison-Late",33498,21024,10316,48246,93763,67454,167776,23519,15879,32580,76744,55375,131604,2020,2023
+"Fraser","Sockeye","SEL",718,"Nahatlatch-Early Summer",4352,734,387,1658,4183,2991,6876,1672,1059,2388,5090,3194,7391,2020,2023
+"Fraser","Sockeye","SEL",719,"Anderson-Seton-Early Summer",9330,5486,2794,12827,24666,17001,51688,1005,301,2192,10288,5718,24233,2020,2023
+"Fraser","Sockeye","SEL",720,"Chilko-Early Summer",48873,NA,NA,NA,NA,NA,NA,1,0,1078,14242,28,912052,1986,1989
+"Fraser","Sockeye","SEL",721,"Chilko-Summer",343203,85814,54836,160982,464057,350221,652263,122876,85608,215064,552998,397518,681409,2020,2023
+"Fraser","Sockeye","SEL",725,"Francois-Fraser-Summer",90402,27845,15586,63683,144333,102482,251399,40336,37128,50688,122988,97223,153759,2020,2023
+"Fraser","Sockeye","SEL",727,"Nadina-Francois-Early Summer",61252,10583,5676,25616,50234,30793,106545,3005,1731,5879,26264,18463,39963,2020,2023
+"Fraser","Sockeye","SEL",728,"Quesnel-Summer (cyclic)",43689,280186,155356,644370,660191,354912,1362732,486,287,3751,208668,49353,882636,2020,2023
+"Fraser","Sockeye","SEL",729,"Seton-Late (de novo)",1386,2804,1172,10447,16984,9196,49614,1096,251,2265,9057,5503,15997,2020,2023
+"Fraser","Sockeye","SEL",731,"Takla-Trembleur-Stuart-Summer (cyclic)",41790,99047,49082,226466,374536,215427,769871,7276,3174,11973,139263,66352,249784,2020,2023
+"Fraser","Sockeye","SEL",732,"Takla-Trembleur-Early Stuart (cyclic)",3830,64568,34064,163529,213292,124205,469748,12642,5783,20184,84918,47362,143581,2020,2023
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",746,NA,NA,NA,NA,NA,NA,95,15,314,2397,1167,4036,2020,2023
+"Fraser","Sockeye","SEL",735,"Bowron-Early Summer",1696,3197,1364,10296,14936,9287,40572,2128,1305,3031,9070,5942,12444,2020,2023
+"Fraser","Sockeye","SEL",738,"Shuswap-Early Summer (cyclic)",14275,86373,50331,196189,300098,192958,606066,8049,4503,10616,49425,28272,71928,2020,2023
+"Fraser","Sockeye","SEL",739,"Shuswap-Late (cyclic)",7739,578027,337376,1284537,1172220,616546,2554180,3540,1948,5607,1001491,242072,1337160,2020,2023
+"Fraser","Sockeye","SEL",740,"Kamloops-Early Summer",5007,4227,2574,9251,22279,15628,37969,2833,1767,4037,8591,6690,12736,2020,2023
+"Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",1741,1335,694,3820,8465,5448,17299,126,12,1341,7700,590,72457,2020,2023
 "Fraser","Sockeye","SEL",753,"Fraser-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser","Sockeye","SEL",756,"Alouette-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Sockeye","SEL",757,"Coquitlam-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Sockeye","SEL",758,"Kawkawa-Late",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Sockeye","SEL",759,"Seton-Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser","Sockeye","SEL",760,"Adams-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser","Sockeye","SEL",761,"Momich-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Sockeye","SEL",763,"North Barriere-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Sockeye","SER",742,"Widgeon (river-type)",186,NA,NA,NA,NA,NA,NA,137,80,210,634,307,1200,2019,2022
-"Fraser","Sockeye","SER",745,"Harrison River (river-type)",26834,22749,11842,44143,108096,76834,180351,4381,2058,18353,63373,18658,180008,2019,2022
-"Fraser","Steelhead","SH",780,"Mid Fraser Summer",47,303,153,656,575,379,1008,368,84,535,976,344,2043,2019,2023
-"Fraser","Steelhead","SH",781,"Thompson Summer",261,393,148,1007,897,670,1617,850,393,1023,1680,913,2844,2019,2023
-"Fraser","Steelhead","SH",782,"Lower Fraser Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Fraser","Steelhead","SH",783,"Fraser Canyon Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Sockeye","SER",742,"Widgeon (river-type)",140,NA,NA,NA,NA,NA,NA,162,107,280,919,506,1166,2020,2023
+"Fraser","Sockeye","SER",745,"Harrison River (river-type)",46417,21824,13750,41301,107320,75956,170644,4458,2397,10658,33054,17576,79387,2020,2023
+"Fraser","Steelhead","SH",780,"Mid Fraser Summer",66,298,159,680,575,393,1058,280,76,439,958,334,1662,2022,2026
+"Fraser","Steelhead","SH",781,"Thompson Summer",205,390,132,987,898,650,1590,590,245,893,1670,737,2808,2022,2026
 "Fraser","Steelhead","SH",784,"Lower Fraser Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Fraser","Steelhead","SH",785,"Boundary Bay Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Haida Gwaii","Chinook","CK",805,"North Haida Gwaii",6488,NA,NA,NA,NA,NA,NA,2250,1105,3593,4532,3125,6317,2002,2006
+"Haida Gwaii","Chinook","CK",805,"North Haida Gwaii",1800,NA,NA,NA,NA,NA,NA,1550,1237,2934,4500,3338,5609,2021,2025
 "Haida Gwaii","Chinook","CK",806,"East Haida Gwaii",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",311,NA,NA,NA,NA,NA,NA,300,103,590,2250,1076,3264,2006,2010
-"Haida Gwaii","Chum","CM",801,"East Haida Gwaii",32215,62260,34206,116719,134350,106816,199561,107288,55299,145207,236192,182835,289308,2017,2021
-"Haida Gwaii","Chum","CM",802,"North Haida Gwaii",8670,13309,8967,21281,31804,24882,42251,17988,9019,28183,75356,39614,102749,2015,2019
-"Haida Gwaii","Chum","CM",803,"West Haida Gwaii",42474,29393,20758,44395,64016,54258,79781,64860,49243,76796,120892,98680,142115,2017,2021
-"Haida Gwaii","Chum","CM",804,"Skidegate",47349,33194,21230,53520,67841,55095,92479,55324,40569,72235,129284,96446,143921,2017,2021
-"Haida Gwaii","Coho","CO",807,"East Haida Gwaii",30732,31315,20102,46045,57286,44927,75288,47249,37448,60276,90019,75933,114615,2019,2021
-"Haida Gwaii","Coho","CO",808,"West Haida Gwaii",14406,8461,5147,14717,17064,11967,26091,11808,8187,18792,44292,28086,55938,2018,2020
-"Haida Gwaii","Coho","CO",809,"Haida Gwaii-Graham Island Lowlands",69362,68257,42233,123241,109060,67343,187058,69454,43281,77766,193518,116911,221361,2017,2019
-"Haida Gwaii","Pink","PKE",810,"North Haida Gwaii (even)",1376401,115427,854,244392,3380,0,436098,429222,304323,737948,1376401,805825,1987933,2020,2020
-"Haida Gwaii","Pink","PKE",811,"East Haida Gwaii (even)",1041460,75442,637,238185,1106,0,319265,463736,334826,717894,1057760,809210,1267796,2020,2020
-"Haida Gwaii","Pink","PKE",812,"West Haida Gwaii (even)",16773,36018,588,296064,0,0,239048,146486,45944,177034,372309,173961,501107,2020,2020
-"Haida Gwaii","Pink","PKO",813,"East Haida Gwaii (odd)",38954,6154,235,53891,100,0,30419,24225,11569,41099,74579,34665,157666,2021,2021
+"Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",311,NA,NA,NA,NA,NA,NA,300,105,601,2250,1091,3317,2006,2010
+"Haida Gwaii","Chum","CM",801,"East Haida Gwaii",32215,64481,33856,122319,134522,104438,202072,107288,54188,146926,236192,184172,293111,2017,2021
+"Haida Gwaii","Chum","CM",802,"North Haida Gwaii",8670,13806,8544,20772,32022,24804,41576,17988,8944,27610,75356,39425,102203,2015,2019
+"Haida Gwaii","Chum","CM",803,"West Haida Gwaii",42474,30336,21163,44577,64232,53897,79217,64860,49200,76715,120892,98286,141844,2017,2021
+"Haida Gwaii","Chum","CM",804,"Skidegate",47349,33093,21529,53513,69620,54734,91935,55324,40097,72121,129284,95854,144812,2017,2021
+"Haida Gwaii","Coho","CO",807,"East Haida Gwaii",30732,30449,20665,47479,58224,44689,76902,47249,37589,60078,90019,75835,116202,2019,2021
+"Haida Gwaii","Coho","CO",808,"West Haida Gwaii",14406,8482,5216,15148,17230,11852,26246,11808,8052,19095,44292,27861,56826,2018,2020
+"Haida Gwaii","Coho","CO",809,"Haida Gwaii-Graham Island Lowlands",69362,65266,43332,126234,115152,73008,195333,69454,43256,79071,193518,115935,223231,2017,2019
+"Haida Gwaii","Pink","PKE",810,"North Haida Gwaii (even)",1376401,113052,775,246974,2967,0,429573,429222,305155,720083,1376401,817133,1943161,2020,2020
+"Haida Gwaii","Pink","PKE",811,"East Haida Gwaii (even)",1041460,71525,962,224582,701,0,287486,463736,340433,704077,1057760,811227,1263426,2020,2020
+"Haida Gwaii","Pink","PKE",812,"West Haida Gwaii (even)",16773,46238,521,296028,0,0,236596,146486,44261,179500,372309,173329,495404,2020,2020
+"Haida Gwaii","Pink","PKO",813,"East Haida Gwaii (odd)",38954,5531,196,57465,112,0,30157,24225,11800,40887,74579,36452,160735,2021,2021
 "Haida Gwaii","Pink","PKO",814,"North Haida Gwaii (odd)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Pink","PKO",815,"West Haida Gwaii (odd)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Sockeye","SEL",819,"Ain-Skundale-Ian",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Haida Gwaii","Sockeye","SEL",820,"Awun",6714,2732,2386,3164,4969,3269,6512,2100,1523,4100,8000,6012,13547,2017,2021
+"Haida Gwaii","Sockeye","SEL",820,"Awun",6714,2810,2406,3187,5122,3303,6456,2100,1540,4142,8000,6023,13430,2017,2021
 "Haida Gwaii","Sockeye","SEL",821,"Fairfax",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Sockeye","SEL",822,"Jalun",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Haida Gwaii","Sockeye","SEL",823,"Marian/Eden",2249,4435,3271,5099,7708,3614,11324,3000,1960,5164,13650,8830,21522,2017,2021
-"Haida Gwaii","Sockeye","SEL",824,"Mathers",2241,NA,NA,NA,NA,NA,NA,950,523,1485,3000,1760,4365,2014,2016
-"Haida Gwaii","Sockeye","SEL",825,"Mercer",5024,270,146,445,2966,2595,3297,4000,2718,4995,10000,6771,11324,2014,2018
-"Haida Gwaii","Sockeye","SEL",826,"Skidegate",11184,3752,2963,4475,10926,9450,12498,10000,6295,14192,30000,18754,37526,2017,2021
-"Haida Gwaii","Sockeye","SEL",827,"Yakoun",4952,4680,4026,5263,10226,8531,11641,7000,5875,11426,21500,15967,27625,2017,2021
+"Haida Gwaii","Sockeye","SEL",823,"Marian/Eden",2249,4449,3308,5175,7834,3556,11307,3000,1943,5115,13650,8809,21095,2017,2021
+"Haida Gwaii","Sockeye","SEL",824,"Mathers",2241,NA,NA,NA,NA,NA,NA,950,511,1459,3000,1738,4333,2014,2016
+"Haida Gwaii","Sockeye","SEL",825,"Mercer",5024,261,143,455,2932,2603,3315,4000,2717,4920,10000,6731,11238,2014,2018
+"Haida Gwaii","Sockeye","SEL",826,"Skidegate",11184,3699,2978,4469,11021,9455,12606,10000,6255,14189,30000,18646,37620,2017,2021
+"Haida Gwaii","Sockeye","SEL",827,"Yakoun",4952,4671,4073,5280,10146,8624,11657,7000,5880,11460,21500,16092,27653,2017,2021
 "Haida Gwaii","Sockeye","SER",816,"East Haida Gwaii (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Sockeye","SER",817,"North Haida Gwaii (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Sockeye","SER",818,"West Haida Gwaii (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Steelhead","SH",880,"Haida Gwaii Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Nass","Chinook","CK",401,"Portland Sound-Observatory Inlet-Lower Nass",2052,335,211,509,1121,984,1321,1110,1015,1401,2348,1757,2974,2018,2022
-"Nass","Chinook","CK",402,"Upper Nass",12294,2143,1280,3897,10057,8915,12250,11509,8844,14687,22136,17534,24950,2018,2022
-"Nass","Chum","CM",404,"Portland Inlet",17552,5581,3518,9309,17776,14980,23202,13311,10758,16409,33194,22420,41528,2016,2019
-"Nass","Chum","CM",405,"Lower Nass",11874,14379,273,65721,38116,0,132374,6775,3431,24650,54200,25490,169456,2013,2016
-"Nass","Chum","CM",406,"Portland Canal-Observatory",72939,9120,5789,15326,29080,23985,38541,18461,14170,28152,52443,40817,76313,2019,2022
-"Nass","Coho","CO",408,"Lower Nass",36775,16239,9383,29345,67203,52644,96964,12496,6878,21093,50784,29118,77584,2020,2022
-"Nass","Coho","CO",409,"Upper Nass",89227,977,451,2173,7115,5718,10175,48562,40469,63688,106407,78410,135142,2020,2022
-"Nass","Coho","CO",410,"Portland Sound-Observatory Inlet-Portland Canal",41247,8723,4135,20438,44560,32740,73489,20288,10071,27251,37104,29454,49305,2020,2022
+"Nass","Chinook","CK",401,"Portland Sound-Observatory Inlet-Lower Nass",2052,317,214,514,1126,977,1319,1110,1019,1425,2348,1780,2974,2018,2022
+"Nass","Chinook","CK",402,"Upper Nass",12294,2164,1343,3982,10405,8949,12320,11509,8839,14632,22136,17509,24930,2018,2022
+"Nass","Chum","CM",404,"Portland Inlet",17552,5870,3749,9375,17803,14823,22725,13311,10770,16473,33194,22450,41336,2016,2019
+"Nass","Chum","CM",405,"Lower Nass",11874,14700,186,64658,38592,0,132210,6775,3434,24438,54200,25335,162587,2013,2016
+"Nass","Chum","CM",406,"Portland Canal-Observatory",72939,9208,5520,15085,29568,24357,38570,18461,14297,28185,52443,40837,77105,2019,2022
+"Nass","Coho","CO",408,"Lower Nass",36775,16168,9519,29563,66960,51986,96274,12496,6868,21909,50784,28939,78362,2020,2022
+"Nass","Coho","CO",409,"Upper Nass",89227,937,474,2193,7204,5640,10128,48562,40472,63461,106407,78158,134043,2020,2022
+"Nass","Coho","CO",410,"Portland Sound-Observatory Inlet-Portland Canal",41247,8673,4200,20698,45409,32103,72654,20288,9968,27301,37104,29406,49306,2020,2022
 "Nass","Pink","PKE",412,"Upper Nass (even)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Nass","Pink","PKO",414,"Nass-Portland-Observatory (odd)",900891,175676,80778,441217,546264,354823,961120,254901,133150,577621,929747,527968,1569832,2021,2021
+"Nass","Pink","PKO",414,"Nass-Portland-Observatory (odd)",900891,174872,81618,433188,533670,358799,961601,254901,134240,583987,929747,528565,1563542,2021,2021
 "Nass","Pink","PKO",415,"Upper Nass (odd)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Nass","Sockeye","SEL",418,"Clements",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Nass","Sockeye","SEL",419,"Leverson",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Nass","Sockeye","SEL",420,"Bowser",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Nass","Sockeye","SEL",421,"Damdochax",5197,517,361,701,3697,3129,4204,1668,797,2428,4580,2799,6628,2018,2022
-"Nass","Sockeye","SEL",422,"Fred Wright",3007,1865,1248,2841,15182,12650,17309,1556,696,3386,8870,6265,15453,2018,2022
-"Nass","Sockeye","SEL",423,"Kwinageese",NA,696,248,2177,5525,3868,10269,NA,NA,NA,NA,NA,NA,NA,NA
-"Nass","Sockeye","SEL",424,"Meziadin",159003,20202,16049,25097,123531,112461,135192,126468,104003,152070,185917,159042,273249,2018,2022
+"Nass","Sockeye","SEL",421,"Damdochax",5197,523,378,722,3711,3185,4247,1668,799,2419,4580,2817,6598,2018,2022
+"Nass","Sockeye","SEL",422,"Fred Wright",3007,1914,1283,2844,14986,12670,17290,1556,704,3380,8870,6081,15550,2018,2022
+"Nass","Sockeye","SEL",423,"Kwinageese",NA,752,244,2197,5684,3826,10238,NA,NA,NA,NA,NA,NA,NA,NA
+"Nass","Sockeye","SEL",424,"Meziadin",159003,19784,16106,25130,123142,112455,135314,126468,104473,152968,185917,159496,273884,2018,2022
 "Nass","Sockeye","SEL",425,"Oweegee",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Nass","Sockeye","SER",426,"Lower Nass-Portland (river-type)",28265,3239,1022,11698,13214,7619,34809,2701,1798,8967,19934,7831,39206,2019,2022
-"Nass","Sockeye","SER",427,"Upper Nass River (river-type)",428,48,7,295,331,149,1316,197,38,233,552,314,1373,2019,2022
-"Nass","Steelhead","SH",480,"Nass Summer",10366,NA,NA,NA,NA,NA,NA,7924,5311,12321,17454,12590,23840,2018,2022
+"Nass","Sockeye","SER",426,"Lower Nass-Portland (river-type)",28265,3289,1146,11663,12783,7796,34688,2701,1757,9196,19934,7719,40531,2019,2022
+"Nass","Sockeye","SER",427,"Upper Nass River (river-type)",428,42,7,284,329,163,1222,197,48,235,552,319,1323,2019,2022
+"Nass","Steelhead","SH",480,"Nass Summer",11841,NA,NA,NA,NA,NA,NA,7850,5772,11325,16922,12243,23074,2021,2025
 "Nass","Steelhead","SH",481,"Nass Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Chinook","CK",1004,"Alsek",4974,NA,NA,NA,NA,NA,NA,5210,3144,7142,10806,6818,15481,2019,2023
+"Northern Transboundary","Chinook","CK",1004,"Alsek",4974,NA,NA,NA,NA,NA,NA,5210,3088,7116,10806,6752,15403,2019,2023
 "Northern Transboundary","Chinook","CK",1005,"Lynn Canal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Chinook","CK",1006,"Taku-Early Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Chinook","CK",1007,"Taku-Mid Timing",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -308,92 +299,81 @@
 "Northern Transboundary","Pink","PKE",1019,"Transboundary Fjords (even)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Pink","PKO",1020,"Transboundary Fjords (odd)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Sockeye","SEL",1025,"Christina",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Sockeye","SEL",1026,"Tahltan",10746,NA,NA,NA,NA,NA,NA,9305,6806,11878,23216,14616,26983,2019,2023
-"Northern Transboundary","Sockeye","SEL",1027,"Kuthai",388,NA,NA,NA,NA,NA,NA,656,179,1469,4122,1867,5889,2019,2023
-"Northern Transboundary","Sockeye","SEL",1028,"Little Trapper",8358,NA,NA,NA,NA,NA,NA,6376,4958,8599,13084,9732,17427,2019,2023
-"Northern Transboundary","Sockeye","SEL",1029,"Tatsamenie",5153,NA,NA,NA,NA,NA,NA,1937,1115,3486,7682,4006,17085,2019,2023
-"Northern Transboundary","Sockeye","SEL",1033,"King Salmon",7532,NA,NA,NA,NA,NA,NA,1012,378,2625,4472,2474,7299,2020,2023
+"Northern Transboundary","Sockeye","SEL",1026,"Tahltan",10746,NA,NA,NA,NA,NA,NA,9305,6819,11937,23216,14616,27023,2019,2023
+"Northern Transboundary","Sockeye","SEL",1027,"Kuthai",388,NA,NA,NA,NA,NA,NA,656,178,1478,4122,1867,5837,2019,2023
+"Northern Transboundary","Sockeye","SEL",1028,"Little Trapper",8358,NA,NA,NA,NA,NA,NA,6376,4890,8511,13084,9614,17365,2019,2023
+"Northern Transboundary","Sockeye","SEL",1029,"Tatsamenie",5153,NA,NA,NA,NA,NA,NA,1937,1123,3426,7682,4005,17168,2019,2023
+"Northern Transboundary","Sockeye","SEL",1033,"King Salmon",7532,NA,NA,NA,NA,NA,NA,1012,395,2681,4472,2499,7064,2020,2023
 "Northern Transboundary","Sockeye","SEL",1036,"Chutine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Sockeye","SEL",1038,"Klukshu",15297,NA,NA,NA,NA,NA,NA,7852,5874,11456,18597,15348,23107,2019,2023
-"Northern Transboundary","Sockeye","SEL",1039,"Nesketahin",388,NA,NA,NA,NA,NA,NA,422,208,1093,2286,1661,3745,2019,2023
+"Northern Transboundary","Sockeye","SEL",1038,"Klukshu",15297,NA,NA,NA,NA,NA,NA,7852,5787,11510,18597,15364,22992,2019,2023
+"Northern Transboundary","Sockeye","SEL",1039,"Nesketahin",388,NA,NA,NA,NA,NA,NA,422,202,1126,2286,1653,3854,2019,2023
 "Northern Transboundary","Sockeye","SER",1021,"Alsek (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Sockeye","SER",1023,"Northern Transboundary Fjords (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Steelhead","SH",1080,"Alsek Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Steelhead","SH",1081,"Taku Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Steelhead","SH",1082,"Taku Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Steelhead","SH",1083,"Stikine Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Northern Transboundary","Steelhead","SH",1084,"Stikine Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Chinook","CK",205,"Ecstall",1514,NA,NA,NA,NA,NA,NA,1311,839,1655,2840,1524,6161,2000,2001
-"Skeena","Chinook","CK",206,"Kalum-Early",837,NA,NA,NA,NA,NA,NA,890,556,1164,1602,1225,2047,2006,2011
-"Skeena","Chinook","CK",207,"Kalum-Late",7502,1141,580,2924,5197,4191,6837,8046,5901,9358,11709,9939,15604,2015,2020
-"Skeena","Chinook","CK",210,"Lower Skeena",1359,662,251,1697,2076,1506,3349,1951,1416,2504,3772,3036,5376,2015,2020
-"Skeena","Chinook","CK",212,"Upper Skeena",1721,1342,493,3584,4472,3009,8621,2197,1515,3834,6315,3704,10065,2015,2020
-"Skeena","Chinook","CK",217,"Middle Skeena-Mainstem Tributaries",3000,1809,742,4764,6989,5115,11651,4353,3021,7060,12456,7801,16211,2015,2020
-"Skeena","Chinook","CK",221,"Upper Bulkley River",1927,NA,NA,NA,NA,NA,NA,536,304,1072,1626,877,3510,2001,2006
-"Skeena","Chinook","CK",222,"Middle Skeena-Large Lakes",9792,4788,2145,14256,17342,12535,32327,12548,8422,17833,27563,19316,40159,2015,2020
+"Skeena","Chinook","CK",205,"Ecstall",1514,NA,NA,NA,NA,NA,NA,1311,843,1658,2840,1526,6210,2000,2001
+"Skeena","Chinook","CK",206,"Kalum-Early",837,NA,NA,NA,NA,NA,NA,890,550,1164,1602,1226,2026,2006,2011
+"Skeena","Chinook","CK",207,"Kalum-Late",7502,1185,534,2928,5131,4175,6832,8046,5930,9338,11709,9965,15605,2015,2020
+"Skeena","Chinook","CK",210,"Lower Skeena",1359,674,274,1857,2022,1502,3483,1951,1406,2512,3772,3058,5400,2015,2020
+"Skeena","Chinook","CK",212,"Upper Skeena",1721,1330,490,3670,4434,3104,8944,2197,1484,3803,6315,3687,10105,2015,2020
+"Skeena","Chinook","CK",217,"Middle Skeena-Mainstem Tributaries",3000,1815,681,4754,6778,4918,11637,4353,3053,7056,12456,7973,16091,2015,2020
+"Skeena","Chinook","CK",221,"Upper Bulkley River",1927,NA,NA,NA,NA,NA,NA,536,306,1091,1626,884,3560,2001,2006
+"Skeena","Chinook","CK",222,"Middle Skeena-Large Lakes",9792,4651,1893,14287,17062,12445,32274,12548,8230,17740,27563,18925,39516,2015,2020
 "Skeena","Chinook","CK",224,"Skeena Estuary",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Skeena","Chinook","CK",227,"Lakelse",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Chinook","CK",229,"Zymoetz",927,504,185,1526,1591,1125,2943,1465,1047,2106,2994,2304,3885,2015,2020
-"Skeena","Chum","CM",211,"Lower Skeena",1824,9074,5529,16157,17200,10908,27440,6265,3656,8370,19463,11883,26088,2014,2017
-"Skeena","Chum","CM",214,"Middle Skeena",861,NA,NA,NA,NA,NA,NA,665,300,928,3576,1067,3992,2014,2017
-"Skeena","Chum","CM",220,"Skeena Estuary",407,NA,NA,NA,NA,NA,NA,327,253,1145,1871,1387,5339,2016,2017
+"Skeena","Chinook","CK",229,"Zymoetz",927,507,152,1535,1601,1144,2998,1465,1031,2085,2994,2297,3843,2015,2020
+"Skeena","Chum","CM",211,"Lower Skeena",1824,8988,5772,15968,16855,10984,27369,6265,3633,8438,19463,11886,26353,2014,2017
+"Skeena","Chum","CM",214,"Middle Skeena",861,NA,NA,NA,NA,NA,NA,665,293,931,3576,1074,3999,2014,2017
+"Skeena","Chum","CM",220,"Skeena Estuary",407,NA,NA,NA,NA,NA,NA,327,255,1122,1871,1427,5297,2016,2017
 "Skeena","Chum","CM",242,"Upper Skeena",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Coho","CO",202,"Lower Skeena",66743,76082,45467,144440,192426,142696,318843,63168,49048,92828,160566,120344,236598,2015,2017
-"Skeena","Coho","CO",215,"Middle Skeena",167245,26423,16544,44213,94865,77060,130686,50513,29818,76585,164913,93255,209995,2015,2017
-"Skeena","Coho","CO",225,"Skeena Estuary",4457,NA,NA,NA,NA,NA,NA,4659,3671,6302,14275,8048,20087,2013,2014
-"Skeena","Coho","CO",231,"Upper Skeena",12914,2315,1025,5261,7958,6046,12096,5848,6179,8617,14498,11754,16986,2015,2017
-"Skeena","Pink","PKE",218,"Middle-Upper Skeena (even)",160195,112073,56107,259697,347824,235159,578536,158829,101501,272806,611509,328606,971668,2016,2016
-"Skeena","Pink","PKE",219,"Nass-Skeena Estuary (even)",6047266,223058,111176,430239,871212,690499,1155679,681988,434580,1185209,2498250,1457690,3339735,2022,2022
-"Skeena","Pink","PKO",209,"Lower Skeena River (odd)",176055,304243,136931,678679,1013080,686819,1614419,567705,424025,911012,1867208,1327955,2865584,2017,2017
-"Skeena","Pink","PKO",213,"Middle-Upper Skeena (odd)",853053,283314,141132,585413,872889,625303,1380968,558574,345345,872340,1363952,950692,2014394,2017,2017
-"Skeena","Pink","PKO",223,"Nass-Skeena Estuary (odd)",104406,114001,45473,423814,240792,125410,755964,86792,42459,147004,290486,138678,517071,2017,2017
-"Skeena","Sockeye","SEL",171,"Alastair",5485,9414,8761,10110,18791,13133,22398,8881,4965,12413,23566,18743,30177,2017,2022
+"Skeena","Coho","CO",202,"Lower Skeena",64071,76525,43105,144016,188296,137284,318125,59276,45213,88181,153276,112582,241365,2022,2024
+"Skeena","Coho","CO",215,"Middle Skeena",93191,24637,16213,42860,95612,77202,128966,48179,30500,73688,144547,93293,203206,2022,2024
+"Skeena","Coho","CO",225,"Skeena Estuary",4457,NA,NA,NA,NA,NA,NA,4659,3673,6361,14275,8058,19658,2013,2014
+"Skeena","Coho","CO",231,"Upper Skeena",25622,2206,1029,5092,7565,6012,12027,5848,6234,9443,15700,13290,19812,2022,2024
+"Skeena","Pink","PKE",218,"Middle-Upper Skeena (even)",160195,118999,54059,253658,346115,231454,577231,158829,99123,271515,611509,324838,976987,2016,2016
+"Skeena","Pink","PKE",219,"Nass-Skeena Estuary (even)",6047266,223096,116530,441301,861128,696959,1168963,681988,437616,1182697,2498250,1452872,3353551,2022,2022
+"Skeena","Pink","PKO",209,"Lower Skeena River (odd)",176055,310201,123487,662824,994440,718015,1636511,567705,427531,926008,1867208,1304033,2857138,2017,2017
+"Skeena","Pink","PKO",213,"Middle-Upper Skeena (odd)",853053,275839,128917,597448,887359,610065,1375814,558574,354700,871061,1363952,960075,2036410,2017,2017
+"Skeena","Pink","PKO",223,"Nass-Skeena Estuary (odd)",104406,110502,40888,442360,240143,134719,777389,86792,42156,149588,290486,140309,520237,2017,2017
+"Skeena","Sockeye","SEL",171,"Alastair",5485,9500,8763,10124,18792,13359,22640,8881,4919,12434,23566,18757,29953,2017,2022
 "Skeena","Sockeye","SEL",174,"Ecstall/Lower",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Sockeye","SEL",175,"Johnston",280,2500,1082,2773,8034,3790,11402,850,425,1534,6389,1967,8046,2019,2023
-"Skeena","Sockeye","SEL",176,"Kitsumkalum",20312,3852,2879,4827,12724,10350,15257,2127,1768,16228,21452,6987,63552,2020,2023
-"Skeena","Sockeye","SEL",177,"Lakelse",9545,8048,6398,9415,12674,7717,17076,6561,5185,11698,20690,14853,28752,2019,2023
-"Skeena","Sockeye","SEL",178,"Mcdonell/Dennis/Aldrich",2763,554,415,763,2373,2146,2715,1525,1086,3187,5972,4566,7213,2019,2023
-"Skeena","Sockeye","SEL",180,"Babine/Onerka",15862,387719,264242,450700,536603,274630,762686,26627,19241,32895,62766,49819,82843,2019,2023
+"Skeena","Sockeye","SEL",175,"Johnston",280,2512,1119,2778,8517,3765,11279,850,428,1531,6389,1982,7927,2019,2023
+"Skeena","Sockeye","SEL",176,"Kitsumkalum",20312,3800,2976,4907,12717,10386,15332,2127,1796,16538,21452,7396,64053,2020,2023
+"Skeena","Sockeye","SEL",177,"Lakelse",9545,8009,6483,9431,12881,8101,17189,6561,5210,11667,20690,14839,28925,2019,2023
+"Skeena","Sockeye","SEL",178,"Mcdonell/Dennis/Aldrich",2763,566,417,765,2404,2162,2716,1525,1091,3192,5972,4680,7205,2019,2023
+"Skeena","Sockeye","SEL",180,"Babine/Onerka",15862,390489,250773,446399,512759,278823,778502,26627,19038,33255,62766,49430,82733,2019,2023
 "Skeena","Sockeye","SEL",181,"Bulkley/Maxan",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Sockeye","SEL",183,"Gitanyow (Kitwanga/Kitwancool)",485,12616,4626,13571,20811,0,33124,389,293,758,1669,1406,4620,2019,2023
-"Skeena","Sockeye","SEL",185,"Morice/Atna",22419,52674,46394,60803,109478,76437,145992,3962,1914,7778,15962,7882,30090,2018,2023
-"Skeena","Sockeye","SEL",186,"Nilkitkwa",46363,73918,33137,181451,201451,140628,385695,109920,72482,142842,273422,186532,367359,2019,2023
-"Skeena","Sockeye","SEL",187,"Stephens",11724,4897,1620,14035,14795,9062,31368,10292,6402,12471,20340,16716,25368,2019,2023
-"Skeena","Sockeye","SEL",189,"Tahlo/Morrison",10184,10012,8625,11136,24811,20128,30104,8054,6671,12394,31573,21827,38443,2019,2023
-"Skeena","Sockeye","SEL",190,"Asitika",453,151,91,238,717,538,940,209,106,403,1110,898,1421,2019,2023
-"Skeena","Sockeye","SEL",191,"Azuklotz",3271,4031,3327,4313,7851,4586,12094,1038,528,1771,4896,3080,6248,2019,2023
-"Skeena","Sockeye","SEL",192,"Bear",2728,20591,18529,22388,44529,30098,56311,698,336,1506,6011,1961,7249,2019,2023
-"Skeena","Sockeye","SEL",193,"Damshilgwit",360,136,89,210,1752,1556,1931,294,166,349,594,371,826,2020,2023
-"Skeena","Sockeye","SEL",194,"Johanson",322,NA,NA,NA,NA,NA,NA,100,78,208,393,298,565,2019,2023
+"Skeena","Sockeye","SEL",183,"Gitanyow (Kitwanga/Kitwancool)",485,12619,4442,13626,21670,0,33517,389,299,747,1669,1395,4527,2019,2023
+"Skeena","Sockeye","SEL",185,"Morice/Atna",22419,52646,45750,60627,114110,74307,146847,3962,1851,7738,15962,7843,30340,2018,2023
+"Skeena","Sockeye","SEL",186,"Nilkitkwa",46363,70014,34639,180629,201904,142490,383420,109920,72855,145433,273422,186523,368884,2019,2023
+"Skeena","Sockeye","SEL",187,"Stephens",11724,4497,1587,13624,14817,9608,31434,10292,6616,12474,20340,16897,25429,2019,2023
+"Skeena","Sockeye","SEL",189,"Tahlo/Morrison",10184,9942,8604,11137,25118,20243,29999,8054,6662,12188,31573,21692,38847,2019,2023
+"Skeena","Sockeye","SEL",190,"Asitika",453,157,88,233,716,534,938,209,106,393,1110,893,1418,2019,2023
+"Skeena","Sockeye","SEL",191,"Azuklotz",3271,4016,3330,4291,8235,4408,11604,1038,524,1711,4896,3035,6149,2019,2023
+"Skeena","Sockeye","SEL",192,"Bear",2728,20561,18584,22503,43893,30452,56695,698,337,1486,6011,1944,7581,2019,2023
+"Skeena","Sockeye","SEL",193,"Damshilgwit",360,137,84,210,1741,1552,1927,294,168,348,594,372,824,2020,2023
+"Skeena","Sockeye","SEL",194,"Johanson",322,NA,NA,NA,NA,NA,NA,100,75,206,393,301,569,2019,2023
 "Skeena","Sockeye","SEL",195,"Kluatantan",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Skeena","Sockeye","SEL",196,"Kluayaz",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Sockeye","SEL",197,"Motase",179,1039,471,1931,1913,531,3993,171,104,268,600,455,716,2019,2023
+"Skeena","Sockeye","SEL",197,"Motase",179,1087,522,1965,1794,527,3965,171,104,268,600,459,721,2019,2023
 "Skeena","Sockeye","SEL",198,"Sicintine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Sockeye","SEL",199,"Slamgeesh",NA,377,269,470,659,317,956,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Sockeye","SEL",199,"Slamgeesh",NA,372,275,474,633,316,966,NA,NA,NA,NA,NA,NA,NA,NA
 "Skeena","Sockeye","SEL",200,"Spawning",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Sockeye","SEL",201,"Sustut",1469,1101,769,1396,3435,2244,4609,288,185,615,1642,994,2205,2019,2023
-"Skeena","Sockeye","SEL",203,"Babine (enhanced)",437369,83371,27310,290418,421617,267071,939879,294656,239439,384966,504712,438836,590588,2019,2023
+"Skeena","Sockeye","SEL",201,"Sustut",1469,1105,775,1392,3395,2260,4611,288,187,624,1642,989,2244,2019,2023
+"Skeena","Sockeye","SEL",203,"Babine (enhanced)",437369,80642,27638,287443,411597,262078,927311,294656,239431,384525,504712,437703,590928,2019,2023
 "Skeena","Sockeye","SEL",230,"Footsore/Hodder",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Sockeye","SEL",291,"Prudhomme",679,935,690,1149,2817,2433,3204,2051,1754,3907,8500,5270,9786,2015,2019
-"Skeena","Sockeye","SEL",292,"Shawatlan",1862,676,504,848,2053,1764,2466,2000,1351,2869,6600,4132,7672,2013,2015
-"Skeena","Sockeye","SER",216,"Skeena River-High Interior (river-type)",196,NA,NA,NA,NA,NA,NA,62,10,80,165,92,243,2015,2019
+"Skeena","Sockeye","SEL",291,"Prudhomme",679,937,715,1170,2815,2463,3213,2051,1747,3906,8500,5301,9880,2015,2019
+"Skeena","Sockeye","SEL",292,"Shawatlan",1862,686,506,851,2082,1759,2454,2000,1334,2908,6600,4132,7605,2013,2015
+"Skeena","Sockeye","SER",216,"Skeena River-High Interior (river-type)",196,NA,NA,NA,NA,NA,NA,62,10,80,165,93,237,2015,2019
 "Skeena","Sockeye","SER",226,"Skeena River (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Skeena","Steelhead","SH",280,"Upper Skeena Headwaters",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",281,"Upper Sustut",223,NA,NA,NA,NA,NA,NA,284,194,633,1024,534,1437,2020,2024
-"Skeena","Steelhead","SH",282,"Upper Skeena",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",283,"Kispiox",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",284,"Babine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",285,"Middle Skeena",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",286,"Suskwa",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",287,"Bulkley",27186,NA,NA,NA,NA,NA,NA,15740,13476,21620,27479,19063,38799,2008,2012
-"Skeena","Steelhead","SH",288,"Skeena Coastal Summers",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Skeena","Steelhead","SH",289,"Morice",27186,NA,NA,NA,NA,NA,NA,15740,13466,22201,27479,19014,38810,2008,2012
-"Skeena","Steelhead","SH",290,"Skeena Coastal Winters",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"West Vancouver Island","Chinook","CK",328,"West Vancouver Island-South (Fall x-1)",48607,NA,NA,NA,NA,NA,NA,34700,27192,48619,58225,44616,72476,2014,2018
-"West Vancouver Island","Chinook","CK",329,"West Vancouver Island-Nootka and Kyuquot (Fall x-1)",30282,NA,NA,NA,NA,NA,NA,20250,11748,23347,33470,25876,50213,2014,2018
-"West Vancouver Island","Chinook","CK",330,"West Vancouver Island-North (Fall x-1)",2281,NA,NA,NA,NA,NA,NA,2262,1494,2662,3736,3234,4978,2014,2018
-"West Vancouver Island","Chum","CM",977,"Northwest Vancouver Island",74201,11720,7492,17268,23753,19616,30614,24811,20414,32239,73650,54473,94155,2012,2015
-"West Vancouver Island","Chum","CM",978,"Southwest & West Vancouver Island",180277,58473,32530,102287,148216,123978,187414,204064,162387,258980,433640,319617,477062,2012,2015
+"Skeena","Steelhead","SH",281,"Upper Sustut",245,NA,NA,NA,NA,NA,NA,291,191,586,1014,505,1372,2021,2025
+"Skeena","Steelhead","SH",287,"Bulkley",27186,NA,NA,NA,NA,NA,NA,15740,13525,22292,27479,19069,38815,2008,2012
+"Skeena","Steelhead","SH",289,"Morice",27186,NA,NA,NA,NA,NA,NA,15740,13332,21514,27479,19017,38888,2008,2012
+"West Vancouver Island","Chinook","CK",328,"West Vancouver Island-South (Fall x-1)",48607,NA,NA,NA,NA,NA,NA,34700,27180,48833,58225,44763,72759,2014,2018
+"West Vancouver Island","Chinook","CK",329,"West Vancouver Island-Nootka and Kyuquot (Fall x-1)",30282,NA,NA,NA,NA,NA,NA,20250,11748,23423,33470,25831,50214,2014,2018
+"West Vancouver Island","Chinook","CK",330,"West Vancouver Island-North (Fall x-1)",2281,NA,NA,NA,NA,NA,NA,2262,1480,2664,3736,3230,4946,2014,2018
+"West Vancouver Island","Chum","CM",977,"Northwest Vancouver Island",74201,11655,7174,16969,24269,19504,30518,24811,20280,32468,73650,54992,94235,2012,2015
+"West Vancouver Island","Chum","CM",978,"Southwest & West Vancouver Island",180277,56850,31993,102528,144325,121100,185819,204064,161334,258258,433640,319393,478068,2012,2015
 "West Vancouver Island","Coho","CO",913,"Juan de Fuca-Pachena",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Coho","CO",914,"West Vancouver Island",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Coho","CO",915,"Clayoquot",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -407,8 +387,8 @@
 "West Vancouver Island","Sockeye","SEL",949,"Clayoquot",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SEL",950,"Deserted",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SEL",951,"Fairy",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"West Vancouver Island","Sockeye","SEL",952,"Great Central",225344,31211,10090,111422,124819,89533,245020,138564,97894,176637,252355,209838,340233,2020,2024
-"West Vancouver Island","Sockeye","SEL",953,"Hucuktlis",8956,NA,NA,NA,NA,NA,NA,7000,4758,14091,30800,18599,46579,2020,2024
+"West Vancouver Island","Sockeye","SEL",952,"Great Central",284326,38384,13548,97909,122924,89674,193968,138817,99593,178618,256516,215569,351601,2021,2025
+"West Vancouver Island","Sockeye","SEL",953,"Hucuktlis",11492,8449,4282,18458,20677,13212,38422,7750,4868,14136,30600,19162,47013,2021,2025
 "West Vancouver Island","Sockeye","SEL",954,"Hesquiat",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SEL",955,"Hobiton",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SEL",956,"Jansen",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -422,32 +402,46 @@
 "West Vancouver Island","Sockeye","SEL",964,"O'Connell",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SEL",966,"Park River",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SEL",967,"Power",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"West Vancouver Island","Sockeye","SEL",969,"Sproat",188604,19677,4546,73525,104991,67932,211450,131255,98782,167592,238738,184401,332842,2020,2024
+"West Vancouver Island","Sockeye","SEL",969,"Sproat",171816,26082,10314,62397,111287,87681,158827,129356,97604,164791,235417,183439,328970,2021,2025
 "West Vancouver Island","Sockeye","SEL",970,"William-Brink",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SER",972,"West Vancouver Island (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "West Vancouver Island","Sockeye","SER",974,"NW Vancouver Island (river-type)",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"West Vancouver Island","Steelhead","SH",982,"West Vancouver Island Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"West Vancouver Island","Steelhead","SH",984,"West Vancouver Island Summer",206,NA,NA,NA,NA,NA,NA,478,236,617,893,500,1184,2019,2023
-"Yukon","Chinook","CK",1201,"Big Salmon",2091,775,278,2376,3296,2514,5365,3302,2350,4291,6829,5031,8717,2019,2024
-"Yukon","Chinook","CK",1202,"Nordenskiold",1177,160,80,337,1093,891,1425,651,543,1135,2374,1581,3495,2019,2024
-"Yukon","Chinook","CK",1203,"Pelly",2847,2008,964,5432,6730,4919,10584,6538,3887,7594,11313,8025,16741,2019,2024
-"Yukon","Chinook","CK",1204,"Middle Yukon",5713,1466,691,3845,7205,5816,10621,7376,5238,10499,16389,11844,20420,2019,2024
-"Yukon","Chinook","CK",1205,"Stewart",1354,694,238,2244,2432,1814,4509,2660,1754,3042,5158,3452,6158,2019,2024
-"Yukon","Chinook","CK",1206,"White",1182,908,412,2129,2709,2088,4642,2003,1134,2598,4010,3089,5340,2019,2024
-"Yukon","Chinook","CK",1207,"Northern Yukon",1735,1401,578,4514,4630,3160,9279,3236,2237,5280,8760,5326,12469,2019,2024
-"Yukon","Chinook","CK",1209,"Porcupine",695,NA,NA,NA,NA,NA,NA,479,262,4075,4408,877,10257,2019,2024
-"Yukon","Chinook","CK",1210,"Old Crow",695,NA,NA,NA,NA,NA,NA,479,266,4115,4408,842,10547,2019,2024
-"Yukon","Chinook","CK",1211,"Upper Yukon",818,NA,NA,NA,NA,NA,NA,611,425,1164,1707,634,2251,2019,2024
-"Yukon","Chinook","CK",1212,"Teslin",82,NA,NA,NA,NA,NA,NA,231,144,431,828,554,1501,2019,2024
-"Yukon","Chum","CM",1213,"Middle Yukon",14477,NA,NA,NA,NA,NA,NA,34912,12813,51159,101271,28980,118725,2021,2024
-"Yukon","Chum","CM",1214,"North Yukon",14,NA,NA,NA,NA,NA,NA,144,2,285,948,205,2043,2021,2024
-"Yukon","Chum","CM",1215,"White",5357,NA,NA,NA,NA,NA,NA,23946,4885,41488,98114,16350,145222,2021,2024
-"Yukon","Chum","CM",1217,"Porcupine",4691,NA,NA,NA,NA,NA,NA,15216,8495,19475,43232,26139,61411,2021,2024
-"Yukon","Chum","CM",1219,"Teslin",470,NA,NA,NA,NA,NA,NA,360,112,749,1517,692,4287,2021,2024
+"West Vancouver Island","Steelhead","SH",984,"West Vancouver Island Summer",444,NA,NA,NA,NA,NA,NA,447,334,634,960,689,1244,2021,2025
+"Yukon","Chinook","CK",1201,"Big Salmon",2091,748,284,2278,3210,2461,5341,3302,2338,4299,6829,5018,8705,2019,2024
+"Yukon","Chinook","CK",1202,"Nordenskiold",1177,150,73,303,1066,880,1387,651,541,1145,2374,1589,3503,2019,2024
+"Yukon","Chinook","CK",1203,"Pelly",2847,2245,974,5923,6778,4991,11351,6538,3883,7645,11313,8059,16841,2019,2024
+"Yukon","Chinook","CK",1204,"Middle Yukon",5713,1656,696,4685,7607,5764,11628,7376,5243,10314,16389,11872,20262,2019,2024
+"Yukon","Chinook","CK",1205,"Stewart",1354,735,233,2277,2511,1796,4517,2660,1742,3046,5158,3466,6169,2019,2024
+"Yukon","Chinook","CK",1206,"White",1182,786,363,1943,2705,2098,4508,2003,1145,2576,4010,3104,5312,2019,2024
+"Yukon","Chinook","CK",1207,"Northern Yukon",1735,1395,493,3873,4532,3272,8195,3236,2194,5277,8760,5419,12564,2019,2024
+"Yukon","Chinook","CK",1209,"Porcupine",695,NA,NA,NA,NA,NA,NA,479,277,4173,4408,912,10149,2019,2024
+"Yukon","Chinook","CK",1210,"Old Crow",695,NA,NA,NA,NA,NA,NA,479,271,4147,4408,871,10454,2019,2024
+"Yukon","Chinook","CK",1211,"Upper Yukon",818,NA,NA,NA,NA,NA,NA,611,421,1154,1707,622,2255,2019,2024
+"Yukon","Chinook","CK",1212,"Teslin",82,NA,NA,NA,NA,NA,NA,231,142,430,828,547,1497,2019,2024
+"Yukon","Chum","CM",1213,"Middle Yukon",14477,NA,NA,NA,NA,NA,NA,34912,12866,50821,101271,29129,115497,2021,2024
+"Yukon","Chum","CM",1214,"North Yukon",14,NA,NA,NA,NA,NA,NA,144,3,266,948,195,2035,2021,2024
+"Yukon","Chum","CM",1215,"White",5357,NA,NA,NA,NA,NA,NA,23946,4903,42243,98114,16371,138925,2021,2024
+"Yukon","Chum","CM",1216,"Donjek Kluane",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Yukon","Chum","CM",1217,"Porcupine",4691,NA,NA,NA,NA,NA,NA,15216,8408,19529,43232,25894,61972,2021,2024
+"Yukon","Chum","CM",1219,"Teslin",470,NA,NA,NA,NA,NA,NA,360,110,762,1517,693,4385,2021,2024
+"Skeena","Steelhead","SH",282,"Upper Skeena",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Steelhead","SH",283,"Kispiox",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Steelhead","SH",284,"Babine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Steelhead","SH",285,"Middle Skeena",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Steelhead","SH",286,"Suskwa",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Steelhead","SH",288,"Skeena Coastal Summers",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Skeena","Steelhead","SH",290,"Skeena Coastal Winters",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Central Coast","Steelhead","SH",681,"North Coast Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Central Coast","Steelhead","SH",682,"Central Coast Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Sockeye","SEL",757,"Coquitlam-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Sockeye","SEL",758,"Kawkawa-Late",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Sockeye","SEL",759,"Seton-Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Sockeye","SEL",763,"North Barriere-Early Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Steelhead","SH",782,"Lower Fraser Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Fraser","Steelhead","SH",783,"Fraser Canyon Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Haida Gwaii","Sockeye","SEL",828,"Marie",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Yukon","Chinook","CK",1208,"Salmon Fork",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Yukon","Coho","CO",1220,"Porcupine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-"Yukon","Chum","CM",1216,"Donjek Kluane",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Yukon","Chum","CM",1218,"Stewart",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Sockeye","SEL",1024,"Border",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Sockeye","SEL",1031,"Blanchard",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
@@ -462,3 +456,9 @@
 "Northern Transboundary","Chum","CM",1002,"Whiting",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Chum","CM",1003,"Unuk",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "Northern Transboundary","Chum","CM",1032,"Lower Stikine",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary","Steelhead","SH",1080,"Alsek Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary","Steelhead","SH",1082,"Taku Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary","Steelhead","SH",1083,"Stikine Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Northern Transboundary","Steelhead","SH",1084,"Stikine Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"East Vancouver Island & Mainland Inlets","Steelhead","SH",983,"South Coast Summer",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"West Vancouver Island","Steelhead","SH",982,"West Vancouver Island Winter",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

@@ -20,49 +20,26 @@
 #' 
 #'******************************************************************************
 #
+
 rm(list = ls())
 graphics.off()
 
-# reset the wd to head using the location of the current script
-path <- rstudioapi::getActiveDocumentContext()$path
-dirhead <- "population-indicators"
-path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path)
-wd_head <- paste0(path_ahead,dirhead)
-setwd(wd_head)
-
-# Now import functions related to directories.
-# Note that the script cannot be called again once the directory is set to the 
-# subdirectory of the project (unless setwd() is called again).
-source("code/functions_set_wd.R")
 source("code/functions_general.R")
 source("code/colours.R")
-
-# return the name of the directories for the different projects:
-subDir_projects <- subDir_projects_fun()
-
-wds_l <- set_working_directories_fun(subDir = subDir_projects$biological_status,
-                                     Export_locally = F)
-wd_head <- wds_l$wd_head
-wd_code <- wds_l$wd_code
-wd_data <- wds_l$wd_data
-wd_figures <- wds_l$wd_figures
-wd_output <- wds_l$wd_output
-wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
-wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                                         wds_l$wd_population_indicator_data_input_dropbox,
-                                         sep = "/")
-
-# wd_output <- gsub("/output","/output_NORMAL_DIST",wd_output)
-
-# The datasets to input were outputted by other scripts 
-wd_data_input <- paste0(wd_output,"/intermediate")
-
-# Import functions for this specific project
-source("Code/functions.R")
+source("biological-status/code/functions.R")
 
 # Load packages
 library(R2jags)  # Provides wrapper functions to implement Bayesian analysis in JAGS.  ??? needed ?
 library(modeest) # Provides estimators of the mode of univariate data or univariate distributions. ??? needed ?
+library(lamW)    # to use the lambertW0 function to calculate Smsy 
+
+wd_X_Drive1_PROJECTS <- paste0(get_XDrive(),"1_PROJECTS")
+wd_popInd <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-indicators")
+wd_pop_indic_data_input_dropbox <- paste0(wd_popInd,"/data-input")
+wd_output <- paste0(wd_popInd,"/biological-status/output")
+wd_figures <- paste0(wd_popInd,"/biological-status/figures")
+wd_data_input <- paste0(wd_output,"/intermediate")
+
 
 # option to export the figures
 print_fig <- T
@@ -103,31 +80,6 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                             fromDatabase = fromDatabase,
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
-#'* TEMOPORARY *
-#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon <- gsub("population-indicators/data-input",
-                 "population-data/Yukon-data",
-                 wd_pop_indic_data_input_dropbox)
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
-                                           pattern = "dataset1_spawner-abundance")
-
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- conservationunits_decoder$cuid == cuid
-  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
-  
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
-
-cond <- cuspawnerabundance$region == "Yukon"
-cuspawnerabundance[cond,]
-cuspawnerabundance <- cuspawnerabundance[!cond,]
-
-cuspawnerabundance <- rbind(cuspawnerabundance,
-                            spwAbd_yukon[,colnames(cuspawnerabundance)])
-
 
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species and last year for current spawner abundance
@@ -174,7 +126,7 @@ options(warn = 0)  # warnings are stored until the top level function returns (d
 
 # 
 for(i_rg in 1:length(region)){
-  # i_rg <- 1
+  # i_rg <- 2
   
   if(region[i_rg] == "West Vancouver Island"){
     regionName <- "WVI"
@@ -216,7 +168,8 @@ for(i_rg in 1:length(region)){
   species_acro <- names(species_rg)
   if(length(species_rg) == 0){
     
-    print(paste0("There is no posterior files in ",region[i_rg]," for ",paste(species[cond],collapse = ", ")))
+    # print(paste0("There is no posterior files in ",region[i_rg]," for ",paste(species[cond],collapse = ", ")))
+    print(paste0("There is no posterior files for any speccies in ",region[i_rg],"."))
     
   }else{
     

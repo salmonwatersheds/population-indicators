@@ -22,6 +22,27 @@
 # https://www.dropbox.com/scl/fo/w0wpfhaoa5hd0tb3lcbnb/ANKzPkbsunvofXav50moBHc?rlkey=aub20ix3s83j5unc6bnj4p0kc&st=qenwuo4m&dl=0
 # https://salmonwatersheds.slack.com/archives/C01D2S4PRC2/p1713592075622849
 
+
+rm(list = ls())
+graphics.off()
+
+source("code/functions_general.R")
+source("biological-status/code/functions.R")
+
+# Load packages
+library(dplyr)
+library(zoo) # for rollmean function
+
+wd_X_Drive1_PROJECTS <- paste0(get_XDrive(),"1_PROJECTS")
+wd_popInd <- paste0(wd_X_Drive1_PROJECTS,"/1_Active/Population Methods and Analysis/population-indicators")
+wd_pop_indic_data_input_dropbox <- paste0(wd_popInd,"/data-input")
+wd_output <- paste0(wd_popInd,"/trends/output")
+wd_figures <- paste0(wd_popInd,"/trends/figures")
+
+
+
+
+
 # reset the wd to head using the location of the current script
 path <- rstudioapi::getActiveDocumentContext()$path
 dirhead <- "population-indicators"
@@ -61,8 +82,7 @@ wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
                                          sep = "/")
 
 # Loading packages & functions
-library(dplyr)
-library(zoo) # for rollmean function
+
 
 # source("code/functions.R") # note used
 
@@ -87,9 +107,6 @@ cu_decoder <- datasets_database_fun(nameDataSet = "conservationunits_decoder.csv
                                     update_file_csv = update_file_csv,
                                     wd = wd_pop_indic_data_input_dropbox)
 
-# TEMPORARY
-# colnames(cu_decoder)[colnames(cu_decoder) == "species_abbr"] <- "species_qualified"
-
 # remove the SMU-related information because that causes issues lower
 nrow(cu_decoder) # 470
 cu_decoder <- cu_decoder[,!grepl("smu",colnames(cu_decoder))]
@@ -111,35 +128,9 @@ spawners <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
 # Filter out no estimated spawner abundance
 spawners <- spawners %>% filter(!is.na(estimated_count))
 
-#'* TEMOPORARY *
-#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon <- gsub("population-indicators/data-input",
-                 "population-data/Yukon-data",
-                 wd_pop_indic_data_input_dropbox)
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
-                                           pattern = "dataset1_spawner-abundance")
-
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- cu_decoder$cuid == cuid
-  sq <- cu_decoder$species_qualified[cond] |> unique()
-  
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
-
-cond <- spawners$region == "Yukon"
-spawners[cond,]
-spawners <- spawners[!cond,]
-
-spawners <- rbind(spawners,
-                  spwAbd_yukon[,colnames(spawners)])
-
 #
 # Fill datasets and produce figures ------------
 #
-
 cuid <- unique(spawners$cuid)
 
 species_name <- spawners$species_name[match(cuid, spawners$cuid)]
@@ -440,7 +431,7 @@ cond <- dataset391_output_new$region == "Northern Transboundary"
 dataset391_output_new[cond,]
 
 #
-# Remove VIMI SH South Coast Winter 980 TEMPORARY --------
+# Remove VIMI SH South Coast Winter 980 TEMPORARY but STILL NEEDED --------
 #' cf. PSE Data Check-In Meeting Notes - 19-09-2024
 #' These CUs should be removed because the only population for which there is data
 #' is not representative of the whole CU
@@ -484,13 +475,13 @@ write.csv(dataset391_output_new,paste0(wd_output,"/archive/dataset391_threegen_t
 
 # Export in /output locally to push to github 
 write.csv(dataset103_output_new,
-          paste0(getwd(),"/output/dataset103_log_smoothed_spawners.csv"),
+          paste0(getwd(),"/trends/output/dataset103_log_smoothed_spawners.csv"),
           row.names = F)
 write.csv(dataset202_output_new,
-          paste0(getwd(),"/output/dataset202_allgen_trends.csv"),
+          paste0(getwd(),"/trends/output/dataset202_allgen_trends.csv"),
           row.names = F)
 write.csv(dataset391_output_new,
-          paste0(getwd(),"/output/dataset391_threegen_trends.csv"),
+          paste0(getwd(),"/trends/output/dataset391_threegen_trends.csv"),
           row.names = F)
 
 # QUESTION:
@@ -697,7 +688,7 @@ for(cuid in cuids){
 data_compare
 
 # Number of CUs with differences:
-data_compare$cuid |> unique() |> length() # 17
+data_compare$cuid |> unique() |> length() # 65 17
 
 # Where they are from:
 data_compare$region |> unique()

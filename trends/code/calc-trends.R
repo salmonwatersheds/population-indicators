@@ -39,7 +39,7 @@ wd_pop_indic_data_input_dropbox <- paste0(wd_popInd,"/data-input")
 wd_output <- paste0(wd_popInd,"/trends/output")
 wd_figures <- paste0(wd_popInd,"/trends/figures")
 
-
+wd_pop_indic_data_input_dropbox <- paste0(wd_popInd,"/data-input")
 
 
 
@@ -50,36 +50,36 @@ path_ahead <- sub(pattern = paste0("\\",dirhead,".*"),replacement = "", x = path
 wd_head <- paste0(path_ahead,dirhead)
 setwd(wd_head)
 
-# Now import functions related to directories.
-# Note that the script cannot be called again once the directory is set to the 
-# subdirectory of the project (unless setwd() is called again).
-source("code/functions_set_wd.R")
-source("code/functions_general.R")
-
-# return the name of the directories for the different projects:
-subDir_projects <- subDir_projects_fun()
-
-wds_l <- set_working_directories_fun(subDir = subDir_projects$trends,
-                                     Export_locally = F)
-wd_head <- wds_l$wd_head
-wd_project <- wds_l$wd_project
-wd_code <- wds_l$wd_code
-wd_data <- wds_l$wd_data
-wd_figures <- wds_l$wd_figures
-wd_output <- wds_l$wd_output
-wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
-
-wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                               wds_l$wd_project_dropbox,
-                               "references",sep="/")
-
-wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                         wds_l$wd_project_dropbox,
-                         "data",sep="/")
-
-wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
-                                         wds_l$wd_population_indicator_data_input_dropbox,
-                                         sep = "/")
+# # Now import functions related to directories.
+# # Note that the script cannot be called again once the directory is set to the 
+# # subdirectory of the project (unless setwd() is called again).
+# source("code/functions_set_wd.R")
+# source("code/functions_general.R")
+# 
+# # return the name of the directories for the different projects:
+# subDir_projects <- subDir_projects_fun()
+# 
+# wds_l <- set_working_directories_fun(subDir = subDir_projects$trends,
+#                                      Export_locally = F)
+# wd_head <- wds_l$wd_head
+# wd_project <- wds_l$wd_project
+# wd_code <- wds_l$wd_code
+# wd_data <- wds_l$wd_data
+# wd_figures <- wds_l$wd_figures
+# wd_output <- wds_l$wd_output
+# wd_X_Drive1_PROJECTS <- wds_l$wd_X_Drive1_PROJECTS
+# 
+# wd_references_dropbox <- paste(wd_X_Drive1_PROJECTS,
+#                                wds_l$wd_project_dropbox,
+#                                "references",sep="/")
+# 
+# wd_data_dropbox <- paste(wd_X_Drive1_PROJECTS,
+#                          wds_l$wd_project_dropbox,
+#                          "data",sep="/")
+# 
+# wd_pop_indic_data_input_dropbox <- paste(wd_X_Drive1_PROJECTS,
+#                                          wds_l$wd_population_indicator_data_input_dropbox,
+#                                          sep = "/")
 
 # Loading packages & functions
 
@@ -123,7 +123,55 @@ spawners <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                   update_file_csv = update_file_csv,
                                   wd = wd_pop_indic_data_input_dropbox)
 
-# spawners$estimated_count[which(spawners$estimated_count == -989898)] <- NA
+#'* TEMOPORARY (2026-10-09) *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
+                                           pattern = "dataset1_spawner-abundance")
+
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- cu_decoder$cuid == cuid
+  sq <- cu_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
+
+cond <- spawners$region == "Yukon"
+spawners[cond,]
+cuid_yk_pse <- unique(spawners$cuid[cond])
+length(cuid_yk_pse) # 17
+
+sapply(cuid_yk_pse,function(cuid){
+  cond <- spawners$cuid == cuid
+  out <- max(spawners$year[cond])
+  names(out) <- cuid
+  return(out)
+})
+
+cuid_yk_new <- unique(spwAbd_yukon$cuid)
+length(cuid_yk_new) # 16
+sapply(cuid_yk_new,function(cuid){
+  cond <- spwAbd_yukon$cuid == cuid
+  out <- max(spwAbd_yukon$year[cond])
+  names(out) <- cuid
+  return(out)
+})
+
+cuid_yk_new[! cuid_yk_new %in% cuid_yk_pse]
+cuid_yk_pse[! cuid_yk_pse %in% cuid_yk_new]
+# 1216
+
+spawners[spawners$cuid == 1216,]
+# CM 1216 Donjek Kluane --> no estimated spawner abundance
+
+spawners <- spawners[!cond,]
+
+spawners <- rbind(spawners,
+                  spwAbd_yukon[,colnames(spawners)])
 
 # Filter out no estimated spawner abundance
 spawners <- spawners %>% filter(!is.na(estimated_count))
@@ -134,19 +182,6 @@ spawners <- spawners %>% filter(!is.na(estimated_count))
 cuid <- unique(spawners$cuid)
 
 species_name <- spawners$species_name[match(cuid, spawners$cuid)]
-# TEMPORARY
-# simplify species_name as in PSE data meeting December 11 2024
-# To remove eventually when conservationunits_decoder$species_name 
-# changed as well.
-species_name <- sapply(species_name, FUN = function(sp){
-  out <- sp
-  if(grepl("[s|S]ockeye",sp)){
-    out <- "Sockeye"
-  }else if(grepl("Pink",sp)){
-    out <- "Pink"
-  }
-  return(out)
-})
 
 cu_list <- data.frame(
   region = cu_decoder$region[match(cuid, cu_decoder$pooledcuid)],
@@ -688,7 +723,7 @@ for(cuid in cuids){
 data_compare
 
 # Number of CUs with differences:
-data_compare$cuid |> unique() |> length() # 65 17
+data_compare$cuid |> unique() |> length() # 16 (Yukon data update) 65 17
 
 # Where they are from:
 data_compare$region |> unique()

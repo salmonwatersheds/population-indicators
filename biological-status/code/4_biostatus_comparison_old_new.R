@@ -246,8 +246,13 @@ biostatus_merge[cond,]
 
 #'* Condition same status *
 cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
-sum(cond_same) # 428 (425) 450 436 442 378 432 370 369 362 346
+sum(cond_same) # 461 428 (425) 450 436 442 378 432 370 369 362 346
 biostatus_merge[cond_same,] # |> View()
+biostatus_merge[!cond_same,]
+
+benchmarks_new[benchmarks_new$cuid %in% biostatus_merge[!cond_same,]$cuid,]
+biostatus_new[biostatus_new$cuid %in% biostatus_merge[!cond_same,]$cuid,]
+
 
 # with biostatus assessed:
 cond_123 <- biostatus_merge$psf_status_old[cond_same] %in% c("poor","fair","goog")
@@ -265,7 +270,7 @@ biostatus_merge[cond_same,][cond_123,][!cond_method_same,]
 
 #'* Different status *
 cond_diff <- biostatus_merge$psf_status_old != biostatus_merge$psf_status_new
-sum(cond_diff) # 35 (38) 13 27 21 41 31 93 103 120
+sum(cond_diff) # 2 35 (38) 13 27 21 41 31 93 103 120
 
 show <- biostatus_merge[cond_diff,c("region","species_qualified","cuid","cu_name_pse",
                             "psf_status_old","psf_status_new",
@@ -297,7 +302,7 @@ show$gen_length <- sapply(show$cuid,function(cuid){
 })
 
 show
-nrow(show) # 35 (38) 13 27
+nrow(show) # 2 35 (38) 13 27
 
 cases <- unique(biostatus_merge[cond_diff,c("psf_status_old","psf_status_new")])
 cases$count <- apply(cases,1,function(r){

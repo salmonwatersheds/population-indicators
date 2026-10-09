@@ -103,7 +103,7 @@ benchmarks_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                        region = region,
                                                        species_all = species_all,
                                                        term_exclude = "cyclic")
-nrow(benchmarks_percentile) # 1275 1305 1341 1347
+nrow(benchmarks_percentile) # 1272 (?!--> just Yukon updated) 1275 1305 1341 1347
 
 #'* Import biostatus obtained with HBSR Sgen - Smsy: *
 pattern <- "biological_status_HBSRM"
@@ -167,7 +167,7 @@ biological_status_percentile <- rbind_biologicalStatusCSV_fun(pattern = pattern,
                                                       species_all = species_all,
                                                       term_exclude = "cyclic")
 
-nrow(biological_status_percentile) # 425 435 447 449 451 452 448
+nrow(biological_status_percentile) # 424 (?!--> just Yukon updated) 425 435 447 449 451 452 448
 
 
 #'* Import the conservationunits_decoder.csv *
@@ -188,8 +188,6 @@ nrow(unique(conservationunits_decoder[,c("region","species_name","cu_name_pse")]
 length(unique(conservationunits_decoder$pooledcuid)) # 463
 length(unique(conservationunits_decoder$cuid)) # 469
 
-# TEMPORAL FIX (until fixed in the database)
-# colnames(conservationunits_decoder)[colnames(conservationunits_decoder) == "species_abbr"] <- "species_qualified"
 unique(conservationunits_decoder$species_qualified)
 
 # remove the SMU-related information because that causes issues lower
@@ -251,17 +249,27 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                             wd = wd_pop_indic_data_input_dropbox)
 
 
-# check the last year of data for each region, STILL USED ???
-d <- data.frame(region = unique(cuspawnerabundance$region))
+#'* TEMOPORARY (2026-10-09) *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
 
-d$year_last <- sapply(X = d$region,function(rg){
-  cond_rg <- cuspawnerabundance$region == rg
-  cond_noNA <- !is.na(cuspawnerabundance$estimated_count)
-  out <- max(cuspawnerabundance$year[cond_rg & cond_noNA])
-  return(out)
-})
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
+                                           pattern = "dataset1_spawner-abundance")
 
-d
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- conservationunits_decoder$cuid == cuid
+  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
+
+cuspawnerabundance <- cuspawnerabundance[!cond,]
+
+cuspawnerabundance <- rbind(cuspawnerabundance,
+                            spwAbd_yukon[,colnames(cuspawnerabundance)])
 
 
 #'* Import code_PSF_Status from database *
@@ -528,7 +536,7 @@ val_new <- paste(val_toUpdate,8, sep = ", ")
 biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
 
 row_toUpdate <- biological_status_percentile$cuid %in% rule8$cuid[rule8$concerned]
-sum(row_toUpdate) # 260 268 !!! 76 51 50 67 77
+sum(row_toUpdate) # 259 (--> after Yukon update) 260 268 !!! 76 51 50 67 77
 val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
 val_new <- paste(val_toUpdate,8, sep = ", ")
 biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
@@ -541,7 +549,7 @@ val_new <- paste(val_toUpdate,9, sep = ", ")
 biological_status_HBSRM$psf_status_code[row_toUpdate] <- val_new
 
 row_toUpdate <- biological_status_percentile$comment  == "No estimated_count data in cuspawnerabundance.csv"
-sum(row_toUpdate) # 175 192 210
+sum(row_toUpdate) # 174 (--> after Yukon update) 175 192 210
 val_toUpdate <- biological_status_percentile$psf_status_code[row_toUpdate]
 val_new <- paste(val_toUpdate,9, sep = ", ")
 biological_status_percentile$psf_status_code[row_toUpdate] <- val_new
@@ -618,11 +626,11 @@ length(CUs_HBSRM_only) # 0 should be 0
 
 CUs_Percent_only <- biological_status_percentile$cuid[!biological_status_percentile$cuid %in% 
                                                        biological_status_HBSRM$cuid]
-length(CUs_Percent_only) # 259 271 287 289 298 305 (311 - 6 cyclic) ; 311 313 315 311
+length(CUs_Percent_only) # 258 (--> after Yukon update) 259 271 287 289 298 305 (311 - 6 cyclic) ; 311 313 315 311
 
 # Expected number of rows in biological_status_merged:
 length(CUs_comm) + length(CUs_HBSRM_only) + length(CUs_Percent_only) # 425 435 447 449 451 452 448
-nrow(biological_status_merged) # 425 435 447 455 449 451 452 --> should be the same as above
+nrow(biological_status_merged) # 424 (--> after Yukon update) 425 435 447 455 449 451 452 --> should be the same as above
 
 # Renames columns
 colnames(biological_status_merged) <- gsub("red","red_prob",colnames(biological_status_merged))
@@ -934,6 +942,7 @@ table(biological_status_merged$psf_status)
 #            270              4             44             25             11             91 2025-06-22: updating the Yukon data (also moved some of the code with new rule for 8 and absolute benchmark above)
 #            270              4             42             25             11             93 2025-10-09: 
 #            261              1             44             25             15             79 2026-09-24: there is only 1 extinct CU now because the other three only have NAs for spawner abundance and were consequently removed from the latest dataset1 (Fraser data)
+#            260              1             44             25             15             79 2026-09-24: Yukon update only --> looks like we lost a CU... --> it is Yukon CM 1216 Donjeck Kluane that only has observed counts so it comes in the downloaded dataset but not in the source 
 
 #'* Add field  hist_COLOUR *
 #' Note: this will be be removed in future. And no need to do the same for 
@@ -1006,7 +1015,7 @@ biological_status_merged[grepl("5",biological_status_merged$psf_status_code_all)
 #
 
 #'* Number CUs total *
-nrow(biological_status_merged) # 425 435 447 449 451 452 448
+nrow(biological_status_merged) # 424 (--> after Yukon update) 425 435 447 449 451 452 448
 
 
 #'* Number CUs with biostatus assessed over both methods *
@@ -1121,7 +1130,7 @@ biological_status_merged[!condition_1_2_3 & cond_perc,] # --> 8
 #'* Number of absolute bench *
 condition_absolute <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "absolute"
-sum(condition_absolute)     # 61 59
+sum(condition_absolute)     # 60 (--> after Yukon update) 61 59
 
 
 # should be TRUE
@@ -1218,7 +1227,7 @@ for(r in 1:nrow(benchmarks_merged)){
 # benchmarks_merged <- import_mostRecent_file_fun(wd_output,
 #                                                 pattern = "Benchmarks_HBSR_Percentile_all_")
 
-nrow(biological_status_merged)  # 425 445 447 449
+nrow(biological_status_merged)  # 424 (--> after Yukon update) 425 445 447 449
 nrow(conservationunits_decoder) # 469
 
 # We use the "pooledcuid" field and not "cuid" because the latter contains cuid
@@ -1285,6 +1294,7 @@ table(biological_status_merged$psf_status[!cond_yk])
 # data-deficient        extinct           fair           good   not-assessed           poor 
 #           284              4             39             25             11             80   # 2025-09-22   # Yukon update
 #           292              4             40             25             15             67   # 2026-09-24
+#           292              4             40             25             15             67   # 2026-10-09   # Yukon update
 
 #'* Add to benchmarks_merged *
 head(benchmarks_merged)
@@ -1353,7 +1363,7 @@ for(i in 1:nrow(biological_status_merged)){ # It should not print anything
 }
 
 #
-# MANUAL CHANGES: for Fraser CO and SH OLD -----
+# MANUAL CHANGES: for Fraser CO and SH -----
 # From population meeting in 18/12/2024
 # 
 
@@ -1372,15 +1382,17 @@ for(i in 1:nrow(biological_status_merged)){ # It should not print anything
 #' NOW (2026-09-22): we have SR for those CUs from Baily et al. 2025
 
 
-# use the percentile approach for the two SH Fraser CUs (THIS SHOULD BE PERMANENT)
+#' use the percentile approach for the two SH Fraser CUs (THIS SHOULD BE PERMANENT)
+#' STILL CURRENT !!! 2026-10-02
+#' https://pacificsalmonfdn.slack.com/archives/CJ5RVHVCG/p1790902063627559
 cuid_here <- c(780,781)
 cond <- biological_status_merged$cuid %in% cuid_here
 biological_status_merged[cond,]
-# biological_status_merged$psf_status[cond] <- biological_status_merged$percentile_status[cond]
-# biological_status_merged$psf_status_code[cond] <- sapply(biological_status_merged$psf_status[cond],FUN = function(bs){
-#   return((3:1)[bs == c("poor","fair","good")])
-# })
-# biological_status_merged$psf_status_type[cond] <- "percentile"
+biological_status_merged$psf_status[cond] <- biological_status_merged$percentile_status[cond]
+biological_status_merged$psf_status_code[cond] <- sapply(biological_status_merged$psf_status[cond],FUN = function(bs){
+  return((3:1)[bs == c("poor","fair","good")])
+})
+biological_status_merged$psf_status_type[cond] <- "percentile"
 
 #
 # Export files /dataset101_biological_status and dataset102_benchmarks -------
@@ -1407,9 +1419,9 @@ write.csv(benchmarks_merged,
 
 # write files in /output locally to push to github
 write.csv(biological_status_merged,
-          paste0(getwd(),"/output/dataset101_biological_status.csv"),
+          paste0(getwd(),"/biological-status/output/dataset101_biological_status.csv"),
           row.names = F)
 
 write.csv(benchmarks_merged,
-          paste0(getwd(),"/output/dataset102_benchmarks.csv"),
+          paste0(getwd(),"/biological-status/output/dataset102_benchmarks.csv"),
           row.names = F)

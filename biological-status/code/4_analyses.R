@@ -36,6 +36,10 @@
 rm(list = ls())
 graphics.off()
 
+source("code/functions_general.R")
+source("code/colours.R")
+source("biological-status/code/functions.R")
+
 library(tidyr)
 library(dplyr)
 library(xlsx)
@@ -47,13 +51,6 @@ wd_output <- paste0(wd_popInd,"/biological-status/output")
 wd_figures <- paste0(wd_popInd,"/biological-status/figures")
 wd_data_input <- paste0(wd_output,"/intermediate")
 
-# Now import functions related to directories.
-# Note that the script cannot be called again once the directory is set to the 
-# subdirectory of the project (unless setwd() is called again).
-source("code/functions_set_wd.R")
-source("code/functions_general.R")
-source("code/colours.R")
-source("biological-status/code/functions.R")
 
 
 # Import species names and acronyms
@@ -116,6 +113,26 @@ for(cuid in unique(spwAbd_yukon$cuid)){
 
 cond <- cuspawnerabundance$region == "Yukon"
 cuspawnerabundance[cond,]
+cuid_yk_pse <- unique(cuspawnerabundance$cuid[cond])
+length(cuid_yk_pse) # 17
+
+max(cuspawnerabundance$year[cond]) # 2025
+sapply(cuid_yk_pse,function(cuid){
+  cond <- cuspawnerabundance$cuid == cuid
+  out <- max(cuspawnerabundance$year[cond])
+  names(out) <- cuid
+  return(out)
+})
+
+cuid_yk_new <- unique(spwAbd_yukon$cuid)
+sapply(cuid_yk_new,function(cuid){
+  cond <- spwAbd_yukon$cuid == cuid
+  out <- max(spwAbd_yukon$year[cond])
+  names(out) <- cuid
+  return(out)
+})
+
+
 cuspawnerabundance <- cuspawnerabundance[!cond,]
 
 cuspawnerabundance <- rbind(cuspawnerabundance,
@@ -186,6 +203,8 @@ biological_status_cu$curr_spw <- sapply(biological_status_cu$cuid,function(cuid)
 })
 
 cond <- biological_status_cu
+
+cuid_biostat <- c(1203,1205)
 
 figure_print <- F
 percent <- 0

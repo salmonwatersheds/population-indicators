@@ -81,6 +81,48 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
+#'* TEMOPORARY (2026-10-09) *
+#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
+wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+
+spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
+                                           pattern = "dataset1_spawner-abundance")
+
+spwAbd_yukon$observed_count <- NA
+spwAbd_yukon$species_qualified <- NA
+for(cuid in unique(spwAbd_yukon$cuid)){
+  cond <- conservationunits_decoder$cuid == cuid
+  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+  
+  cond <- spwAbd_yukon$cuid == cuid
+  spwAbd_yukon$species_qualified[cond] <- sq
+}
+
+cond <- cuspawnerabundance$region == "Yukon"
+cuspawnerabundance[cond,]
+max(cuspawnerabundance$year[cond]) # 2025
+sapply(unique(cuspawnerabundance$cuid[cond]),function(cuid){
+  cond <- cuspawnerabundance$cuid == cuid
+  out <- max(cuspawnerabundance$year[cond])
+  names(out) <- cuid
+  return(out)
+})
+
+sapply(unique(spwAbd_yukon$cuid),function(cuid){
+  cond <- spwAbd_yukon$cuid == cuid
+  out <- max(spwAbd_yukon$year[cond])
+  names(out) <- cuid
+  return(out)
+})
+
+
+cuspawnerabundance <- cuspawnerabundance[!cond,]
+
+cuspawnerabundance <- rbind(cuspawnerabundance,
+                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+
+
+
 #------------------------------------------------------------------------------#
 # Selection of region(s) and species and last year for current spawner abundance
 #------------------------------------------------------------------------------#
@@ -126,7 +168,7 @@ options(warn = 0)  # warnings are stored until the top level function returns (d
 
 # 
 for(i_rg in 1:length(region)){
-  # i_rg <- 2
+  # i_rg <- 1
   
   if(region[i_rg] == "West Vancouver Island"){
     regionName <- "WVI"

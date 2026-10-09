@@ -76,6 +76,38 @@ recruitsperspawner <- datasets_database_fun(nameDataSet = "recruitsperspawner.cs
 unique(recruitsperspawner$region)
 unique(recruitsperspawner[,c("region","species_name")])
 
+
+#' TEMPORART (2026-10-09): add Yukon data from source
+
+cond_yukon <- recruitsperspawner$region == "Yukon"
+max(recruitsperspawner$year[cond_yukon]) # 2017
+sum(cond_yukon) # 231
+length(unique(recruitsperspawner$cuid[cond_yukon])) # 7
+
+# Import latest dataset directly from /yukon-data
+wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+
+recruitsperspawner_yukon <- read.csv(paste0(wd_yukon_data,"/output/dataset5_recruits-per-spawner_Yukon.csv"),header = T)
+max(recruitsperspawner_yukon$year) # 2018
+nrow(recruitsperspawner_yukon) # 238
+length(unique(recruitsperspawner_yukon$cuid)) # 7
+
+recruitsperspawner_yukon$species_qualified <- sapply(recruitsperspawner_yukon$cuid,function(cuid){
+  cond <- conservationunits_decoder$cuid == cuid
+  return(unique(conservationunits_decoder$species_qualified[cond]))
+})
+
+recruitsperspawner_yukon$r_s <- recruitsperspawner_yukon$recruits / recruitsperspawner_yukon$spawners
+
+# replace the data
+recruitsperspawner <- recruitsperspawner[!cond_yukon,]
+
+colnames(recruitsperspawner_yukon)[!colnames(recruitsperspawner_yukon) %in% colnames(recruitsperspawner)]
+
+recruitsperspawner <- rbind(recruitsperspawner,recruitsperspawner_yukon[,colnames(recruitsperspawner)])
+
+
+
 #'* External values for prior for Smax *
 
 #'1) Skeena SEL for which prSmax is estimated with a photosynthetic-based
@@ -310,6 +342,7 @@ region <- c(
 
 # all the regions
 region <- as.character(regions_df[1,])
+region <- "Yukon"
 # region <- region[region != "Columbia"]
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)

@@ -81,45 +81,20 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
-#'* TEMOPORARY (2026-10-09) *
+#'* TEMOPORARY (2026-11-05) *
 #' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+wd_fraser_data <- gsub("population-indicators","population-data/fraser-data",getwd())
 
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
-                                           pattern = "dataset1_spawner-abundance")
+spwAbd_fraser <- import_mostRecent_file_fun(wd = paste0(wd_fraser_data,"/output"),
+                                            pattern = "dataset1_spawner-abundance")
 
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- conservationunits_decoder$cuid == cuid
-  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
-  
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
+spwAbd_fraser$observed_count <- NA
 
-cond <- cuspawnerabundance$region == "Yukon"
-cuspawnerabundance[cond,]
-max(cuspawnerabundance$year[cond]) # 2025
-sapply(unique(cuspawnerabundance$cuid[cond]),function(cuid){
-  cond <- cuspawnerabundance$cuid == cuid
-  out <- max(cuspawnerabundance$year[cond])
-  names(out) <- cuid
-  return(out)
-})
-
-sapply(unique(spwAbd_yukon$cuid),function(cuid){
-  cond <- spwAbd_yukon$cuid == cuid
-  out <- max(spwAbd_yukon$year[cond])
-  names(out) <- cuid
-  return(out)
-})
-
-
+cond <- cuspawnerabundance$cuid %in% unique(spwAbd_fraser$cuid)
 cuspawnerabundance <- cuspawnerabundance[!cond,]
 
 cuspawnerabundance <- rbind(cuspawnerabundance,
-                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+                            spwAbd_fraser[,colnames(cuspawnerabundance)])
 
 
 
@@ -130,7 +105,7 @@ cuspawnerabundance <- rbind(cuspawnerabundance,
 # Choosing the region
 # BSC: This will have to eventually be automatized and eventually allows for 
 # multiple regions to be passed on.
-region <- regions_df$Yukon
+region <- regions_df$Fraser
 
 # multiple regions:
 region <- c(
@@ -151,6 +126,8 @@ cond_sp <- species_acronym_df$species_qualified_simple == "CK" |
   species_acronym_df$species_qualified_simple == "SE"
 cond_sp <- species_acronym_df$species_qualified_simple == "SE"
 species <- species_acronym_df$species_name_simple[cond_sp] |> unique()
+
+species <-"Sockeye"
 
 # For all species
 species <- species_acronym_df$species_name_simple |> unique()

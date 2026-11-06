@@ -246,7 +246,7 @@ biostatus_merge[cond,]
 
 #'* Condition same status *
 cond_same <- biostatus_merge$psf_status_old == biostatus_merge$psf_status_new
-sum(cond_same) # 461 428 (425) 450 436 442 378 432 370 369 362 346
+sum(cond_same) # 461 461 428 (425) 450 436 442 378 432 370 369 362 346
 biostatus_merge[cond_same,] # |> View()
 biostatus_merge[!cond_same,]
 
@@ -311,7 +311,7 @@ cases$count <- apply(cases,1,function(r){
   return(sum(cond))
 })
 cases
-sum(cases$count) # 38 13 27
+sum(cases$count) # 2 38 13 27
 
 # record the CUs that are different
 biostatus_merge_diff <- biostatus_merge[cond_diff,]

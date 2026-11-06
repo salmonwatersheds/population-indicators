@@ -59,7 +59,7 @@ region <- c(
 
 # all the regions
 region <- as.character(regions_df[1,])
-region <- "Yukon"
+region <- "Fraser"
 
 # Set species and constraints on analysis (first brood year and min # of SR data points)
 # BSC: possibility to select one or more species.
@@ -69,7 +69,7 @@ region <- "Yukon"
 cond_sp <- species_acronym_df$species_qualified_simple == "CK" | 
   species_acronym_df$species_qualified_simple == "SE"
 cond_sp <- species_acronym_df$species_qualified_simple == "CK"
-species <- "Chum"
+species <- "Sockeye"
 
 # For all species
 species <- species_acronym_df$species_name_simple |> unique()
@@ -103,57 +103,36 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                             update_file_csv = update_file_csv,
                                             wd = wd_pop_indic_data_input_dropbox)
 
-#'* TEMOPORARY (2026-10-09) *
+#'* TEMOPORARY (2026-11-05) *
 #' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+wd_fraser_data <- gsub("population-indicators","population-data/fraser-data",getwd())
 
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
+spwAbd_fraser <- import_mostRecent_file_fun(wd = paste0(wd_fraser_data,"/output"),
                                            pattern = "dataset1_spawner-abundance")
 
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- conservationunits_decoder$cuid == cuid
-  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
+spwAbd_fraser$observed_count <- NA
 
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
-
-cond <- cuspawnerabundance$region == "Yukon"
+cond <- cuspawnerabundance$region == "Fraser"
 cuspawnerabundance[cond,]
-cuid_yk_pse <- unique(cuspawnerabundance$cuid[cond])
-length(cuid_yk_pse) # 17
+cuid_fraser_pse <- unique(cuspawnerabundance$cuid[cond])
+length(cuid_fraser_pse) # 61
 
-max(cuspawnerabundance$year[cond]) # 2025
-sapply(cuid_yk_pse,function(cuid){
-  cond <- cuspawnerabundance$cuid == cuid
-  out <- max(cuspawnerabundance$year[cond])
-  names(out) <- cuid
-  return(out)
-})
+max(cuspawnerabundance$year[cond]) # 2026
 
-cuid_yk_new <- unique(spwAbd_yukon$cuid)
-length(cuid_yk_new) # 16
-sapply(cuid_yk_new,function(cuid){
-  cond <- spwAbd_yukon$cuid == cuid
-  out <- max(spwAbd_yukon$year[cond])
-  names(out) <- cuid
-  return(out)
-})
+cuid_fraser_new <- unique(spwAbd_fraser$cuid)
+length(cuid_fraser_new) # 57
 
-cuid_yk_new[! cuid_yk_new %in% cuid_yk_pse]
-cuid_yk_pse[! cuid_yk_pse %in% cuid_yk_new]
-# 1216
+cuid_fraser_new[! cuid_fraser_new %in% cuid_fraser_pse]
+cuid_fraser_pse[! cuid_fraser_pse %in% cuid_fraser_new]
+#  780 781 784 785 --> all SH
 
-cuspawnerabundance[cuspawnerabundance$cuid == 1216,]
-# CM 1216 Donjek Kluane
+cuspawnerabundance[cuspawnerabundance$cuid == 785 ,]
 
+cond <- cuspawnerabundance$cuid %in% unique(spwAbd_fraser$cuid)
 cuspawnerabundance <- cuspawnerabundance[!cond,]
 
 cuspawnerabundance <- rbind(cuspawnerabundance,
-                            spwAbd_yukon[,colnames(cuspawnerabundance)])
-
+                            spwAbd_fraser[,colnames(cuspawnerabundance)])
 
 # The benchmarks to use
 benchmarks <- c(0.25, 0.5, 0.75) # was c(0.25, 0.5)

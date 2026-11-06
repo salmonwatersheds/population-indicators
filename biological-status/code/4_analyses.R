@@ -93,50 +93,21 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                              update_file_csv = update_file_csv,
                                              wd = wd_pop_indic_data_input_dropbox)
 
-#'* TEMOPORARY *
+
+#'* TEMOPORARY (2026-11-05) *
 #' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon <- gsub("population-indicators/data-input",
-                 "population-data/Yukon-data",
-                 wd_pop_indic_data_input_dropbox)
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon,"/output/archive/"),
-                                           pattern = "dataset1_spawner-abundance")
+wd_fraser_data <- gsub("population-indicators","population-data/fraser-data",getwd())
 
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- conservationunits_decoder$cuid == cuid
-  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
-  
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
+spwAbd_fraser <- import_mostRecent_file_fun(wd = paste0(wd_fraser_data,"/output"),
+                                            pattern = "dataset1_spawner-abundance")
 
-cond <- cuspawnerabundance$region == "Yukon"
-cuspawnerabundance[cond,]
-cuid_yk_pse <- unique(cuspawnerabundance$cuid[cond])
-length(cuid_yk_pse) # 17
+spwAbd_fraser$observed_count <- NA
 
-max(cuspawnerabundance$year[cond]) # 2025
-sapply(cuid_yk_pse,function(cuid){
-  cond <- cuspawnerabundance$cuid == cuid
-  out <- max(cuspawnerabundance$year[cond])
-  names(out) <- cuid
-  return(out)
-})
-
-cuid_yk_new <- unique(spwAbd_yukon$cuid)
-sapply(cuid_yk_new,function(cuid){
-  cond <- spwAbd_yukon$cuid == cuid
-  out <- max(spwAbd_yukon$year[cond])
-  names(out) <- cuid
-  return(out)
-})
-
-
+cond <- cuspawnerabundance$cuid %in% unique(spwAbd_fraser$cuid)
 cuspawnerabundance <- cuspawnerabundance[!cond,]
 
 cuspawnerabundance <- rbind(cuspawnerabundance,
-                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+                            spwAbd_fraser[,colnames(cuspawnerabundance)])
 
 
 

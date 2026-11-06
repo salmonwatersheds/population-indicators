@@ -249,27 +249,20 @@ cuspawnerabundance <- datasets_database_fun(nameDataSet = "cuspawnerabundance.cs
                                             wd = wd_pop_indic_data_input_dropbox)
 
 
-#'* TEMOPORARY (2026-10-09) *
-#' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+#'* TEMOPORARY (2026-11-05) *
+#'
+wd_fraser_data <- gsub("population-indicators","population-data/fraser-data",getwd())
 
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
-                                           pattern = "dataset1_spawner-abundance")
+spwAbd_fraser <- import_mostRecent_file_fun(wd = paste0(wd_fraser_data,"/output"),
+                                            pattern = "dataset1_spawner-abundance")
 
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- conservationunits_decoder$cuid == cuid
-  sq <- conservationunits_decoder$species_qualified[cond] |> unique()
-  
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
+spwAbd_fraser$observed_count <- NA
 
+cond <- cuspawnerabundance$cuid %in% unique(spwAbd_fraser$cuid)
 cuspawnerabundance <- cuspawnerabundance[!cond,]
 
 cuspawnerabundance <- rbind(cuspawnerabundance,
-                            spwAbd_yukon[,colnames(cuspawnerabundance)])
+                            spwAbd_fraser[,colnames(cuspawnerabundance)])
 
 
 #'* Import code_PSF_Status from database *
@@ -943,6 +936,7 @@ table(biological_status_merged$psf_status)
 #            270              4             42             25             11             93 2025-10-09: 
 #            261              1             44             25             15             79 2026-09-24: there is only 1 extinct CU now because the other three only have NAs for spawner abundance and were consequently removed from the latest dataset1 (Fraser data)
 #            260              1             44             25             15             79 2026-09-24: Yukon update only --> looks like we lost a CU... --> it is Yukon CM 1216 Donjeck Kluane that only has observed counts so it comes in the downloaded dataset but not in the source 
+#            260              1             46             25             15             77 2026-11-05: Fraser update with the latest dataset sent by Fiona Martens (PSC) for SEL
 
 #'* Add field  hist_COLOUR *
 #' Note: this will be be removed in future. And no need to do the same for 
@@ -1112,10 +1106,10 @@ sum(condition_5_6_7) # 16 13 13 16 229 233 226 (less 6 cyclic CUs) 232 234 38
 
 #'* Number CUs with biostatus assessed with HBSRM *
 condition_1_2_3 <- biological_status_merged$psf_status_code %in% 1:3
-sum(cond_sr)                           # 134 123 137 140 152 117 110 104 97 124 125
-sum(condition_1_2_3 & cond_sr)         #  82  86  99 102 114 125 117 110 (--> + 6 cyclic CUs) 104 97 124 125
-sum(condition_8 & cond_sr)             #  46 37 38 24 with not enough recent data but psf_status_type still shown
-sum(!condition_1_2_3 & cond_sr)        #  46
+sum(cond_sr)                           # 136 134 123 137 140 152 117 110 104 97 124 125
+sum(condition_1_2_3 & cond_sr)         #  90  82  86  99 102 114 125 117 110 (--> + 6 cyclic CUs) 104 97 124 125
+sum(condition_8 & cond_sr)             #  46  46 37 38 24 with not enough recent data but psf_status_type still shown
+sum(!condition_1_2_3 & cond_sr)        #  46  46
 
 biological_status_merged[!condition_1_2_3 & cond_sr,] # --> 8
 
@@ -1130,7 +1124,7 @@ biological_status_merged[!condition_1_2_3 & cond_perc,] # --> 8
 #'* Number of absolute bench *
 condition_absolute <- !is.na(biological_status_merged$psf_status_type) & 
   biological_status_merged$psf_status_type == "absolute"
-sum(condition_absolute)     # 60 (--> after Yukon update) 61 59
+sum(condition_absolute)     # 59 (--> after the SEL Fraser update) 60 (--> after Yukon update) 61 59
 
 
 # should be TRUE
@@ -1138,8 +1132,7 @@ cond_sum <- (cond_sr & !condition_8) | (cond_perc & !condition_8) | (condition_a
 sum(cond_sum)
 all(cond_sum == condition_1_2_3)
 
-biological_status_merged[cond_sum != condition_1_2_3,]
-
+biological_status_merged[cond_sum != condition_1_2_3,] # should not be any
 
 #
 # Create benchmarks_HBSR_Percentile_all.csv (part of dataset_102) --------
@@ -1249,9 +1242,9 @@ conservationunits_decoder[cond,c("region","species_qualified","pooledcuid","cuid
 cond <- ! conservationunits_decoder$pooledcuid %in% biological_status_merged$cuid #
 cuidMissing <- conservationunits_decoder$cuid[cond] |> unique()
 cuidMissing
-length(cuidMissing) # 38 18 16 14
+length(cuidMissing) # 39 38 18 16 14
 conservationunits_decoder[cond,]
-sum(cond) # 38 18
+sum(cond) # 39 38 18
 
 #'* Add to biological_status_merged * 
 head(biological_status_merged)
@@ -1295,6 +1288,7 @@ table(biological_status_merged$psf_status[!cond_yk])
 #           284              4             39             25             11             80   # 2025-09-22   # Yukon update
 #           292              4             40             25             15             67   # 2026-09-24
 #           292              4             40             25             15             67   # 2026-10-09   # Yukon update
+#           292              4             42             25             15             65   # 2026-11-05 Fraser SEL update with PSC data
 
 #'* Add to benchmarks_merged *
 head(benchmarks_merged)

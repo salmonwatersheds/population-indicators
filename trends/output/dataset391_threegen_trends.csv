@@ -40,30 +40,12 @@
 "Skeena","Coho","CO",225,"Skeena Estuary",-0.8,-6,-0.007685,23.777,8.361,2006,2014,NA
 "Skeena","Chinook","CK",229,"Zymoetz",-8,-75.8,-0.08355,175.723,8.372,2003,2020,NA
 "Skeena","Coho","CO",231,"Upper Skeena",4.9,46.5,0.047712,-86.908,9.28,2016,2024,NA
-"Skeena","Steelhead","SH",281,"Upper Sustut",-10.7,-79.5,-0.113157,234.71,7.151,2011,2025,NA
+"Skeena","Steelhead","SH",281,"Upper Sustut",-11.8,-82.9,-0.12611,260.81,7.202,2011,2025,NA
 "Skeena","Steelhead","SH",287,"Bulkley",3.7,66.6,0.036479,-63.322,9.599,1999,2012,NA
 "Skeena","Steelhead","SH",289,"Morice",3.7,66.6,0.036479,-63.322,9.599,1999,2012,NA
 "Skeena","Sockeye","SEL",291,"Prudhomme",-11.1,-80.9,-0.118126,245.552,8.709,2005,2019,NA
 "Skeena","Sockeye","SEL",292,"Shawatlan",-8.4,-70.9,-0.088273,185.426,8.791,2001,2015,NA
 "Columbia","Chinook","CK",301,"Okanagan",12.7,434.4,0.119718,-238.246,2.148,2008,2022,NA
-"Fraser","Chinook","CK",302,"Boundary Bay (Fall 4-1)",5.9,88.6,0.057698,-111.131,4.957,2012,2023,NA
-"Fraser","Chinook","CK",303,"Lower Fraser River (Fall 4-1)",4.7,65.3,0.045712,-81.389,10.674,2014,2025,NA
-"Fraser","Chinook","CK",304,"Lower Fraser River (Spring 5-2)",-11.8,-82.7,-0.12522,258.455,6.637,2011,2025,NA
-"Fraser","Chinook","CK",305,"Lower Fraser River-Upper Pitt (Summer 5-2)",-5.2,-52.6,-0.05331,111.163,3.956,2011,2025,NA
-"Fraser","Chinook","CK",306,"Lower Fraser River (Summer 5-2)",-2.5,-30.2,-0.025731,55.791,4.046,2011,2025,NA
-"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",-22.1,-93.6,-0.249984,509.411,5.943,2014,2025,NA
-"Fraser","Chinook","CK",308,"Fraser Canyon-Nahatlatch (Spring 5-2)",20.5,1253.9,0.186111,-372.695,1.574,2011,2025,NA
-"Fraser","Chinook","CK",309,"Middle Fraser River-Portage (Fall 5-2)",-4.9,-50.6,-0.050379,105.514,4.203,2011,2025,NA
-"Fraser","Chinook","CK",310,"Middle Fraser River (Spring 5-2)",-0.8,-10.7,-0.008108,24.556,8.252,2011,2025,NA
-"Fraser","Chinook","CK",311,"Middle Fraser River (Summer 5-2)",-2.8,-32.8,-0.028444,66.632,9.43,2011,2025,NA
-"Fraser","Chinook","CK",312,"Upper Fraser River (Spring 5-2)",-1.9,-23.6,-0.019255,48.065,9.342,2011,2025,NA
-"Fraser","Chinook","CK",313,"South Thompson River (Summer 4-1)",9.7,175.9,0.092277,-174.846,11,2014,2025,NA
-"Fraser","Chinook","CK",314,"South Thompson River (Summer 5-2)",2.4,39.8,0.023919,-41.317,6.784,2011,2025,NA
-"Fraser","Chinook","CK",315,"Shuswap River (Summer 4-1)",6.5,99.5,0.062801,-116.705,9.777,2014,2025,NA
-"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",-23.9,-95,-0.273,553.77,3.947,2014,2025,NA
-"Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",-2.9,-27.9,-0.029709,68.924,9.089,2014,2025,NA
-"Fraser","Chinook","CK",318,"North Thompson River (Spring 5-2)",4.4,83.2,0.043247,-81.907,5.062,2011,2025,NA
-"Fraser","Chinook","CK",319,"North Thompson River (Summer 5-2)",2,32.6,0.020161,-32.927,7.616,2011,2025,NA
 "East Vancouver Island & Mainland Inlets","Chinook","CK",320,"Southern Mainland-Georgia Strait (Fall x-1)",-2.6,-31.2,-0.026673,59.644,6.165,2005,2018,NA
 "East Vancouver Island & Mainland Inlets","Chinook","CK",321,"East Vancouver Island-Goldstream (Fall x-1)",-22.8,-97.3,-0.258463,523.368,5.408,2004,2018,NA
 "East Vancouver Island & Mainland Inlets","Chinook","CK",322,"East Vancouver Island-Cowichan and Koksilah (Fall x-1)",6.3,136.1,0.061366,-115.337,7.64,2004,2018,NA
@@ -74,7 +56,6 @@
 "West Vancouver Island","Chinook","CK",328,"West Vancouver Island-South (Fall x-1)",-2.8,-33.1,-0.02867,68.319,10.864,2004,2018,NA
 "West Vancouver Island","Chinook","CK",329,"West Vancouver Island-Nootka and Kyuquot (Fall x-1)",2.6,44.2,0.026148,-42.475,9.926,2004,2018,NA
 "West Vancouver Island","Chinook","CK",330,"West Vancouver Island-North (Fall x-1)",0.6,8.5,0.005796,-3.742,7.873,2004,2018,NA
-"Fraser","Chinook","CK",333,"South Thompson-Adams River Upper",NA,NA,NA,NA,NA,2004,2018,NA
 "East Vancouver Island & Mainland Inlets","Chinook","CK",334,"East Vancouver Island-Georgia Strait (Summer 4-1)",-3.6,-40.3,-0.036806,81.369,7.61,2004,2018,NA
 "Nass","Chinook","CK",401,"Portland Sound-Observatory Inlet-Lower Nass",-5,-51.4,-0.051495,111.201,7.799,2008,2022,NA
 "Nass","Chinook","CK",402,"Upper Nass",-5.4,-54,-0.055495,121.277,9.843,2008,2022,NA
@@ -146,37 +127,6 @@
 "Central Coast","Pink","PKO",611,"Hecate Strait-Lowlands (odd)",30,271.9,0.262698,-517.58,12.282,2017,2021,NA
 "Central Coast","Pink","PKO",612,"Hecate Strait-Fjords (odd)",-5.8,-25.9,-0.059855,134.723,13.996,2017,2021,NA
 "Central Coast","Sockeye","SER",614,"Northern Coastal Fjords (river-type)",-4.3,-38.2,-0.043749,96.668,8.732,2010,2021,NA
-"Fraser","Chum","CM",701,"Lower Fraser",-3.9,-35.2,-0.039374,93.165,13.866,2014,2025,NA
-"Fraser","Coho","CO",705,"Fraser Canyon",25.8,527.8,0.229625,-455.879,7.274,2017,2025,NA
-"Fraser","Coho","CO",707,"Lower Thompson",14.6,197.6,0.136305,-265.918,9.009,2017,2025,NA
-"Fraser","Coho","CO",708,"South Thompson",16,226.9,0.148079,-290.134,8.541,2017,2025,NA
-"Fraser","Coho","CO",709,"North Thompson",14.5,196.1,0.13568,-264.383,9.283,2017,2025,NA
-"Fraser","Pink","PKO",710,"Fraser River (odd)",22.7,177.6,0.204173,-396.83,15.803,2021,2025,NA
-"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",-9.7,-67.6,-0.102515,215.795,9.534,2012,2023,NA
-"Fraser","Sockeye","SEL",712,"Cultus-Late",-28.2,-97.4,-0.331704,675.816,8.428,2012,2023,NA
-"Fraser","Sockeye","SEL",713,"Harrison-Downstream Migrating-Late",-24,-95.1,-0.273805,559.885,8.989,2012,2023,NA
-"Fraser","Sockeye","SEL",714,"Harrison-Upstream Migrating-Late",-9.7,-67.4,-0.101978,214.635,9.456,2012,2023,NA
-"Fraser","Sockeye","SEL",715,"Pitt-Early Summer",-14.4,-81.9,-0.155165,323.163,10.972,2012,2023,NA
-"Fraser","Sockeye","SEL",716,"Lillooet-Harrison-Late",-12.5,-77.1,-0.133992,280.415,10.823,2012,2023,NA
-"Fraser","Sockeye","SEL",718,"Nahatlatch-Early Summer",0.2,2.2,0.001992,3.798,7.806,2012,2023,NA
-"Fraser","Sockeye","SEL",719,"Anderson-Seton-Early Summer",-10,-68.4,-0.104838,220.788,9.854,2012,2023,NA
-"Fraser","Sockeye","SEL",720,"Chilko-Early Summer",14.7,351.6,0.137054,-262.246,8.847,1978,1989,NA
-"Fraser","Sockeye","SEL",721,"Chilko-Summer",-8.8,-63.6,-0.091766,198.039,13.405,2012,2023,NA
-"Fraser","Sockeye","SEL",725,"Francois-Fraser-Summer",-2.1,-21.2,-0.021609,54.992,11.514,2012,2023,NA
-"Fraser","Sockeye","SEL",727,"Nadina-Francois-Early Summer",8.8,151.9,0.083992,-159.186,9.806,2012,2023,NA
-"Fraser","Sockeye","SEL",728,"Quesnel-Summer (cyclic)",3.6,48,0.035632,-61.54,10.152,2012,2023,NA
-"Fraser","Sockeye","SEL",729,"Seton-Late (de novo)",-2.3,-22.7,-0.023391,54.021,6.959,2012,2023,NA
-"Fraser","Sockeye","SEL",731,"Takla-Trembleur-Stuart-Summer (cyclic)",0.6,7.2,0.00636,-2.454,10.342,2012,2023,NA
-"Fraser","Sockeye","SEL",732,"Takla-Trembleur-Early Stuart (cyclic)",-22.4,-93.9,-0.253574,520.397,10.206,2012,2023,NA
-"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",0.2,2.6,0.002337,0.579,5.281,2012,2023,NA
-"Fraser","Sockeye","SEL",735,"Bowron-Early Summer",-9.5,-66.6,-0.099561,207.744,7.427,2012,2023,NA
-"Fraser","Sockeye","SEL",738,"Shuswap-Early Summer (cyclic)",-10.7,-71.1,-0.11274,237.148,10.315,2012,2023,NA
-"Fraser","Sockeye","SEL",739,"Shuswap-Late (cyclic)",-11.7,-74.6,-0.124528,260.619,10.068,2012,2023,NA
-"Fraser","Sockeye","SEL",740,"Kamloops-Early Summer",-10.8,-71.4,-0.113891,238.361,9.212,2012,2023,NA
-"Fraser","Sockeye","SER",742,"Widgeon (river-type)",-17.5,-88,-0.192671,394.419,6.766,2012,2023,NA
-"Fraser","Sockeye","SER",745,"Harrison River (river-type)",-24.2,-95.2,-0.276993,570.11,12.799,2012,2023,NA
-"Fraser","Coho","CO",749,"Interior Fraser",24.6,481,0.219944,-435.565,8.061,2017,2025,NA
-"Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",-12.5,-77,-0.133596,277.069,8.274,2012,2023,NA
 "Fraser","Steelhead","SH",780,"Mid Fraser Summer",-16,-91.3,-0.174339,356.907,6.137,2012,2026,NA
 "Fraser","Steelhead","SH",781,"Thompson Summer",-12.2,-83.9,-0.130412,269.252,6.864,2012,2026,NA
 "Haida Gwaii","Chum","CM",800,"North Haida Gwaii-Stanley Creek",6,126.6,0.058426,-110.824,5.795,1996,2010,NA
@@ -230,21 +180,71 @@
 "Northern Transboundary","Sockeye","SEL",1033,"King Salmon",13.5,304,0.126933,-248.231,7.158,2012,2023,NA
 "Northern Transboundary","Sockeye","SEL",1038,"Klukshu",2.5,40.3,0.024205,-39.669,8.958,2009,2023,NA
 "Northern Transboundary","Sockeye","SEL",1039,"Nesketahin",-13.7,-87.3,-0.147151,302.873,7.246,2009,2023,NA
-"Columbia","Sockeye","SEL",1300,"Osoyoos",-14.7,-82.5,-0.158688,330.646,11.524,2011,2022,NA
-"Columbia","Steelhead","SH",1380,"Mid Columbia Summer",-20.2,-95.8,-0.2261,459.957,5.271,2011,2025,NA
-"Yukon","Chinook","CK",1207,"Northern Yukon",-6,-65,-0.061781,132.817,8.761,2008,2025,NA
-"Yukon","Chinook","CK",1206,"White",-7.8,-75,-0.081532,172.037,8.321,2008,2025,NA
-"Yukon","Chinook","CK",1203,"Pelly",-5.7,-63.3,-0.058938,127.714,9.366,2008,2025,NA
-"Yukon","Chinook","CK",1205,"Stewart",-2,-28.6,-0.019808,48.01,8.236,2008,2025,NA
-"Yukon","Chinook","CK",1202,"Nordenskiold",-1.3,-19.8,-0.012985,33.402,7.329,2008,2025,NA
-"Yukon","Chinook","CK",1204,"Middle Yukon",-1.5,-23.1,-0.015459,40.377,9.335,2008,2025,NA
 "Yukon","Chinook","CK",1201,"Big Salmon",-3.6,-46.4,-0.036648,82.197,8.608,2008,2025,NA
-"Yukon","Chinook","CK",1212,"Teslin",-9.6,-81.9,-0.100463,208.036,6.307,2008,2025,NA
-"Yukon","Chinook","CK",1211,"Upper Yukon",0.7,12.5,0.006952,-7.62,6.401,2017,2025,NA
+"Yukon","Chinook","CK",1202,"Nordenskiold",-1.3,-19.8,-0.012985,33.402,7.329,2008,2025,NA
+"Yukon","Chinook","CK",1203,"Pelly",-5.7,-63.3,-0.058938,127.714,9.366,2008,2025,NA
+"Yukon","Chinook","CK",1204,"Middle Yukon",-1.5,-23.1,-0.015459,40.377,9.335,2008,2025,NA
+"Yukon","Chinook","CK",1205,"Stewart",-2,-28.6,-0.019808,48.01,8.236,2008,2025,NA
+"Yukon","Chinook","CK",1206,"White",-7.8,-75,-0.081532,172.037,8.321,2008,2025,NA
+"Yukon","Chinook","CK",1207,"Northern Yukon",-6,-65,-0.061781,132.817,8.761,2008,2025,NA
 "Yukon","Chinook","CK",1209,"Porcupine",-31.3,-99.8,-0.375567,766.635,10.243,2014,2025,NA
 "Yukon","Chinook","CK",1210,"Old Crow",-31.3,-99.8,-0.375567,766.635,10.243,2014,2025,NA
+"Yukon","Chinook","CK",1211,"Upper Yukon",0.7,12.5,0.006952,-7.62,6.401,2017,2025,NA
+"Yukon","Chinook","CK",1212,"Teslin",-9.6,-81.9,-0.100463,208.036,6.307,2008,2025,NA
 "Yukon","Chum","CM",1213,"Middle Yukon",-18.8,-89.9,-0.208345,431.408,11.8,2014,2025,NA
-"Yukon","Chum","CM",1215,"White",-25.3,-96,-0.291753,599.485,11.894,2014,2025,NA
-"Yukon","Chum","CM",1219,"Teslin",24.8,1042.8,0.221463,-441.294,4.732,2014,2025,NA
 "Yukon","Chum","CM",1214,"North Yukon",-20.8,-92.3,-0.233628,476.436,5.909,2014,2025,NA
+"Yukon","Chum","CM",1215,"White",-25.3,-96,-0.291753,599.485,11.894,2014,2025,NA
 "Yukon","Chum","CM",1217,"Porcupine",-12.2,-76.2,-0.130538,272.861,9.957,2014,2025,NA
+"Yukon","Chum","CM",1219,"Teslin",24.8,1042.8,0.221463,-441.294,4.732,2014,2025,NA
+"Columbia","Sockeye","SEL",1300,"Osoyoos",-14.7,-82.5,-0.158688,330.646,11.524,2011,2022,NA
+"Columbia","Steelhead","SH",1380,"Mid Columbia Summer",-20.2,-95.8,-0.2261,459.957,5.271,2011,2025,NA
+"Fraser","Chinook","CK",302,"Boundary Bay (Fall 4-1)",5.9,88.6,0.057698,-111.131,4.957,2012,2023,NA
+"Fraser","Chinook","CK",308,"Fraser Canyon-Nahatlatch (Spring 5-2)",20.5,1253.9,0.186111,-372.695,1.574,2011,2025,NA
+"Fraser","Chinook","CK",303,"Lower Fraser River (Fall 4-1)",4.7,65.3,0.045712,-81.389,10.674,2014,2025,NA
+"Fraser","Chinook","CK",304,"Lower Fraser River (Spring 5-2)",-11.8,-82.7,-0.12522,258.455,6.637,2011,2025,NA
+"Fraser","Chinook","CK",306,"Lower Fraser River (Summer 5-2)",-2.5,-30.2,-0.025731,55.791,4.046,2011,2025,NA
+"Fraser","Chinook","CK",307,"Lower Fraser River-Maria Slough (Summer 4-1)",-22.1,-93.6,-0.249984,509.411,5.943,2014,2025,NA
+"Fraser","Chinook","CK",305,"Lower Fraser River-Upper Pitt (Summer 5-2)",-5.2,-52.6,-0.05331,111.163,3.956,2011,2025,NA
+"Fraser","Chinook","CK",317,"Lower Thompson River (Spring 4-2)",-2.9,-27.9,-0.029709,68.924,9.089,2014,2025,NA
+"Fraser","Chinook","CK",310,"Middle Fraser River (Spring 5-2)",-0.8,-10.7,-0.008108,24.556,8.252,2011,2025,NA
+"Fraser","Chinook","CK",311,"Middle Fraser River (Summer 5-2)",-2.8,-32.8,-0.028444,66.632,9.43,2011,2025,NA
+"Fraser","Chinook","CK",309,"Middle Fraser River-Portage (Fall 5-2)",-4.9,-50.6,-0.050379,105.514,4.203,2011,2025,NA
+"Fraser","Chinook","CK",318,"North Thompson River (Spring 5-2)",4.4,83.2,0.043247,-81.907,5.062,2011,2025,NA
+"Fraser","Chinook","CK",319,"North Thompson River (Summer 5-2)",2,32.6,0.020161,-32.927,7.616,2011,2025,NA
+"Fraser","Chinook","CK",315,"Shuswap River (Summer 4-1)",6.5,99.5,0.062801,-116.705,9.777,2014,2025,NA
+"Fraser","Chinook","CK",313,"South Thompson River (Summer 4-1)",9.7,175.9,0.092277,-174.846,11,2014,2025,NA
+"Fraser","Chinook","CK",314,"South Thompson River (Summer 5-2)",2.4,39.8,0.023919,-41.317,6.784,2011,2025,NA
+"Fraser","Chinook","CK",316,"South Thompson River-Bessette Creek (Summer 4-2)",-23.9,-95,-0.273,553.77,3.947,2014,2025,NA
+"Fraser","Chinook","CK",333,"South Thompson-Adams River Upper",NA,NA,NA,NA,NA,2004,2018,NA
+"Fraser","Chinook","CK",312,"Upper Fraser River (Spring 5-2)",-1.9,-23.6,-0.019255,48.065,9.342,2011,2025,NA
+"Fraser","Chum","CM",701,"Lower Fraser",-3.9,-35.2,-0.039374,93.165,13.866,2014,2025,NA
+"Fraser","Coho","CO",705,"Fraser Canyon",25.8,527.8,0.229625,-455.879,7.274,2017,2025,NA
+"Fraser","Coho","CO",749,"Interior Fraser",24.6,481,0.219944,-435.565,8.061,2017,2025,NA
+"Fraser","Coho","CO",707,"Lower Thompson",14.6,197.6,0.136305,-265.918,9.009,2017,2025,NA
+"Fraser","Coho","CO",709,"North Thompson",14.5,196.1,0.13568,-264.383,9.283,2017,2025,NA
+"Fraser","Coho","CO",708,"South Thompson",16,226.9,0.148079,-290.134,8.541,2017,2025,NA
+"Fraser","Pink","PKO",710,"Fraser River (odd)",22.7,177.6,0.204173,-396.83,15.803,2021,2025,NA
+"Fraser","Sockeye","SEL",719,"Anderson-Seton-Early Summer",-12.7,-77.5,-0.135794,283.618,10.265,2013,2024,NA
+"Fraser","Sockeye","SEL",735,"Bowron-Early Summer",-5.9,-48.6,-0.06046,128.971,7.265,2013,2024,NA
+"Fraser","Sockeye","SEL",720,"Chilko-Early Summer",14.7,351.6,0.137054,-262.246,8.847,1978,1989,NA
+"Fraser","Sockeye","SEL",721,"Chilko-Summer",-9.8,-67.8,-0.102955,220.758,13.509,2013,2024,NA
+"Fraser","Sockeye","SEL",711,"Chilliwack-Early Summer (cyclic)",-10,-68.6,-0.105447,221.771,9.506,2013,2024,NA
+"Fraser","Sockeye","SEL",712,"Cultus-Late",-23.9,-95,-0.272543,556.984,8.356,2013,2024,NA
+"Fraser","Sockeye","SEL",725,"Francois-Fraser-Summer",-5.5,-46.5,-0.05693,126.43,11.829,2013,2024,NA
+"Fraser","Sockeye","SER",745,"Harrison River (river-type)",-20.6,-92.1,-0.231296,477.979,12.381,2013,2024,NA
+"Fraser","Sockeye","SEL",713,"Harrison-Downstream Migrating-Late",-26.2,-96.5,-0.30396,621.018,9.147,2013,2024,NA
+"Fraser","Sockeye","SEL",714,"Harrison-Upstream Migrating-Late",-1.4,-14.2,-0.013942,37.047,8.983,2013,2024,NA
+"Fraser","Sockeye","SEL",740,"Kamloops-Early Summer",-13.7,-80.2,-0.147362,306.788,10.148,2013,2024,NA
+"Fraser","Sockeye","SEL",716,"Lillooet-Harrison-Late",-10.4,-70.1,-0.109818,232.047,10.984,2013,2024,NA
+"Fraser","Sockeye","SEL",727,"Nadina-Francois-Early Summer",10.9,213.2,0.103774,-199.067,9.831,2013,2024,NA
+"Fraser","Sockeye","SEL",718,"Nahatlatch-Early Summer",-0.7,-7.8,-0.007342,22.835,8.056,2013,2024,NA
+"Fraser","Sockeye","SEL",752,"North Barriere-Early Summer (de novo)",-11.2,-72.9,-0.11875,247.269,8.224,2013,2024,NA
+"Fraser","Sockeye","SEL",715,"Pitt-Early Summer",-14,-81,-0.150748,314.395,10.94,2013,2024,NA
+"Fraser","Sockeye","SEL",728,"Quesnel-Summer (cyclic)",2,24.2,0.019677,-29.029,10.581,2013,2024,NA
+"Fraser","Sockeye","SEL",729,"Seton-Late (de novo)",3.6,46.9,0.034935,-63.623,6.701,2013,2024,NA
+"Fraser","Sockeye","SEL",738,"Shuswap-Early Summer (cyclic)",-10.5,-70.5,-0.111046,234.305,10.768,2013,2024,NA
+"Fraser","Sockeye","SEL",739,"Shuswap-Late (cyclic)",-9.4,-66.3,-0.098831,209.037,10.089,2013,2024,NA
+"Fraser","Sockeye","SEL",732,"Takla-Trembleur-Early Stuart (cyclic)",-20.9,-92.4,-0.234762,482.815,10.239,2013,2024,NA
+"Fraser","Sockeye","SEL",731,"Takla-Trembleur-Stuart-Summer (cyclic)",1,11.9,0.010199,-10.052,10.479,2013,2024,NA
+"Fraser","Sockeye","SEL",734,"Taseko-Early Summer",8,134.3,0.077394,-150.809,4.985,2013,2024,NA
+"Fraser","Sockeye","SER",742,"Widgeon (river-type)",-15.5,-84.3,-0.168106,344.887,6.49,2013,2024,NA

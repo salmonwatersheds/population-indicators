@@ -123,55 +123,36 @@ spawners <- datasets_database_fun(nameDataSet = "cuspawnerabundance.csv",
                                   update_file_csv = update_file_csv,
                                   wd = wd_pop_indic_data_input_dropbox)
 
-#'* TEMOPORARY (2026-10-09) *
+#'* TEMOPORARY (2026-11-05) *
 #' Replace the Yukon data with the one freshly produced in the Yukon-data folder
-wd_yukon_data <- gsub("population-indicators","population-data/yukon-data",getwd())
+wd_fraser_data <- gsub("population-indicators","population-data/fraser-data",getwd())
 
-spwAbd_yukon <- import_mostRecent_file_fun(wd = paste0(wd_yukon_data,"/output"),
-                                           pattern = "dataset1_spawner-abundance")
+spwAbd_fraser <- import_mostRecent_file_fun(wd = paste0(wd_fraser_data,"/output"),
+                                            pattern = "dataset1_spawner-abundance")
 
-spwAbd_yukon$observed_count <- NA
-spwAbd_yukon$species_qualified <- NA
-for(cuid in unique(spwAbd_yukon$cuid)){
-  cond <- cu_decoder$cuid == cuid
-  sq <- cu_decoder$species_qualified[cond] |> unique()
-  
-  cond <- spwAbd_yukon$cuid == cuid
-  spwAbd_yukon$species_qualified[cond] <- sq
-}
+spwAbd_fraser$observed_count <- NA
 
-cond <- spawners$region == "Yukon"
+cond <- spawners$region == "Fraser"
 spawners[cond,]
-cuid_yk_pse <- unique(spawners$cuid[cond])
-length(cuid_yk_pse) # 17
+cuid_fraser_pse <- unique(spawners$cuid[cond])
+length(cuid_fraser_pse) # 61
 
-sapply(cuid_yk_pse,function(cuid){
-  cond <- spawners$cuid == cuid
-  out <- max(spawners$year[cond])
-  names(out) <- cuid
-  return(out)
-})
+max(spawners$year[cond]) # 2026
 
-cuid_yk_new <- unique(spwAbd_yukon$cuid)
-length(cuid_yk_new) # 16
-sapply(cuid_yk_new,function(cuid){
-  cond <- spwAbd_yukon$cuid == cuid
-  out <- max(spwAbd_yukon$year[cond])
-  names(out) <- cuid
-  return(out)
-})
+cuid_fraser_new <- unique(spwAbd_fraser$cuid)
+length(cuid_fraser_new) # 57
 
-cuid_yk_new[! cuid_yk_new %in% cuid_yk_pse]
-cuid_yk_pse[! cuid_yk_pse %in% cuid_yk_new]
-# 1216
+cuid_fraser_new[! cuid_fraser_new %in% cuid_fraser_pse]
+cuid_fraser_pse[! cuid_fraser_pse %in% cuid_fraser_new]
+#  780 781 784 785 --> all SH
 
-spawners[spawners$cuid == 1216,]
-# CM 1216 Donjek Kluane --> no estimated spawner abundance
+spawners[spawners$cuid == 785 ,]
 
+cond <- spawners$cuid %in% unique(spwAbd_fraser$cuid)
 spawners <- spawners[!cond,]
 
 spawners <- rbind(spawners,
-                  spwAbd_yukon[,colnames(spawners)])
+                  spwAbd_fraser[,colnames(spawners)])
 
 # Filter out no estimated spawner abundance
 spawners <- spawners %>% filter(!is.na(estimated_count))

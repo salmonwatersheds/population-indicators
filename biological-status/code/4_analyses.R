@@ -175,9 +175,9 @@ biological_status_cu$curr_spw <- sapply(biological_status_cu$cuid,function(cuid)
 
 cond <- biological_status_cu
 
-cuid_biostat <- c(1203,1205)
+cuid_biostat <- 729
 
-figure_print <- F
+figure_print <- T
 percent <- 0
 for(cuid in cuid_biostat){
   # cuid <- 1207
@@ -188,7 +188,8 @@ for(cuid in cuid_biostat){
                                        #dataset103_output = cuspawnerabund_smooth,
                                        conservationunits_decoder = conservationunits_decoder, 
                                        figure_print = figure_print, # figure_print, 
-                                       wd_figures = wd_figures, add_absolute_benchmarks = T)
+                                       wd_figures = wd_figures, 
+                                       add_absolute_benchmarks = T)
   
   progress <- which(cuid == cuid_biostat) / length(cuid_biostat) * 100
   if(progress > percent){

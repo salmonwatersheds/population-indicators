@@ -998,9 +998,17 @@ conservation_unit_census_sites$Y_LAT[cond] <- 51.593091
 i <- i + 1
 cond <- conservation_unit_census_sites$GFE_ID == GFE_IDs_here_cuss[i]
 conservation_unit_census_sites$CENSUS_SITE[cond] |> unique() # PIG CHANNEL COMBINED
+
+TODO: check
+this stream will become called NORTH THOMPSON RIVER-PIG CHANNEL in the end and I am not sure where
+--> it is being changed in script 2 due to streamlocationids.csv
+TODO: Fix accoriding to:
+https://pacificsalmonfdn.slack.com/archives/C03LB7KM6JK/p1794599948672879
+
+
 # cf. map p. 31 of Arbeider et al. 2020. Interior Fraser Coho Salmon Recovery Potential Assessment
 # https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/40888721.pdf
-conservation_unit_census_sites$X_LONGT[cond] <- 119.810014
+conservation_unit_census_sites$X_LONGT[cond] <- -119.810014
 conservation_unit_census_sites$Y_LAT[cond] <- 51.579465
 
 i <- i + 1

@@ -937,6 +937,21 @@ nrow(unique(change_all)) # 199
 all(change_all$GFE_ID %in% nuseds$GFE_ID) # should be TRUE
 change_all <- change_all[order(change_all$CENSUS_SITE),]
 rownames(change_all) <- NULL
+
+
+
+notice the NORTH THOMPSON RIVER@VAVENBY typo ofr:
+
+cond <- streamlocationids$sys_nm %in% c("NORTH THOMPSON RIVER@VAVENBY","NORTH THOMPSON RIVER-PIG CHANNEL")
+streamlocationids[cond,]
+
+"NORTH THOMPSON RIVER@VAVENBY" --> "MIDDLE NORTH THOMPSON RIVER MAINSTEM"
+"NORTH THOMPSON RIVER-PIG CHANNEL" --> "PIG CHANNEL COMBINED"
+
+TODO: Fix accoriding to:
+https://pacificsalmonfdn.slack.com/archives/C03LB7KM6JK/p1794599948672879
+
+
 ```
 
 ```{r, echo=FALSE}
